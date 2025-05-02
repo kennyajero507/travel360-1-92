@@ -9,9 +9,10 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Separator } from "../components/ui/separator";
 import { Badge } from "../components/ui/badge";
+import AdminSettings from "../components/AdminSettings";
 
 const Settings = () => {
-  const { role, setRole, tier, setTier } = useRole();
+  const { role, setRole, tier, setTier, permissions } = useRole();
   const { currency, setCurrency, currencies } = useCurrency();
 
   const handleRoleChange = (selectedRole: UserRole) => {
@@ -44,6 +45,9 @@ const Settings = () => {
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          {permissions.canAccessSystemSettings && (
+            <TabsTrigger value="admin">Administration</TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="general" className="space-y-4 mt-4">
@@ -235,6 +239,12 @@ const Settings = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        
+        {permissions.canAccessSystemSettings && (
+          <TabsContent value="admin" className="space-y-4 mt-4">
+            <AdminSettings />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

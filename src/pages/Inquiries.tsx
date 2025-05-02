@@ -16,6 +16,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
 import {
   Select,
@@ -24,9 +25,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { FileText, Plus, MoreHorizontal, MessageSquare } from "lucide-react";
+import { FileText, Plus, MoreHorizontal, MessageSquare, UserCheck } from "lucide-react";
 import { Badge } from "../components/ui/badge";
+import { toast } from "sonner";
 
 // Mock inquiries data
 const mockInquiries = [
@@ -39,6 +49,7 @@ const mockInquiries = [
     budget: "$5,000",
     status: "New",
     priority: "Normal",
+    assignedTo: null,
   },
   {
     id: "I-2024-002",
@@ -49,6 +60,7 @@ const mockInquiries = [
     budget: "$12,000",
     status: "Assigned",
     priority: "High",
+    assignedTo: "Jane Cooper",
   },
   {
     id: "I-2024-003",
@@ -59,6 +71,7 @@ const mockInquiries = [
     budget: "$6,500",
     status: "Quoted",
     priority: "Urgent",
+    assignedTo: "Robert Fox",
   },
   {
     id: "I-2024-004",
@@ -69,6 +82,7 @@ const mockInquiries = [
     budget: "$8,000",
     status: "New",
     priority: "Normal",
+    assignedTo: null,
   },
   {
     id: "I-2024-005",
@@ -79,14 +93,28 @@ const mockInquiries = [
     budget: "$15,000",
     status: "Assigned",
     priority: "Normal",
+    assignedTo: "Wade Warren",
   },
+];
+
+// Mock agents data
+const mockAgents = [
+  { id: "agent-1", name: "Jane Cooper" },
+  { id: "agent-2", name: "Robert Fox" },
+  { id: "agent-3", name: "Wade Warren" },
+  { id: "agent-4", name: "Esther Howard" },
+  { id: "agent-5", name: "Brooklyn Simmons" },
 ];
 
 const Inquiries = () => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [inquiries, setInquiries] = useState(mockInquiries);
+  const [selectedInquiry, setSelectedInquiry] = useState<string | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<string>("");
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const filteredInquiries = mockInquiries.filter(inquiry => {
+  const filteredInquiries = inquiries.filter(inquiry => {
     const matchesFilter = filter === "all" || inquiry.status.toLowerCase() === filter.toLowerCase();
     const matchesSearch = inquiry.client.toLowerCase().includes(search.toLowerCase()) ||
                          inquiry.destination.toLowerCase().includes(search.toLowerCase()) ||
@@ -113,6 +141,37 @@ const Inquiries = () => {
       case "low": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const openAssignDialog = (inquiryId: string) => {
+    setSelectedInquiry(inquiryId);
+    setSelectedAgent("");
+    setDialogOpen(true);
+  };
+
+  const handleAssignInquiry = () => {
+    if (!selectedInquiry || !selectedAgent) {
+      toast.error("Please select an agent");
+      return;
+    }
+
+    // Find the selected agent
+    const agent = mockAgents.find(a => a.id === selectedAgent);
+    
+    // Update the inquiries
+    setInquiries(prev => prev.map(inquiry => {
+      if (inquiry.id === selectedInquiry) {
+        return {
+          ...inquiry,
+          status: "Assigned",
+          assignedTo: agent?.name || ""
+        };
+      }
+      return inquiry;
+    }));
+
+    toast.success(`Inquiry ${selectedInquiry} assigned to ${agent?.name}`);
+    setDialogOpen(false);
   };
 
   return (
@@ -172,6 +231,7 @@ const Inquiries = () => {
                   <TableHead>Budget</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
+                  <TableHead>Assigned To</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -194,6 +254,7 @@ const Inquiries = () => {
                         {inquiry.priority}
                       </Badge>
                     </TableCell>
+                    <TableCell>{inquiry.assignedTo || "-"}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -203,23 +264,28 @@ const Inquiries = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem asChild>
                             <Link to={`/inquiries/${inquiry.id}`} className="flex items-center w-full">
                               <MessageSquare className="mr-2 h-4 w-4" />
                               View Inquiry
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem asChild>
                             <Link to={`/inquiries/${inquiry.id}/edit`} className="flex items-center w-full">
                               <MessageSquare className="mr-2 h-4 w-4" />
                               Edit Inquiry
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem asChild>
                             <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full">
                               <FileText className="mr-2 h-4 w-4" />
                               Create Quote
                             </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => openAssignDialog(inquiry.id)} className="flex items-center w-full">
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            Assign to Agent
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -231,6 +297,37 @@ const Inquiries = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Assign Inquiry to Agent</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">
+              Select Agent
+            </label>
+            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select an agent" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignInquiry}>
+              Assign
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

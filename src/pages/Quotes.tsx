@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Input } from "../components/ui/input";
-import { FileText, Plus, MoreHorizontal, Download } from "lucide-react";
+import { FileText, Plus, MoreHorizontal, Download, Eye, Edit } from "lucide-react";
 import { Badge } from "../components/ui/badge";
+import { toast } from "sonner";
 
 const mockQuotes = [
   {
@@ -96,6 +97,16 @@ const Quotes = () => {
       case "draft": return "bg-gray-100 text-gray-800";
       default: return "bg-blue-100 text-blue-800";
     }
+  };
+  
+  const handleViewQuote = (id: string) => {
+    // In a real app, this would navigate to the quote view
+    toast.info(`Viewing quote ${id}`);
+  };
+  
+  const handleDownloadQuote = (id: string) => {
+    // In a real app, this would generate and download a PDF
+    toast.success(`Downloaded quote ${id} as PDF`);
   };
 
   return (
@@ -171,34 +182,36 @@ const Quotes = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Link to={`/quotes/${quote.id}`} className="flex items-center w-full">
-                              <FileText className="mr-2 h-4 w-4" />
-                              View Quote
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Link to={`/quotes/${quote.id}/edit`} className="flex items-center w-full">
-                              <FileText className="mr-2 h-4 w-4" />
-                              Edit Quote
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <div className="flex items-center w-full">
-                              <Download className="mr-2 h-4 w-4" />
-                              Download PDF
-                            </div>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleViewQuote(quote.id)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">View</span>
+                        </Button>
+                        
+                        <Button
+                          variant="ghost" 
+                          size="sm" 
+                          asChild
+                        >
+                          <Link to={`/quotes/${quote.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Link>
+                        </Button>
+                        
+                        <Button
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDownloadQuote(quote.id)}
+                        >
+                          <Download className="h-4 w-4" />
+                          <span className="sr-only">Download</span>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

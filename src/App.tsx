@@ -14,6 +14,7 @@ import Hotels from "./pages/Hotels";
 import CreateHotel from "./pages/CreateHotel";
 import { RoleProvider } from "./contexts/RoleContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
+import Calendar from "./pages/Calendar";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
               <Route path="inquiries/create" element={<CreateInquiry />} />
               <Route path="hotels" element={<Hotels />} />
               <Route path="hotels/create" element={<CreateHotel />} />
+              <Route path="calendar" element={<Calendar />} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
