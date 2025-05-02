@@ -1,7 +1,7 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare } from "lucide-react";
 
 interface VerticalNavProps {
   collapsed: boolean;
@@ -39,6 +39,8 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         <NavItem to="/" collapsed={collapsed} icon={<Home size={20} />} label="Dashboard" />
         <NavItem to="/quotes" collapsed={collapsed} icon={<FileText size={20} />} label="Quotes" />
         <NavItem to="/clients" collapsed={collapsed} icon={<Users size={20} />} label="Clients" />
+        <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
+        <NavItem to="/hotels" collapsed={collapsed} icon={<Hotel size={20} />} label="Hotels" />
         <NavItem to="/calendar" collapsed={collapsed} icon={<Calendar size={20} />} label="Calendar" />
         <NavItem to="/settings" collapsed={collapsed} icon={<Settings size={20} />} label="Settings" />
       </div>

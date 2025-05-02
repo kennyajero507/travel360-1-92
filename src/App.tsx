@@ -8,6 +8,10 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 import { Toaster } from "./components/ui/sonner";
+import Inquiries from "./pages/Inquiries";
+import CreateInquiry from "./pages/CreateInquiry";
+import Hotels from "./pages/Hotels";
+import CreateHotel from "./pages/CreateHotel";
 
 function App() {
   return (
@@ -20,6 +24,10 @@ function App() {
           <Route path="quotes/create" element={<CreateQuote />} />
           <Route path="quotes/create/:inquiryId" element={<CreateQuote />} />
           <Route path="clients" element={<Clients />} />
+          <Route path="inquiries" element={<Inquiries />} />
+          <Route path="inquiries/create" element={<CreateInquiry />} />
+          <Route path="hotels" element={<Hotels />} />
+          <Route path="hotels/create" element={<CreateHotel />} />
           <Route path="settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
