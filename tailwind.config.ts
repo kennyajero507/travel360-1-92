@@ -19,6 +19,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Jost', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -26,12 +29,12 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#1a73e8", // Primary blue
+          DEFAULT: "#2563eb", // Changed to a blue shade
           foreground: "#ffffff",
-          hover: "#1557b0",
+          hover: "#1d4ed8",
         },
         secondary: {
-          DEFAULT: "#f8fafc", // Light background
+          DEFAULT: "#f8fafc", 
           foreground: "#1e293b",
         },
         destructive: {
@@ -43,7 +46,7 @@ export default {
           foreground: "#64748b",
         },
         accent: {
-          DEFAULT: "#e0f2fe", // Light blue
+          DEFAULT: "#e0f2fe", 
           foreground: "#0369a1",
         },
         popover: {
@@ -54,11 +57,10 @@ export default {
           DEFAULT: "#ffffff",
           foreground: "#0f172a",
         },
-        // Custom colors for our app
         travelflow: {
           blue: {
-            DEFAULT: "#1a73e8",
-            dark: "#1557b0",
+            DEFAULT: "#2563eb",
+            dark: "#1d4ed8",
             light: "#e8f0fe",
           },
           gray: {

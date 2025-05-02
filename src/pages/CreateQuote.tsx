@@ -17,6 +17,7 @@ import { Plus, Minus, Save, Download, Eye } from "lucide-react";
 import { useRole } from "../contexts/RoleContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import HotelSelector from "../components/HotelSelector";
+import { differenceInDays } from "date-fns";
 
 // Types for our form data
 interface HotelItem {
@@ -40,10 +41,14 @@ interface QuoteFormData {
   startDate: string;
   endDate: string;
   travelers: number;
+  duration: {
+    days: number;
+    nights: number;
+  };
   hotels: HotelItem[];
   transports: TransportItem[];
   markup: {
-    type: "percentage" | "fixed";
+    type: "percentage" | "fixed" | "cost-plus";
     value: number;
   };
   notes: string;
@@ -81,6 +86,10 @@ const CreateQuote = () => {
     startDate: mockInquiry?.startDate || "",
     endDate: mockInquiry?.endDate || "",
     travelers: mockInquiry?.travelers || 2,
+    duration: {
+      days: 0,
+      nights: 0
+    },
     hotels: [
       {
         id: "hotel-1",
@@ -105,6 +114,32 @@ const CreateQuote = () => {
     notes: ""
   });
 
+  // Calculate days and nights when dates change
+  useEffect(() => {
+    if (formData.startDate && formData.endDate) {
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      
+      if (startDate && endDate && startDate < endDate) {
+        const days = differenceInDays(endDate, startDate) + 1; // +1 to include the start day
+        const nights = days - 1;
+        
+        setFormData(prev => ({
+          ...prev,
+          duration: {
+            days,
+            nights
+          },
+          hotels: prev.hotels.map(hotel => ({
+            ...hotel,
+            nights,
+            total: hotel.ratePerNight * nights
+          }))
+        }));
+      }
+    }
+  }, [formData.startDate, formData.endDate]);
+
   // Calculate totals
   const calculateHotelSubtotal = () => {
     return formData.hotels.reduce((sum, hotel) => sum + hotel.total, 0);
@@ -120,9 +155,15 @@ const CreateQuote = () => {
 
   const calculateMarkup = () => {
     const subtotal = calculateSubtotal();
-    return formData.markup.type === "percentage"
-      ? (subtotal * formData.markup.value) / 100
-      : formData.markup.value;
+    if (formData.markup.type === "percentage") {
+      return (subtotal * formData.markup.value) / 100;
+    } else if (formData.markup.type === "cost-plus") {
+      // For cost-plus, we calculate what would be 100% if the cost is 85%
+      // If cost is 85%, then selling price is cost / 0.85
+      return (subtotal / 0.85) - subtotal;
+    } else {
+      return formData.markup.value;
+    }
   };
 
   const calculateGrandTotal = () => {
@@ -159,7 +200,7 @@ const CreateQuote = () => {
         id: newId,
         name: "",
         ratePerNight: 0,
-        nights: 1,
+        nights: prev.duration.nights || 1,
         total: 0
       }]
     }));
@@ -243,6 +284,36 @@ const CreateQuote = () => {
     toast.success("Quote saved as draft");
     navigate("/quotes");
   };
+  
+  // Preview quote
+  const previewQuote = () => {
+    // In a real app, this would generate a preview
+    toast.info("Generating quote preview...");
+    // Store the current quote data in session storage for preview
+    sessionStorage.setItem('previewQuote', JSON.stringify({
+      ...formData,
+      subtotal: calculateSubtotal(),
+      markup: {
+        ...formData.markup,
+        amount: calculateMarkup()
+      },
+      grandTotal: calculateGrandTotal()
+    }));
+    // Open in new tab or modal in a real app
+    window.open('/quote-preview', '_blank');
+  };
+  
+  // Download quote as PDF
+  const downloadQuote = () => {
+    toast.success("Quote downloaded as PDF");
+    // In a real app, this would generate and download a PDF
+  };
+  
+  // Email quote to client
+  const emailQuote = () => {
+    toast.success("Quote sent to client via email");
+    // In a real app, this would send an email
+  };
 
   return (
     <div className="space-y-6">
@@ -258,7 +329,7 @@ const CreateQuote = () => {
             <Save className="mr-2 h-4 w-4" />
             Save Draft
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={previewQuote}>
             <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
@@ -318,6 +389,7 @@ const CreateQuote = () => {
                   onChange={(e) => setFormData({ ...formData, client: e.target.value })}
                   placeholder="Enter client name"
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -330,6 +402,7 @@ const CreateQuote = () => {
                   onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                   placeholder="Destination"
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -342,6 +415,7 @@ const CreateQuote = () => {
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -354,6 +428,7 @@ const CreateQuote = () => {
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -367,7 +442,20 @@ const CreateQuote = () => {
                   value={formData.travelers}
                   onChange={(e) => setFormData({ ...formData, travelers: parseInt(e.target.value) })}
                   required
+                  className="bg-white text-black"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Trip Duration
+                </label>
+                <div className="px-4 py-2 border rounded-md bg-gray-50">
+                  {formData.duration.days > 0 ? (
+                    <p>{formData.duration.days} days / {formData.duration.nights} nights</p>
+                  ) : (
+                    <p>Select start and end dates to calculate</p>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -450,6 +538,7 @@ const CreateQuote = () => {
                       onChange={(e) => updateTransport(transport.id, "description", e.target.value)}
                       placeholder="E.g., Airport to hotel"
                       required
+                      className="bg-white text-black"
                     />
                   </div>
                   <div>
@@ -461,6 +550,7 @@ const CreateQuote = () => {
                       value={transport.cost}
                       onChange={(e) => updateTransport(transport.id, "cost", parseFloat(e.target.value))}
                       required
+                      className="bg-white text-black"
                     />
                   </div>
                 </div>
@@ -484,7 +574,7 @@ const CreateQuote = () => {
                 <label className="text-sm font-medium mb-2 block">Markup Type</label>
                 <Select 
                   value={formData.markup.type} 
-                  onValueChange={(value: "percentage" | "fixed") => updateMarkup("type", value)}
+                  onValueChange={(value: "percentage" | "fixed" | "cost-plus") => updateMarkup("type", value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select markup type" />
@@ -492,12 +582,15 @@ const CreateQuote = () => {
                   <SelectContent>
                     <SelectItem value="percentage">Percentage (%)</SelectItem>
                     <SelectItem value="fixed">Fixed Amount</SelectItem>
+                    <SelectItem value="cost-plus">Cost Plus (85%)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  {formData.markup.type === "percentage" ? "Percentage (%)" : "Amount"}
+                  {formData.markup.type === "percentage" ? "Percentage (%)" : 
+                   formData.markup.type === "fixed" ? "Amount" : 
+                   "Cost Percentage (%)"}
                 </label>
                 <Input
                   type="number"
@@ -506,7 +599,14 @@ const CreateQuote = () => {
                   value={formData.markup.value}
                   onChange={(e) => updateMarkup("value", parseFloat(e.target.value))}
                   required
+                  className="bg-white text-black"
+                  disabled={formData.markup.type === "cost-plus"}
                 />
+                {formData.markup.type === "cost-plus" && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Fixed at 85% cost, 15% markup
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -549,7 +649,9 @@ const CreateQuote = () => {
               </div>
               <div className="flex justify-between">
                 <span>
-                  Markup ({formData.markup.type === "percentage" ? `${formData.markup.value}%` : "Fixed"})
+                  {formData.markup.type === "percentage" ? `Markup (${formData.markup.value}%)` : 
+                   formData.markup.type === "fixed" ? "Markup (Fixed)" : 
+                   "Markup (Cost Plus 85%)"}
                 </span>
                 <span>{formatAmount(calculateMarkup())}</span>
               </div>
@@ -557,6 +659,20 @@ const CreateQuote = () => {
               <div className="flex justify-between text-lg font-bold">
                 <span>Grand Total</span>
                 <span>{formatAmount(calculateGrandTotal())}</span>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={emailQuote}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                  </svg>
+                  Email to Client
+                </Button>
+                <Button type="button" variant="outline" onClick={downloadQuote}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
               </div>
             </div>
           </CardContent>

@@ -1,44 +1,32 @@
 
 import React, { createContext, useContext, useState } from 'react';
 
-type Currency = {
-  code: string;
-  symbol: string;
-  name: string;
-};
+type CurrencyType = 'USD' | 'EUR' | 'KES' | 'GBP';
 
 interface CurrencyContextType {
-  currency: Currency;
-  setCurrency: (currency: Currency) => void;
+  currency: CurrencyType;
+  setCurrency: (currency: CurrencyType) => void;
   formatAmount: (amount: number) => string;
-  currencies: Currency[];
 }
-
-const currencies: Currency[] = [
-  { code: 'KES', symbol: 'Ksh', name: 'Kenyan Shilling' },
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-];
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currency, setCurrency] = useState<Currency>(currencies[0]); // Default to KES
-  
-  const formatAmount = (amount: number): string => {
-    return `${currency.symbol} ${amount.toLocaleString()}`;
-  };
+  const [currency, setCurrency] = useState<CurrencyType>('KES'); // Set KES as default currency
 
-  const contextValue: CurrencyContextType = {
-    currency,
-    setCurrency,
-    formatAmount,
-    currencies
+  const formatAmount = (amount: number): string => {
+    const formatter = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    
+    return formatter.format(amount);
   };
 
   return (
-    <CurrencyContext.Provider value={contextValue}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount }}>
       {children}
     </CurrencyContext.Provider>
   );

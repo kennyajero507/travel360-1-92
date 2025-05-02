@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { 
@@ -80,6 +80,7 @@ const mockQuotes = [
 const Quotes = () => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const filteredQuotes = mockQuotes.filter(quote => {
     const matchesFilter = filter === "all" || quote.status.toLowerCase() === filter.toLowerCase();
@@ -102,11 +103,33 @@ const Quotes = () => {
   const handleViewQuote = (id: string) => {
     // In a real app, this would navigate to the quote view
     toast.info(`Viewing quote ${id}`);
+    // You would typically do something like this:
+    // navigate(`/quotes/${id}`);
+  };
+  
+  const handleEditQuote = (id: string) => {
+    toast.info(`Editing quote ${id}`);
+    navigate(`/quotes/edit/${id}`);
   };
   
   const handleDownloadQuote = (id: string) => {
     // In a real app, this would generate and download a PDF
     toast.success(`Downloaded quote ${id} as PDF`);
+    
+    // Simulate PDF download after a short delay
+    setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = '#';
+      link.setAttribute('download', `Quote-${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }, 500);
+  };
+  
+  const handleEmailQuote = (id: string) => {
+    // In a real app, this would send an email with the quote
+    toast.success(`Quote ${id} sent via email`);
   };
 
   return (
@@ -148,7 +171,7 @@ const Quotes = () => {
                 placeholder="Search quotes..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
+                className="w-full bg-white text-black"
               />
             </div>
           </div>
@@ -195,22 +218,33 @@ const Quotes = () => {
                         <Button
                           variant="ghost" 
                           size="sm" 
-                          asChild
+                          onClick={() => handleEditQuote(quote.id)}
                         >
-                          <Link to={`/quotes/${quote.id}/edit`}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Link>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
                         </Button>
                         
-                        <Button
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleDownloadQuote(quote.id)}
-                        >
-                          <Download className="h-4 w-4" />
-                          <span className="sr-only">Download</span>
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">More options</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleDownloadQuote(quote.id)}>
+                              <Download className="h-4 w-4 mr-2" />
+                              Download as PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEmailQuote(quote.id)}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                              </svg>
+                              Email to Client
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
