@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -14,6 +14,9 @@ import {
 import { Separator } from "../components/ui/separator";
 import { toast } from "sonner";
 import { Plus, Minus, Save, Download, Eye } from "lucide-react";
+import { useRole } from "../contexts/RoleContext";
+import { useCurrency } from "../contexts/CurrencyContext";
+import HotelSelector from "../components/HotelSelector";
 
 // Types for our form data
 interface HotelItem {
@@ -49,6 +52,16 @@ interface QuoteFormData {
 const CreateQuote = () => {
   const { inquiryId } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useRole();
+  const { formatAmount } = useCurrency();
+  
+  // Check if user has permission to create quotes
+  useEffect(() => {
+    if (!hasPermission(['agent', 'operator', 'admin'])) {
+      toast.error("You don't have permission to create quotes");
+      navigate("/");
+    }
+  }, [hasPermission, navigate]);
   
   // Mock inquiry data (would come from API in real app)
   const mockInquiry = inquiryId ? {
@@ -58,7 +71,7 @@ const CreateQuote = () => {
     startDate: "2024-08-20",
     endDate: "2024-08-30",
     travelers: 2,
-    budget: "$5,000",
+    budget: formatAmount(5000),
     preferences: "Beach access, luxury accommodations"
   } : null;
 
@@ -371,61 +384,17 @@ const CreateQuote = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {formData.hotels.map((hotel, index) => (
-              <div key={hotel.id} className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Hotel {index + 1}</h4>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeHotel(hotel.id)}
-                  >
-                    <Minus className="h-4 w-4" />
-                    <span className="sr-only">Remove</span>
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="lg:col-span-2">
-                    <label className="text-sm font-medium mb-2 block">Hotel Name</label>
-                    <Input
-                      value={hotel.name}
-                      onChange={(e) => updateHotel(hotel.id, "name", e.target.value)}
-                      placeholder="Enter hotel name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Rate per Night ($)</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={hotel.ratePerNight}
-                      onChange={(e) => updateHotel(hotel.id, "ratePerNight", parseFloat(e.target.value))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Nights</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={hotel.nights}
-                      onChange={(e) => updateHotel(hotel.id, "nights", parseInt(e.target.value))}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <div className="bg-gray-50 p-2 rounded-md">
-                    <span className="text-sm font-medium">Total: ${hotel.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
+              <HotelSelector 
+                key={hotel.id}
+                hotel={hotel}
+                onChange={updateHotel}
+                onRemove={removeHotel}
+                index={index}
+              />
             ))}
             <div className="flex justify-between items-center pt-2">
               <span className="text-sm font-medium">Accommodation Subtotal</span>
-              <span className="font-medium">${calculateHotelSubtotal().toFixed(2)}</span>
+              <span className="font-medium">{formatAmount(calculateHotelSubtotal())}</span>
             </div>
           </CardContent>
         </Card>
@@ -484,7 +453,7 @@ const CreateQuote = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Cost ($)</label>
+                    <label className="text-sm font-medium mb-2 block">Cost</label>
                     <Input
                       type="number"
                       min="0"
@@ -499,7 +468,7 @@ const CreateQuote = () => {
             ))}
             <div className="flex justify-between items-center pt-2">
               <span className="text-sm font-medium">Transportation Subtotal</span>
-              <span className="font-medium">${calculateTransportSubtotal().toFixed(2)}</span>
+              <span className="font-medium">{formatAmount(calculateTransportSubtotal())}</span>
             </div>
           </CardContent>
         </Card>
@@ -522,13 +491,13 @@ const CreateQuote = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                    <SelectItem value="fixed">Fixed Amount</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  {formData.markup.type === "percentage" ? "Percentage (%)" : "Amount ($)"}
+                  {formData.markup.type === "percentage" ? "Percentage (%)" : "Amount"}
                 </label>
                 <Input
                   type="number"
@@ -550,7 +519,7 @@ const CreateQuote = () => {
           </CardHeader>
           <CardContent>
             <textarea
-              className="w-full min-h-[100px] p-3 border rounded-md"
+              className="w-full min-h-[100px] p-3 border rounded-md bg-white text-black"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Any special requests or additional information..."
@@ -567,27 +536,27 @@ const CreateQuote = () => {
             <div className="space-y-4">
               <div className="flex justify-between">
                 <span>Accommodation Subtotal</span>
-                <span>${calculateHotelSubtotal().toFixed(2)}</span>
+                <span>{formatAmount(calculateHotelSubtotal())}</span>
               </div>
               <div className="flex justify-between">
                 <span>Transportation Subtotal</span>
-                <span>${calculateTransportSubtotal().toFixed(2)}</span>
+                <span>{formatAmount(calculateTransportSubtotal())}</span>
               </div>
               <Separator />
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${calculateSubtotal().toFixed(2)}</span>
+                <span>{formatAmount(calculateSubtotal())}</span>
               </div>
               <div className="flex justify-between">
                 <span>
                   Markup ({formData.markup.type === "percentage" ? `${formData.markup.value}%` : "Fixed"})
                 </span>
-                <span>${calculateMarkup().toFixed(2)}</span>
+                <span>{formatAmount(calculateMarkup())}</span>
               </div>
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Grand Total</span>
-                <span>${calculateGrandTotal().toFixed(2)}</span>
+                <span>{formatAmount(calculateGrandTotal())}</span>
               </div>
             </div>
           </CardContent>
