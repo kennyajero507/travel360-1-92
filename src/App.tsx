@@ -1,27 +1,31 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Quotes from "./pages/Quotes";
+import CreateQuote from "./pages/CreateQuote";
+import Clients from "./pages/Clients";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Layout from "./components/Layout";
+import { Toaster } from "./components/ui/sonner";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+function App() {
+  return (
+    <Router>
+      <Toaster position="top-right" />
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="quotes" element={<Quotes />} />
+          <Route path="quotes/create" element={<CreateQuote />} />
+          <Route path="quotes/create/:inquiryId" element={<CreateQuote />} />
+          <Route path="clients" element={<Clients />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;
