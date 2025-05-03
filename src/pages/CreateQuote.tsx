@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -57,16 +56,17 @@ interface QuoteFormData {
 const CreateQuote = () => {
   const { inquiryId } = useParams();
   const navigate = useNavigate();
-  const { hasPermission } = useRole();
+  const { hasPermission, role } = useRole();
   const { formatAmount } = useCurrency();
   
   // Check if user has permission to create quotes
   useEffect(() => {
-    if (!hasPermission(['agent', 'operator', 'admin'])) {
+    // Only allow agent, team_manager, org_owner, or system_admin roles to create quotes
+    if (!['agent', 'team_manager', 'org_owner', 'system_admin'].includes(role)) {
       toast.error("You don't have permission to create quotes");
       navigate("/");
     }
-  }, [hasPermission, navigate]);
+  }, [role, navigate]);
   
   // Mock inquiry data (would come from API in real app)
   const mockInquiry = inquiryId ? {

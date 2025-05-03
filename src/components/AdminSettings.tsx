@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -17,13 +16,16 @@ interface AdminSettingsProps {
 }
 
 const AdminSettings: React.FC<AdminSettingsProps> = ({ className }) => {
-  const { permissions } = useRole();
+  const { permissions, role } = useRole();
 
   const handleSaveSettings = () => {
     toast.success("Settings saved successfully");
   };
 
-  if (!permissions.canAccessSystemSettings) {
+  // Check if it's system_admin role - only system admins should access this
+  const canAccessAdmin = role === 'system_admin';
+
+  if (!canAccessAdmin) {
     return (
       <div className="p-6 text-center">
         <h2 className="text-lg font-semibold mb-2">Admin Access Required</h2>
@@ -44,7 +46,7 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ className }) => {
             <TabsTrigger value="system">Platform Settings</TabsTrigger>
             <TabsTrigger value="billing">Billing & Payments</TabsTrigger>
           </TabsList>
-
+          
           <TabsContent value="users" className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">User Management</h3>

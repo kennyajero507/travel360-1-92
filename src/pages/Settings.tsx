@@ -8,7 +8,10 @@ import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import AdminSettings from "../components/AdminSettings";
 
 const Settings = () => {
-  const { permissions } = useRole();
+  const { role } = useRole();
+  
+  // Only system admins can access admin settings
+  const canAccessAdmin = role === 'system_admin';
 
   return (
     <div className="space-y-6">
@@ -22,7 +25,7 @@ const Settings = () => {
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="subscription">Subscription</TabsTrigger>
-          {permissions.canAccessSystemSettings && (
+          {canAccessAdmin && (
             <TabsTrigger value="admin">Administration</TabsTrigger>
           )}
         </TabsList>
@@ -39,7 +42,7 @@ const Settings = () => {
           <SubscriptionSettings />
         </TabsContent>
         
-        {permissions.canAccessSystemSettings && (
+        {canAccessAdmin && (
           <TabsContent value="admin" className="space-y-4 mt-4">
             <AdminSettings />
           </TabsContent>

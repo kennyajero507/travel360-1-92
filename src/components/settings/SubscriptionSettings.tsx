@@ -22,7 +22,7 @@ const SubscriptionSettings = () => {
       case 'team_manager': return 'Team Manager';
       case 'agent': return 'Travel Agent';
       case 'client': return 'Client';
-      default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      default: return role;
     }
   };
 

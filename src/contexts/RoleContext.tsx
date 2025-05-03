@@ -16,6 +16,7 @@ interface RoleContextType {
     canConfigureGlobalIntegrations: boolean;
     canSetSecurityPolicies: boolean;
     canViewSystemWideAnalytics: boolean;
+    canAccessSystemSettings: boolean; // Added missing property
     
     // Organization management
     canManageTeamMembers: boolean;
@@ -54,6 +55,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: true,
     canSetSecurityPolicies: true,
     canViewSystemWideAnalytics: true,
+    canAccessSystemSettings: true, // Added missing property
     canManageTeamMembers: true,
     canControlBilling: true,
     canAddHotels: true,
@@ -77,6 +79,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
+    canAccessSystemSettings: false, // Added missing property
     canManageTeamMembers: true,
     canControlBilling: true,
     canAddHotels: true,
@@ -100,6 +103,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
+    canAccessSystemSettings: false, // Added missing property
     canManageTeamMembers: false,
     canControlBilling: false,
     canAddHotels: true,
@@ -123,6 +127,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
+    canAccessSystemSettings: false, // Added missing property
     canManageTeamMembers: false,
     canControlBilling: false,
     canAddHotels: false,
@@ -146,6 +151,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
+    canAccessSystemSettings: false, // Added missing property
     canManageTeamMembers: false,
     canControlBilling: false,
     canAddHotels: false,
