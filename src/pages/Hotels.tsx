@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { 
@@ -27,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { useRole } from "../contexts/RoleContext";
+import { toast } from "sonner";
 
 // Mock hotels data
 const mockHotels = [
@@ -85,6 +87,16 @@ const mockHotels = [
 const Hotels = () => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const { permissions } = useRole();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if the user has permission to access hotels
+    if (!permissions.canAddHotels) {
+      toast.error("You don't have permission to access hotels");
+      navigate("/");
+    }
+  }, [permissions, navigate]);
 
   const filteredHotels = mockHotels.filter(hotel => {
     const matchesFilter = filter === "all" || 
@@ -122,7 +134,7 @@ const Hotels = () => {
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="w-full md:w-64">
               <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white text-black">
                   <SelectValue placeholder="Filter hotels" />
                 </SelectTrigger>
                 <SelectContent>

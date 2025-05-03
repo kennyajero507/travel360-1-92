@@ -16,6 +16,7 @@ import CreateHotel from "./pages/CreateHotel";
 import { RoleProvider } from "./contexts/RoleContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import Calendar from "./pages/Calendar";
+import AgentManagement from "./pages/AgentManagement";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
               <Route path="hotels/create" element={<CreateHotel />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="agents" element={<AgentManagement />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

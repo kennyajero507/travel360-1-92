@@ -101,10 +101,22 @@ const Quotes = () => {
   };
   
   const handleViewQuote = (id: string) => {
-    // In a real app, this would navigate to the quote view
-    toast.info(`Viewing quote ${id}`);
-    // You would typically do something like this:
-    // navigate(`/quotes/${id}`);
+    // Store quote data in session storage for preview
+    const quote = mockQuotes.find(q => q.id === id);
+    if (quote) {
+      sessionStorage.setItem('previewQuote', JSON.stringify({
+        id: quote.id,
+        client: quote.client,
+        destination: quote.destination,
+        dates: quote.dates,
+        travelers: quote.travelers,
+        total: quote.total,
+        status: quote.status,
+      }));
+      window.open('/quote-preview', '_blank');
+    } else {
+      toast.error("Quote not found");
+    }
   };
   
   const handleEditQuote = (id: string) => {
@@ -113,18 +125,65 @@ const Quotes = () => {
   };
   
   const handleDownloadQuote = (id: string) => {
-    // In a real app, this would generate and download a PDF
-    toast.success(`Downloaded quote ${id} as PDF`);
-    
-    // Simulate PDF download after a short delay
-    setTimeout(() => {
+    // Store quote data in session storage for download
+    const quote = mockQuotes.find(q => q.id === id);
+    if (quote) {
+      sessionStorage.setItem('downloadQuote', JSON.stringify({
+        id: quote.id,
+        client: quote.client,
+        destination: quote.destination,
+        dates: quote.dates,
+        travelers: quote.travelers,
+        total: quote.total,
+        status: quote.status,
+      }));
+      
+      // Generate PDF content
+      const pdfContent = `
+        <html>
+          <head>
+            <title>Quote ${quote.id}</title>
+            <style>
+              body { font-family: 'Jost', sans-serif; margin: 20px; }
+              h1 { color: #2563eb; }
+              .header { display: flex; justify-content: space-between; align-items: center; }
+              .quote-details { margin-top: 20px; border: 1px solid #ddd; padding: 15px; }
+              .total { font-weight: bold; font-size: 1.2em; margin-top: 20px; text-align: right; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>TravelFlow Quote</h1>
+              <p>Quote #: ${quote.id}</p>
+            </div>
+            <div class="quote-details">
+              <p><strong>Client:</strong> ${quote.client}</p>
+              <p><strong>Destination:</strong> ${quote.destination}</p>
+              <p><strong>Dates:</strong> ${quote.dates}</p>
+              <p><strong>Travelers:</strong> ${quote.travelers}</p>
+              <p><strong>Status:</strong> ${quote.status}</p>
+              <div class="total">Total: ${quote.total}</div>
+            </div>
+          </body>
+        </html>
+      `;
+      
+      // Create a Blob with the PDF content
+      const blob = new Blob([pdfContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a link and trigger download
       const link = document.createElement('a');
-      link.href = '#';
-      link.setAttribute('download', `Quote-${id}.pdf`);
+      link.href = url;
+      link.download = `Quote-${quote.id}.html`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    }, 500);
+      
+      toast.success(`Downloaded quote ${id}`);
+    } else {
+      toast.error("Quote not found");
+    }
   };
   
   const handleEmailQuote = (id: string) => {
@@ -155,7 +214,7 @@ const Quotes = () => {
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="w-full md:w-64">
               <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white text-black">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -231,7 +290,7 @@ const Quotes = () => {
                               <span className="sr-only">More options</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="bg-white text-black">
                             <DropdownMenuItem onClick={() => handleDownloadQuote(quote.id)}>
                               <Download className="h-4 w-4 mr-2" />
                               Download as PDF

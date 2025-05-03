@@ -18,6 +18,8 @@ interface RoleContextType {
     canViewAnalytics: boolean;
     canManageContentPages: boolean;
     canCreateRoles: boolean;
+    canAddHotels: boolean; // New permission
+    canManageAgents: boolean; // New permission
   };
 }
 
@@ -31,6 +33,8 @@ const defaultPermissions = {
     canViewAnalytics: false,
     canManageContentPages: false,
     canCreateRoles: false,
+    canAddHotels: true, // Enabled for agents
+    canManageAgents: false,
   },
   operator: {
     canEditUsers: false,
@@ -41,6 +45,8 @@ const defaultPermissions = {
     canViewAnalytics: true,
     canManageContentPages: false,
     canCreateRoles: false,
+    canAddHotels: true, // Enabled for operators
+    canManageAgents: false, // Will be set dynamically based on tier
   },
   admin: {
     canEditUsers: true,
@@ -51,6 +57,8 @@ const defaultPermissions = {
     canViewAnalytics: true,
     canManageContentPages: true,
     canCreateRoles: true,
+    canAddHotels: true,
+    canManageAgents: true,
   }
 };
 
@@ -61,10 +69,19 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tier, setTier] = useState<'basic' | 'pro' | 'enterprise'>('basic');
   const [permissions, setPermissions] = useState(defaultPermissions.agent);
 
-  // Update permissions when role changes
+  // Update permissions when role or tier changes
   useEffect(() => {
-    setPermissions(defaultPermissions[role]);
-  }, [role]);
+    // Start with default permissions for the role
+    let updatedPermissions = {...defaultPermissions[role]};
+    
+    // Apply tier-specific permissions for operators
+    if (role === 'operator') {
+      // Only pro and enterprise tier operators can manage agents
+      updatedPermissions.canManageAgents = (tier === 'pro' || tier === 'enterprise');
+    }
+    
+    setPermissions(updatedPermissions);
+  }, [role, tier]);
 
   const hasPermission = (requiredRole: UserRole | UserRole[]): boolean => {
     if (role === 'admin') return true; // Admin has all permissions
