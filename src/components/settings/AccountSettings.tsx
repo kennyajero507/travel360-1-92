@@ -13,6 +13,18 @@ const AccountSettings = () => {
     toast.success(`Role changed to ${selectedRole}`);
   };
 
+  // Helper function to format role display text
+  const formatRoleDisplay = (role: string): string => {
+    switch (role) {
+      case 'system_admin': return 'System Administrator';
+      case 'org_owner': return 'Organization Owner';
+      case 'team_manager': return 'Team Manager';
+      case 'agent': return 'Travel Agent';
+      case 'client': return 'Client';
+      default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -26,9 +38,11 @@ const AccountSettings = () => {
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="system_admin">System Administrator</SelectItem>
+              <SelectItem value="org_owner">Organization Owner</SelectItem>
+              <SelectItem value="team_manager">Team Manager</SelectItem>
               <SelectItem value="agent">Travel Agent</SelectItem>
-              <SelectItem value="operator">Tour Operator</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="client">Client</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-sm text-gray-500">
@@ -37,10 +51,23 @@ const AccountSettings = () => {
 
           <div className="mt-4 border rounded p-4">
             <h3 className="font-medium mb-2">Role Permissions:</h3>
-            <ul className="space-y-1 text-sm">
-              <li><strong>Travel Agent:</strong> Create/edit quotes, manage hotel inventory for assigned inquiries.</li>
-              <li><strong>Tour Operator:</strong> Assign inquiries, manage hotels, view team metrics{permissions.canManageAgents ? ', manage agents' : ''}.</li>
-              <li><strong>Admin:</strong> Manage subscriptions, billing, agents, and system access.</li>
+            <ul className="space-y-2 text-sm">
+              <li className="pb-1 border-b">
+                <strong>System Administrator:</strong> Full platform oversight with access to all organizations, global integrations, security policies, and system-wide analytics.
+              </li>
+              <li className="py-1 border-b">
+                <strong>Organization Owner:</strong> Manage company account, team members, billing, hotel inventory with vendor lists, and access to all company quotes.
+              </li>
+              <li className="py-1 border-b">
+                <strong>Team Manager:</strong> Oversee agent teams, assign inquiries, manage team-specific hotel inventory and preferred properties, monitor team performance.
+                {permissions.canManageAgents && <span className="ml-1 text-green-600">(+ Agent management with Pro/Enterprise)</span>}
+              </li>
+              <li className="py-1 border-b">
+                <strong>Travel Agent:</strong> Create quotes, submit hotels for approval, access approved hotel lists, communicate with clients.
+              </li>
+              <li className="pt-1">
+                <strong>Client:</strong> View quotes via secure links, request modifications, approve quotes digitally.
+              </li>
             </ul>
           </div>
         </div>

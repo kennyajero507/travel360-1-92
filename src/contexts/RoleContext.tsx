@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type UserRole = 'agent' | 'operator' | 'admin';
+// Updated user roles to match the new structure
+export type UserRole = 'system_admin' | 'org_owner' | 'team_manager' | 'agent' | 'client';
 
 interface RoleContextType {
   role: UserRole;
@@ -10,59 +11,157 @@ interface RoleContextType {
   setTier: (tier: 'basic' | 'pro' | 'enterprise') => void;
   hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
   permissions: {
-    canEditUsers: boolean;
-    canManageBilling: boolean;
-    canAccessSystemSettings: boolean;
-    canEditAllQuotes: boolean;
-    canAssignInquiries: boolean;
-    canViewAnalytics: boolean;
-    canManageContentPages: boolean;
-    canCreateRoles: boolean;
+    // System management
+    canManageAllOrganizations: boolean;
+    canConfigureGlobalIntegrations: boolean;
+    canSetSecurityPolicies: boolean;
+    canViewSystemWideAnalytics: boolean;
+    
+    // Organization management
+    canManageTeamMembers: boolean;
+    canControlBilling: boolean;
+    
+    // Hotel management
     canAddHotels: boolean;
+    canEditHotels: boolean;
+    canApproveHotels: boolean;
+    canSubmitHotels: boolean;
+    canSetPreferredVendors: boolean;
+    canImportExportHotels: boolean;
+    
+    // Quote management
+    canAccessAllCompanyQuotes: boolean;
+    canAssignInquiries: boolean;
+    canGenerateQuotes: boolean;
+    canModifyQuotes: boolean;
+    
+    // Agent management
     canManageAgents: boolean;
-    canManageHotels: boolean; // New permission for hotel inventory management
+    
+    // Analytics
+    canViewTeamMetrics: boolean;
+    canViewCompanyReports: boolean;
+    
+    // Client communication
+    canCommunicateWithClients: boolean;
   };
 }
 
 const defaultPermissions = {
-  agent: {
-    canEditUsers: false,
-    canManageBilling: false,
-    canAccessSystemSettings: false,
-    canEditAllQuotes: false,
-    canAssignInquiries: false,
-    canViewAnalytics: false,
-    canManageContentPages: false,
-    canCreateRoles: false,
+  system_admin: {
+    // System admin has all permissions
+    canManageAllOrganizations: true,
+    canConfigureGlobalIntegrations: true,
+    canSetSecurityPolicies: true,
+    canViewSystemWideAnalytics: true,
+    canManageTeamMembers: true,
+    canControlBilling: true,
     canAddHotels: true,
-    canManageAgents: false,
-    canManageHotels: true, // Agents can manage their hotel inventory
-  },
-  operator: {
-    canEditUsers: false,
-    canManageBilling: false,
-    canAccessSystemSettings: false,
-    canEditAllQuotes: true,
+    canEditHotels: true,
+    canApproveHotels: true,
+    canSubmitHotels: true,
+    canSetPreferredVendors: true,
+    canImportExportHotels: true,
+    canAccessAllCompanyQuotes: true,
     canAssignInquiries: true,
-    canViewAnalytics: true,
-    canManageContentPages: false,
-    canCreateRoles: false,
-    canAddHotels: true,
-    canManageAgents: false, // Will be set dynamically based on tier
-    canManageHotels: true, // Operators can manage their hotel inventory
-  },
-  admin: {
-    canEditUsers: true,
-    canManageBilling: true,
-    canAccessSystemSettings: true,
-    canEditAllQuotes: true,
-    canAssignInquiries: true,
-    canViewAnalytics: true,
-    canManageContentPages: true,
-    canCreateRoles: true,
-    canAddHotels: true,
+    canGenerateQuotes: true,
+    canModifyQuotes: true,
     canManageAgents: true,
-    canManageHotels: true,
+    canViewTeamMetrics: true,
+    canViewCompanyReports: true,
+    canCommunicateWithClients: true,
+  },
+  
+  org_owner: {
+    canManageAllOrganizations: false,
+    canConfigureGlobalIntegrations: false,
+    canSetSecurityPolicies: false,
+    canViewSystemWideAnalytics: false,
+    canManageTeamMembers: true,
+    canControlBilling: true,
+    canAddHotels: true,
+    canEditHotels: true,
+    canApproveHotels: true,
+    canSubmitHotels: true,
+    canSetPreferredVendors: true,
+    canImportExportHotels: true,
+    canAccessAllCompanyQuotes: true,
+    canAssignInquiries: true,
+    canGenerateQuotes: true,
+    canModifyQuotes: true,
+    canManageAgents: true,
+    canViewTeamMetrics: true,
+    canViewCompanyReports: true,
+    canCommunicateWithClients: true,
+  },
+  
+  team_manager: {
+    canManageAllOrganizations: false,
+    canConfigureGlobalIntegrations: false,
+    canSetSecurityPolicies: false,
+    canViewSystemWideAnalytics: false,
+    canManageTeamMembers: false,
+    canControlBilling: false,
+    canAddHotels: true,
+    canEditHotels: true,
+    canApproveHotels: true,
+    canSubmitHotels: true,
+    canSetPreferredVendors: true,
+    canImportExportHotels: false,
+    canAccessAllCompanyQuotes: false,
+    canAssignInquiries: true,
+    canGenerateQuotes: true,
+    canModifyQuotes: true,
+    canManageAgents: false, // Will be set dynamically based on tier
+    canViewTeamMetrics: true,
+    canViewCompanyReports: false,
+    canCommunicateWithClients: true,
+  },
+  
+  agent: {
+    canManageAllOrganizations: false,
+    canConfigureGlobalIntegrations: false,
+    canSetSecurityPolicies: false,
+    canViewSystemWideAnalytics: false,
+    canManageTeamMembers: false,
+    canControlBilling: false,
+    canAddHotels: false,
+    canEditHotels: false,
+    canApproveHotels: false,
+    canSubmitHotels: true,
+    canSetPreferredVendors: false,
+    canImportExportHotels: false,
+    canAccessAllCompanyQuotes: false,
+    canAssignInquiries: false,
+    canGenerateQuotes: true,
+    canModifyQuotes: true,
+    canManageAgents: false,
+    canViewTeamMetrics: false,
+    canViewCompanyReports: false,
+    canCommunicateWithClients: true,
+  },
+  
+  client: {
+    canManageAllOrganizations: false,
+    canConfigureGlobalIntegrations: false,
+    canSetSecurityPolicies: false,
+    canViewSystemWideAnalytics: false,
+    canManageTeamMembers: false,
+    canControlBilling: false,
+    canAddHotels: false,
+    canEditHotels: false,
+    canApproveHotels: false,
+    canSubmitHotels: false,
+    canSetPreferredVendors: false,
+    canImportExportHotels: false,
+    canAccessAllCompanyQuotes: false,
+    canAssignInquiries: false,
+    canGenerateQuotes: false,
+    canModifyQuotes: false,
+    canManageAgents: false,
+    canViewTeamMetrics: false,
+    canViewCompanyReports: false,
+    canCommunicateWithClients: true,
   }
 };
 
@@ -78,17 +177,25 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Start with default permissions for the role
     let updatedPermissions = {...defaultPermissions[role]};
     
-    // Apply tier-specific permissions for operators
-    if (role === 'operator') {
-      // Only pro and enterprise tier operators can manage agents
+    // Apply tier-specific permissions for team managers
+    if (role === 'team_manager') {
+      // Only pro and enterprise tier team managers can manage agents
       updatedPermissions.canManageAgents = (tier === 'pro' || tier === 'enterprise');
+    }
+    
+    // Apply tier-specific permissions for agents
+    if (role === 'agent') {
+      // Agents in pro and enterprise tiers might have additional permissions
+      if (tier === 'pro' || tier === 'enterprise') {
+        updatedPermissions.canAddHotels = true; // Pro/enterprise agents can add hotels directly
+      }
     }
     
     setPermissions(updatedPermissions);
   }, [role, tier]);
 
   const hasPermission = (requiredRole: UserRole | UserRole[]): boolean => {
-    if (role === 'admin') return true; // Admin has all permissions
+    if (role === 'system_admin') return true; // System admin has all permissions
     
     if (Array.isArray(requiredRole)) {
       return requiredRole.includes(role);

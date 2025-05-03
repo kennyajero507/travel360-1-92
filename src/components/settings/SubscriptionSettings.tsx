@@ -14,6 +14,18 @@ const SubscriptionSettings = () => {
     toast.success(`Subscription tier changed to ${selectedTier}`);
   };
 
+  // Format role name for display
+  const getRoleDisplayName = () => {
+    switch(role) {
+      case 'system_admin': return 'System Administrator';
+      case 'org_owner': return 'Organization Owner';
+      case 'team_manager': return 'Team Manager';
+      case 'agent': return 'Travel Agent';
+      case 'client': return 'Client';
+      default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -45,8 +57,13 @@ const SubscriptionSettings = () => {
                     <li>✓ 500 quotes/month</li>
                     <li>✓ Basic templates</li>
                     <li>✓ Single user</li>
-                    <li>✓ Hotel inventory management</li>
-                    {role === 'operator' && <li>✗ Agent management</li>}
+                    {(['agent', 'team_manager', 'org_owner'].includes(role)) && (
+                      <>
+                        <li>✓ Submit hotels for approval</li>
+                        {role === 'team_manager' && <li>✗ Agent management</li>}
+                        {role === 'org_owner' && <li>✓ Limited team management</li>}
+                      </>
+                    )}
                   </ul>
                   <Button 
                     className="w-full" 
@@ -73,8 +90,14 @@ const SubscriptionSettings = () => {
                     <li>✓ 10,000 quotes/month</li>
                     <li>✓ Premium branding</li>
                     <li>✓ Up to 5 users</li>
-                    <li>✓ Hotel inventory management</li>
-                    {role === 'operator' && <li>✓ Agent management</li>}
+                    {(['agent', 'team_manager', 'org_owner'].includes(role)) && (
+                      <>
+                        <li>✓ Add/edit hotels</li>
+                        {role === 'team_manager' && <li>✓ Agent management</li>}
+                        {role === 'org_owner' && <li>✓ Full team management</li>}
+                        {role === 'agent' && <li>✓ Direct hotel submission</li>}
+                      </>
+                    )}
                     <li>✓ API access</li>
                   </ul>
                   <Button 
@@ -102,8 +125,14 @@ const SubscriptionSettings = () => {
                     <li>✓ Unlimited quotes</li>
                     <li>✓ Premium branding</li>
                     <li>✓ Unlimited users</li>
-                    <li>✓ Hotel inventory management</li>
-                    {role === 'operator' && <li>✓ Advanced agent management</li>}
+                    {(['agent', 'team_manager', 'org_owner'].includes(role)) && (
+                      <>
+                        <li>✓ Complete hotel management</li>
+                        {(role === 'team_manager' || role === 'org_owner') && <li>✓ Advanced agent management</li>}
+                        {role === 'org_owner' && <li>✓ Multi-department controls</li>}
+                        {role === 'agent' && <li>✓ Enhanced hotel capabilities</li>}
+                      </>
+                    )}
                     <li>✓ API access</li>
                     <li>✓ Dedicated support</li>
                     <li>✓ Custom integrations</li>

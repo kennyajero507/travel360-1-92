@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -91,9 +90,9 @@ const Hotels = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Updated to check for canManageHotels instead of canAddHotels
-    if (!permissions.canManageHotels) {
-      toast.error("You don't have permission to manage hotels");
+    // Check permissions based on role
+    if (!permissions.canAddHotels && !permissions.canSubmitHotels) {
+      toast.error("You don't have permission to access hotel management");
       navigate("/");
     }
   }, [permissions, navigate]);
@@ -111,28 +110,60 @@ const Hotels = () => {
     return matchesFilter && matchesSearch;
   });
 
+  // Generate appropriate title based on role
+  const getRoleTitle = () => {
+    switch(role) {
+      case 'system_admin': return 'Global Hotel Inventory';
+      case 'org_owner': return 'Organization Hotel Inventory';
+      case 'team_manager': return 'Team Hotel Inventory';
+      case 'agent': return 'Hotel Access';
+      default: return 'Hotels';
+    }
+  };
+
+  // Generate subtitle based on role and tier
+  const getSubtitle = () => {
+    if (role === 'system_admin') return 'System-wide hotel management';
+    
+    const formattedRole = (() => {
+      switch(role) {
+        case 'org_owner': return 'Organization Owner';
+        case 'team_manager': return 'Team Manager';
+        case 'agent': return 'Travel Agent';
+        default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      }
+    })();
+    
+    return `${formattedRole} Access - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`;
+  };
+
+  // Show add button based on permissions
+  const showAddButton = permissions.canAddHotels;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Hotels</h1>
-          <p className="text-gray-500 mt-2">
-            {role === 'admin' 
-              ? 'Manage your hotel inventory' 
-              : `${role === 'operator' ? 'Tour Operator' : 'Agent'} Hotel Inventory - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`}
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getRoleTitle()}</h1>
+          <p className="text-gray-500 mt-2">{getSubtitle()}</p>
         </div>
-        <Button asChild className="self-start">
-          <Link to="/hotels/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Hotel
-          </Link>
-        </Button>
+        {showAddButton && (
+          <Button asChild className="self-start">
+            <Link to="/hotels/create">
+              <Plus className="mr-2 h-4 w-4" />
+              {role === 'agent' ? 'Submit New Hotel' : 'Add New Hotel'}
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Hotel Inventory</CardTitle>
+          <CardTitle>
+            {role === 'agent' && !permissions.canAddHotels 
+              ? 'Available Hotels' 
+              : 'Hotel Inventory'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -221,18 +252,26 @@ const Hotels = () => {
                               View Details
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Link to={`/hotels/${hotel.id}/edit`} className="flex items-center w-full">
-                              <Hotel className="mr-2 h-4 w-4" />
-                              Edit Hotel
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <div className="flex items-center w-full">
-                              <StarOff className="mr-2 h-4 w-4" />
-                              {hotel.status === "Active" ? "Mark as Inactive" : "Mark as Active"}
-                            </div>
-                          </DropdownMenuItem>
+                          
+                          {/* Only show edit option if user has edit permissions */}
+                          {permissions.canEditHotels && (
+                            <DropdownMenuItem>
+                              <Link to={`/hotels/${hotel.id}/edit`} className="flex items-center w-full">
+                                <Hotel className="mr-2 h-4 w-4" />
+                                Edit Hotel
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {/* Only show status change option for users with appropriate permissions */}
+                          {permissions.canEditHotels && (
+                            <DropdownMenuItem className="text-red-600">
+                              <div className="flex items-center w-full">
+                                <StarOff className="mr-2 h-4 w-4" />
+                                {hotel.status === "Active" ? "Mark as Inactive" : "Mark as Active"}
+                              </div>
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
