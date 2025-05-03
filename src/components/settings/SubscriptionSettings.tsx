@@ -7,7 +7,7 @@ import { useRole } from "../../contexts/RoleContext";
 import { toast } from "sonner";
 
 const SubscriptionSettings = () => {
-  const { tier, setTier } = useRole();
+  const { tier, setTier, role } = useRole();
 
   const handleTierChange = (selectedTier: string) => {
     setTier(selectedTier as 'basic' | 'pro' | 'enterprise');
@@ -45,6 +45,8 @@ const SubscriptionSettings = () => {
                     <li>✓ 500 quotes/month</li>
                     <li>✓ Basic templates</li>
                     <li>✓ Single user</li>
+                    <li>✓ Hotel inventory management</li>
+                    {role === 'operator' && <li>✗ Agent management</li>}
                   </ul>
                   <Button 
                     className="w-full" 
@@ -71,6 +73,8 @@ const SubscriptionSettings = () => {
                     <li>✓ 10,000 quotes/month</li>
                     <li>✓ Premium branding</li>
                     <li>✓ Up to 5 users</li>
+                    <li>✓ Hotel inventory management</li>
+                    {role === 'operator' && <li>✓ Agent management</li>}
                     <li>✓ API access</li>
                   </ul>
                   <Button 
@@ -98,6 +102,8 @@ const SubscriptionSettings = () => {
                     <li>✓ Unlimited quotes</li>
                     <li>✓ Premium branding</li>
                     <li>✓ Unlimited users</li>
+                    <li>✓ Hotel inventory management</li>
+                    {role === 'operator' && <li>✓ Advanced agent management</li>}
                     <li>✓ API access</li>
                     <li>✓ Dedicated support</li>
                     <li>✓ Custom integrations</li>

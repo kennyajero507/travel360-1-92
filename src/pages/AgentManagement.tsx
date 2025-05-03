@@ -12,8 +12,8 @@ const AgentManagement = () => {
   useEffect(() => {
     // Check if user has permission to manage agents
     if (!permissions.canManageAgents) {
-      toast.error("You don't have permission to manage agents");
-      navigate("/");
+      toast.error("You don't have permission to manage agents. Upgrade your subscription to access this feature.");
+      navigate("/settings");
     }
   }, [permissions, navigate]);
 
@@ -24,7 +24,7 @@ const AgentManagement = () => {
         <p className="text-gray-500 mt-2">
           {role === 'admin' 
             ? 'Manage all agents in the system' 
-            : `Manage your agents - ${tier} subscription`}
+            : `Manage your team - ${tier.charAt(0).toUpperCase() + tier.slice(1)} ${role} subscription`}
         </p>
       </div>
 

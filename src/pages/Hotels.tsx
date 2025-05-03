@@ -87,13 +87,13 @@ const mockHotels = [
 const Hotels = () => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const { permissions } = useRole();
+  const { role, tier, permissions } = useRole();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if the user has permission to access hotels
-    if (!permissions.canAddHotels) {
-      toast.error("You don't have permission to access hotels");
+    // Updated to check for canManageHotels instead of canAddHotels
+    if (!permissions.canManageHotels) {
+      toast.error("You don't have permission to manage hotels");
       navigate("/");
     }
   }, [permissions, navigate]);
@@ -115,8 +115,12 @@ const Hotels = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Hotels</h1>
-          <p className="text-gray-500 mt-2">Manage your hotel inventory</p>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Hotels</h1>
+          <p className="text-gray-500 mt-2">
+            {role === 'admin' 
+              ? 'Manage your hotel inventory' 
+              : `${role === 'operator' ? 'Tour Operator' : 'Agent'} Hotel Inventory - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`}
+          </p>
         </div>
         <Button asChild className="self-start">
           <Link to="/hotels/create">

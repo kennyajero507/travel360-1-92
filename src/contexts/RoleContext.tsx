@@ -18,8 +18,9 @@ interface RoleContextType {
     canViewAnalytics: boolean;
     canManageContentPages: boolean;
     canCreateRoles: boolean;
-    canAddHotels: boolean; // New permission
-    canManageAgents: boolean; // New permission
+    canAddHotels: boolean;
+    canManageAgents: boolean;
+    canManageHotels: boolean; // New permission for hotel inventory management
   };
 }
 
@@ -33,8 +34,9 @@ const defaultPermissions = {
     canViewAnalytics: false,
     canManageContentPages: false,
     canCreateRoles: false,
-    canAddHotels: true, // Enabled for agents
+    canAddHotels: true,
     canManageAgents: false,
+    canManageHotels: true, // Agents can manage their hotel inventory
   },
   operator: {
     canEditUsers: false,
@@ -45,8 +47,9 @@ const defaultPermissions = {
     canViewAnalytics: true,
     canManageContentPages: false,
     canCreateRoles: false,
-    canAddHotels: true, // Enabled for operators
+    canAddHotels: true,
     canManageAgents: false, // Will be set dynamically based on tier
+    canManageHotels: true, // Operators can manage their hotel inventory
   },
   admin: {
     canEditUsers: true,
@@ -59,6 +62,7 @@ const defaultPermissions = {
     canCreateRoles: true,
     canAddHotels: true,
     canManageAgents: true,
+    canManageHotels: true,
   }
 };
 

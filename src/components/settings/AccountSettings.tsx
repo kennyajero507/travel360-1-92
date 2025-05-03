@@ -6,7 +6,7 @@ import { Separator } from "../ui/separator";
 import { useRole, UserRole } from "../../contexts/RoleContext";
 
 const AccountSettings = () => {
-  const { role, setRole } = useRole();
+  const { role, setRole, permissions } = useRole();
 
   const handleRoleChange = (selectedRole: UserRole) => {
     setRole(selectedRole);
@@ -22,7 +22,7 @@ const AccountSettings = () => {
         <div className="space-y-2">
           <label className="font-medium">Current Role</label>
           <Select value={role} onValueChange={handleRoleChange}>
-            <SelectTrigger className="w-full md:w-72">
+            <SelectTrigger className="w-full md:w-72 bg-white text-black">
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
@@ -38,9 +38,9 @@ const AccountSettings = () => {
           <div className="mt-4 border rounded p-4">
             <h3 className="font-medium mb-2">Role Permissions:</h3>
             <ul className="space-y-1 text-sm">
-              <li><strong>Travel Agent:</strong> Create/edit quotes for assigned inquiries.</li>
-              <li><strong>Tour Operator:</strong> Assign inquiries, view team quote metrics.</li>
-              <li><strong>Admin:</strong> Manage subscriptions, billing, and access.</li>
+              <li><strong>Travel Agent:</strong> Create/edit quotes, manage hotel inventory for assigned inquiries.</li>
+              <li><strong>Tour Operator:</strong> Assign inquiries, manage hotels, view team metrics{permissions.canManageAgents ? ', manage agents' : ''}.</li>
+              <li><strong>Admin:</strong> Manage subscriptions, billing, agents, and system access.</li>
             </ul>
           </div>
         </div>
