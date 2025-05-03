@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useRole } from "../contexts/RoleContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import GeneralSettings from "../components/settings/GeneralSettings";
@@ -8,10 +7,10 @@ import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import AdminSettings from "../components/AdminSettings";
 
 const Settings = () => {
-  const { role } = useRole();
+  const { role, permissions } = useRole();
   
   // Only system admins can access admin settings
-  const canAccessAdmin = role === 'system_admin';
+  const canAccessAdmin = permissions.canAccessSystemSettings;
 
   return (
     <div className="space-y-6">
