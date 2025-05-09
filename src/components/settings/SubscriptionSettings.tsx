@@ -23,7 +23,7 @@ const SubscriptionSettings = () => {
     switch(role) {
       case 'system_admin': return 'System Administrator';
       case 'org_owner': return 'Organization Owner';
-      case 'team_manager': return 'Team Manager';
+      case 'tour_operator': return 'Tour Operator';  // Changed from team_manager
       case 'agent': return 'Travel Agent';
       case 'client': return 'Client';
       default: return role;

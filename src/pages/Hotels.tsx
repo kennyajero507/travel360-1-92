@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -115,7 +116,7 @@ const Hotels = () => {
     switch(role) {
       case 'system_admin': return 'Global Hotel Inventory';
       case 'org_owner': return 'Organization Hotel Inventory';
-      case 'team_manager': return 'Team Hotel Inventory';
+      case 'tour_operator': return 'Team Hotel Inventory';  // Changed from team_manager
       case 'agent': return 'Hotel Access';
       default: return 'Hotels';
     }
@@ -128,7 +129,7 @@ const Hotels = () => {
     const formattedRole = (() => {
       switch(role) {
         case 'org_owner': return 'Organization Owner';
-        case 'team_manager': return 'Team Manager';
+        case 'tour_operator': return 'Tour Operator';  // Changed from team_manager
         case 'agent': return 'Travel Agent';
         default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
       }
