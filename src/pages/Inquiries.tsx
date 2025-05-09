@@ -1,6 +1,6 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useRole } from "../contexts/RoleContext";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { 
@@ -30,7 +30,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
@@ -107,6 +106,19 @@ const mockAgents = [
 ];
 
 const Inquiries = () => {
+  const navigate = useNavigate();
+  const { role, permissions } = useRole();
+  
+  // Only organization owners and tour operators can see and assign inquiries
+  const canAccessInquiries = role === 'org_owner' || role === 'tour_operator' || role === 'system_admin';
+  
+  // Redirect if user doesn't have permission
+  if (!canAccessInquiries) {
+    toast.error("You don't have permission to access inquiries");
+    navigate("/");
+    return null;
+  }
+
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [inquiries, setInquiries] = useState(mockInquiries);
@@ -174,11 +186,21 @@ const Inquiries = () => {
     setDialogOpen(false);
   };
 
+  // Get title based on role
+  const getPageTitle = () => {
+    switch(role) {
+      case 'system_admin': return 'All System Inquiries';
+      case 'org_owner': return 'Organization Inquiries';
+      case 'tour_operator': return 'Tour Assignment';
+      default: return 'Inquiries';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inquiries</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{getPageTitle()}</h1>
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
         </div>
         <Button asChild className="self-start">

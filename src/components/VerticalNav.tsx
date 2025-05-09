@@ -43,11 +43,11 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         <NavItem to="/quotes" collapsed={collapsed} icon={<FileText size={20} />} label="Quotes" />
         <NavItem to="/clients" collapsed={collapsed} icon={<Users size={20} />} label="Clients" />
         
-        {hasPermission(['team_manager', 'org_owner', 'system_admin']) && (
+        {hasPermission(['tour_operator', 'org_owner', 'system_admin']) && (
           <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
         )}
         
-        {hasPermission(['system_admin', 'org_owner']) && (
+        {hasPermission(['system_admin', 'org_owner', 'tour_operator']) && (
           <NavItem to="/hotels" collapsed={collapsed} icon={<Hotel size={20} />} label="Hotels" />
         )}
         
@@ -61,7 +61,7 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
             <div className="font-medium">Current Role:</div>
             <div className="uppercase mt-1">
               {role === 'agent' && 'Travel Agent'}
-              {role === 'team_manager' && 'Team Manager'}
+              {role === 'tour_operator' && 'Tour Operator'}
               {role === 'org_owner' && 'Organization Owner'}
               {role === 'system_admin' && 'System Admin'}
             </div>

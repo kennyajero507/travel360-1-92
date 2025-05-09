@@ -18,7 +18,7 @@ const AccountSettings = () => {
     switch (role) {
       case 'system_admin': return 'System Administrator';
       case 'org_owner': return 'Organization Owner';
-      case 'team_manager': return 'Team Manager';
+      case 'tour_operator': return 'Tour Operator';
       case 'agent': return 'Travel Agent';
       case 'client': return 'Client';
       default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -40,7 +40,7 @@ const AccountSettings = () => {
             <SelectContent>
               <SelectItem value="system_admin">System Administrator</SelectItem>
               <SelectItem value="org_owner">Organization Owner</SelectItem>
-              <SelectItem value="team_manager">Team Manager</SelectItem>
+              <SelectItem value="tour_operator">Tour Operator</SelectItem>
               <SelectItem value="agent">Travel Agent</SelectItem>
               <SelectItem value="client">Client</SelectItem>
             </SelectContent>
@@ -59,7 +59,7 @@ const AccountSettings = () => {
                 <strong>Organization Owner:</strong> Manage company account, team members, billing, hotel inventory with vendor lists, and access to all company quotes.
               </li>
               <li className="py-1 border-b">
-                <strong>Team Manager:</strong> Oversee agent teams, assign inquiries, manage team-specific hotel inventory and preferred properties, monitor team performance.
+                <strong>Tour Operator:</strong> Oversee agent teams, assign inquiries, manage hotel inventory and preferred properties, monitor team performance.
                 {permissions.canManageAgents && <span className="ml-1 text-green-600">(+ Agent management with Pro/Enterprise)</span>}
               </li>
               <li className="py-1 border-b">

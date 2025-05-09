@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Updated user roles to match the new structure
-export type UserRole = 'system_admin' | 'org_owner' | 'team_manager' | 'agent' | 'client';
+export type UserRole = 'system_admin' | 'org_owner' | 'tour_operator' | 'agent' | 'client';
 
 interface RoleContextType {
   role: UserRole;
@@ -16,7 +15,7 @@ interface RoleContextType {
     canConfigureGlobalIntegrations: boolean;
     canSetSecurityPolicies: boolean;
     canViewSystemWideAnalytics: boolean;
-    canAccessSystemSettings: boolean; // Added missing property
+    canAccessSystemSettings: boolean;
     
     // Organization management
     canManageTeamMembers: boolean;
@@ -55,7 +54,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: true,
     canSetSecurityPolicies: true,
     canViewSystemWideAnalytics: true,
-    canAccessSystemSettings: true, // Added missing property
+    canAccessSystemSettings: true,
     canManageTeamMembers: true,
     canControlBilling: true,
     canAddHotels: true,
@@ -79,7 +78,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
-    canAccessSystemSettings: false, // Added missing property
+    canAccessSystemSettings: false,
     canManageTeamMembers: true,
     canControlBilling: true,
     canAddHotels: true,
@@ -98,12 +97,12 @@ const defaultPermissions = {
     canCommunicateWithClients: true,
   },
   
-  team_manager: {
+  tour_operator: {
     canManageAllOrganizations: false,
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
-    canAccessSystemSettings: false, // Added missing property
+    canAccessSystemSettings: false,
     canManageTeamMembers: false,
     canControlBilling: false,
     canAddHotels: true,
@@ -116,7 +115,7 @@ const defaultPermissions = {
     canAssignInquiries: true,
     canGenerateQuotes: true,
     canModifyQuotes: true,
-    canManageAgents: false, // Will be set dynamically based on tier
+    canManageAgents: true, // Tour operators can manage agents
     canViewTeamMetrics: true,
     canViewCompanyReports: false,
     canCommunicateWithClients: true,
@@ -127,7 +126,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
-    canAccessSystemSettings: false, // Added missing property
+    canAccessSystemSettings: false,
     canManageTeamMembers: false,
     canControlBilling: false,
     canAddHotels: false,
@@ -151,7 +150,7 @@ const defaultPermissions = {
     canConfigureGlobalIntegrations: false,
     canSetSecurityPolicies: false,
     canViewSystemWideAnalytics: false,
-    canAccessSystemSettings: false, // Added missing property
+    canAccessSystemSettings: false,
     canManageTeamMembers: false,
     canControlBilling: false,
     canAddHotels: false,
@@ -183,9 +182,9 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Start with default permissions for the role
     let updatedPermissions = {...defaultPermissions[role]};
     
-    // Apply tier-specific permissions for team managers
-    if (role === 'team_manager') {
-      // Only pro and enterprise tier team managers can manage agents
+    // Apply tier-specific permissions for tour operators
+    if (role === 'tour_operator') {
+      // Only pro and enterprise tier tour operators can manage agents
       updatedPermissions.canManageAgents = (tier === 'pro' || tier === 'enterprise');
     }
     

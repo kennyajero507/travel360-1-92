@@ -22,7 +22,7 @@ const AgentManagement = () => {
     switch(role) {
       case 'system_admin': return 'Manage All Agents';
       case 'org_owner': return 'Manage Organization Agents';
-      case 'team_manager': return 'Manage Team Agents';
+      case 'tour_operator': return 'Manage Team Agents';
       default: return 'Agent Management';
     }
   };
@@ -31,7 +31,7 @@ const AgentManagement = () => {
   const getSubtitle = () => {
     if (role === 'system_admin') return 'System-wide agent management';
     if (role === 'org_owner') return `Organization owner - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`;
-    if (role === 'team_manager') return `Team management - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`;
+    if (role === 'tour_operator') return `Tour operator - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`;
     return '';
   };
 

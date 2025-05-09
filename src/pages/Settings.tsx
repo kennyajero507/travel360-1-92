@@ -11,6 +11,9 @@ const Settings = () => {
   
   // Only system admins can access admin settings
   const canAccessAdmin = permissions.canAccessSystemSettings;
+  
+  // Only system admins and organization owners can see subscription settings
+  const canSeeSubscription = role === 'system_admin' || role === 'org_owner';
 
   return (
     <div className="space-y-6">
@@ -23,7 +26,9 @@ const Settings = () => {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          {canSeeSubscription && (
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          )}
           {canAccessAdmin && (
             <TabsTrigger value="admin">Administration</TabsTrigger>
           )}
@@ -37,9 +42,11 @@ const Settings = () => {
           <AccountSettings />
         </TabsContent>
 
-        <TabsContent value="subscription" className="space-y-4 mt-4">
-          <SubscriptionSettings />
-        </TabsContent>
+        {canSeeSubscription && (
+          <TabsContent value="subscription" className="space-y-4 mt-4">
+            <SubscriptionSettings />
+          </TabsContent>
+        )}
         
         {canAccessAdmin && (
           <TabsContent value="admin" className="space-y-4 mt-4">
