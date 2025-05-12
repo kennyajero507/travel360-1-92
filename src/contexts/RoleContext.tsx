@@ -10,6 +10,12 @@ interface RoleContextType {
   tier: 'basic' | 'pro' | 'enterprise';
   setTier: (tier: 'basic' | 'pro' | 'enterprise') => void;
   hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
+  currentUser: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  setCurrentUser: (user: { id: string; name: string; email: string }) => void;
   permissions: {
     // System management
     canManageAllOrganizations: boolean;
@@ -106,7 +112,7 @@ const defaultPermissions = {
     canAccessSystemSettings: false,
     canManageTeamMembers: false,
     canControlBilling: false,
-    canAddHotels: true, // Updated to allow tour operators to add hotels
+    canAddHotels: true,
     canEditHotels: true,
     canApproveHotels: true,
     canSubmitHotels: true,
@@ -130,7 +136,7 @@ const defaultPermissions = {
     canAccessSystemSettings: false,
     canManageTeamMembers: false,
     canControlBilling: false,
-    canAddHotels: true, // Updated to allow agents to add hotels
+    canAddHotels: true,
     canEditHotels: false,
     canApproveHotels: false,
     canSubmitHotels: true,
@@ -177,6 +183,11 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole>('agent');
   const [tier, setTier] = useState<'basic' | 'pro' | 'enterprise'>('basic');
   const [permissions, setPermissions] = useState(defaultPermissions.agent);
+  const [currentUser, setCurrentUser] = useState({
+    id: 'usr-123',
+    name: 'James Smith',
+    email: 'james.smith@example.com'
+  });
 
   // Update permissions when role or tier changes
   useEffect(() => {
@@ -223,6 +234,8 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTier,
     hasPermission,
     permissions,
+    currentUser,
+    setCurrentUser
   };
 
   return (

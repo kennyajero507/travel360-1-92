@@ -18,33 +18,63 @@ import { useRole } from "../contexts/RoleContext";
 interface InquiryFormData {
   client: string;
   contact: string;
+  mobile: string; // Added mobile field
   destination: string;
   startDate: string;
   endDate: string;
-  travelers: number;
+  numRooms: number; // Added number of rooms
+  roomType: string; // Added room type
+  travelers: {
+    adults: number;
+    children: number; 
+    infants: number;
+  };
   budget: number;
   priority: string;
   preferences: string;
+  assignedAgent: string; // Added assigned agent
 }
 
 const CreateInquiry = () => {
   const navigate = useNavigate();
-  const { role } = useRole();
+  const { role, currentUser, permissions } = useRole();
   
   const [formData, setFormData] = useState<InquiryFormData>({
     client: "",
     contact: "",
+    mobile: "",
     destination: "",
     startDate: "",
     endDate: "",
-    travelers: 2,
+    numRooms: 1,
+    roomType: "Standard",
+    travelers: {
+      adults: 2,
+      children: 0,
+      infants: 0
+    },
     budget: 5000,
     priority: "Normal",
-    preferences: ""
+    preferences: "",
+    assignedAgent: ""
   });
+
+  const [availableAgents, setAvailableAgents] = useState([
+    { id: "agent-1", name: "James Smith" },
+    { id: "agent-2", name: "Sarah Johnson" },
+    { id: "agent-3", name: "Robert Lee" },
+    { id: "agent-4", name: "Emma Wilson" }
+  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate for required fields
+    if (!formData.client || !formData.mobile || !formData.destination || 
+        !formData.startDate || !formData.endDate) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
     
     // In a real app, save to database via API
     console.log("Inquiry data:", formData);
@@ -71,7 +101,7 @@ const CreateInquiry = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="client" className="block text-sm font-medium mb-2">
-                  Client Name
+                  Client Name *
                 </label>
                 <Input
                   id="client"
@@ -84,17 +114,50 @@ const CreateInquiry = () => {
               </div>
               <div>
                 <label htmlFor="contact" className="block text-sm font-medium mb-2">
-                  Contact (Email or Phone)
+                  Contact Email
                 </label>
                 <Input
                   id="contact"
                   value={formData.contact}
                   onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                  placeholder="Email or phone number"
+                  placeholder="Email address"
+                  type="email"
+                  className="bg-white text-black"
+                />
+              </div>
+              <div>
+                <label htmlFor="mobile" className="block text-sm font-medium mb-2">
+                  Mobile Number *
+                </label>
+                <Input
+                  id="mobile"
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                  placeholder="Mobile phone number"
                   required
                   className="bg-white text-black"
                 />
               </div>
+              {(role === 'org_owner' || role === 'tour_operator' || role === 'system_admin') && permissions.canAssignInquiries && (
+                <div>
+                  <label htmlFor="assignedAgent" className="block text-sm font-medium mb-2">
+                    Assign to Agent
+                  </label>
+                  <Select
+                    value={formData.assignedAgent}
+                    onValueChange={(value) => setFormData({ ...formData, assignedAgent: value })}
+                  >
+                    <SelectTrigger id="assignedAgent" className="bg-white text-black">
+                      <SelectValue placeholder="Select an agent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableAgents.map(agent => (
+                        <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -107,7 +170,7 @@ const CreateInquiry = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="destination" className="block text-sm font-medium mb-2">
-                  Destination
+                  Destination *
                 </label>
                 <Input
                   id="destination"
@@ -139,7 +202,7 @@ const CreateInquiry = () => {
               </div>
               <div>
                 <label htmlFor="startDate" className="block text-sm font-medium mb-2">
-                  Start Date
+                  Start Date *
                 </label>
                 <Input
                   id="startDate"
@@ -152,7 +215,7 @@ const CreateInquiry = () => {
               </div>
               <div>
                 <label htmlFor="endDate" className="block text-sm font-medium mb-2">
-                  End Date
+                  End Date *
                 </label>
                 <Input
                   id="endDate"
@@ -163,20 +226,102 @@ const CreateInquiry = () => {
                   className="bg-white text-black"
                 />
               </div>
+              
+              <div className="grid grid-cols-3 gap-4 md:col-span-2">
+                <div>
+                  <label htmlFor="adults" className="block text-sm font-medium mb-2">
+                    Adults
+                  </label>
+                  <Input
+                    id="adults"
+                    type="number"
+                    min="1"
+                    value={formData.travelers.adults}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      travelers: {
+                        ...formData.travelers,
+                        adults: parseInt(e.target.value)
+                      }
+                    })}
+                    required
+                    className="bg-white text-black"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="children" className="block text-sm font-medium mb-2">
+                    Children
+                  </label>
+                  <Input
+                    id="children"
+                    type="number"
+                    min="0"
+                    value={formData.travelers.children}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      travelers: {
+                        ...formData.travelers,
+                        children: parseInt(e.target.value)
+                      }
+                    })}
+                    className="bg-white text-black"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="infants" className="block text-sm font-medium mb-2">
+                    Infants
+                  </label>
+                  <Input
+                    id="infants"
+                    type="number"
+                    min="0"
+                    value={formData.travelers.infants}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      travelers: {
+                        ...formData.travelers,
+                        infants: parseInt(e.target.value)
+                      }
+                    })}
+                    className="bg-white text-black"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label htmlFor="travelers" className="block text-sm font-medium mb-2">
-                  Number of Travelers
+                <label htmlFor="numRooms" className="block text-sm font-medium mb-2">
+                  Number of Rooms
                 </label>
                 <Input
-                  id="travelers"
+                  id="numRooms"
                   type="number"
                   min="1"
-                  value={formData.travelers}
-                  onChange={(e) => setFormData({ ...formData, travelers: parseInt(e.target.value) })}
-                  required
+                  value={formData.numRooms}
+                  onChange={(e) => setFormData({ ...formData, numRooms: parseInt(e.target.value) })}
                   className="bg-white text-black"
                 />
               </div>
+              <div>
+                <label htmlFor="roomType" className="block text-sm font-medium mb-2">
+                  Room Type
+                </label>
+                <Select
+                  value={formData.roomType}
+                  onValueChange={(value) => setFormData({ ...formData, roomType: value })}
+                >
+                  <SelectTrigger id="roomType" className="bg-white text-black">
+                    <SelectValue placeholder="Select room type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Deluxe">Deluxe</SelectItem>
+                    <SelectItem value="Suite">Suite</SelectItem>
+                    <SelectItem value="Family">Family</SelectItem>
+                    <SelectItem value="Villa">Villa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <label htmlFor="budget" className="block text-sm font-medium mb-2">
                   Budget ($)
@@ -188,7 +333,6 @@ const CreateInquiry = () => {
                   step="100"
                   value={formData.budget}
                   onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) })}
-                  required
                   className="bg-white text-black"
                 />
               </div>
@@ -212,7 +356,7 @@ const CreateInquiry = () => {
           <Button type="button" variant="outline" onClick={() => navigate("/inquiries")}>
             Cancel
           </Button>
-          <Button type="submit">
+          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
             <Save className="mr-2 h-4 w-4" />
             Create Inquiry
           </Button>

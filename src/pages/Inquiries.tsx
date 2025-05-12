@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRole } from "../contexts/RoleContext";
 import { Button } from "../components/ui/button";
@@ -33,7 +33,7 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { FileText, Plus, MoreHorizontal, MessageSquare, UserCheck } from "lucide-react";
+import { FileText, Plus, MoreHorizontal, MessageSquare, UserCheck, Phone } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
 
@@ -42,9 +42,16 @@ const mockInquiries = [
   {
     id: "I-2024-001",
     client: "John Smith",
+    mobile: "+1 (555) 123-4567",
     destination: "Zanzibar",
     dates: "Aug 20-27, 2024",
-    travelers: 2,
+    travelers: {
+      adults: 2,
+      children: 0,
+      infants: 0
+    },
+    roomType: "Deluxe",
+    numRooms: 1,
     budget: "$5,000",
     status: "New",
     priority: "Normal",
@@ -53,31 +60,54 @@ const mockInquiries = [
   {
     id: "I-2024-002",
     client: "Emily Wilson",
+    mobile: "+1 (555) 234-5678",
     destination: "Serengeti Safari",
     dates: "Sept 10-20, 2024",
-    travelers: 4,
+    travelers: {
+      adults: 2,
+      children: 2,
+      infants: 0
+    },
+    roomType: "Family",
+    numRooms: 1,
     budget: "$12,000",
     status: "Assigned",
     priority: "High",
-    assignedTo: "Jane Cooper",
+    assignedTo: "agent-1",
+    assignedAgentName: "James Smith",
   },
   {
     id: "I-2024-003",
     client: "Michael Chang",
+    mobile: "+1 (555) 345-6789",
     destination: "Cape Town",
     dates: "Oct 5-15, 2024",
-    travelers: 2,
+    travelers: {
+      adults: 2,
+      children: 0,
+      infants: 0
+    },
+    roomType: "Suite",
+    numRooms: 1,
     budget: "$6,500",
     status: "Quoted",
     priority: "Urgent",
-    assignedTo: "Robert Fox",
+    assignedTo: "agent-2",
+    assignedAgentName: "Sarah Johnson",
   },
   {
     id: "I-2024-004",
     client: "Sarah Johnson",
+    mobile: "+1 (555) 456-7890",
     destination: "Morocco",
     dates: "Nov 12-22, 2024",
-    travelers: 3,
+    travelers: {
+      adults: 2,
+      children: 1,
+      infants: 0
+    },
+    roomType: "Standard",
+    numRooms: 1,
     budget: "$8,000",
     status: "New",
     priority: "Normal",
@@ -86,38 +116,47 @@ const mockInquiries = [
   {
     id: "I-2024-005",
     client: "Robert Davis",
+    mobile: "+1 (555) 567-8901",
     destination: "Nairobi & Maasai Mara",
     dates: "Dec 18-30, 2024",
-    travelers: 6,
+    travelers: {
+      adults: 4,
+      children: 2,
+      infants: 0
+    },
+    roomType: "Villa",
+    numRooms: 2,
     budget: "$15,000",
     status: "Assigned",
     priority: "Normal",
-    assignedTo: "Wade Warren",
+    assignedTo: "agent-3",
+    assignedAgentName: "Robert Lee",
   },
 ];
 
 // Mock agents data
 const mockAgents = [
-  { id: "agent-1", name: "Jane Cooper" },
-  { id: "agent-2", name: "Robert Fox" },
-  { id: "agent-3", name: "Wade Warren" },
-  { id: "agent-4", name: "Esther Howard" },
+  { id: "agent-1", name: "James Smith" },
+  { id: "agent-2", name: "Sarah Johnson" },
+  { id: "agent-3", name: "Robert Lee" },
+  { id: "agent-4", name: "Emma Wilson" },
   { id: "agent-5", name: "Brooklyn Simmons" },
 ];
 
 const Inquiries = () => {
   const navigate = useNavigate();
-  const { role, permissions } = useRole();
+  const { role, permissions, currentUser } = useRole();
   
   // Only organization owners and tour operators can see and assign inquiries
-  const canAccessInquiries = role === 'org_owner' || role === 'tour_operator' || role === 'system_admin';
+  const canAccessInquiries = role === 'org_owner' || role === 'tour_operator' || role === 'system_admin' || role === 'agent';
   
   // Redirect if user doesn't have permission
-  if (!canAccessInquiries) {
-    toast.error("You don't have permission to access inquiries");
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (!canAccessInquiries) {
+      toast.error("You don't have permission to access inquiries");
+      navigate("/");
+    }
+  }, [canAccessInquiries, navigate]);
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -126,7 +165,17 @@ const Inquiries = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const filteredInquiries = inquiries.filter(inquiry => {
+  // Filter inquiries based on user role
+  const userInquiries = inquiries.filter(inquiry => {
+    // If agent, only show inquiries assigned to them
+    if (role === 'agent') {
+      return inquiry.assignedTo === currentUser.id;
+    }
+    // Otherwise show all inquiries if admin/owner/tour operator
+    return true;
+  });
+  
+  const filteredInquiries = userInquiries.filter(inquiry => {
     const matchesFilter = filter === "all" || inquiry.status.toLowerCase() === filter.toLowerCase();
     const matchesSearch = inquiry.client.toLowerCase().includes(search.toLowerCase()) ||
                          inquiry.destination.toLowerCase().includes(search.toLowerCase()) ||
@@ -176,7 +225,8 @@ const Inquiries = () => {
         return {
           ...inquiry,
           status: "Assigned",
-          assignedTo: agent?.name || ""
+          assignedTo: agent?.id || "",
+          assignedAgentName: agent?.name || ""
         };
       }
       return inquiry;
@@ -192,6 +242,7 @@ const Inquiries = () => {
       case 'system_admin': return 'All System Inquiries';
       case 'org_owner': return 'Organization Inquiries';
       case 'tour_operator': return 'Tour Assignment';
+      case 'agent': return 'My Assigned Inquiries';
       default: return 'Inquiries';
     }
   };
@@ -200,26 +251,32 @@ const Inquiries = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{getPageTitle()}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getPageTitle()}</h1>
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
         </div>
-        <Button asChild className="self-start">
-          <Link to="/inquiries/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Inquiry
-          </Link>
-        </Button>
+        {(role !== 'agent') && (
+          <Button asChild className="self-start">
+            <Link to="/inquiries/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Create New Inquiry
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Inquiries</CardTitle>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <CardTitle>
+            {role === 'agent' ? 
+              `Inquiries Assigned to ${currentUser.name}` : 
+              'All Inquiries'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="w-full md:w-64">
               <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white text-black">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,84 +293,113 @@ const Inquiries = () => {
                 placeholder="Search inquiries..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
+                className="w-full bg-white text-black"
               />
             </div>
           </div>
 
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Client</TableHead>
+                  <TableHead>Mobile</TableHead>
                   <TableHead>Destination</TableHead>
                   <TableHead>Dates</TableHead>
                   <TableHead>Travelers</TableHead>
+                  <TableHead>Rooms</TableHead>
                   <TableHead>Budget</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
-                  <TableHead>Assigned To</TableHead>
+                  {role !== 'agent' && <TableHead>Assigned To</TableHead>}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInquiries.map((inquiry) => (
-                  <TableRow key={inquiry.id}>
-                    <TableCell className="font-medium">{inquiry.id}</TableCell>
-                    <TableCell>{inquiry.client}</TableCell>
-                    <TableCell>{inquiry.destination}</TableCell>
-                    <TableCell>{inquiry.dates}</TableCell>
-                    <TableCell>{inquiry.travelers}</TableCell>
-                    <TableCell>{inquiry.budget}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(inquiry.status)}>
-                        {inquiry.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getPriorityColor(inquiry.priority)}>
-                        {inquiry.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{inquiry.assignedTo || "-"}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/inquiries/${inquiry.id}`} className="flex items-center w-full">
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              View Inquiry
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to={`/inquiries/${inquiry.id}/edit`} className="flex items-center w-full">
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              Edit Inquiry
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full">
-                              <FileText className="mr-2 h-4 w-4" />
-                              Create Quote
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => openAssignDialog(inquiry.id)} className="flex items-center w-full">
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Assign to Agent
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {filteredInquiries.length > 0 ? (
+                  filteredInquiries.map((inquiry) => (
+                    <TableRow key={inquiry.id}>
+                      <TableCell className="font-medium">{inquiry.id}</TableCell>
+                      <TableCell>{inquiry.client}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Phone className="mr-1 h-3 w-3" />
+                          {inquiry.mobile}
+                        </div>
+                      </TableCell>
+                      <TableCell>{inquiry.destination}</TableCell>
+                      <TableCell>{inquiry.dates}</TableCell>
+                      <TableCell>
+                        {inquiry.travelers.adults} A
+                        {inquiry.travelers.children > 0 ? `, ${inquiry.travelers.children} C` : ''}
+                        {inquiry.travelers.infants > 0 ? `, ${inquiry.travelers.infants} I` : ''}
+                      </TableCell>
+                      <TableCell>{inquiry.numRooms} {inquiry.roomType}</TableCell>
+                      <TableCell>{inquiry.budget}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusColor(inquiry.status)}>
+                          {inquiry.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getPriorityColor(inquiry.priority)}>
+                          {inquiry.priority}
+                        </Badge>
+                      </TableCell>
+                      {role !== 'agent' && (
+                        <TableCell>{inquiry.assignedAgentName || "-"}</TableCell>
+                      )}
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link to={`/inquiries/${inquiry.id}`} className="flex items-center w-full">
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                View Inquiry
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to={`/inquiries/${inquiry.id}/edit`} className="flex items-center w-full">
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Edit Inquiry
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full">
+                                <FileText className="mr-2 h-4 w-4" />
+                                Create Quote
+                              </Link>
+                            </DropdownMenuItem>
+                            {permissions.canAssignInquiries && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => openAssignDialog(inquiry.id)} className="flex items-center w-full">
+                                  <UserCheck className="mr-2 h-4 w-4" />
+                                  Assign to Agent
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={role === 'agent' ? 11 : 12} className="text-center py-10">
+                      {role === 'agent' ? 
+                        "No inquiries assigned to you yet." : 
+                        "No inquiries found."}
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
@@ -321,7 +407,7 @@ const Inquiries = () => {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
             <DialogTitle>Assign Inquiry to Agent</DialogTitle>
           </DialogHeader>
@@ -330,7 +416,7 @@ const Inquiries = () => {
               Select Agent
             </label>
             <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full bg-white text-black">
                 <SelectValue placeholder="Select an agent" />
               </SelectTrigger>
               <SelectContent>
@@ -344,7 +430,7 @@ const Inquiries = () => {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAssignInquiry}>
+            <Button onClick={handleAssignInquiry} className="bg-blue-600 hover:bg-blue-700">
               Assign
             </Button>
           </DialogFooter>
