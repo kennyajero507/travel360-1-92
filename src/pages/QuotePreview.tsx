@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Separator } from "../components/ui/separator";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCurrency } from "../contexts/CurrencyContext";
@@ -35,6 +35,11 @@ const QuotePreview = () => {
     // In a real app, this would generate and download a PDF
   };
 
+  const handleEmail = () => {
+    toast.success("Quote sent to client via email");
+    // In a real app, this would send an email
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -48,6 +53,10 @@ const QuotePreview = () => {
       <div className="flex justify-between items-center print:hidden">
         <h1 className="text-3xl font-bold tracking-tight">Quote Preview</h1>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleEmail}>
+            <Mail className="mr-2 h-4 w-4" />
+            Email
+          </Button>
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Print
@@ -77,7 +86,11 @@ const QuotePreview = () => {
             <div>
               <h3 className="font-medium mb-2">Client Information</h3>
               <p>Name: {quoteData.client}</p>
-              <p>Travelers: {quoteData.travelers}</p>
+              <p>
+                Travelers: {quoteData.travelers.adults} Adults
+                {quoteData.travelers.children > 0 && `, ${quoteData.travelers.children} Children`}
+                {quoteData.travelers.infants > 0 && `, ${quoteData.travelers.infants} Infants`}
+              </p>
             </div>
             <div>
               <h3 className="font-medium mb-2">Trip Details</h3>
@@ -88,6 +101,58 @@ const QuotePreview = () => {
           </div>
 
           <Separator />
+
+          {quoteData.guestCostsTotal > 0 && (
+            <div>
+              <h3 className="font-medium mb-3">Guest Costs</h3>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left pb-2">Guest Type</th>
+                    <th className="text-right pb-2">Count</th>
+                    <th className="text-right pb-2">Cost/Night</th>
+                    <th className="text-right pb-2">Nights</th>
+                    <th className="text-right pb-2">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quoteData.travelers.adults > 0 && (
+                    <tr className="border-b">
+                      <td className="py-2">Adults</td>
+                      <td className="text-right py-2">{quoteData.travelers.adults}</td>
+                      <td className="text-right py-2">{formatAmount(quoteData.guestCosts.adultCostPerNight)}</td>
+                      <td className="text-right py-2">{quoteData.duration.nights}</td>
+                      <td className="text-right py-2">{formatAmount(quoteData.guestCosts.adultCostPerNight * quoteData.travelers.adults * quoteData.duration.nights)}</td>
+                    </tr>
+                  )}
+                  {quoteData.travelers.children > 0 && (
+                    <tr className="border-b">
+                      <td className="py-2">Children</td>
+                      <td className="text-right py-2">{quoteData.travelers.children}</td>
+                      <td className="text-right py-2">{formatAmount(quoteData.guestCosts.childCostPerNight)}</td>
+                      <td className="text-right py-2">{quoteData.duration.nights}</td>
+                      <td className="text-right py-2">{formatAmount(quoteData.guestCosts.childCostPerNight * quoteData.travelers.children * quoteData.duration.nights)}</td>
+                    </tr>
+                  )}
+                  {quoteData.travelers.infants > 0 && (
+                    <tr className="border-b">
+                      <td className="py-2">Infants</td>
+                      <td className="text-right py-2">{quoteData.travelers.infants}</td>
+                      <td className="text-right py-2">{formatAmount(quoteData.guestCosts.infantCostPerNight)}</td>
+                      <td className="text-right py-2">{quoteData.duration.nights}</td>
+                      <td className="text-right py-2">{formatAmount(quoteData.guestCosts.infantCostPerNight * quoteData.travelers.infants * quoteData.duration.nights)}</td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={4} className="text-right font-medium py-2">Guest Costs Total:</td>
+                    <td className="text-right font-medium py-2">{formatAmount(quoteData.guestCostsTotal)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
 
           <div>
             <h3 className="font-medium mb-3">Accommodations</h3>
@@ -144,6 +209,12 @@ const QuotePreview = () => {
               <span>Transportation Subtotal</span>
               <span>{formatAmount(quoteData.transports.reduce((sum: number, transport: any) => sum + transport.cost, 0))}</span>
             </div>
+            {quoteData.guestCostsTotal > 0 && (
+              <div className="flex justify-between">
+                <span>Guest Costs Subtotal</span>
+                <span>{formatAmount(quoteData.guestCostsTotal)}</span>
+              </div>
+            )}
             <Separator className="my-2" />
             <div className="flex justify-between">
               <span>Subtotal</span>

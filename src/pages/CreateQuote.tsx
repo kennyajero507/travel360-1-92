@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
 import { 
   Select, 
   SelectContent, 
@@ -11,12 +13,19 @@ import {
   SelectValue 
 } from "../components/ui/select";
 import { Separator } from "../components/ui/separator";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../components/ui/popover";
+import { Calendar } from "../components/ui/calendar";
 import { toast } from "sonner";
-import { Plus, Minus, Save, Download, Eye } from "lucide-react";
+import { Plus, Minus, Save, Download, Eye, Mail, Calendar, Users } from "lucide-react";
 import { useRole } from "../contexts/RoleContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import HotelSelector from "../components/HotelSelector";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Types for our form data
 interface HotelItem {
@@ -34,18 +43,32 @@ interface TransportItem {
   cost: number;
 }
 
+interface GuestBreakdown {
+  adults: number;
+  adultCostPerNight: number;
+  children: number;
+  childCostPerNight: number;
+  infants: number;
+  infantCostPerNight: number;
+}
+
 interface QuoteFormData {
   client: string;
   destination: string;
   startDate: string;
   endDate: string;
-  travelers: number;
+  travelers: {
+    adults: number;
+    children: number;
+    infants: number;
+  };
   duration: {
     days: number;
     nights: number;
   };
   hotels: HotelItem[];
   transports: TransportItem[];
+  guestCosts: GuestBreakdown;
   markup: {
     type: "percentage" | "fixed" | "cost-plus";
     value: number;
@@ -61,8 +84,8 @@ const CreateQuote = () => {
   
   // Check if user has permission to create quotes
   useEffect(() => {
-    // Only allow agent, team_manager, org_owner, or system_admin roles to create quotes
-    if (!['agent', 'team_manager', 'org_owner', 'system_admin'].includes(role)) {
+    // Only allow agent, tour_operator, org_owner, or system_admin roles to create quotes
+    if (!['agent', 'tour_operator', 'org_owner', 'system_admin'].includes(role)) {
       toast.error("You don't have permission to create quotes");
       navigate("/");
     }
@@ -75,7 +98,11 @@ const CreateQuote = () => {
     destination: "Zanzibar",
     startDate: "2024-08-20",
     endDate: "2024-08-30",
-    travelers: 2,
+    travelers: {
+      adults: 2,
+      children: 1,
+      infants: 0,
+    },
     budget: formatAmount(5000),
     preferences: "Beach access, luxury accommodations"
   } : null;
@@ -85,7 +112,11 @@ const CreateQuote = () => {
     destination: mockInquiry?.destination || "",
     startDate: mockInquiry?.startDate || "",
     endDate: mockInquiry?.endDate || "",
-    travelers: mockInquiry?.travelers || 2,
+    travelers: {
+      adults: mockInquiry?.travelers?.adults || 2,
+      children: mockInquiry?.travelers?.children || 0,
+      infants: mockInquiry?.travelers?.infants || 0,
+    },
     duration: {
       days: 0,
       nights: 0
@@ -107,6 +138,14 @@ const CreateQuote = () => {
         cost: 0
       }
     ],
+    guestCosts: {
+      adults: mockInquiry?.travelers?.adults || 2,
+      adultCostPerNight: 0,
+      children: mockInquiry?.travelers?.children || 0,
+      childCostPerNight: 0,
+      infants: mockInquiry?.travelers?.infants || 0,
+      infantCostPerNight: 0
+    },
     markup: {
       type: "percentage",
       value: 15
@@ -120,7 +159,7 @@ const CreateQuote = () => {
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
       
-      if (startDate && endDate && startDate < endDate) {
+      if (startDate && endDate && startDate <= endDate) {
         const days = differenceInDays(endDate, startDate) + 1; // +1 to include the start day
         const nights = days - 1;
         
@@ -149,8 +188,19 @@ const CreateQuote = () => {
     return formData.transports.reduce((sum, transport) => sum + transport.cost, 0);
   };
 
+  const calculateGuestCostsSubtotal = () => {
+    const { guestCosts, duration } = formData;
+    const nights = duration.nights || 1;
+    
+    const adultTotal = guestCosts.adults * guestCosts.adultCostPerNight * nights;
+    const childTotal = guestCosts.children * guestCosts.childCostPerNight * nights;
+    const infantTotal = guestCosts.infants * guestCosts.infantCostPerNight * nights;
+    
+    return adultTotal + childTotal + infantTotal;
+  };
+
   const calculateSubtotal = () => {
-    return calculateHotelSubtotal() + calculateTransportSubtotal();
+    return calculateHotelSubtotal() + calculateTransportSubtotal() + calculateGuestCostsSubtotal();
   };
 
   const calculateMarkup = () => {
@@ -256,6 +306,32 @@ const CreateQuote = () => {
     }));
   };
 
+  // Update guest costs
+  const updateGuestCosts = (field: keyof GuestBreakdown, value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      guestCosts: {
+        ...prev.guestCosts,
+        [field]: value
+      }
+    }));
+  };
+
+  // Handle traveler count update
+  const updateTravelerCount = (type: 'adults' | 'children' | 'infants', value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      travelers: {
+        ...prev.travelers,
+        [type]: value
+      },
+      guestCosts: {
+        ...prev.guestCosts,
+        [type]: value
+      }
+    }));
+  };
+
   // Handle markup change
   const updateMarkup = (field: "type" | "value", value: any) => {
     setFormData(prev => ({
@@ -297,6 +373,7 @@ const CreateQuote = () => {
         ...formData.markup,
         amount: calculateMarkup()
       },
+      guestCostsTotal: calculateGuestCostsSubtotal(),
       grandTotal: calculateGrandTotal()
     }));
     // Open in new tab or modal in a real app
@@ -363,7 +440,15 @@ const CreateQuote = () => {
                 <p className="text-sm font-medium text-gray-500">Budget</p>
                 <p>{mockInquiry.budget}</p>
               </div>
-              <div className="md:col-span-2 lg:col-span-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Travelers</p>
+                <p>
+                  {mockInquiry.travelers.adults} Adults, 
+                  {mockInquiry.travelers.children > 0 ? ` ${mockInquiry.travelers.children} Children, ` : ' '}
+                  {mockInquiry.travelers.infants > 0 ? `${mockInquiry.travelers.infants} Infants` : ''}
+                </p>
+              </div>
+              <div className="md:col-span-2 lg:col-span-3">
                 <p className="text-sm font-medium text-gray-500">Preferences</p>
                 <p>{mockInquiry.preferences}</p>
               </div>
@@ -405,46 +490,98 @@ const CreateQuote = () => {
                   className="bg-white text-black"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Travel Dates Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Travel Dates</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label htmlFor="startDate" className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2">
                   Start Date
                 </label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  required
-                  className="bg-white text-black"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-white text-black",
+                        !formData.startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {formData.startDate ? (
+                        format(new Date(formData.startDate), "PPP")
+                      ) : (
+                        <span>Select start date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.startDate ? new Date(formData.startDate) : undefined}
+                      onSelect={(date) => 
+                        setFormData({ 
+                          ...formData, 
+                          startDate: date ? format(date, "yyyy-MM-dd") : "" 
+                        })
+                      }
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
+
               <div>
-                <label htmlFor="endDate" className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2">
                   End Date
                 </label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  required
-                  className="bg-white text-black"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-white text-black",
+                        !formData.endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {formData.endDate ? (
+                        format(new Date(formData.endDate), "PPP")
+                      ) : (
+                        <span>Select end date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.endDate ? new Date(formData.endDate) : undefined}
+                      onSelect={(date) => 
+                        setFormData({ 
+                          ...formData, 
+                          endDate: date ? format(date, "yyyy-MM-dd") : "" 
+                        })
+                      }
+                      disabled={date => {
+                        // Disable dates before start date
+                        if (!formData.startDate) return false;
+                        return date < new Date(formData.startDate);
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div>
-                <label htmlFor="travelers" className="block text-sm font-medium mb-2">
-                  Number of Travelers
-                </label>
-                <Input
-                  id="travelers"
-                  type="number"
-                  min="1"
-                  value={formData.travelers}
-                  onChange={(e) => setFormData({ ...formData, travelers: parseInt(e.target.value) })}
-                  required
-                  className="bg-white text-black"
-                />
-              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Trip Duration
@@ -456,6 +593,107 @@ const CreateQuote = () => {
                     <p>Select start and end dates to calculate</p>
                   )}
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Guest Breakdown Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Guest Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Number of Adults</label>
+                  <div className="flex items-center">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.travelers.adults}
+                      onChange={(e) => updateTravelerCount('adults', parseInt(e.target.value))}
+                      required
+                      className="bg-white text-black"
+                    />
+                    <div className="ml-2 text-gray-500">
+                      <Users className="h-4 w-4" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Number of Children</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.travelers.children}
+                    onChange={(e) => updateTravelerCount('children', parseInt(e.target.value))}
+                    className="bg-white text-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Number of Infants</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.travelers.infants}
+                    onChange={(e) => updateTravelerCount('infants', parseInt(e.target.value))}
+                    className="bg-white text-black"
+                  />
+                </div>
+              </div>
+              
+              <div className="pt-4">
+                <h3 className="text-sm font-medium mb-3">Cost Per Guest Per Night</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {formData.travelers.adults > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Cost per Adult per Night</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.guestCosts.adultCostPerNight}
+                        onChange={(e) => updateGuestCosts('adultCostPerNight', parseFloat(e.target.value))}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                  )}
+                  
+                  {formData.travelers.children > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Cost per Child per Night</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.guestCosts.childCostPerNight}
+                        onChange={(e) => updateGuestCosts('childCostPerNight', parseFloat(e.target.value))}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                  )}
+                  
+                  {formData.travelers.infants > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Cost per Infant per Night</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.guestCosts.infantCostPerNight}
+                        onChange={(e) => updateGuestCosts('infantCostPerNight', parseFloat(e.target.value))}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-sm font-medium">Guest Costs Total</span>
+                <span className="font-medium">{formatAmount(calculateGuestCostsSubtotal())}</span>
               </div>
             </div>
           </CardContent>
@@ -518,7 +756,7 @@ const CreateQuote = () => {
                       value={transport.type} 
                       onValueChange={(value) => updateTransport(transport.id, "type", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white text-black">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -576,7 +814,7 @@ const CreateQuote = () => {
                   value={formData.markup.type} 
                   onValueChange={(value: "percentage" | "fixed" | "cost-plus") => updateMarkup("type", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white text-black">
                     <SelectValue placeholder="Select markup type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -618,8 +856,8 @@ const CreateQuote = () => {
             <CardTitle>Additional Notes</CardTitle>
           </CardHeader>
           <CardContent>
-            <textarea
-              className="w-full min-h-[100px] p-3 border rounded-md bg-white text-black"
+            <Textarea
+              className="min-h-[100px] bg-white text-black"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Any special requests or additional information..."
@@ -642,6 +880,10 @@ const CreateQuote = () => {
                 <span>Transportation Subtotal</span>
                 <span>{formatAmount(calculateTransportSubtotal())}</span>
               </div>
+              <div className="flex justify-between">
+                <span>Guest Costs Subtotal</span>
+                <span>{formatAmount(calculateGuestCostsSubtotal())}</span>
+              </div>
               <Separator />
               <div className="flex justify-between">
                 <span>Subtotal</span>
@@ -663,10 +905,7 @@ const CreateQuote = () => {
               
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={emailQuote}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2">
-                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                  </svg>
+                  <Mail className="h-4 w-4 mr-2" />
                   Email to Client
                 </Button>
                 <Button type="button" variant="outline" onClick={downloadQuote}>
