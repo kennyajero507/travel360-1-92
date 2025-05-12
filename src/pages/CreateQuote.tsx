@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -20,7 +19,7 @@ import {
 } from "../components/ui/popover";
 import { Calendar } from "../components/ui/calendar";
 import { toast } from "sonner";
-import { Plus, Minus, Save, Download, Eye, Mail, Calendar, Users } from "lucide-react";
+import { Plus, Minus, Save, Download, Eye, Mail, Calendar as CalendarIcon, Users } from "lucide-react";
 import { useRole } from "../contexts/RoleContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import HotelSelector from "../components/HotelSelector";
@@ -514,7 +513,7 @@ const CreateQuote = () => {
                         !formData.startDate && "text-muted-foreground"
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.startDate ? (
                         format(new Date(formData.startDate), "PPP")
                       ) : (
@@ -552,7 +551,7 @@ const CreateQuote = () => {
                         !formData.endDate && "text-muted-foreground"
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.endDate ? (
                         format(new Date(formData.endDate), "PPP")
                       ) : (
