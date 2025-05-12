@@ -164,12 +164,12 @@ const Inquiries = () => {
   const [selectedInquiry, setSelectedInquiry] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
-
+  
   // Filter inquiries based on user role
   const userInquiries = inquiries.filter(inquiry => {
-    // If agent, only show inquiries assigned to them
+    // If agent, show inquiries assigned to them AND unassigned inquiries they could claim
     if (role === 'agent') {
-      return inquiry.assignedTo === currentUser.id;
+      return inquiry.assignedTo === currentUser.id || inquiry.assignedTo === null;
     }
     // Otherwise show all inquiries if admin/owner/tour operator
     return true;
@@ -235,6 +235,28 @@ const Inquiries = () => {
     toast.success(`Inquiry ${selectedInquiry} assigned to ${agent?.name}`);
     setDialogOpen(false);
   };
+  
+  // New function to allow agent to assign inquiry to themselves
+  const handleAssignToMe = (inquiryId: string) => {
+    setInquiries(prev => prev.map(inquiry => {
+      if (inquiry.id === inquiryId && inquiry.assignedTo === null) {
+        return {
+          ...inquiry,
+          status: "Assigned",
+          assignedTo: currentUser.id,
+          assignedAgentName: currentUser.name
+        };
+      }
+      return inquiry;
+    }));
+    
+    toast.success(`Inquiry ${inquiryId} assigned to you`);
+    // Store in session storage for demonstration
+    sessionStorage.setItem(`inquiry-${inquiryId}`, JSON.stringify({
+      assignedTo: currentUser.id,
+      assignedAgentName: currentUser.name
+    }));
+  };
 
   // Get title based on role
   const getPageTitle = () => {
@@ -268,7 +290,7 @@ const Inquiries = () => {
         <CardHeader className="flex flex-row items-start justify-between">
           <CardTitle>
             {role === 'agent' ? 
-              `Inquiries Assigned to ${currentUser.name}` : 
+              `Inquiries Available to ${currentUser.name}` : 
               'All Inquiries'}
           </CardTitle>
         </CardHeader>
@@ -312,7 +334,7 @@ const Inquiries = () => {
                   <TableHead>Budget</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
-                  {role !== 'agent' && <TableHead>Assigned To</TableHead>}
+                  <TableHead>Assigned To</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -347,9 +369,18 @@ const Inquiries = () => {
                           {inquiry.priority}
                         </Badge>
                       </TableCell>
-                      {role !== 'agent' && (
-                        <TableCell>{inquiry.assignedAgentName || "-"}</TableCell>
-                      )}
+                      <TableCell>
+                        {inquiry.assignedAgentName || 
+                          (role === 'agent' && inquiry.assignedTo === null ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleAssignToMe(inquiry.id)}
+                            >
+                              Assign to me
+                            </Button>
+                          ) : "-")}
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -371,12 +402,15 @@ const Inquiries = () => {
                                 Edit Inquiry
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full">
-                                <FileText className="mr-2 h-4 w-4" />
-                                Create Quote
-                              </Link>
-                            </DropdownMenuItem>
+                            {/* Only show create quote option if inquiry is assigned to the current agent or if user is admin/operator */}
+                            {(role !== 'agent' || inquiry.assignedTo === currentUser.id) && (
+                              <DropdownMenuItem asChild>
+                                <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full">
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Create Quote
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
                             {permissions.canAssignInquiries && (
                               <>
                                 <DropdownMenuSeparator />
@@ -393,7 +427,7 @@ const Inquiries = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={role === 'agent' ? 11 : 12} className="text-center py-10">
+                    <TableCell colSpan={12} className="text-center py-10">
                       {role === 'agent' ? 
                         "No inquiries assigned to you yet." : 
                         "No inquiries found."}

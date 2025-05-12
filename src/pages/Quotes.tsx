@@ -28,6 +28,54 @@ import { Input } from "../components/ui/input";
 import { FileText, Plus, MoreHorizontal, Download, Eye, Edit } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
+import { useRole } from "../contexts/RoleContext";
+
+// Sample complete quote data for preview
+const mockQuoteData = {
+  id: "Q-2023-001",
+  client: "Sarah Johnson",
+  mobile: "+1 (555) 123-4567",
+  destination: "Zanzibar",
+  startDate: "2024-08-20",
+  endDate: "2024-08-27",
+  duration: {
+    days: 8,
+    nights: 7
+  },
+  travelers: {
+    adults: 2,
+    children: 0,
+    infants: 0
+  },
+  hotels: [
+    {
+      id: "hotel-1",
+      name: "Serena Beach Resort",
+      roomType: "Deluxe Ocean View",
+      ratePerNight: 250,
+      rooms: 1,
+      nights: 7,
+      total: 1750
+    }
+  ],
+  transports: [
+    {
+      id: "transport-1",
+      type: "Airport Transfer",
+      description: "Round-trip airport transfers",
+      cost: 100
+    }
+  ],
+  subtotal: 1850,
+  markup: {
+    type: "percentage",
+    value: 15,
+    amount: 277.50
+  },
+  grandTotal: 2127.50,
+  notes: "Includes daily breakfast",
+  status: "Approved"
+};
 
 const mockQuotes = [
   {
@@ -81,6 +129,7 @@ const Quotes = () => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const { currentUser, role } = useRole();
 
   const filteredQuotes = mockQuotes.filter(quote => {
     const matchesFilter = filter === "all" || quote.status.toLowerCase() === filter.toLowerCase();
@@ -101,21 +150,21 @@ const Quotes = () => {
   };
   
   const handleViewQuote = (id: string) => {
-    // Store quote data in session storage for preview
-    const quote = mockQuotes.find(q => q.id === id);
-    if (quote) {
-      sessionStorage.setItem('previewQuote', JSON.stringify({
-        id: quote.id,
-        client: quote.client,
-        destination: quote.destination,
-        dates: quote.dates,
-        travelers: quote.travelers,
-        total: quote.total,
-        status: quote.status,
-      }));
+    // Store a complete quote object that includes all fields needed for preview
+    // In a real app, this data would come from the database
+    // Here we're using mockQuoteData for demonstration
+    const quoteForPreview = { ...mockQuoteData, id };
+    
+    // Store in session storage for preview
+    try {
+      sessionStorage.setItem('previewQuote', JSON.stringify(quoteForPreview));
+      console.log("Quote preview data stored:", quoteForPreview);
+      
+      // Open in a new tab to avoid navigation issues
       window.open('/quote-preview', '_blank');
-    } else {
-      toast.error("Quote not found");
+    } catch (error) {
+      console.error("Error storing quote data:", error);
+      toast.error("Could not prepare quote for preview");
     }
   };
   
@@ -125,45 +174,80 @@ const Quotes = () => {
   };
   
   const handleDownloadQuote = (id: string) => {
-    // Store quote data in session storage for download
-    const quote = mockQuotes.find(q => q.id === id);
-    if (quote) {
-      sessionStorage.setItem('downloadQuote', JSON.stringify({
-        id: quote.id,
-        client: quote.client,
-        destination: quote.destination,
-        dates: quote.dates,
-        travelers: quote.travelers,
-        total: quote.total,
-        status: quote.status,
-      }));
-      
+    // Store quote data for download
+    const quoteForDownload = { ...mockQuoteData, id };
+    
+    try {
       // Generate PDF content
       const pdfContent = `
         <html>
           <head>
-            <title>Quote ${quote.id}</title>
+            <title>Quote ${id}</title>
             <style>
               body { font-family: 'Jost', sans-serif; margin: 20px; }
               h1 { color: #2563eb; }
               .header { display: flex; justify-content: space-between; align-items: center; }
               .quote-details { margin-top: 20px; border: 1px solid #ddd; padding: 15px; }
               .total { font-weight: bold; font-size: 1.2em; margin-top: 20px; text-align: right; }
+              table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+              th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
             </style>
           </head>
           <body>
             <div class="header">
               <h1>TravelFlow Quote</h1>
-              <p>Quote #: ${quote.id}</p>
+              <p>Quote #: ${id}</p>
             </div>
             <div class="quote-details">
-              <p><strong>Client:</strong> ${quote.client}</p>
-              <p><strong>Destination:</strong> ${quote.destination}</p>
-              <p><strong>Dates:</strong> ${quote.dates}</p>
-              <p><strong>Travelers:</strong> ${quote.travelers}</p>
-              <p><strong>Status:</strong> ${quote.status}</p>
-              <div class="total">Total: ${quote.total}</div>
+              <p><strong>Client:</strong> ${mockQuoteData.client}</p>
+              <p><strong>Destination:</strong> ${mockQuoteData.destination}</p>
+              <p><strong>Dates:</strong> ${new Date(mockQuoteData.startDate).toLocaleDateString()} - ${new Date(mockQuoteData.endDate).toLocaleDateString()}</p>
+              <p><strong>Travelers:</strong> ${mockQuoteData.travelers.adults} Adults</p>
+              
+              <h3>Accommodations</h3>
+              <table>
+                <tr>
+                  <th>Hotel</th>
+                  <th>Room</th>
+                  <th>Nights</th>
+                  <th>Rate</th>
+                  <th>Total</th>
+                </tr>
+                ${mockQuoteData.hotels.map(hotel => `
+                  <tr>
+                    <td>${hotel.name}</td>
+                    <td>${hotel.roomType}</td>
+                    <td>${hotel.nights}</td>
+                    <td>$${hotel.ratePerNight}</td>
+                    <td>$${hotel.total}</td>
+                  </tr>
+                `).join('')}
+              </table>
+              
+              <h3>Transportation</h3>
+              <table>
+                <tr>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Cost</th>
+                </tr>
+                ${mockQuoteData.transports.map(transport => `
+                  <tr>
+                    <td>${transport.type}</td>
+                    <td>${transport.description}</td>
+                    <td>$${transport.cost}</td>
+                  </tr>
+                `).join('')}
+              </table>
+              
+              <div class="total">
+                <p>Subtotal: $${mockQuoteData.subtotal}</p>
+                <p>Markup (${mockQuoteData.markup.value}%): $${mockQuoteData.markup.amount}</p>
+                <p>Total: $${mockQuoteData.grandTotal}</p>
+              </div>
             </div>
+            <p>Generated by: ${currentUser.name}</p>
+            <p>Date: ${new Date().toLocaleDateString()}</p>
           </body>
         </html>
       `;
@@ -175,14 +259,15 @@ const Quotes = () => {
       // Create a link and trigger download
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Quote-${quote.id}.html`;
+      link.download = `Quote-${id}.html`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
       toast.success(`Downloaded quote ${id}`);
-    } else {
-      toast.error("Quote not found");
+    } catch (error) {
+      console.error("Error downloading quote:", error);
+      toast.error("Could not download quote");
     }
   };
   
@@ -195,10 +280,14 @@ const Quotes = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Quotes</h1>
-          <p className="text-gray-500 mt-2">Manage all your travel quotes in one place</p>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Quotes</h1>
+          <p className="text-gray-500 mt-2">
+            {role === 'agent' ? 
+              `${currentUser.name}'s Quotes` : 
+              'Manage all your travel quotes in one place'}
+          </p>
         </div>
-        <Button asChild className="self-start">
+        <Button asChild className="self-start bg-blue-600 hover:bg-blue-700">
           <Link to="/quotes/create">
             <Plus className="mr-2 h-4 w-4" />
             Create New Quote
