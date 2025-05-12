@@ -116,7 +116,7 @@ const Hotels = () => {
     switch(role) {
       case 'system_admin': return 'Global Hotel Inventory';
       case 'org_owner': return 'Organization Hotel Inventory';
-      case 'tour_operator': return 'Team Hotel Inventory';  // Changed from team_manager
+      case 'tour_operator': return 'Team Hotel Inventory';
       case 'agent': return 'Hotel Access';
       default: return 'Hotels';
     }
@@ -129,7 +129,7 @@ const Hotels = () => {
     const formattedRole = (() => {
       switch(role) {
         case 'org_owner': return 'Organization Owner';
-        case 'tour_operator': return 'Tour Operator';  // Changed from team_manager
+        case 'tour_operator': return 'Tour Operator';
         case 'agent': return 'Travel Agent';
         default: return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
       }
