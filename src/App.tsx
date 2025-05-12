@@ -13,7 +13,8 @@ import Inquiries from "./pages/Inquiries";
 import CreateInquiry from "./pages/CreateInquiry";
 import Hotels from "./pages/Hotels";
 import CreateHotel from "./pages/CreateHotel";
-import { RoleProvider } from "./contexts/RoleContext";
+// Import from the new location
+import { RoleProvider } from "./contexts/role";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import Calendar from "./pages/Calendar";
 import AgentManagement from "./pages/AgentManagement";
