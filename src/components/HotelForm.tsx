@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Button } from "./ui/button";
 
 interface HotelFormProps {
   onSubmit: (hotelData: any) => void;
@@ -93,7 +94,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Basic Hotel Information</CardTitle>
+          <CardTitle className="text-blue-600">Basic Hotel Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -104,6 +105,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter hotel name"
               required
+              className="bg-white text-black"
             />
           </div>
           
@@ -115,6 +117,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               placeholder="City, Country"
               required
+              className="bg-white text-black"
             />
           </div>
           
@@ -124,7 +127,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
               value={formData.starRating} 
               onValueChange={(value) => setFormData({ ...formData, starRating: value })}
             >
-              <SelectTrigger id="starRating">
+              <SelectTrigger id="starRating" className="bg-white text-black">
                 <SelectValue placeholder="Select star rating" />
               </SelectTrigger>
               <SelectContent>
@@ -141,7 +144,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
       
       <Card>
         <CardHeader>
-          <CardTitle>Booking Details</CardTitle>
+          <CardTitle className="text-blue-600">Booking Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -153,6 +156,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 value={formData.checkInDate}
                 onChange={(e) => handleDateChange('checkInDate', e.target.value)}
                 required
+                className="bg-white text-black"
               />
             </div>
             
@@ -164,6 +168,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 value={formData.checkOutDate}
                 onChange={(e) => handleDateChange('checkOutDate', e.target.value)}
                 required
+                className="bg-white text-black"
               />
             </div>
           </div>
@@ -175,7 +180,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
               type="number"
               value={formData.nights}
               readOnly
-              className="bg-gray-100"
+              className="bg-white text-gray-500"
             />
             <p className="text-sm text-gray-500 mt-1">
               Auto-calculated from check-in/check-out dates
@@ -186,7 +191,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
       
       <Card>
         <CardHeader>
-          <CardTitle>Room Details</CardTitle>
+          <CardTitle className="text-blue-600">Room Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -196,7 +201,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 value={formData.roomType} 
                 onValueChange={(value) => setFormData({ ...formData, roomType: value })}
               >
-                <SelectTrigger id="roomType">
+                <SelectTrigger id="roomType" className="bg-white text-black">
                   <SelectValue placeholder="Select room type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -218,6 +223,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 value={formData.numberOfRooms}
                 onChange={(e) => handleCostFactorChange('numberOfRooms', parseInt(e.target.value))}
                 required
+                className="bg-white text-black"
               />
             </div>
           </div>
@@ -232,6 +238,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 value={formData.adultOccupancy}
                 onChange={(e) => setFormData({ ...formData, adultOccupancy: parseInt(e.target.value) })}
                 required
+                className="bg-white text-black"
               />
             </div>
             
@@ -243,6 +250,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 min="0"
                 value={formData.childOccupancy}
                 onChange={(e) => setFormData({ ...formData, childOccupancy: parseInt(e.target.value) })}
+                className="bg-white text-black"
               />
             </div>
           </div>
@@ -258,6 +266,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 value={formData.ratePerNight}
                 onChange={(e) => handleCostFactorChange('ratePerNight', parseFloat(e.target.value))}
                 required
+                className="bg-white text-black"
               />
             </div>
             
@@ -268,7 +277,7 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 type="number"
                 value={formData.totalCost}
                 readOnly
-                className="bg-gray-100"
+                className="bg-white text-gray-500"
               />
               <p className="text-sm text-gray-500 mt-1">
                 Rate × Nights × Number of Rooms
@@ -277,6 +286,10 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
           </div>
         </CardContent>
       </Card>
+      
+      <div className="flex justify-end space-x-4">
+        <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Save Hotel</Button>
+      </div>
     </form>
   );
 };

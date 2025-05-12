@@ -12,7 +12,7 @@ import { Checkbox } from "../components/ui/checkbox";
 
 const CreateHotel = () => {
   const navigate = useNavigate();
-  const { permissions } = useRole();
+  const { permissions, role } = useRole();
   
   // Redirect if user doesn't have permission to add hotels
   if (!permissions.canAddHotels) {
@@ -52,8 +52,10 @@ const CreateHotel = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Add New Hotel</h1>
-          <p className="text-gray-500 mt-2">Add a new hotel to your inventory</p>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Add New Hotel</h1>
+          <p className="text-gray-500 mt-2">
+            {role === 'agent' ? 'Add a new hotel to your submissions' : 'Add a new hotel to your inventory'}
+          </p>
         </div>
       </div>
 
@@ -71,7 +73,7 @@ const CreateHotel = () => {
               </label>
               <textarea
                 id="description"
-                className="w-full min-h-[100px] p-3 border rounded-md"
+                className="w-full min-h-[100px] p-3 border rounded-md bg-white text-black"
                 value={additionalDetails.description}
                 onChange={(e) => setAdditionalDetails({ ...additionalDetails, description: e.target.value })}
                 placeholder="Describe the hotel, its features, and any special notes"
@@ -88,6 +90,7 @@ const CreateHotel = () => {
                   value={additionalDetails.contactPerson}
                   onChange={(e) => setAdditionalDetails({ ...additionalDetails, contactPerson: e.target.value })}
                   placeholder="Hotel contact person"
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -100,6 +103,7 @@ const CreateHotel = () => {
                   value={additionalDetails.contactEmail}
                   onChange={(e) => setAdditionalDetails({ ...additionalDetails, contactEmail: e.target.value })}
                   placeholder="Contact email address"
+                  className="bg-white text-black"
                 />
               </div>
             </div>

@@ -117,7 +117,7 @@ const Hotels = () => {
       case 'system_admin': return 'Global Hotel Inventory';
       case 'org_owner': return 'Organization Hotel Inventory';
       case 'tour_operator': return 'Team Hotel Inventory';
-      case 'agent': return 'Hotel Access';
+      case 'agent': return 'Hotel Inventory';
       default: return 'Hotels';
     }
   };
@@ -187,7 +187,7 @@ const Hotels = () => {
                 placeholder="Search hotels..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
+                className="w-full bg-white text-black"
               />
             </div>
           </div>

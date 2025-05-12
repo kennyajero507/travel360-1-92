@@ -33,7 +33,7 @@ const SubscriptionSettings = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscription Plan</CardTitle>
+        <CardTitle className="text-blue-600">Subscription Plan</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -91,6 +91,12 @@ const SubscriptionSettings = () => {
                     </li>
                     <li className="flex items-start">
                       <span className="mr-2">✓</span> Email support (48-hr response)
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">✓</span> Hotel inventory management
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">✕</span> <span className="text-gray-400">Agent management</span>
                     </li>
                   </ul>
                   <div className="text-xs text-gray-500 italic mt-2">
@@ -150,6 +156,9 @@ const SubscriptionSettings = () => {
                     <li className="flex items-start">
                       <span className="mr-2">✓</span> Advanced analytics dashboard
                     </li>
+                    <li className="flex items-start">
+                      <span className="mr-2 text-green-600 font-bold">✓</span> <span className="font-medium">Agent management</span>
+                    </li>
                   </ul>
                   <div className="text-xs text-gray-500 italic mt-2">
                     Best for: Growing agencies with multiple teams and branding needs.
@@ -197,6 +206,9 @@ const SubscriptionSettings = () => {
                     </li>
                     <li className="flex items-start">
                       <span className="mr-2">✓</span> Onboarding & training included
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">✓</span> Advanced agent management with permissions
                     </li>
                   </ul>
                   <div className="text-xs text-gray-500 italic mt-2">

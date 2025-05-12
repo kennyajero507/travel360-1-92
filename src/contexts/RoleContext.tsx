@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Updated user roles to match the new structure
@@ -105,7 +106,7 @@ const defaultPermissions = {
     canAccessSystemSettings: false,
     canManageTeamMembers: false,
     canControlBilling: false,
-    canAddHotels: true,
+    canAddHotels: true, // Updated to allow tour operators to add hotels
     canEditHotels: true,
     canApproveHotels: true,
     canSubmitHotels: true,
@@ -129,7 +130,7 @@ const defaultPermissions = {
     canAccessSystemSettings: false,
     canManageTeamMembers: false,
     canControlBilling: false,
-    canAddHotels: false,
+    canAddHotels: true, // Updated to allow agents to add hotels
     canEditHotels: false,
     canApproveHotels: false,
     canSubmitHotels: true,
@@ -186,6 +187,9 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (role === 'tour_operator') {
       // Only pro and enterprise tier tour operators can manage agents
       updatedPermissions.canManageAgents = (tier === 'pro' || tier === 'enterprise');
+      
+      // All tour operators can add hotels regardless of tier
+      updatedPermissions.canAddHotels = true;
     }
     
     // Apply tier-specific permissions for agents
@@ -193,6 +197,9 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Agents in pro and enterprise tiers might have additional permissions
       if (tier === 'pro' || tier === 'enterprise') {
         updatedPermissions.canAddHotels = true; // Pro/enterprise agents can add hotels directly
+      } else {
+        // Basic tier agents can also add hotels now
+        updatedPermissions.canAddHotels = true;
       }
     }
     

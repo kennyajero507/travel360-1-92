@@ -13,6 +13,7 @@ import {
 } from "../components/ui/select";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
+import { useRole } from "../contexts/RoleContext";
 
 interface InquiryFormData {
   client: string;
@@ -28,6 +29,7 @@ interface InquiryFormData {
 
 const CreateInquiry = () => {
   const navigate = useNavigate();
+  const { role } = useRole();
   
   const [formData, setFormData] = useState<InquiryFormData>({
     client: "",
@@ -55,7 +57,7 @@ const CreateInquiry = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create Inquiry</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Create Inquiry</h1>
           <p className="text-gray-500 mt-2">Record a new client inquiry</p>
         </div>
       </div>
@@ -77,6 +79,7 @@ const CreateInquiry = () => {
                   onChange={(e) => setFormData({ ...formData, client: e.target.value })}
                   placeholder="Enter client name"
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -89,6 +92,7 @@ const CreateInquiry = () => {
                   onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
                   placeholder="Email or phone number"
                   required
+                  className="bg-white text-black"
                 />
               </div>
             </div>
@@ -111,6 +115,7 @@ const CreateInquiry = () => {
                   onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                   placeholder="Destination"
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -121,7 +126,7 @@ const CreateInquiry = () => {
                   value={formData.priority}
                   onValueChange={(value) => setFormData({ ...formData, priority: value })}
                 >
-                  <SelectTrigger id="priority">
+                  <SelectTrigger id="priority" className="bg-white text-black">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent>
@@ -142,6 +147,7 @@ const CreateInquiry = () => {
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -154,6 +160,7 @@ const CreateInquiry = () => {
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -167,6 +174,7 @@ const CreateInquiry = () => {
                   value={formData.travelers}
                   onChange={(e) => setFormData({ ...formData, travelers: parseInt(e.target.value) })}
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div>
@@ -181,6 +189,7 @@ const CreateInquiry = () => {
                   value={formData.budget}
                   onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) })}
                   required
+                  className="bg-white text-black"
                 />
               </div>
               <div className="md:col-span-2">
@@ -189,7 +198,7 @@ const CreateInquiry = () => {
                 </label>
                 <textarea
                   id="preferences"
-                  className="w-full min-h-[100px] p-3 border rounded-md"
+                  className="w-full min-h-[100px] p-3 border rounded-md bg-white text-black"
                   value={formData.preferences}
                   onChange={(e) => setFormData({ ...formData, preferences: e.target.value })}
                   placeholder="Any special requests or preferences (e.g., beach access, luxury accommodations)"
