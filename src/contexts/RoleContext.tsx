@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Updated user roles to match the new structure
@@ -177,6 +176,7 @@ const defaultPermissions = {
   }
 };
 
+// Create the context with a default undefined value and proper type
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
