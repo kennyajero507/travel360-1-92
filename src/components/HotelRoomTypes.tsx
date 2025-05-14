@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "../components/ui/button";
 import { 
@@ -10,25 +11,31 @@ import {
 } from "../components/ui/table";
 import { Input } from "../components/ui/input";
 import { RoomType } from "../types/hotel.types";
-import { Plus, Edit, Trash } from "lucide-react";
+import { BedDouble, Edit, Trash } from "lucide-react";
 import { toast } from "sonner";
 
 interface HotelRoomTypesProps {
-  hotelId: string;
-  hotelName: string;
   roomTypes: RoomType[];
-  onSaveRoomTypes: (roomTypes: RoomType[]) => void;
-  onCancel: () => void;
-  onComplete: () => void;
+  onAddRoomType?: (roomType: RoomType) => void;
+  onUpdateRoomType?: (id: string, field: keyof RoomType, value: any) => void;
+  onRemoveRoomType?: (id: string) => void;
+  onSaveRoomTypes?: (roomTypes: RoomType[]) => void;
+  onCancel?: () => void;
+  onComplete?: () => void;
+  hotelId?: string;
+  hotelName?: string;
 }
 
 const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
-  hotelId,
-  hotelName,
   roomTypes: initialRoomTypes,
+  onAddRoomType,
+  onUpdateRoomType,
+  onRemoveRoomType,
   onSaveRoomTypes,
   onCancel,
-  onComplete
+  onComplete,
+  hotelId,
+  hotelName
 }) => {
   const [roomTypes, setRoomTypes] = useState<RoomType[]>(initialRoomTypes);
   const [newRoomType, setNewRoomType] = useState<Omit<RoomType, 'id'>>({
@@ -61,7 +68,13 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
   
     const newId = `room-${Date.now()}`;
     const newRoom: RoomType = { id: newId, ...newRoomType };
-    setRoomTypes([...roomTypes, newRoom]);
+    
+    if (onAddRoomType) {
+      onAddRoomType(newRoom);
+    } else {
+      setRoomTypes([...roomTypes, newRoom]);
+    }
+    
     setNewRoomType({
       name: "",
       maxOccupancy: 1,
@@ -97,10 +110,21 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
       return;
     }
   
-    const updatedRoomTypes = roomTypes.map(room =>
-      room.id === editingRoomId ? { id: editingRoomId, ...newRoomType } : room
-    );
-    setRoomTypes(updatedRoomTypes);
+    const updatedRoom = { id: editingRoomId, ...newRoomType };
+    
+    if (onUpdateRoomType) {
+      // Pass each field individually to the parent's update handler
+      Object.keys(newRoomType).forEach(key => {
+        const field = key as keyof Omit<RoomType, 'id'>;
+        onUpdateRoomType(editingRoomId, field, newRoomType[field]);
+      });
+    } else {
+      const updatedRoomTypes = roomTypes.map(room =>
+        room.id === editingRoomId ? updatedRoom : room
+      );
+      setRoomTypes(updatedRoomTypes);
+    }
+    
     setEditingRoomId(null);
     setNewRoomType({
       name: "",
@@ -114,17 +138,25 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
   };
 
   const handleDeleteRoomType = (roomId: string) => {
-    setRoomTypes(roomTypes.filter(room => room.id !== roomId));
+    if (onRemoveRoomType) {
+      onRemoveRoomType(roomId);
+    } else {
+      setRoomTypes(roomTypes.filter(room => room.id !== roomId));
+    }
   };
 
   const handleSave = () => {
-    onSaveRoomTypes(roomTypes);
-    onComplete();
+    if (onSaveRoomTypes) {
+      onSaveRoomTypes(roomTypes);
+    }
+    if (onComplete) {
+      onComplete();
+    }
   };
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Manage Room Types for {hotelName}</h2>
+      {hotelName && <h2 className="text-2xl font-semibold mb-4">Manage Room Types for {hotelName}</h2>}
       
       <div className="mb-4">
         <h3 className="text-lg font-medium mb-2">{editingRoomId ? 'Edit Room Type' : 'Add New Room Type'}</h3>
@@ -239,14 +271,20 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
         </TableBody>
       </Table>
 
-      <div className="flex justify-end mt-4 gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="button" onClick={handleSave}>
-          Save & Complete
-        </Button>
-      </div>
+      {(onSaveRoomTypes || onCancel) && (
+        <div className="flex justify-end mt-4 gap-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
+          {onSaveRoomTypes && (
+            <Button type="button" onClick={handleSave}>
+              Save & Complete
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
