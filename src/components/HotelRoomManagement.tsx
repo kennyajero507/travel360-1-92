@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Button } from "./ui/button";
@@ -6,16 +7,7 @@ import HotelRoomTypes from "./HotelRoomTypes";
 import { Calendar } from "./ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
-
-interface RoomType {
-  id: string;
-  name: string;
-  maxOccupancy: number;
-  bedOptions: string;
-  ratePerNight: number;
-  amenities: string[];
-  totalUnits: number;
-}
+import { RoomType } from "../types/hotel.types";
 
 interface RoomRatePlan {
   id: string;
@@ -30,9 +22,10 @@ interface RoomRatePlan {
 interface HotelRoomManagementProps {
   hotelId: string;
   hotelName: string;
+  onSaveRoomTypes?: (roomTypes: RoomType[]) => void;
 }
 
-const HotelRoomManagement = ({ hotelId, hotelName }: HotelRoomManagementProps) => {
+const HotelRoomManagement = ({ hotelId, hotelName, onSaveRoomTypes }: HotelRoomManagementProps) => {
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [ratePlans, setRatePlans] = useState<RoomRatePlan[]>([]);
   const [selectedRoomTypeId, setSelectedRoomTypeId] = useState<string>("");
@@ -48,19 +41,30 @@ const HotelRoomManagement = ({ hotelId, hotelName }: HotelRoomManagementProps) =
   const [availabilityDate, setAvailabilityDate] = useState<Date | undefined>(new Date());
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
 
+  // Notify parent component when room types change
+  useEffect(() => {
+    if (onSaveRoomTypes) {
+      onSaveRoomTypes(roomTypes);
+    }
+  }, [roomTypes, onSaveRoomTypes]);
+
   // Room Types Management
   const handleAddRoomType = (roomType: RoomType) => {
-    setRoomTypes([...roomTypes, roomType]);
+    const updatedRoomTypes = [...roomTypes, roomType];
+    setRoomTypes(updatedRoomTypes);
   };
 
   const handleUpdateRoomType = (id: string, field: keyof RoomType, value: any) => {
-    setRoomTypes(roomTypes.map(roomType => 
+    const updatedRoomTypes = roomTypes.map(roomType => 
       roomType.id === id ? { ...roomType, [field]: value } : roomType
-    ));
+    );
+    setRoomTypes(updatedRoomTypes);
   };
 
   const handleRemoveRoomType = (id: string) => {
-    setRoomTypes(roomTypes.filter(roomType => roomType.id !== id));
+    const updatedRoomTypes = roomTypes.filter(roomType => roomType.id !== id);
+    setRoomTypes(updatedRoomTypes);
+    
     // Also remove associated rate plans
     setRatePlans(ratePlans.filter(plan => plan.roomTypeId !== id));
   };

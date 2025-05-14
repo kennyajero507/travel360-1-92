@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -11,6 +10,7 @@ import { Input } from "../components/ui/input";
 import { Checkbox } from "../components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import HotelRoomManagement from "../components/HotelRoomManagement";
+import { Hotel } from "../types/hotel.types";
 
 const CreateHotel = () => {
   const navigate = useNavigate();
@@ -23,13 +23,14 @@ const CreateHotel = () => {
     return null;
   }
 
-  const [hotelData, setHotelData] = useState({
+  const [hotelData, setHotelData] = useState<Hotel>({
     id: `hotel-${Date.now()}`,
     name: "",
     address: "",
     destination: "",
     category: "",
-    contactDetails: {}
+    contactDetails: {},
+    roomTypes: []
   });
   
   const [additionalDetails, setAdditionalDetails] = useState({
@@ -64,6 +65,45 @@ const CreateHotel = () => {
     const roomsTab = document.getElementById("rooms-tab");
     if (roomsTab) {
       (roomsTab as HTMLButtonElement).click();
+    }
+  };
+  
+  // Update hotelData with room types from the room management component
+  const handleRoomTypesUpdate = (roomTypes: any[]) => {
+    setHotelData({
+      ...hotelData,
+      roomTypes
+    });
+    
+    // In a real app, save to database via API
+    console.log("Updated hotel with room types:", {
+      ...hotelData,
+      roomTypes
+    });
+    
+    // For demo purposes, store in localStorage for use in quotes
+    try {
+      const hotels = JSON.parse(localStorage.getItem('hotels') || '[]');
+      const existingHotelIndex = hotels.findIndex((h: any) => h.id === hotelData.id);
+      
+      if (existingHotelIndex >= 0) {
+        hotels[existingHotelIndex] = {
+          ...hotelData,
+          roomTypes,
+          additionalDetails
+        };
+      } else {
+        hotels.push({
+          ...hotelData,
+          roomTypes,
+          additionalDetails
+        });
+      }
+      
+      localStorage.setItem('hotels', JSON.stringify(hotels));
+      toast.success("Hotel and room data saved successfully!");
+    } catch (error) {
+      console.error("Error saving hotel data:", error);
     }
   };
 
@@ -211,7 +251,8 @@ const CreateHotel = () => {
             <div className="space-y-6">
               <HotelRoomManagement 
                 hotelId={hotelData.id} 
-                hotelName={hotelData.name} 
+                hotelName={hotelData.name}
+                onSaveRoomTypes={handleRoomTypesUpdate}
               />
               
               <div className="flex justify-end space-x-4 pt-4">
@@ -221,6 +262,7 @@ const CreateHotel = () => {
                 <Button 
                   type="button" 
                   onClick={() => {
+                    handleRoomTypesUpdate(hotelData.roomTypes || []);
                     toast.success("Hotel and rooms saved successfully!");
                     navigate("/hotels");
                   }}

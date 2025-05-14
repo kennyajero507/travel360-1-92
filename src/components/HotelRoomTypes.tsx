@@ -6,16 +6,7 @@ import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
 import { Plus, X } from "lucide-react";
-
-interface RoomType {
-  id: string;
-  name: string;
-  maxOccupancy: number;
-  bedOptions: string;
-  ratePerNight: number;
-  amenities: string[];
-  totalUnits: number;
-}
+import { RoomType } from "../types/hotel.types";
 
 interface HotelRoomTypesProps {
   roomTypes: RoomType[];
@@ -45,6 +36,7 @@ const HotelRoomTypes = ({
     maxOccupancy: 2,
     bedOptions: "Queen",
     ratePerNight: 0,
+    ratePerPersonPerNight: 0, // New field for per-person pricing
     amenities: ["Free Wi-Fi"],
     totalUnits: 1
   });
@@ -60,6 +52,7 @@ const HotelRoomTypes = ({
       maxOccupancy: 2,
       bedOptions: "Queen",
       ratePerNight: 0,
+      ratePerPersonPerNight: 0, // Reset per-person pricing
       amenities: ["Free Wi-Fi"],
       totalUnits: 1
     });
@@ -160,6 +153,19 @@ const HotelRoomTypes = ({
                       />
                     </div>
                     
+                    {/* New field for per-person pricing */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Rate per Person per Night ($)</label>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        step="0.01" 
+                        value={roomType.ratePerPersonPerNight || 0} 
+                        onChange={(e) => onUpdateRoomType(roomType.id, 'ratePerPersonPerNight', parseFloat(e.target.value))}
+                        className="bg-white"
+                      />
+                    </div>
+                    
                     <div>
                       <label className="block text-sm font-medium mb-2">Total Units</label>
                       <Input 
@@ -251,6 +257,20 @@ const HotelRoomTypes = ({
                       value={newRoomType.ratePerNight} 
                       onChange={(e) => setNewRoomType({...newRoomType, ratePerNight: parseFloat(e.target.value)})}
                       className="bg-white"
+                    />
+                  </div>
+                  
+                  {/* New field for per-person pricing */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Rate per Person per Night ($)</label>
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      step="0.01" 
+                      value={newRoomType.ratePerPersonPerNight || 0} 
+                      onChange={(e) => setNewRoomType({...newRoomType, ratePerPersonPerNight: parseFloat(e.target.value)})}
+                      className="bg-white"
+                      placeholder="For tour pricing"
                     />
                   </div>
                   
