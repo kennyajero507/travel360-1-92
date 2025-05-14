@@ -1,335 +1,252 @@
-
-import { useState } from "react";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Checkbox } from "./ui/checkbox";
-import { Plus, X } from "lucide-react";
+import React, { useState } from "react";
+import { Button } from "../components/ui/button";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "../components/ui/table";
+import { Input } from "../components/ui/input";
 import { RoomType } from "../types/hotel.types";
+import { Plus, Edit, Trash } from "lucide-react";
+import { toast } from "sonner";
 
 interface HotelRoomTypesProps {
+  hotelId: string;
+  hotelName: string;
   roomTypes: RoomType[];
-  onAddRoomType: (roomType: RoomType) => void;
-  onUpdateRoomType: (id: string, field: keyof RoomType, value: any) => void;
-  onRemoveRoomType: (id: string) => void;
+  onSaveRoomTypes: (roomTypes: RoomType[]) => void;
+  onCancel: () => void;
+  onComplete: () => void;
 }
 
-const bedOptions = [
-  "King", "Queen", "Twin", "Double", "Single", "Bunk", "Sofa Bed",
-  "2 Singles", "1 King + 1 Single", "2 Queens", "3 Singles", "4 Singles",
-  "Dormitory Style"
-];
-
-const availableAmenities = [
-  "Free Wi-Fi", "Air Conditioning", "TV", "Mini-bar", "Private Bathroom", 
-  "Balcony", "Sea View", "Mountain View", "Garden View", "City View",
-  "Breakfast Included", "Room Service", "Safe", "Work Desk",
-  "Coffee Maker", "Bathtub", "Shower", "Hairdryer", "Iron & Board"
-];
-
-const HotelRoomTypes = ({ 
-  roomTypes, 
-  onAddRoomType, 
-  onUpdateRoomType, 
-  onRemoveRoomType 
-}: HotelRoomTypesProps) => {
-  const [newRoomType, setNewRoomType] = useState<RoomType>({
-    id: `room-${Date.now()}`,
+const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
+  hotelId,
+  hotelName,
+  roomTypes: initialRoomTypes,
+  onSaveRoomTypes,
+  onCancel,
+  onComplete
+}) => {
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>(initialRoomTypes);
+  const [newRoomType, setNewRoomType] = useState<Omit<RoomType, 'id'>>({
     name: "",
-    maxOccupancy: 2,
-    bedOptions: "Queen",
+    maxOccupancy: 1,
+    bedOptions: "",
     ratePerNight: 0,
     ratePerPersonPerNight: 0,
-    amenities: ["Free Wi-Fi"],
+    amenities: [],
     totalUnits: 1
   });
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: keyof Omit<RoomType, 'id'>) => {
+    const value = field === 'maxOccupancy' || field === 'ratePerNight' || field === 'ratePerPersonPerNight' || field === 'totalUnits'
+      ? Number(e.target.value)
+      : e.target.value;
+  
+    setNewRoomType(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   const handleAddRoomType = () => {
-    if (!newRoomType.name) {
-      toast.error("Room type name is required");
+    if (!newRoomType.name || !newRoomType.bedOptions || !newRoomType.maxOccupancy || !newRoomType.ratePerNight || !newRoomType.totalUnits) {
+      toast.error("Please fill in all room details.");
       return;
     }
-    onAddRoomType({...newRoomType, id: `room-${Date.now()}`});
+  
+    const newId = `room-${Date.now()}`;
+    const newRoom: RoomType = { id: newId, ...newRoomType };
+    setRoomTypes([...roomTypes, newRoom]);
     setNewRoomType({
-      id: `room-${Date.now()}`,
       name: "",
-      maxOccupancy: 2,
-      bedOptions: "Queen",
+      maxOccupancy: 1,
+      bedOptions: "",
       ratePerNight: 0,
       ratePerPersonPerNight: 0,
-      amenities: ["Free Wi-Fi"],
+      amenities: [],
       totalUnits: 1
     });
   };
 
-  const handleAmenityToggle = (amenity: string, isChecked: boolean, roomTypeId?: string) => {
-    if (roomTypeId) {
-      // Updating existing room type
-      const roomType = roomTypes.find(rt => rt.id === roomTypeId);
-      if (roomType) {
-        const updatedAmenities = isChecked 
-          ? [...roomType.amenities, amenity]
-          : roomType.amenities.filter(a => a !== amenity);
-        
-        onUpdateRoomType(roomTypeId, 'amenities', updatedAmenities);
-      }
-    } else {
-      // Updating new room type form
-      const updatedAmenities = isChecked 
-        ? [...newRoomType.amenities, amenity]
-        : newRoomType.amenities.filter(a => a !== amenity);
-      
-      setNewRoomType({...newRoomType, amenities: updatedAmenities});
+  const handleEditRoomType = (roomId: string) => {
+    setEditingRoomId(roomId);
+    const roomToEdit = roomTypes.find(room => room.id === roomId);
+    if (roomToEdit) {
+      setNewRoomType({
+        name: roomToEdit.name,
+        maxOccupancy: roomToEdit.maxOccupancy,
+        bedOptions: roomToEdit.bedOptions,
+        ratePerNight: roomToEdit.ratePerNight,
+        ratePerPersonPerNight: roomToEdit.ratePerPersonPerNight,
+        amenities: roomToEdit.amenities,
+        totalUnits: roomToEdit.totalUnits
+      });
     }
   };
 
+  const handleUpdateRoomType = () => {
+    if (!editingRoomId) return;
+  
+    if (!newRoomType.name || !newRoomType.bedOptions || !newRoomType.maxOccupancy || !newRoomType.ratePerNight || !newRoomType.totalUnits) {
+      toast.error("Please fill in all room details.");
+      return;
+    }
+  
+    const updatedRoomTypes = roomTypes.map(room =>
+      room.id === editingRoomId ? { id: editingRoomId, ...newRoomType } : room
+    );
+    setRoomTypes(updatedRoomTypes);
+    setEditingRoomId(null);
+    setNewRoomType({
+      name: "",
+      maxOccupancy: 1,
+      bedOptions: "",
+      ratePerNight: 0,
+      ratePerPersonPerNight: 0,
+      amenities: [],
+      totalUnits: 1
+    });
+  };
+
+  const handleDeleteRoomType = (roomId: string) => {
+    setRoomTypes(roomTypes.filter(room => room.id !== roomId));
+  };
+
+  const handleSave = () => {
+    onSaveRoomTypes(roomTypes);
+    onComplete();
+  };
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Room Types & Accommodation Arrangements</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* List of existing room types */}
-            {roomTypes.length > 0 ? (
-              roomTypes.map((roomType) => (
-                <Card key={roomType.id} className="border border-gray-200">
-                  <CardContent className="pt-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold">{roomType.name}</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => onRemoveRoomType(roomType.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Room Type Name</label>
-                        <Input 
-                          value={roomType.name} 
-                          onChange={(e) => onUpdateRoomType(roomType.id, 'name', e.target.value)}
-                          className="bg-white"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Max Occupancy</label>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="20"
-                          value={roomType.maxOccupancy} 
-                          onChange={(e) => onUpdateRoomType(roomType.id, 'maxOccupancy', parseInt(e.target.value))}
-                          className="bg-white"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Bed Configuration</label>
-                        <Select 
-                          value={roomType.bedOptions}
-                          onValueChange={(value) => onUpdateRoomType(roomType.id, 'bedOptions', value)}
-                        >
-                          <SelectTrigger className="bg-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {bedOptions.map((option) => (
-                              <SelectItem key={option} value={option}>{option}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Rate per Night ($)</label>
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          step="0.01" 
-                          value={roomType.ratePerNight} 
-                          onChange={(e) => onUpdateRoomType(roomType.id, 'ratePerNight', parseFloat(e.target.value))}
-                          className="bg-white"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Rate per Person per Night ($)</label>
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          step="0.01" 
-                          value={roomType.ratePerPersonPerNight || 0} 
-                          onChange={(e) => onUpdateRoomType(roomType.id, 'ratePerPersonPerNight', parseFloat(e.target.value))}
-                          className="bg-white"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Total Units</label>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          value={roomType.totalUnits} 
-                          onChange={(e) => onUpdateRoomType(roomType.id, 'totalUnits', parseInt(e.target.value))}
-                          className="bg-white"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium mb-2">Amenities</label>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                        {availableAmenities.map((amenity) => (
-                          <div key={amenity} className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={`${roomType.id}-${amenity}`} 
-                              checked={roomType.amenities.includes(amenity)}
-                              onCheckedChange={(checked) => 
-                                handleAmenityToggle(amenity, checked === true, roomType.id)
-                              }
-                            />
-                            <label 
-                              htmlFor={`${roomType.id}-${amenity}`}
-                              className="text-sm"
-                            >
-                              {amenity}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300">
-                <p className="text-gray-500 mb-2">No room types added yet</p>
-                <p className="text-gray-400 text-sm mb-4">Add your first room type below</p>
-              </div>
-            )}
-            
-            {/* Add new room type form */}
-            <Card className="border border-dashed border-gray-300 bg-gray-50">
-              <CardContent className="pt-4">
-                <h3 className="text-lg font-semibold mb-4">Add New Room Type</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Room Type Name *</label>
-                    <Input 
-                      value={newRoomType.name} 
-                      onChange={(e) => setNewRoomType({...newRoomType, name: e.target.value})}
-                      placeholder="e.g. Deluxe Double Room"
-                      className="bg-white"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Max Occupancy</label>
-                    <Input 
-                      type="number" 
-                      min="1" 
-                      max="20"
-                      value={newRoomType.maxOccupancy} 
-                      onChange={(e) => setNewRoomType({...newRoomType, maxOccupancy: parseInt(e.target.value)})}
-                      className="bg-white"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Bed Configuration</label>
-                    <Select 
-                      value={newRoomType.bedOptions}
-                      onValueChange={(value) => setNewRoomType({...newRoomType, bedOptions: value})}
-                    >
-                      <SelectTrigger className="bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {bedOptions.map((option) => (
-                          <SelectItem key={option} value={option}>{option}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Rate per Night ($)</label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      value={newRoomType.ratePerNight} 
-                      onChange={(e) => setNewRoomType({...newRoomType, ratePerNight: parseFloat(e.target.value)})}
-                      className="bg-white"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Rate per Person per Night ($)</label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      value={newRoomType.ratePerPersonPerNight || 0} 
-                      onChange={(e) => setNewRoomType({...newRoomType, ratePerPersonPerNight: parseFloat(e.target.value)})}
-                      className="bg-white"
-                      placeholder="For tour pricing"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Total Units</label>
-                    <Input 
-                      type="number" 
-                      min="1" 
-                      value={newRoomType.totalUnits} 
-                      onChange={(e) => setNewRoomType({...newRoomType, totalUnits: parseInt(e.target.value)})}
-                      className="bg-white"
-                    />
-                  </div>
-                </div>
-                
-                <div className="mt-4">
-                  <label className="block text-sm font-medium mb-2">Amenities</label>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {availableAmenities.map((amenity) => (
-                      <div key={amenity} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`new-${amenity}`} 
-                          checked={newRoomType.amenities.includes(amenity)}
-                          onCheckedChange={(checked) => 
-                            handleAmenityToggle(amenity, checked === true)
-                          }
-                        />
-                        <label 
-                          htmlFor={`new-${amenity}`}
-                          className="text-sm"
-                        >
-                          {amenity}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="mt-4">
-                  <Button onClick={handleAddRoomType} className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Room Type
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+    <div>
+      <h2 className="text-2xl font-semibold mb-4">Manage Room Types for {hotelName}</h2>
+      
+      <div className="mb-4">
+        <h3 className="text-lg font-medium mb-2">{editingRoomId ? 'Edit Room Type' : 'Add New Room Type'}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="roomName" className="block text-sm font-medium text-gray-700">Room Type Name</label>
+            <Input
+              type="text"
+              id="roomName"
+              value={newRoomType.name}
+              onChange={(e) => handleInputChange(e, 'name')}
+              className="mt-1"
+            />
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <label htmlFor="maxOccupancy" className="block text-sm font-medium text-gray-700">Max Occupancy</label>
+            <Input
+              type="number"
+              id="maxOccupancy"
+              value={newRoomType.maxOccupancy}
+              onChange={(e) => handleInputChange(e, 'maxOccupancy')}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label htmlFor="bedOptions" className="block text-sm font-medium text-gray-700">Bed Options</label>
+            <Input
+              type="text"
+              id="bedOptions"
+              value={newRoomType.bedOptions}
+              onChange={(e) => handleInputChange(e, 'bedOptions')}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label htmlFor="ratePerNight" className="block text-sm font-medium text-gray-700">Rate per Night</label>
+            <Input
+              type="number"
+              id="ratePerNight"
+              value={newRoomType.ratePerNight}
+              onChange={(e) => handleInputChange(e, 'ratePerNight')}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label htmlFor="ratePerPersonPerNight" className="block text-sm font-medium text-gray-700">Rate per Person</label>
+            <Input
+              type="number"
+              id="ratePerPersonPerNight"
+              value={newRoomType.ratePerPersonPerNight || ''}
+              onChange={(e) => handleInputChange(e, 'ratePerPersonPerNight')}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label htmlFor="totalUnits" className="block text-sm font-medium text-gray-700">Total Units</label>
+            <Input
+              type="number"
+              id="totalUnits"
+              value={newRoomType.totalUnits}
+              onChange={(e) => handleInputChange(e, 'totalUnits')}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        <div className="mt-4">
+          {editingRoomId ? (
+            <Button type="button" variant="secondary" onClick={handleUpdateRoomType}>
+              Update Room Type
+            </Button>
+          ) : (
+            <Button type="button" onClick={handleAddRoomType}>
+              Add Room Type
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Room Type</TableHead>
+            <TableHead>Max Occupancy</TableHead>
+            <TableHead>Bed Options</TableHead>
+            <TableHead>Rate per Night</TableHead>
+            <TableHead>Per Person Rate</TableHead>
+            <TableHead>Units</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {roomTypes.map((room) => (
+            <TableRow key={room.id}>
+              <TableCell className="font-medium">{room.name}</TableCell>
+              <TableCell>{room.maxOccupancy}</TableCell>
+              <TableCell>{room.bedOptions}</TableCell>
+              <TableCell>${room.ratePerNight.toFixed(2)}</TableCell>
+              <TableCell>${(room.ratePerPersonPerNight || 0).toFixed(2)}</TableCell>
+              <TableCell>{room.totalUnits}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" onClick={() => handleEditRoomType(room.id)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleDeleteRoomType(room.id)}>
+                  <Trash className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <div className="flex justify-end mt-4 gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="button" onClick={handleSave}>
+          Save & Complete
+        </Button>
+      </div>
     </div>
   );
 };

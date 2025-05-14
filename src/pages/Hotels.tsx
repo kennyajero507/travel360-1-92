@@ -1,176 +1,26 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/button";
+
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "../components/ui/table";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
-import { Input } from "../components/ui/input";
-import { Hotel as HotelIcon, Plus, MoreHorizontal, Star, StarOff, Eye, Edit } from "lucide-react";
-import { Badge } from "../components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
 import { useRole } from "../contexts/RoleContext";
 import { toast } from "sonner";
-import { Hotel } from "../types/hotel.types";
-
-// Convert mock hotels to match the Hotel type
-const mockHotels: Hotel[] = [
-  {
-    id: "H-001",
-    name: "Serena Hotel",
-    address: "123 Main Street",
-    destination: "Nairobi, Kenya",
-    category: "5-Star",
-    contactDetails: {},
-    status: "Active",
-    additionalDetails: {
-      hasNegotiatedRate: true,
-      website: "https://serenahotels.com"
-    },
-    roomTypes: [{
-      id: "room-1",
-      name: "Standard Room",
-      maxOccupancy: 2,
-      bedOptions: "Queen",
-      ratePerNight: 250,
-      ratePerPersonPerNight: 125,
-      amenities: ["Pool", "Spa", "Restaurant", "WiFi"],
-      totalUnits: 20
-    }]
-  },
-  {
-    id: "H-002",
-    name: "Zanzibar Beach Resort",
-    address: "Beach Road",
-    destination: "Zanzibar, Tanzania",
-    category: "4-Star",
-    contactDetails: {},
-    status: "Active",
-    additionalDetails: {
-      hasNegotiatedRate: true,
-      website: "https://zanzibar-resort.com"
-    },
-    roomTypes: [{
-      id: "room-2",
-      name: "Beach View Room",
-      maxOccupancy: 2,
-      bedOptions: "King",
-      ratePerNight: 180,
-      ratePerPersonPerNight: 90,
-      amenities: ["Beach Access", "Pool", "Restaurant", "WiFi"],
-      totalUnits: 15
-    }]
-  },
-  {
-    id: "H-003",
-    name: "Cape Town Luxury Suites",
-    address: "Cape Town Harbor",
-    destination: "Cape Town, South Africa",
-    category: "5-Star",
-    contactDetails: {},
-    status: "Active",
-    additionalDetails: {
-      hasNegotiatedRate: false,
-      website: "https://capetown-suites.com"
-    },
-    roomTypes: [{
-      id: "room-3",
-      name: "Luxury Suite",
-      maxOccupancy: 3,
-      bedOptions: "King",
-      ratePerNight: 320,
-      ratePerPersonPerNight: 110,
-      amenities: ["Pool", "Spa", "Gym", "Restaurant", "WiFi"],
-      totalUnits: 10
-    }]
-  },
-  {
-    id: "H-004",
-    name: "Marrakech Riad",
-    address: "Medina Quarter",
-    destination: "Marrakech, Morocco",
-    category: "4-Star",
-    contactDetails: {},
-    status: "Active",
-    additionalDetails: {
-      hasNegotiatedRate: true,
-      website: "https://marrakech-riad.com"
-    },
-    roomTypes: [{
-      id: "room-4",
-      name: "Traditional Room",
-      maxOccupancy: 2,
-      bedOptions: "Queen",
-      ratePerNight: 150,
-      ratePerPersonPerNight: 75,
-      amenities: ["Pool", "Restaurant", "WiFi"],
-      totalUnits: 12
-    }]
-  },
-  {
-    id: "H-005",
-    name: "Safari Lodge",
-    address: "National Park",
-    destination: "Maasai Mara, Kenya",
-    category: "4-Star",
-    contactDetails: {},
-    status: "Inactive",
-    additionalDetails: {
-      hasNegotiatedRate: false,
-      website: "https://safari-lodge.com"
-    },
-    roomTypes: [{
-      id: "room-5",
-      name: "Safari Tent",
-      maxOccupancy: 2,
-      bedOptions: "Queen",
-      ratePerNight: 420,
-      ratePerPersonPerNight: 210,
-      amenities: ["Game Drives", "Restaurant", "WiFi"],
-      totalUnits: 8
-    }]
-  },
-];
+import { Hotel as HotelIcon } from "lucide-react";
+import { useHotelsData } from "../hooks/useHotelsData";
+import HotelsHeader from "../components/hotel/HotelsHeader";
+import HotelFilters from "../components/hotel/HotelFilters";
+import HotelTable from "../components/hotel/HotelTable";
 
 const Hotels = () => {
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
   const { role, tier, permissions } = useRole();
   const navigate = useNavigate();
-  const [hotels, setHotels] = useState<Hotel[]>([]);
-
-  // Load hotels from localStorage
-  useEffect(() => {
-    try {
-      const savedHotels = JSON.parse(localStorage.getItem('hotels') || '[]');
-      if (savedHotels && savedHotels.length > 0) {
-        setHotels(savedHotels);
-      } else {
-        // If no hotels in localStorage, use mock data
-        setHotels(mockHotels);
-      }
-    } catch (error) {
-      console.error("Error loading hotels:", error);
-      setHotels(mockHotels);
-    }
-  }, []);
+  const { 
+    filter, 
+    setFilter, 
+    search, 
+    setSearch, 
+    filteredHotels,
+    toggleHotelStatus 
+  } = useHotelsData();
 
   useEffect(() => {
     // Check permissions based on role
@@ -179,47 +29,6 @@ const Hotels = () => {
       navigate("/");
     }
   }, [permissions, navigate]);
-
-  // Filtered hotels logic
-  const filteredHotels = hotels.filter(hotel => {
-    const matchesFilter = filter === "all" || 
-      (filter === "negotiated" && hotel.additionalDetails?.hasNegotiatedRate) ||
-      (filter === "non-negotiated" && !hotel.additionalDetails?.hasNegotiatedRate) ||
-      (filter === "active" && hotel.status === "Active") ||
-      (filter === "inactive" && hotel.status === "Inactive");
-    
-    const matchesSearch = hotel.name?.toLowerCase().includes(search.toLowerCase()) ||
-                         hotel.destination?.toLowerCase().includes(search.toLowerCase());
-    
-    return matchesFilter && matchesSearch;
-  });
-
-  // Toggle hotel active status
-  const toggleHotelStatus = (hotelId: string) => {
-    try {
-      const updatedHotels = hotels.map(hotel => {
-        if (hotel.id === hotelId) {
-          return {
-            ...hotel,
-            status: hotel.status === "Active" ? "Inactive" : "Active"
-          };
-        }
-        return hotel;
-      });
-      
-      setHotels(updatedHotels);
-      localStorage.setItem('hotels', JSON.stringify(updatedHotels));
-      
-      // Find the hotel to use in the toast message
-      const hotel = hotels.find(h => h.id === hotelId);
-      if (hotel) {
-        toast.success(`Hotel ${hotel.status === "Active" ? "deactivated" : "activated"} successfully`);
-      }
-    } catch (error) {
-      console.error("Error updating hotel status:", error);
-      toast.error("Failed to update hotel status");
-    }
-  };
 
   // Generate appropriate title based on role
   const getRoleTitle = () => {
@@ -253,20 +62,12 @@ const Hotels = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getRoleTitle()}</h1>
-          <p className="text-gray-500 mt-2">{getSubtitle()}</p>
-        </div>
-        {showAddButton && (
-          <Button asChild className="self-start">
-            <Link to="/hotels/create">
-              <Plus className="mr-2 h-4 w-4" />
-              {role === 'agent' ? 'Submit New Hotel' : 'Add New Hotel'}
-            </Link>
-          </Button>
-        )}
-      </div>
+      <HotelsHeader 
+        title={getRoleTitle()} 
+        subtitle={getSubtitle()} 
+        showAddButton={showAddButton} 
+        role={role} 
+      />
 
       <Card>
         <CardHeader>
@@ -277,121 +78,18 @@ const Hotels = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="w-full md:w-64">
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="bg-white text-black">
-                  <SelectValue placeholder="Filter hotels" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Hotels</SelectItem>
-                  <SelectItem value="negotiated">Negotiated Rates</SelectItem>
-                  <SelectItem value="non-negotiated">Standard Rates</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1">
-              <Input
-                placeholder="Search hotels..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-white text-black"
-              />
-            </div>
-          </div>
+          <HotelFilters
+            filter={filter}
+            setFilter={setFilter}
+            search={search}
+            setSearch={setSearch}
+          />
 
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Rate per Night ($)</TableHead>
-                  <TableHead>Rate Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredHotels.map((hotel) => (
-                  <TableRow key={hotel.id}>
-                    <TableCell className="font-medium">{hotel.id}</TableCell>
-                    <TableCell>{hotel.name}</TableCell>
-                    <TableCell>{hotel.destination}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        {hotel.category}
-                        {hotel.category?.includes("5") && <Star className="ml-1 h-3.5 w-3.5 text-yellow-500" />}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      ${hotel.roomTypes && hotel.roomTypes.length > 0 
-                        ? Math.min(...hotel.roomTypes.map(rt => rt.ratePerNight)).toFixed(2) 
-                        : "0.00"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={hotel.additionalDetails?.hasNegotiatedRate ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                        {hotel.additionalDetails?.hasNegotiatedRate ? "Negotiated" : "Standard"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={(hotel as any).status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
-                      >
-                        {(hotel as any).status || "Active"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/hotels/${hotel.id}`} className="flex items-center w-full">
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                          
-                          {/* Only show edit option if user has edit permissions */}
-                          {permissions.canEditHotels && (
-                            <DropdownMenuItem asChild>
-                              <Link to={`/hotels/${hotel.id}/edit`} className="flex items-center w-full">
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Hotel
-                              </Link>
-                            </DropdownMenuItem>
-                          )}
-                          
-                          {/* Only show status change option for users with appropriate permissions */}
-                          {permissions.canEditHotels && (
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => toggleHotelStatus(hotel.id)}
-                            >
-                              <div className="flex items-center w-full">
-                                <StarOff className="mr-2 h-4 w-4" />
-                                {(hotel as any).status === "Active" ? "Mark as Inactive" : "Mark as Active"}
-                              </div>
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <HotelTable 
+            hotels={filteredHotels}
+            permissions={permissions}
+            onToggleStatus={toggleHotelStatus}
+          />
         </CardContent>
       </Card>
     </div>
