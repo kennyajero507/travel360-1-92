@@ -65,13 +65,22 @@ const mockInquiriesData = {
 };
 
 // Types for our form data
-interface HotelItem {
+interface AccommodationItem {
+  id: string;
+  roomType: string;
+  paxPerRoomType: number;
+  roomsNeeded: number;
+  costPerPersonPerNight: number;
+  nights: number;
+  total: number;
+}
+
+interface ActivityItem {
   id: string;
   name: string;
-  ratePerNight: number;
-  roomType: string;
-  nights: number;
-  rooms: number;
+  description: string;
+  costPerPerson: number;
+  totalPax: number;
   total: number;
 }
 
@@ -79,7 +88,9 @@ interface TransportItem {
   id: string;
   type: string;
   description: string;
-  cost: number;
+  costPerPerson: number;
+  totalPax: number;
+  total: number;
 }
 
 interface QuoteFormData {
@@ -97,7 +108,8 @@ interface QuoteFormData {
     days: number;
     nights: number;
   };
-  hotels: HotelItem[];
+  accommodations: AccommodationItem[];
+  activities: ActivityItem[];
   transports: TransportItem[];
   markup: {
     type: "percentage" | "fixed" | "cost-plus";
@@ -108,11 +120,11 @@ interface QuoteFormData {
 
 // Room types for selection
 const roomTypes = [
-  "Standard",
-  "Deluxe",
-  "Suite",
-  "Family",
-  "Villa"
+  "Twin Sharing",
+  "Triple Sharing",
+  "Single",
+  "Quad",
+  "Family Suite"
 ];
 
 const CreateQuote = () => {
@@ -150,23 +162,35 @@ const CreateQuote = () => {
       days: 0,
       nights: 0
     },
-    hotels: [
+    accommodations: [
       {
-        id: "hotel-1",
-        name: "",
-        ratePerNight: 0,
-        roomType: mockInquiry?.roomType || "Standard",
+        id: "accom-1",
+        roomType: "Twin Sharing",
+        paxPerRoomType: mockInquiry?.travelers?.adults || 2,
+        roomsNeeded: 1,
+        costPerPersonPerNight: 60,
         nights: 0,
-        rooms: mockInquiry?.numRooms || 1,
+        total: 0
+      }
+    ],
+    activities: [
+      {
+        id: "activity-1",
+        name: "Safari Game Drive",
+        description: "Half-day game drive with professional guide",
+        costPerPerson: 75,
+        totalPax: mockInquiry?.travelers?.adults || 2,
         total: 0
       }
     ],
     transports: [
       {
         id: "transport-1",
-        type: "Flight",
-        description: "",
-        cost: 0
+        type: "Airport Transfer",
+        description: "Return airport transfers",
+        costPerPerson: 25,
+        totalPax: mockInquiry?.travelers?.adults || 2,
+        total: 0
       }
     ],
     markup: {
@@ -175,6 +199,11 @@ const CreateQuote = () => {
     },
     notes: ""
   });
+
+  // Calculate total travelers
+  const calculateTotalTravelers = () => {
+    return formData.travelers.adults + formData.travelers.children;
+  };
 
   // Calculate days and nights when dates change
   useEffect(() => {
@@ -192,37 +221,64 @@ const CreateQuote = () => {
             days,
             nights
           },
-          hotels: prev.hotels.map(hotel => ({
-            ...hotel,
+          accommodations: prev.accommodations.map(item => ({
+            ...item,
             nights,
-            total: calculateHotelTotal(hotel.ratePerNight, nights, hotel.rooms, prev.travelers)
+            total: calculateAccommodationTotal(item.paxPerRoomType, item.costPerPersonPerNight, nights, item.roomsNeeded)
           }))
         }));
       }
     }
   }, [formData.startDate, formData.endDate]);
 
-  // Calculate hotel total based on rate, nights, rooms, and travelers
-  const calculateHotelTotal = (
-    ratePerNight: number, 
-    nights: number, 
-    rooms: number,
-    travelers: { adults: number; children: number; infants: number }
+  // Update total travelers in all sections when traveler numbers change
+  useEffect(() => {
+    const totalTravelers = calculateTotalTravelers();
+    
+    setFormData(prev => ({
+      ...prev,
+      accommodations: prev.accommodations.map(item => ({
+        ...item,
+        total: calculateAccommodationTotal(item.paxPerRoomType, item.costPerPersonPerNight, item.nights, item.roomsNeeded)
+      })),
+      activities: prev.activities.map(item => ({
+        ...item,
+        totalPax: totalTravelers,
+        total: item.costPerPerson * totalTravelers
+      })),
+      transports: prev.transports.map(item => ({
+        ...item,
+        totalPax: totalTravelers,
+        total: item.costPerPerson * totalTravelers
+      }))
+    }));
+  }, [formData.travelers]);
+
+  // Calculate accommodation total based on pax, cost per night, nights, and rooms
+  const calculateAccommodationTotal = (
+    paxPerRoomType: number,
+    costPerPersonPerNight: number,
+    nights: number,
+    roomsNeeded: number
   ) => {
-    return ratePerNight * nights * rooms;
+    return paxPerRoomType * costPerPersonPerNight * nights * roomsNeeded;
   };
 
   // Calculate totals
-  const calculateHotelSubtotal = () => {
-    return formData.hotels.reduce((sum, hotel) => sum + hotel.total, 0);
+  const calculateAccommodationSubtotal = () => {
+    return formData.accommodations.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const calculateActivitiesSubtotal = () => {
+    return formData.activities.reduce((sum, item) => sum + item.total, 0);
   };
 
   const calculateTransportSubtotal = () => {
-    return formData.transports.reduce((sum, transport) => sum + transport.cost, 0);
+    return formData.transports.reduce((sum, item) => sum + item.total, 0);
   };
 
   const calculateSubtotal = () => {
-    return calculateHotelSubtotal() + calculateTransportSubtotal();
+    return calculateAccommodationSubtotal() + calculateActivitiesSubtotal() + calculateTransportSubtotal();
   };
 
   const calculateMarkup = () => {
@@ -231,7 +287,6 @@ const CreateQuote = () => {
       return (subtotal * formData.markup.value) / 100;
     } else if (formData.markup.type === "cost-plus") {
       // For cost-plus, we calculate what would be 100% if the cost is 85%
-      // If cost is 85%, then selling price is cost / 0.85
       return (subtotal / 0.85) - subtotal;
     } else {
       return formData.markup.value;
@@ -242,82 +297,156 @@ const CreateQuote = () => {
     return calculateSubtotal() + calculateMarkup();
   };
 
-  // Update hotel item
-  const updateHotel = (id: string, field: keyof HotelItem, value: any) => {
+  const calculatePerPersonCost = () => {
+    const totalTravelers = calculateTotalTravelers();
+    return totalTravelers > 0 ? calculateGrandTotal() / totalTravelers : 0;
+  };
+
+  // Update accommodation item
+  const updateAccommodation = (id: string, field: keyof AccommodationItem, value: any) => {
     setFormData(prev => {
-      const updatedHotels = prev.hotels.map(hotel => {
-        if (hotel.id === id) {
-          const updatedHotel = { ...hotel, [field]: value };
+      const updatedAccommodations = prev.accommodations.map(item => {
+        if (item.id === id) {
+          const updatedItem = { ...item, [field]: value };
           
-          // Recalculate total if rate, nights, or rooms changed
-          if (field === "ratePerNight" || field === "nights" || field === "rooms") {
-            updatedHotel.total = calculateHotelTotal(
-              updatedHotel.ratePerNight, 
-              updatedHotel.nights, 
-              updatedHotel.rooms,
-              prev.travelers
+          // Recalculate total if relevant fields changed
+          if (field === "paxPerRoomType" || field === "costPerPersonPerNight" || field === "nights" || field === "roomsNeeded") {
+            updatedItem.total = calculateAccommodationTotal(
+              updatedItem.paxPerRoomType,
+              updatedItem.costPerPersonPerNight,
+              updatedItem.nights,
+              updatedItem.roomsNeeded
             );
           }
           
-          return updatedHotel;
+          return updatedItem;
         }
-        return hotel;
+        return item;
       });
       
-      return { ...prev, hotels: updatedHotels };
+      return { ...prev, accommodations: updatedAccommodations };
     });
   };
 
-  // Add new hotel
-  const addHotel = () => {
-    const newId = `hotel-${formData.hotels.length + 1}`;
+  // Add new accommodation
+  const addAccommodation = () => {
+    const newId = `accom-${formData.accommodations.length + 1}`;
+    const totalTravelers = calculateTotalTravelers();
+    
     setFormData(prev => ({
       ...prev,
-      hotels: [...prev.hotels, {
+      accommodations: [...prev.accommodations, {
         id: newId,
-        name: "",
-        ratePerNight: 0,
-        roomType: "Standard",
+        roomType: "Twin Sharing",
+        paxPerRoomType: 2,
+        roomsNeeded: 1,
+        costPerPersonPerNight: 60,
         nights: prev.duration.nights || 0,
-        rooms: 1,
-        total: 0
+        total: calculateAccommodationTotal(2, 60, prev.duration.nights || 0, 1)
       }]
     }));
   };
 
-  // Remove hotel
-  const removeHotel = (id: string) => {
-    if (formData.hotels.length === 1) {
-      toast.error("You must have at least one accommodation");
+  // Remove accommodation
+  const removeAccommodation = (id: string) => {
+    if (formData.accommodations.length === 1) {
+      toast.error("You must have at least one accommodation option");
       return;
     }
     
     setFormData(prev => ({
       ...prev,
-      hotels: prev.hotels.filter(hotel => hotel.id !== id)
+      accommodations: prev.accommodations.filter(item => item.id !== id)
+    }));
+  };
+
+  // Update activity item
+  const updateActivity = (id: string, field: keyof ActivityItem, value: any) => {
+    setFormData(prev => {
+      const updatedActivities = prev.activities.map(item => {
+        if (item.id === id) {
+          const updatedItem = { ...item, [field]: value };
+          
+          // Recalculate total if cost or pax changed
+          if (field === "costPerPerson" || field === "totalPax") {
+            updatedItem.total = updatedItem.costPerPerson * updatedItem.totalPax;
+          }
+          
+          return updatedItem;
+        }
+        return item;
+      });
+      
+      return { ...prev, activities: updatedActivities };
+    });
+  };
+
+  // Add new activity
+  const addActivity = () => {
+    const newId = `activity-${formData.activities.length + 1}`;
+    const totalTravelers = calculateTotalTravelers();
+    
+    setFormData(prev => ({
+      ...prev,
+      activities: [...prev.activities, {
+        id: newId,
+        name: "",
+        description: "",
+        costPerPerson: 0,
+        totalPax: totalTravelers,
+        total: 0
+      }]
+    }));
+  };
+
+  // Remove activity
+  const removeActivity = (id: string) => {
+    if (formData.activities.length === 1) {
+      toast.error("You must have at least one activity");
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      activities: prev.activities.filter(item => item.id !== id)
     }));
   };
 
   // Update transport item
   const updateTransport = (id: string, field: keyof TransportItem, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      transports: prev.transports.map(transport => 
-        transport.id === id ? { ...transport, [field]: value } : transport
-      )
-    }));
+    setFormData(prev => {
+      const updatedTransports = prev.transports.map(item => {
+        if (item.id === id) {
+          const updatedItem = { ...item, [field]: value };
+          
+          // Recalculate total if cost or pax changed
+          if (field === "costPerPerson" || field === "totalPax") {
+            updatedItem.total = updatedItem.costPerPerson * updatedItem.totalPax;
+          }
+          
+          return updatedItem;
+        }
+        return item;
+      });
+      
+      return { ...prev, transports: updatedTransports };
+    });
   };
 
   // Add new transport
   const addTransport = () => {
     const newId = `transport-${formData.transports.length + 1}`;
+    const totalTravelers = calculateTotalTravelers();
+    
     setFormData(prev => ({
       ...prev,
       transports: [...prev.transports, {
         id: newId,
         type: "Transfer",
         description: "",
-        cost: 0
+        costPerPerson: 0,
+        totalPax: totalTravelers,
+        total: 0
       }]
     }));
   };
@@ -331,7 +460,7 @@ const CreateQuote = () => {
     
     setFormData(prev => ({
       ...prev,
-      transports: prev.transports.filter(transport => transport.id !== id)
+      transports: prev.transports.filter(item => item.id !== id)
     }));
   };
 
@@ -376,9 +505,10 @@ const CreateQuote = () => {
         ...formData.markup,
         amount: calculateMarkup()
       },
-      grandTotal: calculateGrandTotal()
+      grandTotal: calculateGrandTotal(),
+      perPersonCost: calculatePerPersonCost()
     }));
-    // Open in new tab or modal in a real app
+    // Open in new tab
     window.open('/quote-preview', '_blank');
   };
   
@@ -398,7 +528,7 @@ const CreateQuote = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Create Quote</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Create Tour Package Quote</h1>
           <p className="text-gray-500 mt-2">
             {inquiryId ? `Creating quote from inquiry #${inquiryId}` : "Create a new quote for your client"}
           </p>
@@ -525,7 +655,7 @@ const CreateQuote = () => {
         {/* Travel Dates Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Travel Dates</CardTitle>
+            <CardTitle>Travel Dates & Group Composition</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -561,7 +691,7 @@ const CreateQuote = () => {
                         })
                       }
                       initialFocus
-                      className={cn("p-3 pointer-events-auto")}
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -604,7 +734,7 @@ const CreateQuote = () => {
                         return date < new Date(formData.startDate);
                       }}
                       initialFocus
-                      className={cn("p-3 pointer-events-auto")}
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -624,88 +754,98 @@ const CreateQuote = () => {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="adults" className="block text-sm font-medium mb-2">
-                  Adults
-                </label>
-                <Input
-                  id="adults"
-                  type="number"
-                  min="1"
-                  value={formData.travelers.adults}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    travelers: {
-                      ...formData.travelers,
-                      adults: parseInt(e.target.value)
-                    }
-                  })}
-                  required
-                  className="bg-white text-black"
-                />
+            <div className="mt-6">
+              <h3 className="text-md font-medium mb-3">Group Composition</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="adults" className="block text-sm font-medium mb-2">
+                    Adults
+                  </label>
+                  <Input
+                    id="adults"
+                    type="number"
+                    min="1"
+                    value={formData.travelers.adults}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      travelers: {
+                        ...formData.travelers,
+                        adults: parseInt(e.target.value) || 0
+                      }
+                    })}
+                    required
+                    className="bg-white text-black"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="children" className="block text-sm font-medium mb-2">
+                    Children
+                  </label>
+                  <Input
+                    id="children"
+                    type="number"
+                    min="0"
+                    value={formData.travelers.children}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      travelers: {
+                        ...formData.travelers,
+                        children: parseInt(e.target.value) || 0
+                      }
+                    })}
+                    className="bg-white text-black"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="infants" className="block text-sm font-medium mb-2">
+                    Infants
+                  </label>
+                  <Input
+                    id="infants"
+                    type="number"
+                    min="0"
+                    value={formData.travelers.infants}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      travelers: {
+                        ...formData.travelers,
+                        infants: parseInt(e.target.value) || 0
+                      }
+                    })}
+                    className="bg-white text-black"
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="children" className="block text-sm font-medium mb-2">
-                  Children
-                </label>
-                <Input
-                  id="children"
-                  type="number"
-                  min="0"
-                  value={formData.travelers.children}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    travelers: {
-                      ...formData.travelers,
-                      children: parseInt(e.target.value)
-                    }
-                  })}
-                  className="bg-white text-black"
-                />
-              </div>
-              <div>
-                <label htmlFor="infants" className="block text-sm font-medium mb-2">
-                  Infants
-                </label>
-                <Input
-                  id="infants"
-                  type="number"
-                  min="0"
-                  value={formData.travelers.infants}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    travelers: {
-                      ...formData.travelers,
-                      infants: parseInt(e.target.value)
-                    }
-                  })}
-                  className="bg-white text-black"
-                />
+              <div className="mt-4 px-4 py-3 bg-blue-50 rounded-md">
+                <p className="text-blue-700">
+                  <Users className="inline-block h-4 w-4 mr-2" />
+                  Total Travelers: <span className="font-medium">{calculateTotalTravelers()}</span> 
+                  {formData.travelers.infants > 0 && ` (+ ${formData.travelers.infants} infants)`}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Hotels Section */}
+        {/* Accommodations Section */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Accommodations</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addHotel}>
+            <CardTitle>Per Person Accommodation Setup</CardTitle>
+            <Button type="button" variant="outline" size="sm" onClick={addAccommodation}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Hotel
+              Add Accommodation
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {formData.hotels.map((hotel, index) => (
-              <div key={hotel.id} className="border rounded-lg p-4 space-y-4">
+            {formData.accommodations.map((item, index) => (
+              <div key={item.id} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Hotel {index + 1}</h4>
+                  <h4 className="text-sm font-medium">Accommodation {index + 1}</h4>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeHotel(hotel.id)}
+                    onClick={() => removeAccommodation(item.id)}
                   >
                     <Minus className="h-4 w-4" />
                     <span className="sr-only">Remove</span>
@@ -713,32 +853,10 @@ const CreateQuote = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Hotel Name</label>
-                    <Input
-                      value={hotel.name}
-                      onChange={(e) => updateHotel(hotel.id, "name", e.target.value)}
-                      placeholder="Hotel name"
-                      className="bg-white text-black"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Rate Per Night</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={hotel.ratePerNight}
-                      onChange={(e) => updateHotel(hotel.id, "ratePerNight", parseFloat(e.target.value))}
-                      className="bg-white text-black"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
                     <label className="text-sm font-medium mb-2 block">Room Type</label>
                     <Select
-                      value={hotel.roomType}
-                      onValueChange={(value) => updateHotel(hotel.id, "roomType", value)}
+                      value={item.roomType}
+                      onValueChange={(value) => updateAccommodation(item.id, "roomType", value)}
                     >
                       <SelectTrigger className="bg-white text-black">
                         <SelectValue placeholder="Select room type" />
@@ -751,12 +869,35 @@ const CreateQuote = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Number of Rooms</label>
+                    <label className="text-sm font-medium mb-2 block">Cost Per Person Per Night</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.costPerPersonPerNight}
+                      onChange={(e) => updateAccommodation(item.id, "costPerPersonPerNight", parseFloat(e.target.value) || 0)}
+                      className="bg-white text-black"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Pax in This Room Type</label>
                     <Input
                       type="number"
                       min="1"
-                      value={hotel.rooms}
-                      onChange={(e) => updateHotel(hotel.id, "rooms", parseInt(e.target.value))}
+                      value={item.paxPerRoomType}
+                      onChange={(e) => updateAccommodation(item.id, "paxPerRoomType", parseInt(e.target.value) || 0)}
+                      className="bg-white text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Rooms Needed</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.roomsNeeded}
+                      onChange={(e) => updateAccommodation(item.id, "roomsNeeded", parseInt(e.target.value) || 0)}
                       className="bg-white text-black"
                     />
                   </div>
@@ -765,22 +906,106 @@ const CreateQuote = () => {
                     <Input
                       type="number"
                       min="1"
-                      value={hotel.nights}
-                      onChange={(e) => updateHotel(hotel.id, "nights", parseInt(e.target.value))}
+                      value={item.nights}
+                      onChange={(e) => updateAccommodation(item.id, "nights", parseInt(e.target.value) || 0)}
                       className="bg-white text-black"
                       readOnly={formData.duration.nights > 0}
                     />
                   </div>
                 </div>
-                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between">
-                  <span>Total for {hotel.rooms} {hotel.roomType} room(s) x {hotel.nights} nights:</span>
-                  <span className="font-medium">{formatAmount(hotel.total)}</span>
+                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
+                  <span className="text-sm">
+                    {item.paxPerRoomType} pax × ${item.costPerPersonPerNight}/night × {item.nights} nights × {item.roomsNeeded} rooms
+                  </span>
+                  <span className="font-medium">{formatAmount(item.total)}</span>
                 </div>
               </div>
             ))}
             <div className="flex justify-between items-center pt-2">
               <span className="text-sm font-medium">Accommodation Subtotal</span>
-              <span className="font-medium">{formatAmount(calculateHotelSubtotal())}</span>
+              <span className="font-medium">{formatAmount(calculateAccommodationSubtotal())}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Activities Section */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Activities</CardTitle>
+            <Button type="button" variant="outline" size="sm" onClick={addActivity}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Activity
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {formData.activities.map((item, index) => (
+              <div key={item.id} className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Activity {index + 1}</h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeActivity(item.id)}
+                  >
+                    <Minus className="h-4 w-4" />
+                    <span className="sr-only">Remove</span>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Activity Name</label>
+                    <Input
+                      value={item.name}
+                      onChange={(e) => updateActivity(item.id, "name", e.target.value)}
+                      placeholder="Activity name"
+                      className="bg-white text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Cost Per Person</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.costPerPerson}
+                      onChange={(e) => updateActivity(item.id, "costPerPerson", parseFloat(e.target.value) || 0)}
+                      className="bg-white text-black"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Description</label>
+                    <Input
+                      value={item.description}
+                      onChange={(e) => updateActivity(item.id, "description", e.target.value)}
+                      placeholder="Brief description"
+                      className="bg-white text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Total Participants</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.totalPax}
+                      onChange={(e) => updateActivity(item.id, "totalPax", parseInt(e.target.value) || 0)}
+                      className="bg-white text-black"
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
+                  <span className="text-sm">
+                    {item.totalPax} participants × ${item.costPerPerson} per person
+                  </span>
+                  <span className="font-medium">{formatAmount(item.total)}</span>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-sm font-medium">Activities Subtotal</span>
+              <span className="font-medium">{formatAmount(calculateActivitiesSubtotal())}</span>
             </div>
           </CardContent>
         </Card>
@@ -820,11 +1045,11 @@ const CreateQuote = () => {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Flight">Flight</SelectItem>
-                        <SelectItem value="Transfer">Transfer</SelectItem>
-                        <SelectItem value="Train">Train</SelectItem>
-                        <SelectItem value="Car Rental">Car Rental</SelectItem>
+                        <SelectItem value="Airport Transfer">Airport Transfer</SelectItem>
+                        <SelectItem value="Safari Vehicle">Safari Vehicle</SelectItem>
+                        <SelectItem value="Private Car">Private Car</SelectItem>
                         <SelectItem value="Ferry">Ferry</SelectItem>
+                        <SelectItem value="Domestic Flight">Domestic Flight</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -835,22 +1060,38 @@ const CreateQuote = () => {
                       value={transport.description}
                       onChange={(e) => updateTransport(transport.id, "description", e.target.value)}
                       placeholder="E.g., Airport to hotel"
-                      required
                       className="bg-white text-black"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Cost</label>
+                    <label className="text-sm font-medium mb-2 block">Cost Per Person</label>
                     <Input
                       type="number"
                       min="0"
                       step="0.01"
-                      value={transport.cost}
-                      onChange={(e) => updateTransport(transport.id, "cost", parseFloat(e.target.value))}
-                      required
+                      value={transport.costPerPerson}
+                      onChange={(e) => updateTransport(transport.id, "costPerPerson", parseFloat(e.target.value) || 0)}
                       className="bg-white text-black"
                     />
                   </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Total Passengers</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={transport.totalPax}
+                      onChange={(e) => updateTransport(transport.id, "totalPax", parseInt(e.target.value) || 0)}
+                      className="bg-white text-black"
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
+                  <span className="text-sm">
+                    {transport.totalPax} passengers × ${transport.costPerPerson} per person
+                  </span>
+                  <span className="font-medium">{formatAmount(transport.total)}</span>
                 </div>
               </div>
             ))}
@@ -934,7 +1175,11 @@ const CreateQuote = () => {
             <div className="space-y-4">
               <div className="flex justify-between">
                 <span>Accommodation Subtotal</span>
-                <span>{formatAmount(calculateHotelSubtotal())}</span>
+                <span>{formatAmount(calculateAccommodationSubtotal())}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Activities Subtotal</span>
+                <span>{formatAmount(calculateActivitiesSubtotal())}</span>
               </div>
               <div className="flex justify-between">
                 <span>Transportation Subtotal</span>
@@ -957,6 +1202,10 @@ const CreateQuote = () => {
               <div className="flex justify-between text-lg font-bold">
                 <span>Grand Total</span>
                 <span>{formatAmount(calculateGrandTotal())}</span>
+              </div>
+              <div className="flex justify-between text-md text-blue-600 font-semibold bg-blue-50 p-3 rounded-md">
+                <span>Per Person Cost</span>
+                <span>{formatAmount(calculatePerPersonCost())}</span>
               </div>
               
               <div className="flex justify-end gap-2 pt-4">
