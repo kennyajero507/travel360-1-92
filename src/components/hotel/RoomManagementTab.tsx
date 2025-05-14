@@ -4,6 +4,7 @@ import { Save } from "lucide-react";
 import HotelRoomManagement from "../HotelRoomManagement";
 import { RoomType } from "../../types/hotel.types";
 import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 interface RoomManagementTabProps {
   hotelId: string;
@@ -17,11 +18,36 @@ interface RoomManagementTabProps {
 const RoomManagementTab = ({
   hotelId,
   hotelName,
-  roomTypes,
+  roomTypes: initialRoomTypes,
   onSaveRoomTypes,
   onCancel,
   onComplete
 }: RoomManagementTabProps) => {
+  const [currentRoomTypes, setCurrentRoomTypes] = useState<RoomType[]>(initialRoomTypes);
+  
+  // Update local state when props change
+  useEffect(() => {
+    setCurrentRoomTypes(initialRoomTypes);
+  }, [initialRoomTypes]);
+  
+  // Handle room types updates from the room management component
+  const handleRoomTypesUpdate = (updatedRoomTypes: RoomType[]) => {
+    setCurrentRoomTypes(updatedRoomTypes);
+  };
+  
+  // Save room types and complete the process
+  const handleSave = () => {
+    onSaveRoomTypes(currentRoomTypes);
+    toast.success("Room types saved successfully!");
+  };
+  
+  // Complete the hotel setup
+  const handleComplete = () => {
+    onSaveRoomTypes(currentRoomTypes);
+    toast.success("Hotel and rooms saved successfully!");
+    onComplete();
+  };
+
   if (!hotelName) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -43,7 +69,8 @@ const RoomManagementTab = ({
       <HotelRoomManagement 
         hotelId={hotelId} 
         hotelName={hotelName}
-        onSaveRoomTypes={onSaveRoomTypes}
+        onSaveRoomTypes={handleRoomTypesUpdate}
+        initialRoomTypes={currentRoomTypes}
       />
       
       <div className="flex justify-end space-x-4 pt-4">
@@ -52,12 +79,16 @@ const RoomManagementTab = ({
         </Button>
         <Button 
           type="button" 
-          onClick={() => {
-            onSaveRoomTypes(roomTypes);
-            toast.success("Hotel and rooms saved successfully!");
-            onComplete();
-          }}
+          onClick={handleSave}
           className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Save Room Types
+        </Button>
+        <Button 
+          type="button" 
+          onClick={handleComplete}
+          className="bg-green-600 hover:bg-green-700"
         >
           <Save className="mr-2 h-4 w-4" />
           Complete Hotel Setup

@@ -1,4 +1,3 @@
 
-// This file is maintained for backward compatibility
-// It re-exports everything from the new modular structure
+// Re-export everything from the new modular structure
 export * from './role';

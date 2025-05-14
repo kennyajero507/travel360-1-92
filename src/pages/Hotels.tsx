@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -18,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Input } from "../components/ui/input";
-import { Hotel, Plus, MoreHorizontal, Star, StarOff } from "lucide-react";
+import { Hotel as HotelIcon, Plus, MoreHorizontal, Star, StarOff, Eye, Edit } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import {
   Select,
@@ -29,6 +28,7 @@ import {
 } from "../components/ui/select";
 import { useRole } from "../contexts/RoleContext";
 import { toast } from "sonner";
+import { Hotel } from "../types/hotel.types";
 
 // Mock hotels data
 const mockHotels = [
@@ -89,6 +89,23 @@ const Hotels = () => {
   const [search, setSearch] = useState("");
   const { role, tier, permissions } = useRole();
   const navigate = useNavigate();
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+
+  // Load hotels from localStorage
+  useEffect(() => {
+    try {
+      const savedHotels = JSON.parse(localStorage.getItem('hotels') || '[]');
+      if (savedHotels && savedHotels.length > 0) {
+        setHotels(savedHotels);
+      } else {
+        // If no hotels in localStorage, use mock data
+        setHotels(mockHotels);
+      }
+    } catch (error) {
+      console.error("Error loading hotels:", error);
+      setHotels(mockHotels);
+    }
+  }, []);
 
   useEffect(() => {
     // Check permissions based on role
@@ -98,18 +115,41 @@ const Hotels = () => {
     }
   }, [permissions, navigate]);
 
-  const filteredHotels = mockHotels.filter(hotel => {
+  // Mock hotels data for initial display
+  const filteredHotels = hotels.filter(hotel => {
     const matchesFilter = filter === "all" || 
-      (filter === "negotiated" && hotel.hasNegotiatedRate) ||
-      (filter === "non-negotiated" && !hotel.hasNegotiatedRate) ||
-      (filter === "active" && hotel.status === "Active") ||
-      (filter === "inactive" && hotel.status === "Inactive");
+      (filter === "negotiated" && hotel.additionalDetails?.hasNegotiatedRate) ||
+      (filter === "non-negotiated" && !hotel.additionalDetails?.hasNegotiatedRate) ||
+      (filter === "active" && (hotel as any).status === "Active") ||
+      (filter === "inactive" && (hotel as any).status === "Inactive");
     
-    const matchesSearch = hotel.name.toLowerCase().includes(search.toLowerCase()) ||
-                         hotel.location.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = hotel.name?.toLowerCase().includes(search.toLowerCase()) ||
+                         hotel.destination?.toLowerCase().includes(search.toLowerCase());
     
     return matchesFilter && matchesSearch;
   });
+
+  // Toggle hotel active status
+  const toggleHotelStatus = (hotelId: string) => {
+    try {
+      const updatedHotels = hotels.map(hotel => {
+        if (hotel.id === hotelId) {
+          return {
+            ...hotel,
+            status: (hotel as any).status === "Active" ? "Inactive" : "Active"
+          };
+        }
+        return hotel;
+      });
+      
+      setHotels(updatedHotels);
+      localStorage.setItem('hotels', JSON.stringify(updatedHotels));
+      toast.success(`Hotel ${(hotel as any).status === "Active" ? "deactivated" : "activated"} successfully`);
+    } catch (error) {
+      console.error("Error updating hotel status:", error);
+      toast.error("Failed to update hotel status");
+    }
+  };
 
   // Generate appropriate title based on role
   const getRoleTitle = () => {
@@ -211,31 +251,29 @@ const Hotels = () => {
                   <TableRow key={hotel.id}>
                     <TableCell className="font-medium">{hotel.id}</TableCell>
                     <TableCell>{hotel.name}</TableCell>
-                    <TableCell>{hotel.location}</TableCell>
+                    <TableCell>{hotel.destination}</TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         {hotel.category}
-                        {hotel.category.includes("5") && <Star className="ml-1 h-3.5 w-3.5 text-yellow-500" />}
+                        {hotel.category?.includes("5") && <Star className="ml-1 h-3.5 w-3.5 text-yellow-500" />}
                       </div>
                     </TableCell>
-                    <TableCell>${hotel.ratePerNight}</TableCell>
                     <TableCell>
-                      {hotel.hasNegotiatedRate ? (
-                        <Badge variant="outline" className="bg-green-100 text-green-800">
-                          Negotiated
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                          Standard
-                        </Badge>
-                      )}
+                      ${hotel.roomTypes && hotel.roomTypes.length > 0 
+                        ? Math.min(...hotel.roomTypes.map(rt => rt.ratePerNight)).toFixed(2) 
+                        : "0.00"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={hotel.additionalDetails?.hasNegotiatedRate ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                        {hotel.additionalDetails?.hasNegotiatedRate ? "Negotiated" : "Standard"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge 
                         variant="outline" 
-                        className={hotel.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                        className={(hotel as any).status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
                       >
-                        {hotel.status}
+                        {(hotel as any).status || "Active"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -247,18 +285,18 @@ const Hotels = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem asChild>
                             <Link to={`/hotels/${hotel.id}`} className="flex items-center w-full">
-                              <Hotel className="mr-2 h-4 w-4" />
+                              <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </Link>
                           </DropdownMenuItem>
                           
                           {/* Only show edit option if user has edit permissions */}
                           {permissions.canEditHotels && (
-                            <DropdownMenuItem>
+                            <DropdownMenuItem asChild>
                               <Link to={`/hotels/${hotel.id}/edit`} className="flex items-center w-full">
-                                <Hotel className="mr-2 h-4 w-4" />
+                                <Edit className="mr-2 h-4 w-4" />
                                 Edit Hotel
                               </Link>
                             </DropdownMenuItem>
@@ -266,10 +304,13 @@ const Hotels = () => {
                           
                           {/* Only show status change option for users with appropriate permissions */}
                           {permissions.canEditHotels && (
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => toggleHotelStatus(hotel.id)}
+                            >
                               <div className="flex items-center w-full">
                                 <StarOff className="mr-2 h-4 w-4" />
-                                {hotel.status === "Active" ? "Mark as Inactive" : "Mark as Active"}
+                                {(hotel as any).status === "Active" ? "Mark as Inactive" : "Mark as Active"}
                               </div>
                             </DropdownMenuItem>
                           )}
