@@ -28,7 +28,8 @@ const CreateHotel = () => {
     destination: "",
     category: "",
     contactDetails: {},
-    roomTypes: []
+    roomTypes: [],
+    status: "Active" // Set default status to Active
   });
   
   const [additionalDetails, setAdditionalDetails] = useState({
@@ -54,8 +55,24 @@ const CreateHotel = () => {
       ...hotelFormData
     });
     
-    // In a real app, save to database via API
-    console.log("Hotel data:", finalData);
+    // Save to localStorage for later access
+    try {
+      const hotels = JSON.parse(localStorage.getItem('hotels') || '[]');
+      const existingIndex = hotels.findIndex((h: Hotel) => h.id === hotelData.id);
+      
+      if (existingIndex >= 0) {
+        hotels[existingIndex] = {
+          ...hotels[existingIndex],
+          ...finalData
+        };
+      } else {
+        hotels.push(finalData);
+      }
+      
+      localStorage.setItem('hotels', JSON.stringify(hotels));
+    } catch (error) {
+      console.error("Error saving hotel:", error);
+    }
     
     toast.success("Hotel details saved! You can now manage room types.");
     
@@ -73,19 +90,14 @@ const CreateHotel = () => {
       roomTypes
     });
     
-    // In a real app, save to database via API
-    console.log("Updated hotel with room types:", {
-      ...hotelData,
-      roomTypes
-    });
-    
-    // For demo purposes, store in localStorage for use in quotes
+    // Save to localStorage
     try {
       const hotels = JSON.parse(localStorage.getItem('hotels') || '[]');
       const existingHotelIndex = hotels.findIndex((h: any) => h.id === hotelData.id);
       
       if (existingHotelIndex >= 0) {
         hotels[existingHotelIndex] = {
+          ...hotels[existingHotelIndex],
           ...hotelData,
           roomTypes,
           additionalDetails

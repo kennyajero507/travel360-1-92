@@ -30,57 +30,122 @@ import { useRole } from "../contexts/RoleContext";
 import { toast } from "sonner";
 import { Hotel } from "../types/hotel.types";
 
-// Mock hotels data
-const mockHotels = [
+// Convert mock hotels to match the Hotel type
+const mockHotels: Hotel[] = [
   {
     id: "H-001",
     name: "Serena Hotel",
-    location: "Nairobi, Kenya",
+    address: "123 Main Street",
+    destination: "Nairobi, Kenya",
     category: "5-Star",
-    ratePerNight: 250,
-    hasNegotiatedRate: true,
-    amenities: ["Pool", "Spa", "Restaurant", "WiFi"],
-    status: "Active"
+    contactDetails: {},
+    status: "Active",
+    additionalDetails: {
+      hasNegotiatedRate: true,
+      website: "https://serenahotels.com"
+    },
+    roomTypes: [{
+      id: "room-1",
+      name: "Standard Room",
+      maxOccupancy: 2,
+      bedOptions: "Queen",
+      ratePerNight: 250,
+      ratePerPersonPerNight: 125,
+      amenities: ["Pool", "Spa", "Restaurant", "WiFi"],
+      totalUnits: 20
+    }]
   },
   {
     id: "H-002",
     name: "Zanzibar Beach Resort",
-    location: "Zanzibar, Tanzania",
+    address: "Beach Road",
+    destination: "Zanzibar, Tanzania",
     category: "4-Star",
-    ratePerNight: 180,
-    hasNegotiatedRate: true,
-    amenities: ["Beach Access", "Pool", "Restaurant", "WiFi"],
-    status: "Active"
+    contactDetails: {},
+    status: "Active",
+    additionalDetails: {
+      hasNegotiatedRate: true,
+      website: "https://zanzibar-resort.com"
+    },
+    roomTypes: [{
+      id: "room-2",
+      name: "Beach View Room",
+      maxOccupancy: 2,
+      bedOptions: "King",
+      ratePerNight: 180,
+      ratePerPersonPerNight: 90,
+      amenities: ["Beach Access", "Pool", "Restaurant", "WiFi"],
+      totalUnits: 15
+    }]
   },
   {
     id: "H-003",
     name: "Cape Town Luxury Suites",
-    location: "Cape Town, South Africa",
+    address: "Cape Town Harbor",
+    destination: "Cape Town, South Africa",
     category: "5-Star",
-    ratePerNight: 320,
-    hasNegotiatedRate: false,
-    amenities: ["Pool", "Spa", "Gym", "Restaurant", "WiFi"],
-    status: "Active"
+    contactDetails: {},
+    status: "Active",
+    additionalDetails: {
+      hasNegotiatedRate: false,
+      website: "https://capetown-suites.com"
+    },
+    roomTypes: [{
+      id: "room-3",
+      name: "Luxury Suite",
+      maxOccupancy: 3,
+      bedOptions: "King",
+      ratePerNight: 320,
+      ratePerPersonPerNight: 110,
+      amenities: ["Pool", "Spa", "Gym", "Restaurant", "WiFi"],
+      totalUnits: 10
+    }]
   },
   {
     id: "H-004",
     name: "Marrakech Riad",
-    location: "Marrakech, Morocco",
+    address: "Medina Quarter",
+    destination: "Marrakech, Morocco",
     category: "4-Star",
-    ratePerNight: 150,
-    hasNegotiatedRate: true,
-    amenities: ["Pool", "Restaurant", "WiFi"],
-    status: "Active"
+    contactDetails: {},
+    status: "Active",
+    additionalDetails: {
+      hasNegotiatedRate: true,
+      website: "https://marrakech-riad.com"
+    },
+    roomTypes: [{
+      id: "room-4",
+      name: "Traditional Room",
+      maxOccupancy: 2,
+      bedOptions: "Queen",
+      ratePerNight: 150,
+      ratePerPersonPerNight: 75,
+      amenities: ["Pool", "Restaurant", "WiFi"],
+      totalUnits: 12
+    }]
   },
   {
     id: "H-005",
     name: "Safari Lodge",
-    location: "Maasai Mara, Kenya",
+    address: "National Park",
+    destination: "Maasai Mara, Kenya",
     category: "4-Star",
-    ratePerNight: 420,
-    hasNegotiatedRate: false,
-    amenities: ["Game Drives", "Restaurant", "WiFi"],
-    status: "Inactive"
+    contactDetails: {},
+    status: "Inactive",
+    additionalDetails: {
+      hasNegotiatedRate: false,
+      website: "https://safari-lodge.com"
+    },
+    roomTypes: [{
+      id: "room-5",
+      name: "Safari Tent",
+      maxOccupancy: 2,
+      bedOptions: "Queen",
+      ratePerNight: 420,
+      ratePerPersonPerNight: 210,
+      amenities: ["Game Drives", "Restaurant", "WiFi"],
+      totalUnits: 8
+    }]
   },
 ];
 
@@ -115,13 +180,13 @@ const Hotels = () => {
     }
   }, [permissions, navigate]);
 
-  // Mock hotels data for initial display
+  // Filtered hotels logic
   const filteredHotels = hotels.filter(hotel => {
     const matchesFilter = filter === "all" || 
       (filter === "negotiated" && hotel.additionalDetails?.hasNegotiatedRate) ||
       (filter === "non-negotiated" && !hotel.additionalDetails?.hasNegotiatedRate) ||
-      (filter === "active" && (hotel as any).status === "Active") ||
-      (filter === "inactive" && (hotel as any).status === "Inactive");
+      (filter === "active" && hotel.status === "Active") ||
+      (filter === "inactive" && hotel.status === "Inactive");
     
     const matchesSearch = hotel.name?.toLowerCase().includes(search.toLowerCase()) ||
                          hotel.destination?.toLowerCase().includes(search.toLowerCase());
@@ -136,7 +201,7 @@ const Hotels = () => {
         if (hotel.id === hotelId) {
           return {
             ...hotel,
-            status: (hotel as any).status === "Active" ? "Inactive" : "Active"
+            status: hotel.status === "Active" ? "Inactive" : "Active"
           };
         }
         return hotel;
@@ -144,7 +209,12 @@ const Hotels = () => {
       
       setHotels(updatedHotels);
       localStorage.setItem('hotels', JSON.stringify(updatedHotels));
-      toast.success(`Hotel ${(hotel as any).status === "Active" ? "deactivated" : "activated"} successfully`);
+      
+      // Find the hotel to use in the toast message
+      const hotel = hotels.find(h => h.id === hotelId);
+      if (hotel) {
+        toast.success(`Hotel ${hotel.status === "Active" ? "deactivated" : "activated"} successfully`);
+      }
     } catch (error) {
       console.error("Error updating hotel status:", error);
       toast.error("Failed to update hotel status");

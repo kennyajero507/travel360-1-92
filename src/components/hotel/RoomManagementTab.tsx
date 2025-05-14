@@ -44,7 +44,7 @@ const RoomManagementTab = ({
   // Complete the hotel setup
   const handleComplete = () => {
     onSaveRoomTypes(currentRoomTypes);
-    toast.success("Hotel and rooms saved successfully!");
+    toast.success("Hotel setup completed successfully!");
     onComplete();
   };
 

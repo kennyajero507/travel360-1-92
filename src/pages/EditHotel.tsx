@@ -13,7 +13,7 @@ import RoomManagementTab from "../components/hotel/RoomManagementTab";
 const EditHotel = () => {
   const navigate = useNavigate();
   const { hotelId } = useParams();
-  const { permissions, role } = useRole();
+  const { permissions } = useRole();
   
   // Redirect if user doesn't have permission to edit hotels
   useEffect(() => {
@@ -49,6 +49,7 @@ const EditHotel = () => {
       const foundHotel = hotels.find((h: Hotel) => h.id === hotelId);
       
       if (foundHotel) {
+        console.log("Found hotel:", foundHotel);
         setHotelData(foundHotel);
         
         if (foundHotel.additionalDetails) {

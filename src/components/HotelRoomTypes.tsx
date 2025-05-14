@@ -16,12 +16,16 @@ interface HotelRoomTypesProps {
 }
 
 const bedOptions = [
-  "King", "Queen", "Twin", "Double", "Single", "Bunk", "Sofa Bed"
+  "King", "Queen", "Twin", "Double", "Single", "Bunk", "Sofa Bed",
+  "2 Singles", "1 King + 1 Single", "2 Queens", "3 Singles", "4 Singles",
+  "Dormitory Style"
 ];
 
 const availableAmenities = [
   "Free Wi-Fi", "Air Conditioning", "TV", "Mini-bar", "Private Bathroom", 
-  "Balcony", "Sea View", "Breakfast Included", "Room Service", "Safe"
+  "Balcony", "Sea View", "Mountain View", "Garden View", "City View",
+  "Breakfast Included", "Room Service", "Safe", "Work Desk",
+  "Coffee Maker", "Bathtub", "Shower", "Hairdryer", "Iron & Board"
 ];
 
 const HotelRoomTypes = ({ 
@@ -36,13 +40,14 @@ const HotelRoomTypes = ({
     maxOccupancy: 2,
     bedOptions: "Queen",
     ratePerNight: 0,
-    ratePerPersonPerNight: 0, // New field for per-person pricing
+    ratePerPersonPerNight: 0,
     amenities: ["Free Wi-Fi"],
     totalUnits: 1
   });
 
   const handleAddRoomType = () => {
     if (!newRoomType.name) {
+      toast.error("Room type name is required");
       return;
     }
     onAddRoomType({...newRoomType, id: `room-${Date.now()}`});
@@ -52,7 +57,7 @@ const HotelRoomTypes = ({
       maxOccupancy: 2,
       bedOptions: "Queen",
       ratePerNight: 0,
-      ratePerPersonPerNight: 0, // Reset per-person pricing
+      ratePerPersonPerNight: 0,
       amenities: ["Free Wi-Fi"],
       totalUnits: 1
     });
@@ -83,126 +88,132 @@ const HotelRoomTypes = ({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Room Types</CardTitle>
+          <CardTitle>Room Types & Accommodation Arrangements</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {/* List of existing room types */}
-            {roomTypes.map((roomType) => (
-              <Card key={roomType.id} className="border border-gray-200">
-                <CardContent className="pt-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold">{roomType.name}</h3>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => onRemoveRoomType(roomType.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Room Type Name</label>
-                      <Input 
-                        value={roomType.name} 
-                        onChange={(e) => onUpdateRoomType(roomType.id, 'name', e.target.value)}
-                        className="bg-white"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Max Occupancy</label>
-                      <Input 
-                        type="number" 
-                        min="1" 
-                        max="10"
-                        value={roomType.maxOccupancy} 
-                        onChange={(e) => onUpdateRoomType(roomType.id, 'maxOccupancy', parseInt(e.target.value))}
-                        className="bg-white"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Bed Options</label>
-                      <Select 
-                        value={roomType.bedOptions}
-                        onValueChange={(value) => onUpdateRoomType(roomType.id, 'bedOptions', value)}
+            {roomTypes.length > 0 ? (
+              roomTypes.map((roomType) => (
+                <Card key={roomType.id} className="border border-gray-200">
+                  <CardContent className="pt-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold">{roomType.name}</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => onRemoveRoomType(roomType.id)}
                       >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bedOptions.map((option) => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Rate per Night ($)</label>
-                      <Input 
-                        type="number" 
-                        min="0" 
-                        step="0.01" 
-                        value={roomType.ratePerNight} 
-                        onChange={(e) => onUpdateRoomType(roomType.id, 'ratePerNight', parseFloat(e.target.value))}
-                        className="bg-white"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Room Type Name</label>
+                        <Input 
+                          value={roomType.name} 
+                          onChange={(e) => onUpdateRoomType(roomType.id, 'name', e.target.value)}
+                          className="bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Max Occupancy</label>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="20"
+                          value={roomType.maxOccupancy} 
+                          onChange={(e) => onUpdateRoomType(roomType.id, 'maxOccupancy', parseInt(e.target.value))}
+                          className="bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Bed Configuration</label>
+                        <Select 
+                          value={roomType.bedOptions}
+                          onValueChange={(value) => onUpdateRoomType(roomType.id, 'bedOptions', value)}
+                        >
+                          <SelectTrigger className="bg-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bedOptions.map((option) => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Rate per Night ($)</label>
+                        <Input 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={roomType.ratePerNight} 
+                          onChange={(e) => onUpdateRoomType(roomType.id, 'ratePerNight', parseFloat(e.target.value))}
+                          className="bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Rate per Person per Night ($)</label>
+                        <Input 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={roomType.ratePerPersonPerNight || 0} 
+                          onChange={(e) => onUpdateRoomType(roomType.id, 'ratePerPersonPerNight', parseFloat(e.target.value))}
+                          className="bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Total Units</label>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          value={roomType.totalUnits} 
+                          onChange={(e) => onUpdateRoomType(roomType.id, 'totalUnits', parseInt(e.target.value))}
+                          className="bg-white"
+                        />
+                      </div>
                     </div>
                     
-                    {/* New field for per-person pricing */}
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Rate per Person per Night ($)</label>
-                      <Input 
-                        type="number" 
-                        min="0" 
-                        step="0.01" 
-                        value={roomType.ratePerPersonPerNight || 0} 
-                        onChange={(e) => onUpdateRoomType(roomType.id, 'ratePerPersonPerNight', parseFloat(e.target.value))}
-                        className="bg-white"
-                      />
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium mb-2">Amenities</label>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        {availableAmenities.map((amenity) => (
+                          <div key={amenity} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`${roomType.id}-${amenity}`} 
+                              checked={roomType.amenities.includes(amenity)}
+                              onCheckedChange={(checked) => 
+                                handleAmenityToggle(amenity, checked === true, roomType.id)
+                              }
+                            />
+                            <label 
+                              htmlFor={`${roomType.id}-${amenity}`}
+                              className="text-sm"
+                            >
+                              {amenity}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Total Units</label>
-                      <Input 
-                        type="number" 
-                        min="1" 
-                        value={roomType.totalUnits} 
-                        onChange={(e) => onUpdateRoomType(roomType.id, 'totalUnits', parseInt(e.target.value))}
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium mb-2">Amenities</label>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                      {availableAmenities.map((amenity) => (
-                        <div key={amenity} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`${roomType.id}-${amenity}`} 
-                            checked={roomType.amenities.includes(amenity)}
-                            onCheckedChange={(checked) => 
-                              handleAmenityToggle(amenity, checked === true, roomType.id)
-                            }
-                          />
-                          <label 
-                            htmlFor={`${roomType.id}-${amenity}`}
-                            className="text-sm"
-                          >
-                            {amenity}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-md border border-dashed border-gray-300">
+                <p className="text-gray-500 mb-2">No room types added yet</p>
+                <p className="text-gray-400 text-sm mb-4">Add your first room type below</p>
+              </div>
+            )}
             
             {/* Add new room type form */}
             <Card className="border border-dashed border-gray-300 bg-gray-50">
@@ -224,7 +235,7 @@ const HotelRoomTypes = ({
                     <Input 
                       type="number" 
                       min="1" 
-                      max="10"
+                      max="20"
                       value={newRoomType.maxOccupancy} 
                       onChange={(e) => setNewRoomType({...newRoomType, maxOccupancy: parseInt(e.target.value)})}
                       className="bg-white"
@@ -232,7 +243,7 @@ const HotelRoomTypes = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Bed Options</label>
+                    <label className="block text-sm font-medium mb-2">Bed Configuration</label>
                     <Select 
                       value={newRoomType.bedOptions}
                       onValueChange={(value) => setNewRoomType({...newRoomType, bedOptions: value})}
@@ -260,7 +271,6 @@ const HotelRoomTypes = ({
                     />
                   </div>
                   
-                  {/* New field for per-person pricing */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Rate per Person per Night ($)</label>
                     <Input 
