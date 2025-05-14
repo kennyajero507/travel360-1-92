@@ -8,12 +8,18 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { useRole } from "../contexts/RoleContext";
+import { QuoteData } from "../types/quote.types";
 
 const QuotePreview = () => {
   const navigate = useNavigate();
   const { formatAmount } = useCurrency();
   const { currentUser } = useRole();
-  const [quoteData, setQuoteData] = useState<any>(null);
+  const [quoteData, setQuoteData] = useState<QuoteData & {
+    subtotal?: number;
+    markup?: { amount: number; type: string; value: number };
+    grandTotal?: number;
+    perPersonCost?: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,53 +79,100 @@ const QuotePreview = () => {
             <p><strong>Destination:</strong> ${quoteData.destination}</p>
             <p><strong>Dates:</strong> ${quoteData.startDate ? new Date(quoteData.startDate).toLocaleDateString() : ""} - ${quoteData.endDate ? new Date(quoteData.endDate).toLocaleDateString() : ""}</p>
             <p><strong>Duration:</strong> ${quoteData.duration ? `${quoteData.duration.days} days / ${quoteData.duration.nights} nights` : ""}</p>
-            <p><strong>Travelers:</strong> ${quoteData.travelers ? `${quoteData.travelers.adults} Adults${quoteData.travelers.children > 0 ? `, ${quoteData.travelers.children} Children` : ""}${quoteData.travelers.infants > 0 ? `, ${quoteData.travelers.infants} Infants` : ""}` : ""}</p>
-            <h3>Accommodations</h3>
+            <p><strong>Travelers:</strong> ${quoteData.travelers ? 
+              `${quoteData.travelers.adults} Adults` + 
+              (quoteData.travelers.childrenWithBed > 0 ? `, ${quoteData.travelers.childrenWithBed} Child with Bed` : "") +
+              (quoteData.travelers.childrenNoBed > 0 ? `, ${quoteData.travelers.childrenNoBed} Child No Bed` : "") +
+              (quoteData.travelers.infants > 0 ? `, ${quoteData.travelers.infants} Infants` : "") : ""}</p>
+            
+            <h3>Room Arrangements</h3>
             <table>
               <thead>
                 <tr>
-                  <th>Hotel</th>
                   <th>Room Type</th>
-                  <th>Rate/Night</th>
+                  <th>Rooms</th>
+                  <th>Occupants</th>
                   <th>Nights</th>
                   <th>Total</th>
                 </tr>
               </thead>
               <tbody>
-                ${quoteData.hotels ? quoteData.hotels.map((hotel: any) => `
+                ${quoteData.roomArrangements ? quoteData.roomArrangements.map(room => `
                   <tr>
-                    <td>${hotel.name || "Not specified"}</td>
-                    <td>${hotel.roomType || ""}</td>
-                    <td>${hotel.ratePerNight || ""}</td>
-                    <td>${hotel.nights || ""}</td>
-                    <td>${hotel.total || ""}</td>
+                    <td>${room.roomType}</td>
+                    <td>${room.numRooms}</td>
+                    <td>
+                      ${room.adults} Adults
+                      ${room.childrenWithBed > 0 ? `, ${room.childrenWithBed} CWB` : ""}
+                      ${room.childrenNoBed > 0 ? `, ${room.childrenNoBed} CNB` : ""}
+                      ${room.infants > 0 ? `, ${room.infants} Infants` : ""}
+                    </td>
+                    <td>${room.nights}</td>
+                    <td>$${room.total.toFixed(2)}</td>
                   </tr>
                 `).join('') : ""}
               </tbody>
             </table>
+            
+            <h3>Activities & Experiences</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Activity</th>
+                  <th>Description</th>
+                  <th>Participants</th>
+                  <th>Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${quoteData.activities ? quoteData.activities.map(activity => `
+                  <tr>
+                    <td>${activity.name || "Not specified"}</td>
+                    <td>${activity.description || ""}</td>
+                    <td>
+                      ${activity.included.adults} Adults
+                      ${activity.included.children > 0 ? `, ${activity.included.children} Children` : ""}
+                      ${activity.included.infants > 0 ? `, ${activity.included.infants} Infants` : ""}
+                    </td>
+                    <td>$${activity.total.toFixed(2)}</td>
+                  </tr>
+                `).join('') : ""}
+              </tbody>
+            </table>
+            
             <h3>Transportation</h3>
             <table>
               <thead>
                 <tr>
                   <th>Type</th>
                   <th>Description</th>
+                  <th>Passengers</th>
                   <th>Cost</th>
                 </tr>
               </thead>
               <tbody>
-                ${quoteData.transports ? quoteData.transports.map((transport: any) => `
+                ${quoteData.transports ? quoteData.transports.map(transport => `
                   <tr>
                     <td>${transport.type || ""}</td>
                     <td>${transport.description || "Not specified"}</td>
-                    <td>${transport.cost || ""}</td>
+                    <td>
+                      ${transport.included.adults} Adults
+                      ${transport.included.children > 0 ? `, ${transport.included.children} Children` : ""}
+                      ${transport.included.infants > 0 ? `, ${transport.included.infants} Infants` : ""}
+                    </td>
+                    <td>$${transport.total.toFixed(2)}</td>
                   </tr>
                 `).join('') : ""}
               </tbody>
             </table>
+            
             <div class="total">
-              <p>Subtotal: ${quoteData.subtotal || ""}</p>
-              <p>Markup: ${quoteData.markup?.amount || ""}</p>
-              <p>Total: ${quoteData.grandTotal || ""}</p>
+              <p>Subtotal: $${quoteData.subtotal?.toFixed(2) || "0.00"}</p>
+              <p>Markup (${quoteData.markup?.type === "percentage" ? quoteData.markup.value + "%" : 
+                           quoteData.markup?.type === "cost-plus" ? "Cost Plus" : "Fixed"}): 
+                 $${quoteData.markup?.amount.toFixed(2) || "0.00"}</p>
+              <p>Total: $${quoteData.grandTotal?.toFixed(2) || "0.00"}</p>
+              <p>Per Person: $${quoteData.perPersonCost?.toFixed(2) || "0.00"}</p>
             </div>
           </div>
         </body>
@@ -201,7 +254,7 @@ const QuotePreview = () => {
             </div>
             <div className="text-right">
               <p className="font-medium">TravelFlow Inc.</p>
-              <p className="text-sm text-gray-500">Created by: {currentUser.name}</p>
+              <p className="text-sm text-gray-500">Created by: {currentUser?.name}</p>
               <p className="text-gray-500">Date: {new Date().toLocaleDateString()}</p>
             </div>
           </div>
@@ -213,9 +266,10 @@ const QuotePreview = () => {
               <p>Name: {quoteData.client}</p>
               <p>Mobile: {quoteData.mobile}</p>
               <p>
-                Travelers: {quoteData.travelers && quoteData.travelers.adults} Adults
-                {quoteData.travelers && quoteData.travelers.children > 0 && `, ${quoteData.travelers.children} Children`}
-                {quoteData.travelers && quoteData.travelers.infants > 0 && `, ${quoteData.travelers.infants} Infants`}
+                Travelers: {quoteData.travelers.adults} Adults
+                {quoteData.travelers.childrenWithBed > 0 && `, ${quoteData.travelers.childrenWithBed} Child with Bed`}
+                {quoteData.travelers.childrenNoBed > 0 && `, ${quoteData.travelers.childrenNoBed} Child No Bed`}
+                {quoteData.travelers.infants > 0 && `, ${quoteData.travelers.infants} Infants`}
               </p>
             </div>
             <div>
@@ -228,29 +282,33 @@ const QuotePreview = () => {
 
           <Separator />
 
-          {quoteData.hotels && quoteData.hotels.length > 0 && (
+          {/* Room Arrangements Section */}
+          {quoteData.roomArrangements && quoteData.roomArrangements.length > 0 && (
             <div>
-              <h3 className="font-medium mb-3">Accommodations</h3>
+              <h3 className="font-medium mb-3">Room Arrangements</h3>
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left pb-2">Hotel</th>
                     <th className="text-left pb-2">Room Type</th>
-                    <th className="text-right pb-2">Rate/Night</th>
-                    <th className="text-right pb-2">Rooms</th>
-                    <th className="text-right pb-2">Nights</th>
+                    <th className="text-center pb-2">Rooms</th>
+                    <th className="text-left pb-2">Occupants</th>
+                    <th className="text-center pb-2">Nights</th>
                     <th className="text-right pb-2">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {quoteData.hotels.map((hotel: any, index: number) => (
-                    <tr key={hotel.id || index} className="border-b">
-                      <td className="py-2">{hotel.name || "Not specified"}</td>
-                      <td className="py-2">{hotel.roomType}</td>
-                      <td className="text-right py-2">{formatAmount(hotel.ratePerNight)}</td>
-                      <td className="text-right py-2">{hotel.rooms}</td>
-                      <td className="text-right py-2">{hotel.nights}</td>
-                      <td className="text-right py-2">{formatAmount(hotel.total)}</td>
+                  {quoteData.roomArrangements.map((room, index) => (
+                    <tr key={room.id || index} className="border-b">
+                      <td className="py-2">{room.roomType}</td>
+                      <td className="text-center py-2">{room.numRooms}</td>
+                      <td className="py-2">
+                        {room.adults} Adults
+                        {room.childrenWithBed > 0 && `, ${room.childrenWithBed} CWB`}
+                        {room.childrenNoBed > 0 && `, ${room.childrenNoBed} CNB`}
+                        {room.infants > 0 && `, ${room.infants} Infants`}
+                      </td>
+                      <td className="text-center py-2">{room.nights}</td>
+                      <td className="text-right py-2">${room.total.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -258,6 +316,32 @@ const QuotePreview = () => {
             </div>
           )}
 
+          {/* Activities Section */}
+          {quoteData.activities && quoteData.activities.length > 0 && (
+            <div>
+              <h3 className="font-medium mb-3">Activities & Experiences</h3>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left pb-2">Activity</th>
+                    <th className="text-left pb-2">Description</th>
+                    <th className="text-right pb-2">Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quoteData.activities.map((activity, index) => (
+                    <tr key={activity.id || index} className="border-b">
+                      <td className="py-2">{activity.name}</td>
+                      <td className="py-2">{activity.description || "Not specified"}</td>
+                      <td className="text-right py-2">${activity.total.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Transports Section */}
           {quoteData.transports && quoteData.transports.length > 0 && (
             <div>
               <h3 className="font-medium mb-3">Transportation</h3>
@@ -270,11 +354,11 @@ const QuotePreview = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {quoteData.transports.map((transport: any, index: number) => (
+                  {quoteData.transports.map((transport, index) => (
                     <tr key={transport.id || index} className="border-b">
                       <td className="py-2">{transport.type}</td>
                       <td className="py-2">{transport.description || "Not specified"}</td>
-                      <td className="text-right py-2">{formatAmount(transport.cost)}</td>
+                      <td className="text-right py-2">${transport.total.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -285,16 +369,20 @@ const QuotePreview = () => {
           <div className="bg-gray-50 p-4 rounded-md space-y-2">
             <div className="flex justify-between">
               <span>Accommodation Subtotal</span>
-              <span>{formatAmount(quoteData.hotels?.reduce((sum: number, hotel: any) => sum + (hotel.total || 0), 0) || 0)}</span>
+              <span>${quoteData.roomArrangements?.reduce((sum, room) => sum + room.total, 0).toFixed(2) || "0.00"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Activities Subtotal</span>
+              <span>${quoteData.activities?.reduce((sum, activity) => sum + activity.total, 0).toFixed(2) || "0.00"}</span>
             </div>
             <div className="flex justify-between">
               <span>Transportation Subtotal</span>
-              <span>{formatAmount(quoteData.transports?.reduce((sum: number, transport: any) => sum + (transport.cost || 0), 0) || 0)}</span>
+              <span>${quoteData.transports?.reduce((sum, transport) => sum + transport.total, 0).toFixed(2) || "0.00"}</span>
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>{formatAmount(quoteData.subtotal || 0)}</span>
+              <span>${quoteData.subtotal?.toFixed(2) || "0.00"}</span>
             </div>
             <div className="flex justify-between">
               <span>
@@ -302,12 +390,16 @@ const QuotePreview = () => {
                 quoteData.markup?.type === "fixed" ? "Markup (Fixed)" : 
                 "Markup (Cost Plus 85%)"}
               </span>
-              <span>{formatAmount(quoteData.markup?.amount || 0)}</span>
+              <span>${quoteData.markup?.amount.toFixed(2) || "0.00"}</span>
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between font-bold text-lg">
               <span>Total</span>
-              <span>{formatAmount(quoteData.grandTotal || 0)}</span>
+              <span>${quoteData.grandTotal?.toFixed(2) || "0.00"}</span>
+            </div>
+            <div className="flex justify-between text-blue-600 font-medium">
+              <span>Per Person</span>
+              <span>${quoteData.perPersonCost?.toFixed(2) || "0.00"}</span>
             </div>
           </div>
 

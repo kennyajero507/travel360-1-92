@@ -25,6 +25,18 @@ import { useRole } from "../contexts/RoleContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { differenceInDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
+import RoomArrangementSection from "../components/quote/RoomArrangementSection";
+import { RoomArrangement, QuoteActivity, QuoteTransport, QuoteData } from "../types/quote.types";
+
+// Available room types
+const availableRoomTypes = [
+  "Single Room",
+  "Double Room",
+  "Twin Room", 
+  "Triple Room",
+  "Quad Room",
+  "Family Room"
+];
 
 // Mock inquiry data for demo purposes - in a real app, this would come from an API
 const mockInquiriesData = {
@@ -64,69 +76,6 @@ const mockInquiriesData = {
   }
 };
 
-// Types for our form data
-interface AccommodationItem {
-  id: string;
-  roomType: string;
-  paxPerRoomType: number;
-  roomsNeeded: number;
-  costPerPersonPerNight: number;
-  nights: number;
-  total: number;
-}
-
-interface ActivityItem {
-  id: string;
-  name: string;
-  description: string;
-  costPerPerson: number;
-  totalPax: number;
-  total: number;
-}
-
-interface TransportItem {
-  id: string;
-  type: string;
-  description: string;
-  costPerPerson: number;
-  totalPax: number;
-  total: number;
-}
-
-interface QuoteFormData {
-  client: string;
-  mobile: string;
-  destination: string;
-  startDate: string;
-  endDate: string;
-  travelers: {
-    adults: number;
-    children: number;
-    infants: number;
-  };
-  duration: {
-    days: number;
-    nights: number;
-  };
-  accommodations: AccommodationItem[];
-  activities: ActivityItem[];
-  transports: TransportItem[];
-  markup: {
-    type: "percentage" | "fixed" | "cost-plus";
-    value: number;
-  };
-  notes: string;
-}
-
-// Room types for selection
-const roomTypes = [
-  "Twin Sharing",
-  "Triple Sharing",
-  "Single",
-  "Quad",
-  "Family Suite"
-];
-
 const CreateQuote = () => {
   const { inquiryId } = useParams();
   const navigate = useNavigate();
@@ -147,28 +96,37 @@ const CreateQuote = () => {
     ? mockInquiriesData[inquiryId as keyof typeof mockInquiriesData]
     : null;
 
-  const [formData, setFormData] = useState<QuoteFormData>({
+  const [formData, setFormData] = useState<QuoteData>({
     client: mockInquiry?.client || "",
     mobile: mockInquiry?.mobile || "",
     destination: mockInquiry?.destination || "",
     startDate: mockInquiry?.startDate || "",
     endDate: mockInquiry?.endDate || "",
-    travelers: {
-      adults: mockInquiry?.travelers?.adults || 2,
-      children: mockInquiry?.travelers?.children || 0,
-      infants: mockInquiry?.travelers?.infants || 0,
-    },
     duration: {
       days: 0,
       nights: 0
     },
-    accommodations: [
+    travelers: {
+      adults: mockInquiry?.travelers?.adults || 2,
+      childrenWithBed: 0,
+      childrenNoBed: mockInquiry?.travelers?.children || 0,
+      infants: mockInquiry?.travelers?.infants || 0
+    },
+    roomArrangements: [
       {
-        id: "accom-1",
-        roomType: "Twin Sharing",
-        paxPerRoomType: mockInquiry?.travelers?.adults || 2,
-        roomsNeeded: 1,
-        costPerPersonPerNight: 60,
+        id: "room-1",
+        roomType: "Double Room",
+        numRooms: 1,
+        adults: mockInquiry?.travelers?.adults || 2,
+        childrenWithBed: 0,
+        childrenNoBed: mockInquiry?.travelers?.children || 0,
+        infants: mockInquiry?.travelers?.infants || 0,
+        ratePerNight: {
+          adult: 80,
+          childWithBed: 60,
+          childNoBed: 40,
+          infant: 0
+        },
         nights: 0,
         total: 0
       }
@@ -178,8 +136,16 @@ const CreateQuote = () => {
         id: "activity-1",
         name: "Safari Game Drive",
         description: "Half-day game drive with professional guide",
-        costPerPerson: 75,
-        totalPax: mockInquiry?.travelers?.adults || 2,
+        costPerPerson: {
+          adult: 75,
+          child: 40,
+          infant: 0
+        },
+        included: {
+          adults: mockInquiry?.travelers?.adults || 2,
+          children: mockInquiry?.travelers?.children || 0,
+          infants: mockInquiry?.travelers?.infants || 0
+        },
         total: 0
       }
     ],
@@ -188,8 +154,16 @@ const CreateQuote = () => {
         id: "transport-1",
         type: "Airport Transfer",
         description: "Return airport transfers",
-        costPerPerson: 25,
-        totalPax: mockInquiry?.travelers?.adults || 2,
+        costPerPerson: {
+          adult: 25,
+          child: 25,
+          infant: 0
+        },
+        included: {
+          adults: mockInquiry?.travelers?.adults || 2,
+          children: mockInquiry?.travelers?.children || 0,
+          infants: mockInquiry?.travelers?.infants || 0
+        },
         total: 0
       }
     ],
@@ -197,12 +171,13 @@ const CreateQuote = () => {
       type: "percentage",
       value: 15
     },
-    notes: ""
+    notes: "",
+    status: "draft"
   });
 
   // Calculate total travelers
   const calculateTotalTravelers = () => {
-    return formData.travelers.adults + formData.travelers.children;
+    return formData.travelers.adults + formData.travelers.childrenWithBed + formData.travelers.childrenNoBed;
   };
 
   // Calculate days and nights when dates change
@@ -220,53 +195,270 @@ const CreateQuote = () => {
           duration: {
             days,
             nights
-          },
-          accommodations: prev.accommodations.map(item => ({
-            ...item,
-            nights,
-            total: calculateAccommodationTotal(item.paxPerRoomType, item.costPerPersonPerNight, nights, item.roomsNeeded)
-          }))
+          }
         }));
       }
     }
   }, [formData.startDate, formData.endDate]);
 
-  // Update total travelers in all sections when traveler numbers change
+  // Update room arrangements when traveler numbers change
   useEffect(() => {
-    const totalTravelers = calculateTotalTravelers();
+    updateTotals();
+  }, [formData.travelers, formData.duration.nights]);
+
+  // Calculate accommodation total based on per-person rates and nights
+  const updateTotals = () => {
+    // No need to update if no nights calculated yet
+    if (formData.duration.nights <= 0) return;
+
+    // Update activities and transports based on current traveler counts
+    const updatedActivities = formData.activities.map(activity => {
+      const totalAdults = activity.included.adults;
+      const totalChildren = activity.included.children;
+      const totalInfants = activity.included.infants;
+      
+      const total = 
+        totalAdults * activity.costPerPerson.adult + 
+        totalChildren * activity.costPerPerson.child + 
+        totalInfants * activity.costPerPerson.infant;
+      
+      return {
+        ...activity,
+        total
+      };
+    });
+    
+    const updatedTransports = formData.transports.map(transport => {
+      const totalAdults = transport.included.adults;
+      const totalChildren = transport.included.children;
+      const totalInfants = transport.included.infants;
+      
+      const total = 
+        totalAdults * transport.costPerPerson.adult + 
+        totalChildren * transport.costPerPerson.child + 
+        totalInfants * transport.costPerPerson.infant;
+      
+      return {
+        ...transport,
+        total
+      };
+    });
     
     setFormData(prev => ({
       ...prev,
-      accommodations: prev.accommodations.map(item => ({
-        ...item,
-        total: calculateAccommodationTotal(item.paxPerRoomType, item.costPerPersonPerNight, item.nights, item.roomsNeeded)
-      })),
-      activities: prev.activities.map(item => ({
-        ...item,
-        totalPax: totalTravelers,
-        total: item.costPerPerson * totalTravelers
-      })),
-      transports: prev.transports.map(item => ({
-        ...item,
-        totalPax: totalTravelers,
-        total: item.costPerPerson * totalTravelers
-      }))
+      activities: updatedActivities,
+      transports: updatedTransports
     }));
-  }, [formData.travelers]);
+  };
 
-  // Calculate accommodation total based on pax, cost per night, nights, and rooms
-  const calculateAccommodationTotal = (
-    paxPerRoomType: number,
-    costPerPersonPerNight: number,
-    nights: number,
-    roomsNeeded: number
-  ) => {
-    return paxPerRoomType * costPerPersonPerNight * nights * roomsNeeded;
+  // Handle room arrangements change
+  const handleRoomArrangementsChange = (arrangements: RoomArrangement[]) => {
+    setFormData(prev => ({
+      ...prev,
+      roomArrangements: arrangements
+    }));
+    
+    // Calculate total travelers from room arrangements
+    const totalAdults = arrangements.reduce((sum, arr) => sum + arr.adults * arr.numRooms, 0);
+    const totalCWB = arrangements.reduce((sum, arr) => sum + arr.childrenWithBed * arr.numRooms, 0);
+    const totalCNB = arrangements.reduce((sum, arr) => sum + arr.childrenNoBed * arr.numRooms, 0);
+    const totalInfants = arrangements.reduce((sum, arr) => sum + arr.infants * arr.numRooms, 0);
+    
+    setFormData(prev => ({
+      ...prev,
+      travelers: {
+        adults: totalAdults,
+        childrenWithBed: totalCWB,
+        childrenNoBed: totalCNB,
+        infants: totalInfants
+      }
+    }));
+  };
+
+  // Update activity item
+  const updateActivity = (id: string, field: string, value: any) => {
+    setFormData(prev => {
+      const updatedActivities = prev.activities.map(item => {
+        if (item.id === id) {
+          let updatedItem = { ...item };
+          
+          if (field.startsWith("cost_")) {
+            const personType = field.split("_")[1];
+            updatedItem = {
+              ...updatedItem,
+              costPerPerson: {
+                ...updatedItem.costPerPerson,
+                [personType]: value
+              }
+            };
+          } else if (field.startsWith("included_")) {
+            const personType = field.split("_")[1];
+            updatedItem = {
+              ...updatedItem,
+              included: {
+                ...updatedItem.included,
+                [personType]: value
+              }
+            };
+          } else {
+            updatedItem = {
+              ...updatedItem,
+              [field]: value
+            };
+          }
+          
+          // Recalculate total
+          updatedItem.total = 
+            updatedItem.included.adults * updatedItem.costPerPerson.adult + 
+            updatedItem.included.children * updatedItem.costPerPerson.child + 
+            updatedItem.included.infants * updatedItem.costPerPerson.infant;
+          
+          return updatedItem;
+        }
+        return item;
+      });
+      
+      return { ...prev, activities: updatedActivities };
+    });
+  };
+
+  // Add new activity
+  const addActivity = () => {
+    const newId = `activity-${formData.activities.length + 1}`;
+    
+    setFormData(prev => ({
+      ...prev,
+      activities: [...prev.activities, {
+        id: newId,
+        name: "",
+        description: "",
+        costPerPerson: {
+          adult: 50,
+          child: 25,
+          infant: 0
+        },
+        included: {
+          adults: prev.travelers.adults,
+          children: prev.travelers.childrenWithBed + prev.travelers.childrenNoBed,
+          infants: prev.travelers.infants
+        },
+        total: prev.travelers.adults * 50 + (prev.travelers.childrenWithBed + prev.travelers.childrenNoBed) * 25
+      }]
+    }));
+  };
+
+  // Remove activity
+  const removeActivity = (id: string) => {
+    if (formData.activities.length === 1) {
+      toast.error("You must have at least one activity");
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      activities: prev.activities.filter(item => item.id !== id)
+    }));
+  };
+
+  // Update transport item
+  const updateTransport = (id: string, field: string, value: any) => {
+    setFormData(prev => {
+      const updatedTransports = prev.transports.map(item => {
+        if (item.id === id) {
+          let updatedItem = { ...item };
+          
+          if (field.startsWith("cost_")) {
+            const personType = field.split("_")[1];
+            updatedItem = {
+              ...updatedItem,
+              costPerPerson: {
+                ...updatedItem.costPerPerson,
+                [personType]: value
+              }
+            };
+          } else if (field.startsWith("included_")) {
+            const personType = field.split("_")[1];
+            updatedItem = {
+              ...updatedItem,
+              included: {
+                ...updatedItem.included,
+                [personType]: value
+              }
+            };
+          } else {
+            updatedItem = {
+              ...updatedItem,
+              [field]: value
+            };
+          }
+          
+          // Recalculate total
+          updatedItem.total = 
+            updatedItem.included.adults * updatedItem.costPerPerson.adult + 
+            updatedItem.included.children * updatedItem.costPerPerson.child + 
+            updatedItem.included.infants * updatedItem.costPerPerson.infant;
+          
+          return updatedItem;
+        }
+        return item;
+      });
+      
+      return { ...prev, transports: updatedTransports };
+    });
+  };
+
+  // Add new transport
+  const addTransport = () => {
+    const newId = `transport-${formData.transports.length + 1}`;
+    
+    setFormData(prev => ({
+      ...prev,
+      transports: [...prev.transports, {
+        id: newId,
+        type: "Transfer",
+        description: "",
+        costPerPerson: {
+          adult: 25,
+          child: 25,
+          infant: 0
+        },
+        included: {
+          adults: prev.travelers.adults,
+          children: prev.travelers.childrenWithBed + prev.travelers.childrenNoBed,
+          infants: prev.travelers.infants
+        },
+        total: prev.travelers.adults * 25 + (prev.travelers.childrenWithBed + prev.travelers.childrenNoBed) * 25
+      }]
+    }));
+  };
+
+  // Remove transport
+  const removeTransport = (id: string) => {
+    if (formData.transports.length === 1) {
+      toast.error("You must have at least one transport item");
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      transports: prev.transports.filter(item => item.id !== id)
+    }));
+  };
+
+  // Handle markup change
+  const updateMarkup = (field: "type" | "value", value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      markup: {
+        ...prev.markup,
+        [field]: value
+      }
+    }));
   };
 
   // Calculate totals
   const calculateAccommodationSubtotal = () => {
-    return formData.accommodations.reduce((sum, item) => sum + item.total, 0);
+    return formData.roomArrangements.reduce((sum, item) => sum + item.total, 0);
   };
 
   const calculateActivitiesSubtotal = () => {
@@ -300,179 +492,6 @@ const CreateQuote = () => {
   const calculatePerPersonCost = () => {
     const totalTravelers = calculateTotalTravelers();
     return totalTravelers > 0 ? calculateGrandTotal() / totalTravelers : 0;
-  };
-
-  // Update accommodation item
-  const updateAccommodation = (id: string, field: keyof AccommodationItem, value: any) => {
-    setFormData(prev => {
-      const updatedAccommodations = prev.accommodations.map(item => {
-        if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
-          
-          // Recalculate total if relevant fields changed
-          if (field === "paxPerRoomType" || field === "costPerPersonPerNight" || field === "nights" || field === "roomsNeeded") {
-            updatedItem.total = calculateAccommodationTotal(
-              updatedItem.paxPerRoomType,
-              updatedItem.costPerPersonPerNight,
-              updatedItem.nights,
-              updatedItem.roomsNeeded
-            );
-          }
-          
-          return updatedItem;
-        }
-        return item;
-      });
-      
-      return { ...prev, accommodations: updatedAccommodations };
-    });
-  };
-
-  // Add new accommodation
-  const addAccommodation = () => {
-    const newId = `accom-${formData.accommodations.length + 1}`;
-    const totalTravelers = calculateTotalTravelers();
-    
-    setFormData(prev => ({
-      ...prev,
-      accommodations: [...prev.accommodations, {
-        id: newId,
-        roomType: "Twin Sharing",
-        paxPerRoomType: 2,
-        roomsNeeded: 1,
-        costPerPersonPerNight: 60,
-        nights: prev.duration.nights || 0,
-        total: calculateAccommodationTotal(2, 60, prev.duration.nights || 0, 1)
-      }]
-    }));
-  };
-
-  // Remove accommodation
-  const removeAccommodation = (id: string) => {
-    if (formData.accommodations.length === 1) {
-      toast.error("You must have at least one accommodation option");
-      return;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      accommodations: prev.accommodations.filter(item => item.id !== id)
-    }));
-  };
-
-  // Update activity item
-  const updateActivity = (id: string, field: keyof ActivityItem, value: any) => {
-    setFormData(prev => {
-      const updatedActivities = prev.activities.map(item => {
-        if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
-          
-          // Recalculate total if cost or pax changed
-          if (field === "costPerPerson" || field === "totalPax") {
-            updatedItem.total = updatedItem.costPerPerson * updatedItem.totalPax;
-          }
-          
-          return updatedItem;
-        }
-        return item;
-      });
-      
-      return { ...prev, activities: updatedActivities };
-    });
-  };
-
-  // Add new activity
-  const addActivity = () => {
-    const newId = `activity-${formData.activities.length + 1}`;
-    const totalTravelers = calculateTotalTravelers();
-    
-    setFormData(prev => ({
-      ...prev,
-      activities: [...prev.activities, {
-        id: newId,
-        name: "",
-        description: "",
-        costPerPerson: 0,
-        totalPax: totalTravelers,
-        total: 0
-      }]
-    }));
-  };
-
-  // Remove activity
-  const removeActivity = (id: string) => {
-    if (formData.activities.length === 1) {
-      toast.error("You must have at least one activity");
-      return;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      activities: prev.activities.filter(item => item.id !== id)
-    }));
-  };
-
-  // Update transport item
-  const updateTransport = (id: string, field: keyof TransportItem, value: any) => {
-    setFormData(prev => {
-      const updatedTransports = prev.transports.map(item => {
-        if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
-          
-          // Recalculate total if cost or pax changed
-          if (field === "costPerPerson" || field === "totalPax") {
-            updatedItem.total = updatedItem.costPerPerson * updatedItem.totalPax;
-          }
-          
-          return updatedItem;
-        }
-        return item;
-      });
-      
-      return { ...prev, transports: updatedTransports };
-    });
-  };
-
-  // Add new transport
-  const addTransport = () => {
-    const newId = `transport-${formData.transports.length + 1}`;
-    const totalTravelers = calculateTotalTravelers();
-    
-    setFormData(prev => ({
-      ...prev,
-      transports: [...prev.transports, {
-        id: newId,
-        type: "Transfer",
-        description: "",
-        costPerPerson: 0,
-        totalPax: totalTravelers,
-        total: 0
-      }]
-    }));
-  };
-
-  // Remove transport
-  const removeTransport = (id: string) => {
-    if (formData.transports.length === 1) {
-      toast.error("You must have at least one transport item");
-      return;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      transports: prev.transports.filter(item => item.id !== id)
-    }));
-  };
-
-  // Handle markup change
-  const updateMarkup = (field: "type" | "value", value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      markup: {
-        ...prev.markup,
-        [field]: value
-      }
-    }));
   };
 
   // Handle form submission
@@ -655,7 +674,7 @@ const CreateQuote = () => {
         {/* Travel Dates Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Travel Dates & Group Composition</CardTitle>
+            <CardTitle>Travel Dates</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -753,180 +772,16 @@ const CreateQuote = () => {
                 </div>
               </div>
             </div>
-
-            <div className="mt-6">
-              <h3 className="text-md font-medium mb-3">Group Composition</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="adults" className="block text-sm font-medium mb-2">
-                    Adults
-                  </label>
-                  <Input
-                    id="adults"
-                    type="number"
-                    min="1"
-                    value={formData.travelers.adults}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travelers: {
-                        ...formData.travelers,
-                        adults: parseInt(e.target.value) || 0
-                      }
-                    })}
-                    required
-                    className="bg-white text-black"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="children" className="block text-sm font-medium mb-2">
-                    Children
-                  </label>
-                  <Input
-                    id="children"
-                    type="number"
-                    min="0"
-                    value={formData.travelers.children}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travelers: {
-                        ...formData.travelers,
-                        children: parseInt(e.target.value) || 0
-                      }
-                    })}
-                    className="bg-white text-black"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="infants" className="block text-sm font-medium mb-2">
-                    Infants
-                  </label>
-                  <Input
-                    id="infants"
-                    type="number"
-                    min="0"
-                    value={formData.travelers.infants}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travelers: {
-                        ...formData.travelers,
-                        infants: parseInt(e.target.value) || 0
-                      }
-                    })}
-                    className="bg-white text-black"
-                  />
-                </div>
-              </div>
-              <div className="mt-4 px-4 py-3 bg-blue-50 rounded-md">
-                <p className="text-blue-700">
-                  <Users className="inline-block h-4 w-4 mr-2" />
-                  Total Travelers: <span className="font-medium">{calculateTotalTravelers()}</span> 
-                  {formData.travelers.infants > 0 && ` (+ ${formData.travelers.infants} infants)`}
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
-        {/* Accommodations Section */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Per Person Accommodation Setup</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addAccommodation}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Accommodation
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {formData.accommodations.map((item, index) => (
-              <div key={item.id} className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Accommodation {index + 1}</h4>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeAccommodation(item.id)}
-                  >
-                    <Minus className="h-4 w-4" />
-                    <span className="sr-only">Remove</span>
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Room Type</label>
-                    <Select
-                      value={item.roomType}
-                      onValueChange={(value) => updateAccommodation(item.id, "roomType", value)}
-                    >
-                      <SelectTrigger className="bg-white text-black">
-                        <SelectValue placeholder="Select room type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roomTypes.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Cost Per Person Per Night</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.costPerPersonPerNight}
-                      onChange={(e) => updateAccommodation(item.id, "costPerPersonPerNight", parseFloat(e.target.value) || 0)}
-                      className="bg-white text-black"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Pax in This Room Type</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.paxPerRoomType}
-                      onChange={(e) => updateAccommodation(item.id, "paxPerRoomType", parseInt(e.target.value) || 0)}
-                      className="bg-white text-black"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Rooms Needed</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.roomsNeeded}
-                      onChange={(e) => updateAccommodation(item.id, "roomsNeeded", parseInt(e.target.value) || 0)}
-                      className="bg-white text-black"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Number of Nights</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.nights}
-                      onChange={(e) => updateAccommodation(item.id, "nights", parseInt(e.target.value) || 0)}
-                      className="bg-white text-black"
-                      readOnly={formData.duration.nights > 0}
-                    />
-                  </div>
-                </div>
-                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
-                  <span className="text-sm">
-                    {item.paxPerRoomType} pax × ${item.costPerPersonPerNight}/night × {item.nights} nights × {item.roomsNeeded} rooms
-                  </span>
-                  <span className="font-medium">{formatAmount(item.total)}</span>
-                </div>
-              </div>
-            ))}
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-sm font-medium">Accommodation Subtotal</span>
-              <span className="font-medium">{formatAmount(calculateAccommodationSubtotal())}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Room Arrangements Section */}
+        <RoomArrangementSection 
+          roomArrangements={formData.roomArrangements}
+          duration={formData.duration.nights}
+          onRoomArrangementsChange={handleRoomArrangementsChange}
+          availableRoomTypes={availableRoomTypes}
+        />
 
         {/* Activities Section */}
         <Card>
@@ -963,19 +818,6 @@ const CreateQuote = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Cost Per Person</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.costPerPerson}
-                      onChange={(e) => updateActivity(item.id, "costPerPerson", parseFloat(e.target.value) || 0)}
-                      className="bg-white text-black"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
                     <label className="text-sm font-medium mb-2 block">Description</label>
                     <Input
                       value={item.description}
@@ -984,28 +826,94 @@ const CreateQuote = () => {
                       className="bg-white text-black"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Total Participants</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.totalPax}
-                      onChange={(e) => updateActivity(item.id, "totalPax", parseInt(e.target.value) || 0)}
-                      className="bg-white text-black"
-                    />
+                </div>
+                
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Per Person Rates</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Adult Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.costPerPerson.adult}
+                        onChange={(e) => updateActivity(item.id, "cost_adult", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Child Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.costPerPerson.child}
+                        onChange={(e) => updateActivity(item.id, "cost_child", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Infant Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.costPerPerson.infant}
+                        onChange={(e) => updateActivity(item.id, "cost_infant", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
                   </div>
                 </div>
+
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Participants</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Adults</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.included.adults}
+                        onChange={(e) => updateActivity(item.id, "included_adults", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Children</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.included.children}
+                        onChange={(e) => updateActivity(item.id, "included_children", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Infants</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.included.infants}
+                        onChange={(e) => updateActivity(item.id, "included_infants", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
                   <span className="text-sm">
-                    {item.totalPax} participants × ${item.costPerPerson} per person
+                    {item.name || "Activity"}: {item.included.adults} adults, {item.included.children} children, {item.included.infants} infants
                   </span>
-                  <span className="font-medium">{formatAmount(item.total)}</span>
+                  <span className="font-medium">${item.total.toFixed(2)}</span>
                 </div>
               </div>
             ))}
             <div className="flex justify-between items-center pt-2">
               <span className="text-sm font-medium">Activities Subtotal</span>
-              <span className="font-medium">{formatAmount(calculateActivitiesSubtotal())}</span>
+              <span className="font-medium">${calculateActivitiesSubtotal().toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -1034,7 +942,7 @@ const CreateQuote = () => {
                     <span className="sr-only">Remove</span>
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Type</label>
                     <Select 
@@ -1063,41 +971,94 @@ const CreateQuote = () => {
                       className="bg-white text-black"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Cost Per Person</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={transport.costPerPerson}
-                      onChange={(e) => updateTransport(transport.id, "costPerPerson", parseFloat(e.target.value) || 0)}
-                      className="bg-white text-black"
-                    />
+                </div>
+                
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Per Person Rates</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Adult Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={transport.costPerPerson.adult}
+                        onChange={(e) => updateTransport(transport.id, "cost_adult", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Child Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={transport.costPerPerson.child}
+                        onChange={(e) => updateTransport(transport.id, "cost_child", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Infant Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={transport.costPerPerson.infant}
+                        onChange={(e) => updateTransport(transport.id, "cost_infant", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Total Passengers</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={transport.totalPax}
-                      onChange={(e) => updateTransport(transport.id, "totalPax", parseInt(e.target.value) || 0)}
-                      className="bg-white text-black"
-                    />
+
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Passengers</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Adults</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={transport.included.adults}
+                        onChange={(e) => updateTransport(transport.id, "included_adults", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Children</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={transport.included.children}
+                        onChange={(e) => updateTransport(transport.id, "included_children", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Infants</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={transport.included.infants}
+                        onChange={(e) => updateTransport(transport.id, "included_infants", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
                   </div>
                 </div>
+                
                 <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
                   <span className="text-sm">
-                    {transport.totalPax} passengers × ${transport.costPerPerson} per person
+                    {transport.type}: {transport.included.adults} adults, {transport.included.children} children, {transport.included.infants} infants
                   </span>
-                  <span className="font-medium">{formatAmount(transport.total)}</span>
+                  <span className="font-medium">${transport.total.toFixed(2)}</span>
                 </div>
               </div>
             ))}
             <div className="flex justify-between items-center pt-2">
               <span className="text-sm font-medium">Transportation Subtotal</span>
-              <span className="font-medium">{formatAmount(calculateTransportSubtotal())}</span>
+              <span className="font-medium">${calculateTransportSubtotal().toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -1175,20 +1136,20 @@ const CreateQuote = () => {
             <div className="space-y-4">
               <div className="flex justify-between">
                 <span>Accommodation Subtotal</span>
-                <span>{formatAmount(calculateAccommodationSubtotal())}</span>
+                <span>${calculateAccommodationSubtotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Activities Subtotal</span>
-                <span>{formatAmount(calculateActivitiesSubtotal())}</span>
+                <span>${calculateActivitiesSubtotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Transportation Subtotal</span>
-                <span>{formatAmount(calculateTransportSubtotal())}</span>
+                <span>${calculateTransportSubtotal().toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>{formatAmount(calculateSubtotal())}</span>
+                <span>${calculateSubtotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>
@@ -1196,16 +1157,16 @@ const CreateQuote = () => {
                    formData.markup.type === "fixed" ? "Markup (Fixed)" : 
                    "Markup (Cost Plus 85%)"}
                 </span>
-                <span>{formatAmount(calculateMarkup())}</span>
+                <span>${calculateMarkup().toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Grand Total</span>
-                <span>{formatAmount(calculateGrandTotal())}</span>
+                <span>${calculateGrandTotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-md text-blue-600 font-semibold bg-blue-50 p-3 rounded-md">
                 <span>Per Person Cost</span>
-                <span>{formatAmount(calculatePerPersonCost())}</span>
+                <span>${calculatePerPersonCost().toFixed(2)}</span>
               </div>
               
               <div className="flex justify-end gap-2 pt-4">
