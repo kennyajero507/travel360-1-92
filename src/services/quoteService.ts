@@ -93,11 +93,11 @@ const mockQuotes = {
       }
     ],
     markup: {
-      type: "percentage",
+      type: "percentage" as "percentage" | "fixed" | "cost-plus",
       value: 15
     },
     notes: "Client prefers beachfront accommodation and has interest in water activities.",
-    status: "sent",
+    status: "sent" as "draft" | "sent" | "approved" | "rejected",
     createdBy: "agent1",
     createdAt: "2023-12-15T08:30:00Z",
     updatedAt: "2023-12-16T14:22:00Z"
@@ -131,7 +131,15 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
         quote.createdAt = quote.updatedAt;
       }
       
-      mockQuotes[quote.id as keyof typeof mockQuotes] = quote as any;
+      // Ensure the markup type is one of the allowed values
+      if (quote.markup && typeof quote.markup.type === 'string') {
+        if (!['percentage', 'fixed', 'cost-plus'].includes(quote.markup.type)) {
+          quote.markup.type = 'percentage';
+        }
+      }
+      
+      // Using type assertion to fix the TypeScript error
+      mockQuotes[quote.id] = quote as any;
       resolve(quote);
     }, 700);
   });

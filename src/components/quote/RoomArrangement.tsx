@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { RoomArrangement } from "../../types/quote.types";
+import type { RoomArrangement as RoomArrangementType } from "../../types/quote.types";
 import { 
   Card, 
   CardContent, 
@@ -20,9 +20,9 @@ import { toast } from "sonner";
 import { Plus, Minus } from "lucide-react";
 
 interface RoomArrangementProps {
-  roomArrangements: RoomArrangement[];
+  roomArrangements: RoomArrangementType[];
   duration: number;
-  onRoomArrangementsChange: (arrangements: RoomArrangement[]) => void;
+  onRoomArrangementsChange: (arrangements: RoomArrangementType[]) => void;
   availableRoomTypes: string[];
 }
 
