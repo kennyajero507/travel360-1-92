@@ -187,7 +187,7 @@ const EditQuote = () => {
                             const otherHotelsArrangements = quote.roomArrangements.filter(arr => arr.hotelId !== hotel.id);
                             handleRoomArrangementsChange([...otherHotelsArrangements, ...arrangements]);
                           }}
-                          availableRoomTypes={hotel.roomTypes?.map(rt => rt.name) || ["Standard Room", "Deluxe Room", "Suite"]}
+                          availableRoomTypes={hotel.roomTypes?.map((rt: any) => rt.name) || ["Standard Room", "Deluxe Room", "Suite"]}
                           hotelId={hotel.id}
                         />
                       </div>
@@ -204,7 +204,7 @@ const EditQuote = () => {
               <div className="flex justify-center mt-4">
                 <Button 
                   variant="outline" 
-                  onClick={() => setSelectedHotelId("")}
+                  onClick={() => handleHotelSelection("")}
                   className="flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />

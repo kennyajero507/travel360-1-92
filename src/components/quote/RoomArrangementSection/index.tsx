@@ -12,7 +12,7 @@ interface RoomArrangementSectionProps {
   duration: number;
   onRoomArrangementsChange: (arrangements: RoomArrangement[]) => void;
   availableRoomTypes: string[];
-  hotelId?: string; // Optional hotel ID for multi-hotel support
+  hotelId?: string; // Added hotelId as an optional prop
 }
 
 const defaultRates: PersonTypeRates = {
