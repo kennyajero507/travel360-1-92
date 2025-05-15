@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import type { RoomArrangement as RoomArrangementType } from "../../types/quote.types";
 import { 
@@ -16,7 +17,7 @@ import {
   SelectValue 
 } from "../ui/select";
 import { toast } from "sonner";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Hotel } from "lucide-react";
 
 interface RoomArrangementProps {
   roomArrangements: RoomArrangementType[];
@@ -176,7 +177,10 @@ const RoomArrangement = ({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Room Arrangements</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Hotel className="h-5 w-5" />
+          Room Arrangements
+        </CardTitle>
         <Button type="button" variant="outline" size="sm" onClick={addRoomArrangement}>
           <Plus className="h-4 w-4 mr-2" />
           Add Room

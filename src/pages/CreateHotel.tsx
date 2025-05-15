@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { useRole } from "../contexts/RoleContext";
 import { toast } from "sonner";
-import { Building, Home } from "lucide-react";
+import { Building, Hotel } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Hotel } from "../types/hotel.types";
+import { Hotel as HotelType } from "../types/hotel.types";
 import HotelDetailsTab from "../components/hotel/HotelDetailsTab";
 import RoomManagementTab from "../components/hotel/RoomManagementTab";
 
@@ -21,7 +21,7 @@ const CreateHotel = () => {
     return null;
   }
 
-  const [hotelData, setHotelData] = useState<Hotel>({
+  const [hotelData, setHotelData] = useState<HotelType>({
     id: `hotel-${Date.now()}`,
     name: "",
     address: "",
@@ -58,7 +58,7 @@ const CreateHotel = () => {
     // Save to localStorage for later access
     try {
       const hotels = JSON.parse(localStorage.getItem('hotels') || '[]');
-      const existingIndex = hotels.findIndex((h: Hotel) => h.id === hotelData.id);
+      const existingIndex = hotels.findIndex((h: HotelType) => h.id === hotelData.id);
       
       if (existingIndex >= 0) {
         hotels[existingIndex] = {
@@ -146,7 +146,7 @@ const CreateHotel = () => {
             className="flex items-center gap-2"
             disabled={!hotelData.name}
           >
-            <Home className="h-4 w-4" />
+            <Hotel className="h-4 w-4" />
             Room Management
           </TabsTrigger>
         </TabsList>

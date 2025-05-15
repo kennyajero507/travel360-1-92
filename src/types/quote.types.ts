@@ -80,6 +80,7 @@ export interface QuoteData {
   };
   notes: string;
   status: "draft" | "sent" | "approved" | "rejected";
+  hotelId?: string; // Add hotel ID to connect room arrangements to a specific hotel
   createdBy?: string;
   createdAt?: string;
   updatedAt?: string;

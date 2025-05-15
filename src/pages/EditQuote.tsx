@@ -1,14 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Save, Download, Eye, Mail } from "lucide-react";
+import { Loader2, Save, Download, Eye, Mail, Hotel } from "lucide-react";
 import { useRole } from "../contexts/RoleContext";
 import { QuoteData } from "../types/quote.types";
-import { getQuoteById, saveQuote, updateQuoteStatus } from "../services/quoteService";
+import { getQuoteById, saveQuote } from "../services/quoteService";
 import RoomArrangement from "../components/quote/RoomArrangement";
 import { useQuoteCalculations } from "../hooks/useQuoteCalculations";
+import { useHotelsData } from "../hooks/useHotelsData";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 // Available room types
 const availableRoomTypes = [
@@ -24,10 +27,13 @@ const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
   const { role } = useRole();
+  const { hotels } = useHotelsData();
   
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedHotelId, setSelectedHotelId] = useState<string>("");
+  const [availableRoomTypesFromHotel, setAvailableRoomTypesFromHotel] = useState<string[]>(availableRoomTypes);
   
   // Load quote data
   useEffect(() => {
@@ -40,6 +46,10 @@ const EditQuote = () => {
         
         if (quoteData) {
           setQuote(quoteData);
+          // If there's a saved hotelId in the quote, select it
+          if (quoteData.hotelId) {
+            setSelectedHotelId(quoteData.hotelId);
+          }
         } else {
           toast.error("Quote not found");
           navigate("/quotes");
@@ -63,9 +73,35 @@ const EditQuote = () => {
       navigate("/");
     }
   }, [role, navigate]);
+
+  // Update available room types when hotel is selected
+  useEffect(() => {
+    if (selectedHotelId && hotels.length > 0) {
+      const selectedHotel = hotels.find(hotel => hotel.id === selectedHotelId);
+      if (selectedHotel && selectedHotel.roomTypes && selectedHotel.roomTypes.length > 0) {
+        const hotelRoomTypes = selectedHotel.roomTypes.map(roomType => roomType.name);
+        setAvailableRoomTypesFromHotel(hotelRoomTypes);
+      } else {
+        setAvailableRoomTypesFromHotel(availableRoomTypes);
+      }
+    } else {
+      setAvailableRoomTypesFromHotel(availableRoomTypes);
+    }
+  }, [selectedHotelId, hotels]);
   
   // Use the quote calculations hook if quote data is available
   const calculations = quote ? useQuoteCalculations(quote) : null;
+  
+  // Handle hotel selection
+  const handleHotelSelection = (hotelId: string) => {
+    setSelectedHotelId(hotelId);
+    if (quote) {
+      setQuote({
+        ...quote,
+        hotelId: hotelId
+      });
+    }
+  };
   
   // Handle room arrangements change
   const handleRoomArrangementsChange = (arrangements) => {
@@ -91,7 +127,10 @@ const EditQuote = () => {
     
     try {
       setSaving(true);
-      const savedQuote = await saveQuote(quote);
+      const savedQuote = await saveQuote({
+        ...quote,
+        hotelId: selectedHotelId
+      });
       toast.success("Quote saved successfully");
       setQuote(savedQuote);
     } catch (error) {
@@ -115,7 +154,8 @@ const EditQuote = () => {
         amount: calculations.calculateMarkup()
       },
       grandTotal: calculations.calculateGrandTotal(),
-      perPersonCost: calculations.calculatePerPersonCost()
+      perPersonCost: calculations.calculatePerPersonCost(),
+      hotelId: selectedHotelId
     }));
     
     // Open in new tab
@@ -217,17 +257,38 @@ const EditQuote = () => {
         </CardContent>
       </Card>
       
+      {/* Hotel Selection */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Hotel className="h-5 w-5 text-blue-600" />
+              <h2 className="text-xl font-semibold">Select Hotel</h2>
+            </div>
+            
+            <Select value={selectedHotelId} onValueChange={handleHotelSelection}>
+              <SelectTrigger className="w-full bg-white text-black">
+                <SelectValue placeholder="Select a hotel from inventory" />
+              </SelectTrigger>
+              <SelectContent>
+                {hotels.map(hotel => (
+                  <SelectItem key={hotel.id} value={hotel.id}>
+                    {hotel.name} - {hotel.category} ({hotel.destination})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Room Arrangements Section */}
       <RoomArrangement 
         roomArrangements={quote.roomArrangements}
         duration={quote.duration.nights}
         onRoomArrangementsChange={handleRoomArrangementsChange}
-        availableRoomTypes={availableRoomTypes}
+        availableRoomTypes={availableRoomTypesFromHotel}
       />
-      
-      {/* We'll continue with activities and transports from the original CreateQuote component */}
-      {/* To keep the file concise, we redirect back to the main CreateQuote page */}
-      {/* which already has all the functionality needed for activities, transports, etc. */}
       
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={() => navigate("/quotes")}>
