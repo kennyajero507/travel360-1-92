@@ -12,17 +12,8 @@ import QuoteHeader from "../components/quote/QuoteHeader";
 import ClientDetailsCard from "../components/quote/ClientDetailsCard";
 import HotelSelection from "../components/quote/HotelSelection";
 import RoomArrangement from "../components/quote/RoomArrangement";
+import HotelRoomList from "../components/quote/HotelRoomList";
 import QuoteActionButtons from "../components/quote/QuoteActionButtons";
-
-// Available room types
-const availableRoomTypes = [
-  "Single Room",
-  "Double Room",
-  "Twin Room", 
-  "Triple Room",
-  "Quad Room",
-  "Family Room"
-];
 
 const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -37,6 +28,8 @@ const EditQuote = () => {
     saving,
     selectedHotelId,
     handleHotelSelection,
+    populateRoomArrangementsFromHotel,
+    addRoomArrangement,
     handleRoomArrangementsChange,
     handleSave,
     previewQuote,
@@ -44,23 +37,35 @@ const EditQuote = () => {
     emailQuote
   } = useQuoteEditor(quoteId, role);
   
-  const [availableRoomTypesFromHotel, setAvailableRoomTypesFromHotel] = 
-    useState<string[]>(availableRoomTypes);
+  const [hotelRoomTypes, setHotelRoomTypes] = useState<any[]>([]);
+  const [selectedHotel, setSelectedHotel] = useState<any>(null);
   
-  // Update available room types when hotel is selected
+  // Update selected hotel when hotel ID changes
   useEffect(() => {
     if (selectedHotelId && hotels.length > 0) {
-      const selectedHotel = hotels.find(hotel => hotel.id === selectedHotelId);
-      if (selectedHotel && selectedHotel.roomTypes && selectedHotel.roomTypes.length > 0) {
-        const hotelRoomTypes = selectedHotel.roomTypes.map(roomType => roomType.name);
-        setAvailableRoomTypesFromHotel(hotelRoomTypes);
-      } else {
-        setAvailableRoomTypesFromHotel(availableRoomTypes);
-      }
+      const hotel = hotels.find(h => h.id === selectedHotelId);
+      setSelectedHotel(hotel || null);
     } else {
-      setAvailableRoomTypesFromHotel(availableRoomTypes);
+      setSelectedHotel(null);
     }
   }, [selectedHotelId, hotels]);
+
+  // Handle room types loaded from hotel selection
+  const handleRoomTypesLoaded = (roomTypes: any[]) => {
+    setHotelRoomTypes(roomTypes);
+    
+    // Populate room arrangements based on hotel room types
+    if (quote && roomTypes.length > 0) {
+      populateRoomArrangementsFromHotel(roomTypes, quote.duration.nights);
+    }
+  };
+  
+  // Handle adding a new room type to the quote
+  const handleAddRoom = (roomType: any) => {
+    if (quote) {
+      addRoomArrangement(roomType, quote.duration.nights);
+    }
+  };
   
   if (loading) {
     return <LoadingIndicator message="Loading quote data..." />;
@@ -107,15 +112,29 @@ const EditQuote = () => {
         selectedHotelId={selectedHotelId}
         hotels={hotels}
         onHotelSelection={handleHotelSelection}
+        onRoomTypesLoaded={handleRoomTypesLoaded}
       />
       
+      {/* Hotel Room Types List (only show when a hotel is selected) */}
+      {selectedHotelId && (
+        <HotelRoomList 
+          roomTypes={hotelRoomTypes}
+          selectedHotel={selectedHotel}
+          onAddRoom={handleAddRoom}
+        />
+      )}
+      
       {/* Room Arrangements Section */}
-      <RoomArrangement 
-        roomArrangements={quote.roomArrangements}
-        duration={quote.duration.nights}
-        onRoomArrangementsChange={handleRoomArrangementsChange}
-        availableRoomTypes={availableRoomTypesFromHotel}
-      />
+      {quote.roomArrangements.length > 0 && (
+        <RoomArrangement 
+          roomArrangements={quote.roomArrangements}
+          duration={quote.duration.nights}
+          onRoomArrangementsChange={handleRoomArrangementsChange}
+          availableRoomTypes={hotelRoomTypes.length > 0 
+            ? hotelRoomTypes.map(rt => rt.name) 
+            : ["Standard Room", "Deluxe Room", "Suite"]}
+        />
+      )}
       
       {/* Action Buttons */}
       <QuoteActionButtons

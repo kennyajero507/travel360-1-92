@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { Hotel } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { 
@@ -13,13 +14,27 @@ interface HotelSelectionProps {
   selectedHotelId: string;
   hotels: any[];
   onHotelSelection: (hotelId: string) => void;
+  onRoomTypesLoaded?: (roomTypes: any[]) => void;
 }
 
 const HotelSelection = ({ 
   selectedHotelId, 
   hotels, 
-  onHotelSelection 
+  onHotelSelection,
+  onRoomTypesLoaded
 }: HotelSelectionProps) => {
+  // When hotel selection changes, get its room types
+  useEffect(() => {
+    if (selectedHotelId && hotels.length > 0) {
+      const selectedHotel = hotels.find(hotel => hotel.id === selectedHotelId);
+      if (selectedHotel && selectedHotel.roomTypes && selectedHotel.roomTypes.length > 0) {
+        if (onRoomTypesLoaded) {
+          onRoomTypesLoaded(selectedHotel.roomTypes);
+        }
+      }
+    }
+  }, [selectedHotelId, hotels, onRoomTypesLoaded]);
+
   return (
     <Card>
       <CardContent className="pt-6">

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { QuoteData } from "../types/quote.types";
+import { QuoteData, RoomArrangement } from "../types/quote.types";
 import { getQuoteById, saveQuote } from "../services/quoteService";
 import { useQuoteCalculations } from "./useQuoteCalculations";
 
@@ -64,6 +64,80 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
         hotelId: hotelId
       });
     }
+  };
+  
+  // Create default room arrangement from hotel room type
+  const createDefaultRoomArrangement = (roomType: any, duration: number): RoomArrangement => {
+    return {
+      id: `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      roomType: roomType.name,
+      numRooms: 1,
+      adults: Math.min(2, roomType.maxOccupancy || 2),
+      childrenWithBed: 0,
+      childrenNoBed: 0,
+      infants: 0,
+      ratePerNight: {
+        adult: roomType.ratePerNight || 80,
+        childWithBed: roomType.ratePerNight * 0.75 || 60,
+        childNoBed: roomType.ratePerNight * 0.5 || 40,
+        infant: 0
+      },
+      nights: duration,
+      total: roomType.ratePerNight * duration || 80 * duration
+    };
+  };
+
+  // Populate room arrangements from hotel room types
+  const populateRoomArrangementsFromHotel = (hotelRoomTypes: any[], duration: number) => {
+    if (!hotelRoomTypes || hotelRoomTypes.length === 0 || !quote) return;
+    
+    // Create room arrangements from hotel room types
+    const newRoomArrangements = hotelRoomTypes.map(roomType => 
+      createDefaultRoomArrangement(roomType, duration)
+    );
+    
+    // Update the quote with new room arrangements
+    setQuote(prev => {
+      if (!prev) return prev;
+      
+      return {
+        ...prev,
+        roomArrangements: newRoomArrangements,
+        travelers: {
+          adults: newRoomArrangements.reduce((sum, arr) => sum + arr.adults * arr.numRooms, 0),
+          childrenWithBed: 0,
+          childrenNoBed: 0,
+          infants: 0
+        }
+      };
+    });
+  };
+  
+  // Add a new room arrangement
+  const addRoomArrangement = (roomType: any, duration: number) => {
+    if (!quote) return;
+    
+    const newArrangement = createDefaultRoomArrangement(roomType, duration);
+    
+    setQuote(prev => {
+      if (!prev) return prev;
+      
+      const updatedArrangements = [...prev.roomArrangements, newArrangement];
+      
+      // Calculate total travelers
+      const totalTravelers = {
+        adults: updatedArrangements.reduce((sum, arr) => sum + arr.adults * arr.numRooms, 0),
+        childrenWithBed: updatedArrangements.reduce((sum, arr) => sum + arr.childrenWithBed * arr.numRooms, 0),
+        childrenNoBed: updatedArrangements.reduce((sum, arr) => sum + arr.childrenNoBed * arr.numRooms, 0),
+        infants: updatedArrangements.reduce((sum, arr) => sum + arr.infants * arr.numRooms, 0)
+      };
+      
+      return {
+        ...prev,
+        roomArrangements: updatedArrangements,
+        travelers: totalTravelers
+      };
+    });
   };
   
   // Handle room arrangements change
@@ -144,6 +218,8 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
     selectedHotelId,
     calculations,
     handleHotelSelection,
+    populateRoomArrangementsFromHotel,
+    addRoomArrangement,
     handleRoomArrangementsChange,
     handleSave,
     previewQuote,
