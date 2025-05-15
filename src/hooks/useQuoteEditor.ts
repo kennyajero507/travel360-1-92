@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -58,18 +57,14 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
   // Handle hotel selection
   const handleHotelSelection = (hotelId: string) => {
     setSelectedHotelId(hotelId);
-    if (quote) {
-      setQuote({
-        ...quote,
-        hotelId: hotelId
-      });
-    }
+    // We no longer update the quote's hotelId here since we now support multiple hotels
   };
   
   // Create default room arrangement from hotel room type
-  const createDefaultRoomArrangement = (roomType: any, duration: number): RoomArrangement => {
+  const createDefaultRoomArrangement = (roomType: any, duration: number, hotelId: string): RoomArrangement => {
     return {
       id: `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      hotelId: hotelId, // Store which hotel this room arrangement belongs to
       roomType: roomType.name,
       numRooms: 1,
       adults: Math.min(2, roomType.maxOccupancy || 2),
@@ -89,35 +84,35 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
 
   // Populate room arrangements from hotel room types
   const populateRoomArrangementsFromHotel = (hotelRoomTypes: any[], duration: number) => {
-    if (!hotelRoomTypes || hotelRoomTypes.length === 0 || !quote) return;
+    if (!hotelRoomTypes || hotelRoomTypes.length === 0 || !quote || !selectedHotelId) return;
     
     // Create room arrangements from hotel room types
     const newRoomArrangements = hotelRoomTypes.map(roomType => 
-      createDefaultRoomArrangement(roomType, duration)
+      createDefaultRoomArrangement(roomType, duration, selectedHotelId)
     );
     
-    // Update the quote with new room arrangements
+    // Update the quote with new room arrangements - preserve arrangements for other hotels
     setQuote(prev => {
       if (!prev) return prev;
       
+      // Filter out any existing arrangements for this hotel
+      const otherHotelsArrangements = prev.roomArrangements.filter(arr => arr.hotelId !== selectedHotelId);
+      
+      const updatedArrangements = [...otherHotelsArrangements, ...newRoomArrangements];
+      
       return {
         ...prev,
-        roomArrangements: newRoomArrangements,
-        travelers: {
-          adults: newRoomArrangements.reduce((sum, arr) => sum + arr.adults * arr.numRooms, 0),
-          childrenWithBed: 0,
-          childrenNoBed: 0,
-          infants: 0
-        }
+        roomArrangements: updatedArrangements,
+        travelers: calculations?.calculateTotalTravelers(updatedArrangements) || prev.travelers
       };
     });
   };
   
   // Add a new room arrangement
   const addRoomArrangement = (roomType: any, duration: number) => {
-    if (!quote) return;
+    if (!quote || !selectedHotelId) return;
     
-    const newArrangement = createDefaultRoomArrangement(roomType, duration);
+    const newArrangement = createDefaultRoomArrangement(roomType, duration, selectedHotelId);
     
     setQuote(prev => {
       if (!prev) return prev;
@@ -125,12 +120,7 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
       const updatedArrangements = [...prev.roomArrangements, newArrangement];
       
       // Calculate total travelers
-      const totalTravelers = {
-        adults: updatedArrangements.reduce((sum, arr) => sum + arr.adults * arr.numRooms, 0),
-        childrenWithBed: updatedArrangements.reduce((sum, arr) => sum + arr.childrenWithBed * arr.numRooms, 0),
-        childrenNoBed: updatedArrangements.reduce((sum, arr) => sum + arr.childrenNoBed * arr.numRooms, 0),
-        infants: updatedArrangements.reduce((sum, arr) => sum + arr.infants * arr.numRooms, 0)
-      };
+      const totalTravelers = calculations?.calculateTotalTravelers(updatedArrangements) || prev.travelers;
       
       return {
         ...prev,
@@ -141,19 +131,19 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
   };
   
   // Handle room arrangements change
-  const handleRoomArrangementsChange = (arrangements) => {
+  const handleRoomArrangementsChange = (arrangements: RoomArrangement[]) => {
     if (!quote) return;
     
     setQuote(prev => {
       if (!prev) return prev;
       
       // Calculate total travelers from room arrangements
-      const totalTravelers = calculations?.calculateTotalTravelers(arrangements);
+      const totalTravelers = calculations?.calculateTotalTravelers(arrangements) || prev.travelers;
       
       return {
         ...prev,
         roomArrangements: arrangements,
-        travelers: totalTravelers || prev.travelers
+        travelers: totalTravelers
       };
     });
   };
@@ -164,10 +154,8 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
     
     try {
       setSaving(true);
-      const savedQuote = await saveQuote({
-        ...quote,
-        hotelId: selectedHotelId
-      });
+      // We now save all room arrangements with their respective hotelIds
+      const savedQuote = await saveQuote(quote);
       toast.success("Quote saved successfully");
       setQuote(savedQuote);
     } catch (error) {

@@ -1,12 +1,10 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "../../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { Plus } from "lucide-react";
 import { toast } from "../../ui/use-toast";
 import { RoomArrangement, PersonTypeRates } from "../../../types/quote.types";
-import ArrangementCard from "./ArrangementCard";
 import TotalSummary from "./TotalSummary";
 
 interface RoomArrangementSectionProps {
@@ -14,6 +12,7 @@ interface RoomArrangementSectionProps {
   duration: number;
   onRoomArrangementsChange: (arrangements: RoomArrangement[]) => void;
   availableRoomTypes: string[];
+  hotelId?: string; // Optional hotel ID for multi-hotel support
 }
 
 const defaultRates: PersonTypeRates = {
@@ -37,9 +36,15 @@ const RoomArrangementSection = ({
   roomArrangements,
   duration,
   onRoomArrangementsChange,
-  availableRoomTypes
+  availableRoomTypes,
+  hotelId
 }: RoomArrangementSectionProps) => {
   const [arrangements, setArrangements] = useState<RoomArrangement[]>(roomArrangements);
+
+  useEffect(() => {
+    // Update local state when props change
+    setArrangements(roomArrangements);
+  }, [roomArrangements]);
 
   useEffect(() => {
     // Update totals when duration changes
@@ -67,6 +72,7 @@ const RoomArrangementSection = ({
     const newId = `room-${Date.now()}`;
     const newArrangement: RoomArrangement = {
       id: newId,
+      hotelId: hotelId || "", // Set the hotel ID if provided
       roomType: availableRoomTypes[0] || "Double Room",
       numRooms: 1,
       adults: 2,

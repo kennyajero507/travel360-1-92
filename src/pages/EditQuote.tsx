@@ -15,7 +15,7 @@ import RoomArrangementSection from "../components/quote/RoomArrangementSection";
 import HotelRoomList from "../components/quote/HotelRoomList";
 import QuoteActionButtons from "../components/quote/QuoteActionButtons";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Hotel } from "lucide-react";
+import { Plus, Hotel } from "lucide-react";
 
 const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -40,6 +40,7 @@ const EditQuote = () => {
   } = useQuoteEditor(quoteId, role);
   
   const [hotelRoomTypes, setHotelRoomTypes] = useState<any[]>([]);
+  const [selectedHotels, setSelectedHotels] = useState<any[]>([]);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
   
   // Update selected hotel when hotel ID changes
@@ -47,6 +48,11 @@ const EditQuote = () => {
     if (selectedHotelId && hotels.length > 0) {
       const hotel = hotels.find(h => h.id === selectedHotelId);
       setSelectedHotel(hotel || null);
+      
+      // Add to selected hotels list if not already present
+      if (hotel && !selectedHotels.some(h => h.id === hotel.id)) {
+        setSelectedHotels(prev => [...prev, hotel]);
+      }
     } else {
       setSelectedHotel(null);
     }
@@ -66,6 +72,18 @@ const EditQuote = () => {
   const handleAddRoom = (roomType: any) => {
     if (quote) {
       addRoomArrangement(roomType, quote.duration.nights);
+    }
+  };
+  
+  // Remove a hotel from the selected hotels list
+  const removeHotel = (hotelId: string) => {
+    setSelectedHotels(prev => prev.filter(h => h.id !== hotelId));
+    // Also remove all room arrangements for this hotel
+    if (quote) {
+      const updatedRoomArrangements = quote.roomArrangements.filter(
+        arr => arr.hotelId !== hotelId
+      );
+      handleRoomArrangementsChange(updatedRoomArrangements);
     }
   };
   
@@ -117,7 +135,7 @@ const EditQuote = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Hotel Selection */}
-          <div className="mb-4">
+          <div className="mb-6">
             <h3 className="text-md font-medium mb-4">Select Hotel</h3>
             <HotelSelection
               selectedHotelId={selectedHotelId}
@@ -127,30 +145,72 @@ const EditQuote = () => {
             />
           </div>
           
-          {/* Hotel Room Types List (only show when a hotel is selected) */}
-          {selectedHotelId && (
-            <div className="mb-4">
-              <h3 className="text-md font-medium mb-4">Available Room Types</h3>
-              <HotelRoomList 
-                roomTypes={hotelRoomTypes}
-                selectedHotel={selectedHotel}
-                onAddRoom={handleAddRoom}
-              />
-            </div>
-          )}
-          
-          {/* Room Arrangements Section */}
-          {quote.roomArrangements.length > 0 && (
-            <div>
-              <h3 className="text-md font-medium mb-4">Room Arrangements</h3>
-              <RoomArrangementSection 
-                roomArrangements={quote.roomArrangements}
-                duration={quote.duration.nights}
-                onRoomArrangementsChange={handleRoomArrangementsChange}
-                availableRoomTypes={hotelRoomTypes.length > 0 
-                  ? hotelRoomTypes.map(rt => rt.name) 
-                  : ["Standard Room", "Deluxe Room", "Suite"]}
-              />
+          {/* Selected Hotels List */}
+          {selectedHotels.length > 0 && (
+            <div className="space-y-6">
+              {selectedHotels.map(hotel => (
+                <Card key={hotel.id} className="border border-gray-200">
+                  <CardHeader className="bg-gray-50 flex flex-row justify-between items-center py-3">
+                    <div>
+                      <h4 className="text-md font-medium">{hotel.name}</h4>
+                      <p className="text-sm text-gray-500">{hotel.category} • {hotel.destination}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => removeHotel(hotel.id)}
+                      className="text-red-600"
+                    >
+                      Remove Hotel
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    {/* Hotel Room Types List */}
+                    <div className="mb-4">
+                      <h3 className="text-md font-medium mb-4">Available Room Types</h3>
+                      <HotelRoomList 
+                        roomTypes={hotel.roomTypes || []}
+                        selectedHotel={hotel}
+                        onAddRoom={handleAddRoom}
+                      />
+                    </div>
+                    
+                    {/* Room Arrangements Section for this hotel */}
+                    {quote.roomArrangements.filter(arr => arr.hotelId === hotel.id).length > 0 ? (
+                      <div>
+                        <h3 className="text-md font-medium mb-4">Room Arrangements</h3>
+                        <RoomArrangementSection 
+                          roomArrangements={quote.roomArrangements.filter(arr => arr.hotelId === hotel.id)}
+                          duration={quote.duration.nights}
+                          onRoomArrangementsChange={(arrangements) => {
+                            // Preserve arrangements for other hotels
+                            const otherHotelsArrangements = quote.roomArrangements.filter(arr => arr.hotelId !== hotel.id);
+                            handleRoomArrangementsChange([...otherHotelsArrangements, ...arrangements]);
+                          }}
+                          availableRoomTypes={hotel.roomTypes?.map(rt => rt.name) || ["Standard Room", "Deluxe Room", "Suite"]}
+                          hotelId={hotel.id}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 border border-dashed border-gray-200 rounded-md">
+                        <p className="text-gray-500">No room arrangements added yet</p>
+                        <p className="text-sm text-gray-400 mt-2">Click on "Add Room" above to add room arrangements</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+              
+              <div className="flex justify-center mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedHotelId("")}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Another Hotel
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

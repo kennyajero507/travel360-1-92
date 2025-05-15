@@ -8,6 +8,7 @@ export interface PersonTypeRates {
 
 export interface RoomArrangement {
   id: string;
+  hotelId?: string;      // Added hotelId to link a room arrangement to a specific hotel
   roomType: string;
   numRooms: number;
   adults: number;
@@ -80,7 +81,7 @@ export interface QuoteData {
   };
   notes: string;
   status: "draft" | "sent" | "approved" | "rejected";
-  hotelId?: string; // Add hotel ID to connect room arrangements to a specific hotel
+  hotelId?: string; // We'll keep this for backward compatibility
   createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
