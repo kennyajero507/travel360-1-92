@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import type { RoomArrangement as RoomArrangementType } from "../../types/quote.types";
 import { 
@@ -68,7 +67,7 @@ const RoomArrangement = ({
   const addRoomArrangement = () => {
     const newRoomId = `room-${roomArrangements.length + 1}`;
     
-    const newRoom: RoomArrangement = {
+    const newRoom: RoomArrangementType = {
       id: newRoomId,
       roomType: availableRoomTypes[0] || "Double Room",
       numRooms: 1,
