@@ -17,74 +17,11 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
     name: initialData.name || "",
     location: initialData.location || "",
     starRating: initialData.starRating || "",
-    
-    // Booking Details
-    checkInDate: initialData.checkInDate || "",
-    checkOutDate: initialData.checkOutDate || "",
-    nights: initialData.nights || 0,
-    
-    // Room Details
-    roomType: initialData.roomType || "Double",
-    adultOccupancy: initialData.adultOccupancy || 2,
-    childOccupancy: initialData.childOccupancy || 0,
-    ratePerNight: initialData.ratePerNight || 0,
-    numberOfRooms: initialData.numberOfRooms || 1,
-    totalCost: initialData.totalCost || 0
+    category: initialData.category || "",
+    address: initialData.address || "",
+    destination: initialData.destination || "",
   });
 
-  // Calculate number of nights when check-in/check-out dates change
-  const calculateNights = (checkIn: string, checkOut: string) => {
-    if (!checkIn || !checkOut) return 0;
-    
-    const checkInDate = new Date(checkIn);
-    const checkOutDate = new Date(checkOut);
-    
-    // Calculate the time difference in milliseconds
-    const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
-    
-    // Convert milliseconds to days
-    return Math.ceil(timeDiff / (1000 * 3600 * 24));
-  };
-  
-  // Calculate total cost when relevant fields change
-  const calculateTotalCost = (rate: number, nights: number, rooms: number) => {
-    return rate * nights * rooms;
-  };
-  
-  // Handle date changes and recalculate nights
-  const handleDateChange = (field: string, value: string) => {
-    const newData = { ...formData, [field]: value };
-    
-    if (field === 'checkInDate' || field === 'checkOutDate') {
-      const nights = calculateNights(
-        field === 'checkInDate' ? value : formData.checkInDate,
-        field === 'checkOutDate' ? value : formData.checkOutDate
-      );
-      
-      newData.nights = nights;
-      newData.totalCost = calculateTotalCost(
-        newData.ratePerNight, 
-        nights, 
-        newData.numberOfRooms
-      );
-    }
-    
-    setFormData(newData);
-  };
-  
-  // Handle changes to rate, number of rooms
-  const handleCostFactorChange = (field: string, value: number) => {
-    const newData = { ...formData, [field]: value };
-    
-    newData.totalCost = calculateTotalCost(
-      field === 'ratePerNight' ? value : newData.ratePerNight,
-      newData.nights,
-      field === 'numberOfRooms' ? value : newData.numberOfRooms
-    );
-    
-    setFormData(newData);
-  };
-  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -110,11 +47,23 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
           </div>
           
           <div>
-            <Label htmlFor="location">Hotel Location / Destination</Label>
+            <Label htmlFor="address">Hotel Address</Label>
             <Input
-              id="location"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Full address"
+              required
+              className="bg-white text-black"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="destination">Destination</Label>
+            <Input
+              id="destination"
+              value={formData.destination}
+              onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
               placeholder="City, Country"
               required
               className="bg-white text-black"
@@ -122,7 +71,26 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
           </div>
           
           <div>
-            <Label htmlFor="starRating">Hotel Star Rating (Optional)</Label>
+            <Label htmlFor="category">Hotel Category</Label>
+            <Select 
+              value={formData.category} 
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger id="category" className="bg-white text-black">
+                <SelectValue placeholder="Select hotel category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Luxury">Luxury</SelectItem>
+                <SelectItem value="Business">Business</SelectItem>
+                <SelectItem value="Budget">Budget</SelectItem>
+                <SelectItem value="Resort">Resort</SelectItem>
+                <SelectItem value="Boutique">Boutique</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="starRating">Hotel Star Rating</Label>
             <Select 
               value={formData.starRating} 
               onValueChange={(value) => setFormData({ ...formData, starRating: value })}
@@ -138,151 +106,6 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
                 <SelectItem value="5-Star">5-Star</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-blue-600">Booking Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="checkInDate">Check-in Date</Label>
-              <Input
-                id="checkInDate"
-                type="date"
-                value={formData.checkInDate}
-                onChange={(e) => handleDateChange('checkInDate', e.target.value)}
-                required
-                className="bg-white text-black"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="checkOutDate">Check-out Date</Label>
-              <Input
-                id="checkOutDate"
-                type="date"
-                value={formData.checkOutDate}
-                onChange={(e) => handleDateChange('checkOutDate', e.target.value)}
-                required
-                className="bg-white text-black"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="nights">Number of Nights</Label>
-            <Input
-              id="nights"
-              type="number"
-              value={formData.nights}
-              readOnly
-              className="bg-white text-gray-500"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Auto-calculated from check-in/check-out dates
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-blue-600">Room Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="roomType">Room Type</Label>
-              <Select 
-                value={formData.roomType} 
-                onValueChange={(value) => setFormData({ ...formData, roomType: value })}
-              >
-                <SelectTrigger id="roomType" className="bg-white text-black">
-                  <SelectValue placeholder="Select room type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Single">Single</SelectItem>
-                  <SelectItem value="Double">Double</SelectItem>
-                  <SelectItem value="Twin">Twin</SelectItem>
-                  <SelectItem value="Family">Family</SelectItem>
-                  <SelectItem value="Suite">Suite</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="numberOfRooms">Number of Rooms</Label>
-              <Input
-                id="numberOfRooms"
-                type="number"
-                min="1"
-                value={formData.numberOfRooms}
-                onChange={(e) => handleCostFactorChange('numberOfRooms', parseInt(e.target.value))}
-                required
-                className="bg-white text-black"
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="adultOccupancy">Number of Adults</Label>
-              <Input
-                id="adultOccupancy"
-                type="number"
-                min="1"
-                value={formData.adultOccupancy}
-                onChange={(e) => setFormData({ ...formData, adultOccupancy: parseInt(e.target.value) })}
-                required
-                className="bg-white text-black"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="childOccupancy">Number of Children</Label>
-              <Input
-                id="childOccupancy"
-                type="number"
-                min="0"
-                value={formData.childOccupancy}
-                onChange={(e) => setFormData({ ...formData, childOccupancy: parseInt(e.target.value) })}
-                className="bg-white text-black"
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="ratePerNight">Rate per Night (Base Cost)</Label>
-              <Input
-                id="ratePerNight"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.ratePerNight}
-                onChange={(e) => handleCostFactorChange('ratePerNight', parseFloat(e.target.value))}
-                required
-                className="bg-white text-black"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="totalCost">Total Room Cost</Label>
-              <Input
-                id="totalCost"
-                type="number"
-                value={formData.totalCost}
-                readOnly
-                className="bg-white text-gray-500"
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Rate × Nights × Number of Rooms
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>
