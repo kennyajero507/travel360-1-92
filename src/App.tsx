@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Quotes from "./pages/Quotes";
 import CreateQuote from "./pages/CreateQuote";
+import EditQuote from "./pages/EditQuote"; // Import the new EditQuote component
 import QuotePreview from "./pages/QuotePreview";
 import Clients from "./pages/Clients";
 import Settings from "./pages/Settings";
@@ -33,7 +34,7 @@ function App() {
               <Route path="quotes" element={<Quotes />} />
               <Route path="quotes/create" element={<CreateQuote />} />
               <Route path="quotes/create/:inquiryId" element={<CreateQuote />} />
-              <Route path="quotes/edit/:quoteId" element={<CreateQuote />} />
+              <Route path="quotes/edit/:quoteId" element={<EditQuote />} /> {/* Use new EditQuote component */}
               <Route path="quote-preview" element={<QuotePreview />} />
               <Route path="clients" element={<Clients />} />
               <Route path="inquiries" element={<Inquiries />} />
