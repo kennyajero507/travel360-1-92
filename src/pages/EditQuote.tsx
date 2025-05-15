@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -11,7 +10,7 @@ import LoadingIndicator from "../components/quote/LoadingIndicator";
 import QuoteHeader from "../components/quote/QuoteHeader";
 import ClientDetailsCard from "../components/quote/ClientDetailsCard";
 import HotelSelection from "../components/quote/HotelSelection";
-import RoomArrangement from "../components/quote/RoomArrangement";
+import RoomArrangementSection from "../components/quote/RoomArrangementSection";
 import HotelRoomList from "../components/quote/HotelRoomList";
 import QuoteActionButtons from "../components/quote/QuoteActionButtons";
 
@@ -126,7 +125,7 @@ const EditQuote = () => {
       
       {/* Room Arrangements Section */}
       {quote.roomArrangements.length > 0 && (
-        <RoomArrangement 
+        <RoomArrangementSection 
           roomArrangements={quote.roomArrangements}
           duration={quote.duration.nights}
           onRoomArrangementsChange={handleRoomArrangementsChange}
