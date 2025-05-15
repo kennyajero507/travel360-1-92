@@ -1,7 +1,5 @@
 
 import { useEffect } from "react";
-import { Hotel } from "lucide-react";
-import { Card, CardContent } from "../ui/card";
 import { 
   Select,
   SelectContent,
@@ -36,29 +34,20 @@ const HotelSelection = ({
   }, [selectedHotelId, hotels, onRoomTypesLoaded]);
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Hotel className="h-5 w-5 text-blue-600" />
-            <h2 className="text-xl font-semibold">Select Hotel</h2>
-          </div>
-          
-          <Select value={selectedHotelId} onValueChange={onHotelSelection}>
-            <SelectTrigger className="w-full bg-white text-black">
-              <SelectValue placeholder="Select a hotel from inventory" />
-            </SelectTrigger>
-            <SelectContent>
-              {hotels.map(hotel => (
-                <SelectItem key={hotel.id} value={hotel.id}>
-                  {hotel.name} - {hotel.category} ({hotel.destination})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="w-full">
+      <Select value={selectedHotelId} onValueChange={onHotelSelection}>
+        <SelectTrigger className="w-full bg-white text-black">
+          <SelectValue placeholder="Select a hotel from inventory" />
+        </SelectTrigger>
+        <SelectContent>
+          {hotels.map(hotel => (
+            <SelectItem key={hotel.id} value={hotel.id}>
+              {hotel.name} - {hotel.category} ({hotel.destination})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
 

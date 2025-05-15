@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -13,6 +14,8 @@ import HotelSelection from "../components/quote/HotelSelection";
 import RoomArrangementSection from "../components/quote/RoomArrangementSection";
 import HotelRoomList from "../components/quote/HotelRoomList";
 import QuoteActionButtons from "../components/quote/QuoteActionButtons";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Hotel } from "lucide-react";
 
 const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -106,34 +109,52 @@ const EditQuote = () => {
         status={quote.status}
       />
       
-      {/* Hotel Selection */}
-      <HotelSelection
-        selectedHotelId={selectedHotelId}
-        hotels={hotels}
-        onHotelSelection={handleHotelSelection}
-        onRoomTypesLoaded={handleRoomTypesLoaded}
-      />
-      
-      {/* Hotel Room Types List (only show when a hotel is selected) */}
-      {selectedHotelId && (
-        <HotelRoomList 
-          roomTypes={hotelRoomTypes}
-          selectedHotel={selectedHotel}
-          onAddRoom={handleAddRoom}
-        />
-      )}
-      
-      {/* Room Arrangements Section */}
-      {quote.roomArrangements.length > 0 && (
-        <RoomArrangementSection 
-          roomArrangements={quote.roomArrangements}
-          duration={quote.duration.nights}
-          onRoomArrangementsChange={handleRoomArrangementsChange}
-          availableRoomTypes={hotelRoomTypes.length > 0 
-            ? hotelRoomTypes.map(rt => rt.name) 
-            : ["Standard Room", "Deluxe Room", "Suite"]}
-        />
-      )}
+      {/* Hotel & Room Arrangements Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <Hotel className="h-5 w-5 text-blue-600" />
+          <CardTitle>Hotel & Room Arrangements</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Hotel Selection */}
+          <div className="mb-4">
+            <h3 className="text-md font-medium mb-4">Select Hotel</h3>
+            <HotelSelection
+              selectedHotelId={selectedHotelId}
+              hotels={hotels}
+              onHotelSelection={handleHotelSelection}
+              onRoomTypesLoaded={handleRoomTypesLoaded}
+            />
+          </div>
+          
+          {/* Hotel Room Types List (only show when a hotel is selected) */}
+          {selectedHotelId && (
+            <div className="mb-4">
+              <h3 className="text-md font-medium mb-4">Available Room Types</h3>
+              <HotelRoomList 
+                roomTypes={hotelRoomTypes}
+                selectedHotel={selectedHotel}
+                onAddRoom={handleAddRoom}
+              />
+            </div>
+          )}
+          
+          {/* Room Arrangements Section */}
+          {quote.roomArrangements.length > 0 && (
+            <div>
+              <h3 className="text-md font-medium mb-4">Room Arrangements</h3>
+              <RoomArrangementSection 
+                roomArrangements={quote.roomArrangements}
+                duration={quote.duration.nights}
+                onRoomArrangementsChange={handleRoomArrangementsChange}
+                availableRoomTypes={hotelRoomTypes.length > 0 
+                  ? hotelRoomTypes.map(rt => rt.name) 
+                  : ["Standard Room", "Deluxe Room", "Suite"]}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Action Buttons */}
       <QuoteActionButtons
