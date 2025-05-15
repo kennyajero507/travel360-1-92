@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -775,13 +774,21 @@ const CreateQuote = () => {
           </CardContent>
         </Card>
 
-        {/* Room Arrangements Section */}
-        <RoomArrangementSection 
-          roomArrangements={formData.roomArrangements}
-          duration={formData.duration.nights}
-          onRoomArrangementsChange={handleRoomArrangementsChange}
-          availableRoomTypes={availableRoomTypes}
-        />
+        {/* Hotel Section (Renamed from Room Arrangements) */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Hotel</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Room Arrangements Section */}
+            <RoomArrangementSection 
+              roomArrangements={formData.roomArrangements}
+              duration={formData.duration.nights}
+              onRoomArrangementsChange={handleRoomArrangementsChange}
+              availableRoomTypes={availableRoomTypes}
+            />
+          </CardContent>
+        </Card>
 
         {/* Activities Section */}
         <Card>

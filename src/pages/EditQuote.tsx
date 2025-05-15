@@ -109,11 +109,11 @@ const EditQuote = () => {
         status={quote.status}
       />
       
-      {/* Hotel & Room Arrangements Section */}
+      {/* Hotel Section */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
           <Hotel className="h-5 w-5 text-blue-600" />
-          <CardTitle>Hotel & Room Arrangements</CardTitle>
+          <CardTitle>Hotel</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Hotel Selection */}
