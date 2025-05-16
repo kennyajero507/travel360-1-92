@@ -18,12 +18,11 @@ import { useRole } from "../contexts/RoleContext";
 interface InquiryFormData {
   client: string;
   contact: string;
-  mobile: string; // Added mobile field
+  mobile: string;
   destination: string;
   startDate: string;
   endDate: string;
-  numRooms: number; // Added number of rooms
-  roomType: string; // Added room type
+  numRooms: number;
   travelers: {
     adults: number;
     children: number; 
@@ -32,7 +31,7 @@ interface InquiryFormData {
   budget: number;
   priority: string;
   preferences: string;
-  assignedAgent: string; // Added assigned agent
+  assignedAgent: string;
 }
 
 const CreateInquiry = () => {
@@ -47,7 +46,6 @@ const CreateInquiry = () => {
     startDate: "",
     endDate: "",
     numRooms: 1,
-    roomType: "Standard",
     travelers: {
       adults: 2,
       children: 0,
@@ -300,26 +298,6 @@ const CreateInquiry = () => {
                   onChange={(e) => setFormData({ ...formData, numRooms: parseInt(e.target.value) })}
                   className="bg-white text-black"
                 />
-              </div>
-              <div>
-                <label htmlFor="roomType" className="block text-sm font-medium mb-2">
-                  Room Type
-                </label>
-                <Select
-                  value={formData.roomType}
-                  onValueChange={(value) => setFormData({ ...formData, roomType: value })}
-                >
-                  <SelectTrigger id="roomType" className="bg-white text-black">
-                    <SelectValue placeholder="Select room type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Standard">Standard</SelectItem>
-                    <SelectItem value="Deluxe">Deluxe</SelectItem>
-                    <SelectItem value="Suite">Suite</SelectItem>
-                    <SelectItem value="Family">Family</SelectItem>
-                    <SelectItem value="Villa">Villa</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div>

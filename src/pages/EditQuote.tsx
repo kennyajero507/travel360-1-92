@@ -15,7 +15,7 @@ import RoomArrangementSection from "../components/quote/RoomArrangementSection";
 import HotelRoomList from "../components/quote/HotelRoomList";
 import QuoteActionButtons from "../components/quote/QuoteActionButtons";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Plus, Hotel } from "lucide-react";
+import { Plus, Hotel, Bus, MapPin, Compass } from "lucide-react";
 
 const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -213,6 +213,45 @@ const EditQuote = () => {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+      
+      {/* Transport Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <Bus className="h-5 w-5 text-blue-600" />
+          <CardTitle>Transport</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-10 border border-dashed border-gray-200 rounded-md">
+            <p className="text-gray-500">Transport options will be configured here</p>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Transfer Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <MapPin className="h-5 w-5 text-blue-600" />
+          <CardTitle>Transfer</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-10 border border-dashed border-gray-200 rounded-md">
+            <p className="text-gray-500">Transfer options will be configured here</p>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Activities Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2">
+          <Compass className="h-5 w-5 text-blue-600" />
+          <CardTitle>Activities</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-10 border border-dashed border-gray-200 rounded-md">
+            <p className="text-gray-500">Activities will be configured here</p>
+          </div>
         </CardContent>
       </Card>
       
