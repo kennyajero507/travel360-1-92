@@ -13,6 +13,7 @@ interface RoomArrangementSectionProps {
   duration: number;
   onRoomArrangementsChange: (arrangements: RoomArrangement[]) => void;
   availableRoomTypes: string[];
+  hotelId?: string; // Added hotelId as an optional prop
 }
 
 const defaultRates: PersonTypeRates = {
@@ -36,7 +37,8 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
   roomArrangements,
   duration,
   onRoomArrangementsChange,
-  availableRoomTypes
+  availableRoomTypes,
+  hotelId
 }) => {
   const [arrangements, setArrangements] = useState<RoomArrangement[]>(roomArrangements);
 
@@ -66,6 +68,7 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
     const newId = `room-${Date.now()}`;
     const newArrangement: RoomArrangement = {
       id: newId,
+      hotelId: hotelId || "", // Use the hotelId prop if provided
       roomType: availableRoomTypes[0] || "Double Room",
       numRooms: 1,
       adults: 2,
