@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -127,7 +126,7 @@ const EditQuote = () => {
         status={quote.status}
       />
       
-      {/* Hotel Section */}
+      {/* 1. Hotel Section */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
           <Hotel className="h-5 w-5 text-blue-600" />
@@ -216,20 +215,20 @@ const EditQuote = () => {
         </CardContent>
       </Card>
       
-      {/* Transport Section */}
+      {/* 2. Transportation Section */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
           <Bus className="h-5 w-5 text-blue-600" />
-          <CardTitle>Transport</CardTitle>
+          <CardTitle>Transportation</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-10 border border-dashed border-gray-200 rounded-md">
-            <p className="text-gray-500">Transport options will be configured here</p>
+            <p className="text-gray-500">Transportation options will be configured here</p>
           </div>
         </CardContent>
       </Card>
       
-      {/* Transfer Section */}
+      {/* 3. Transfer Section */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
           <MapPin className="h-5 w-5 text-blue-600" />
@@ -242,7 +241,7 @@ const EditQuote = () => {
         </CardContent>
       </Card>
       
-      {/* Activities Section */}
+      {/* 4. Activities Section */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
           <Compass className="h-5 w-5 text-blue-600" />

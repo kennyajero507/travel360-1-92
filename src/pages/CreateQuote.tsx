@@ -774,7 +774,9 @@ const CreateQuote = () => {
           </CardContent>
         </Card>
 
-        {/* Hotel Section (Renamed from Room Arrangements) */}
+        {/* SECTION ORDERING CHANGED: First Hotel, then Transportation, Transfer, and Activities */}
+        
+        {/* 1. Hotel Section (Renamed from Room Arrangements) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Hotel</CardTitle>
@@ -790,142 +792,7 @@ const CreateQuote = () => {
           </CardContent>
         </Card>
 
-        {/* Activities Section */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Activities</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addActivity}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Activity
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {formData.activities.map((item, index) => (
-              <div key={item.id} className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Activity {index + 1}</h4>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeActivity(item.id)}
-                  >
-                    <Minus className="h-4 w-4" />
-                    <span className="sr-only">Remove</span>
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Activity Name</label>
-                    <Input
-                      value={item.name}
-                      onChange={(e) => updateActivity(item.id, "name", e.target.value)}
-                      placeholder="Activity name"
-                      className="bg-white text-black"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Description</label>
-                    <Input
-                      value={item.description}
-                      onChange={(e) => updateActivity(item.id, "description", e.target.value)}
-                      placeholder="Brief description"
-                      className="bg-white text-black"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <h5 className="text-sm font-medium mb-2">Per Person Rates</h5>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Adult Rate</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.costPerPerson.adult}
-                        onChange={(e) => updateActivity(item.id, "cost_adult", parseFloat(e.target.value) || 0)}
-                        className="bg-white text-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Child Rate</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.costPerPerson.child}
-                        onChange={(e) => updateActivity(item.id, "cost_child", parseFloat(e.target.value) || 0)}
-                        className="bg-white text-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Infant Rate</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.costPerPerson.infant}
-                        onChange={(e) => updateActivity(item.id, "cost_infant", parseFloat(e.target.value) || 0)}
-                        className="bg-white text-black"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h5 className="text-sm font-medium mb-2">Participants</h5>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Adults</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={item.included.adults}
-                        onChange={(e) => updateActivity(item.id, "included_adults", parseInt(e.target.value) || 0)}
-                        className="bg-white text-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Children</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={item.included.children}
-                        onChange={(e) => updateActivity(item.id, "included_children", parseInt(e.target.value) || 0)}
-                        className="bg-white text-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Infants</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={item.included.infants}
-                        onChange={(e) => updateActivity(item.id, "included_infants", parseInt(e.target.value) || 0)}
-                        className="bg-white text-black"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
-                  <span className="text-sm">
-                    {item.name || "Activity"}: {item.included.adults} adults, {item.included.children} children, {item.included.infants} infants
-                  </span>
-                  <span className="font-medium">${item.total.toFixed(2)}</span>
-                </div>
-              </div>
-            ))}
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-sm font-medium">Activities Subtotal</span>
-              <span className="font-medium">${calculateActivitiesSubtotal().toFixed(2)}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Transportation Section */}
+        {/* 2. Transportation Section */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Transportation</CardTitle>
@@ -1066,6 +933,157 @@ const CreateQuote = () => {
             <div className="flex justify-between items-center pt-2">
               <span className="text-sm font-medium">Transportation Subtotal</span>
               <span className="font-medium">${calculateTransportSubtotal().toFixed(2)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 3. Transfer Section - Added new section */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Transfer</CardTitle>
+            <Button type="button" variant="outline" size="sm" onClick={() => toast.info("Transfer functionality coming soon")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Transfer
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-10 border border-dashed border-gray-200 rounded-md">
+              <p className="text-gray-500">Transfer options will be configured here</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 4. Activities Section */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Activities</CardTitle>
+            <Button type="button" variant="outline" size="sm" onClick={addActivity}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Activity
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {formData.activities.map((item, index) => (
+              <div key={item.id} className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Activity {index + 1}</h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeActivity(item.id)}
+                  >
+                    <Minus className="h-4 w-4" />
+                    <span className="sr-only">Remove</span>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Activity Name</label>
+                    <Input
+                      value={item.name}
+                      onChange={(e) => updateActivity(item.id, "name", e.target.value)}
+                      placeholder="Activity name"
+                      className="bg-white text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Description</label>
+                    <Input
+                      value={item.description}
+                      onChange={(e) => updateActivity(item.id, "description", e.target.value)}
+                      placeholder="Brief description"
+                      className="bg-white text-black"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Per Person Rates</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Adult Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.costPerPerson.adult}
+                        onChange={(e) => updateActivity(item.id, "cost_adult", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Child Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.costPerPerson.child}
+                        onChange={(e) => updateActivity(item.id, "cost_child", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Infant Rate</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.costPerPerson.infant}
+                        onChange={(e) => updateActivity(item.id, "cost_infant", parseFloat(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Participants</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Adults</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.included.adults}
+                        onChange={(e) => updateActivity(item.id, "included_adults", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Children</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.included.children}
+                        onChange={(e) => updateActivity(item.id, "included_children", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Infants</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.included.infants}
+                        onChange={(e) => updateActivity(item.id, "included_infants", parseInt(e.target.value) || 0)}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
+                  <span className="text-sm">
+                    {item.name || "Activity"}: {item.included.adults} adults, {item.included.children} children, {item.included.infants} infants
+                  </span>
+                  <span className="font-medium">${item.total.toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-sm font-medium">Activities Subtotal</span>
+              <span className="font-medium">${calculateActivitiesSubtotal().toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
