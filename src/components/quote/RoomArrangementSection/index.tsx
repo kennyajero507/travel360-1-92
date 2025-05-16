@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "../../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
@@ -14,13 +13,6 @@ interface RoomArrangementSectionProps {
   availableRoomTypes: string[];
   hotelId?: string; // Added hotelId as an optional prop
 }
-
-const defaultRates: PersonTypeRates = {
-  adult: 80,
-  childWithBed: 60,
-  childNoBed: 40,
-  infant: 0
-};
 
 // Max occupancy per room type
 const roomTypeMaxOccupancy: Record<string, number> = {
