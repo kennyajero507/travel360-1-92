@@ -1,3 +1,4 @@
+
 import { QuoteData } from "../types/quote.types";
 
 // Mock data
@@ -23,6 +24,7 @@ const mockQuotes = {
     roomArrangements: [
       {
         id: "room-1",
+        hotelId: "hotel-1",
         roomType: "Family Room",
         numRooms: 1,
         adults: 2,

@@ -65,6 +65,13 @@ export interface QuoteTransfer {
   total: number;
 }
 
+export interface Hotel {
+  id: string;
+  name: string;
+  category?: string;
+  destination?: string;
+}
+
 export interface QuoteData {
   id?: string;
   inquiryId?: string;
@@ -97,4 +104,22 @@ export interface QuoteData {
   createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+// Added new types to support the quote summary
+
+export interface HotelSummary {
+  hotel: Hotel;
+  roomArrangements: RoomArrangement[];
+  totalCost: number;
+}
+
+export interface QuoteSummary {
+  hotelSummaries: HotelSummary[];
+  transportTotal: number;
+  transferTotal: number;
+  activityTotal: number;
+  subtotal: number;
+  markup: number;
+  total: number;
 }
