@@ -133,7 +133,7 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
       
       // Ensure the markup type is one of the allowed values
       if (quote.markup && typeof quote.markup.type === 'string') {
-        if (!['percentage', 'fixed', 'cost-plus'].includes(quote.markup.type)) {
+        if (!['percentage', 'fixed'].includes(quote.markup.type)) {
           quote.markup.type = 'percentage';
         }
       }

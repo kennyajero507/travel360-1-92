@@ -202,6 +202,21 @@ const QuotePreview = () => {
     navigate("/quotes");
   };
 
+  const MarkupSection = () => {
+    return (
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <div className="flex justify-between py-2">
+          <span>
+            {quoteData.markup?.type === "percentage" 
+              ? `Markup (${quoteData.markup.value}%)` 
+              : "Markup (Fixed)"}
+          </span>
+          <span>${quoteData.markup?.amount.toFixed(2) || "0.00"}</span>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -383,14 +398,7 @@ const QuotePreview = () => {
               <span>Subtotal</span>
               <span>${quoteData.subtotal?.toFixed(2) || "0.00"}</span>
             </div>
-            <div className="flex justify-between">
-              <span>
-                {quoteData.markup?.type === "percentage" ? `Markup (${quoteData.markup.value}%)` : 
-                quoteData.markup?.type === "fixed" ? "Markup (Fixed)" : 
-                "Markup"}
-              </span>
-              <span>${quoteData.markup?.amount.toFixed(2) || "0.00"}</span>
-            </div>
+            <MarkupSection />
             <Separator className="my-2" />
             <div className="flex justify-between font-bold text-lg">
               <span>Total</span>

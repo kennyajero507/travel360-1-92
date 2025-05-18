@@ -1,9 +1,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { FileText, Users, Calendar, ArrowUp } from "lucide-react";
+import { FileText, Users, Calendar, ArrowUp, MessageSquare } from "lucide-react";
 import { Progress } from "../components/ui/progress";
+import { useRole } from "../contexts/RoleContext";
+import { Link } from "react-router-dom";
+import { Button } from "../components/ui/button";
 
 const Dashboard = () => {
+  const { role } = useRole();
+  const isAgent = role === 'agent';
+  
   return (
     <div className="space-y-6">
       <div>
@@ -27,13 +33,58 @@ const Dashboard = () => {
           icon={<Users className="text-primary" />} 
         />
         <StatsCard 
-          title="New Inquiries" 
+          title={isAgent ? "My Inquiries" : "New Inquiries"} 
           value="8" 
           trend="+3%" 
           description="vs. last month" 
-          icon={<Calendar className="text-primary" />} 
+          icon={<MessageSquare className="text-primary" />} 
         />
       </div>
+      
+      {/* Agent-specific Dashboard Elements */}
+      {isAgent && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>My Inquiries</span>
+              <Button asChild size="sm">
+                <Link to="/inquiries/create">New Inquiry</Link>
+              </Button>
+            </CardTitle>
+            <CardDescription>Recent inquiries assigned to you or available for assignment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <InquiryItem 
+                client="Sarah Johnson" 
+                destination="Zanzibar"
+                dates="Aug 20-27, 2024"
+                status="New"
+                isAssigned={false}
+              />
+              <InquiryItem 
+                client="Michael Chen" 
+                destination="Serengeti"
+                dates="Sep 10-20, 2024"
+                status="Assigned to you"
+                isAssigned={true}
+              />
+              <InquiryItem 
+                client="Emily Rodriguez" 
+                destination="Nairobi"
+                dates="Oct 15-25, 2024"
+                status="Quoted"
+                isAssigned={true}
+              />
+              <div className="text-center mt-4">
+                <Button variant="outline" asChild>
+                  <Link to="/inquiries">View All Inquiries</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -140,6 +191,51 @@ const StatsCard = ({ title, value, trend, description, icon }: StatsCardProps) =
         <p className="text-xs text-gray-500 mt-2">{description}</p>
       </CardContent>
     </Card>
+  );
+};
+
+interface InquiryItemProps {
+  client: string;
+  destination: string;
+  dates: string;
+  status: string;
+  isAssigned: boolean;
+}
+
+const InquiryItem = ({ client, destination, dates, status, isAssigned }: InquiryItemProps) => {
+  return (
+    <div className="flex items-center justify-between border-b pb-3">
+      <div className="flex items-start space-x-3">
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <MessageSquare className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-medium">{client}</p>
+          <p className="text-xs text-gray-500">{destination} • {dates}</p>
+        </div>
+      </div>
+      <div>
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          status === "New" ? "bg-blue-100 text-blue-800" : 
+          status === "Quoted" ? "bg-green-100 text-green-800" : 
+          "bg-yellow-100 text-yellow-800"
+        }`}>
+          {status}
+        </span>
+        <div className="mt-1 flex justify-end">
+          {isAssigned && (
+            <Button size="sm" variant="ghost" asChild className="text-xs h-7 px-2">
+              <Link to={`/quotes/create`}>Create Quote</Link>
+            </Button>
+          )}
+          {!isAssigned && (
+            <Button size="sm" variant="outline" className="text-xs h-7 px-2">
+              Assign to me
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

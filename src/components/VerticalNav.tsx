@@ -43,9 +43,8 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         <NavItem to="/quotes" collapsed={collapsed} icon={<FileText size={20} />} label="Quotes" />
         <NavItem to="/clients" collapsed={collapsed} icon={<Users size={20} />} label="Clients" />
         
-        {hasPermission(['tour_operator', 'org_owner', 'system_admin']) && (
-          <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
-        )}
+        {/* Show Inquiries for all roles, including agents */}
+        <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
         
         {hasPermission(['system_admin', 'org_owner', 'tour_operator']) && (
           <NavItem to="/hotels" collapsed={collapsed} icon={<Hotel size={20} />} label="Hotels" />
