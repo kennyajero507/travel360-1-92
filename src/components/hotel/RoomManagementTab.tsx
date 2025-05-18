@@ -80,7 +80,6 @@ const RoomManagementTab = ({
         <Button 
           type="button" 
           onClick={handleSave}
-          className="bg-blue-600 hover:bg-blue-700"
         >
           <Save className="mr-2 h-4 w-4" />
           Save Room Types
@@ -88,7 +87,7 @@ const RoomManagementTab = ({
         <Button 
           type="button" 
           onClick={handleComplete}
-          className="bg-green-600 hover:bg-green-700"
+          className="bg-green-600 hover:bg-black"
         >
           <Save className="mr-2 h-4 w-4" />
           Complete Hotel Setup

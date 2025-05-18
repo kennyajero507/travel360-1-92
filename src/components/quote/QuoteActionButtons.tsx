@@ -21,7 +21,6 @@ const QuoteActionButtons = ({
       <Button 
         onClick={handleSave} 
         disabled={saving}
-        className="bg-blue-600 hover:bg-blue-700"
       >
         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
         Save Changes

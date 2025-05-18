@@ -42,7 +42,7 @@ const HotelDetailsTab = ({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="button" onClick={handleFormSubmit} className="bg-blue-600 hover:bg-blue-700">
+        <Button type="button" onClick={handleFormSubmit}>
           <Save className="mr-2 h-4 w-4" />
           Save Hotel Details
         </Button>

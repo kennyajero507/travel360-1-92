@@ -44,7 +44,7 @@ const QuoteHeader = ({
           <Mail className="mr-2 h-4 w-4" />
           Email to Client
         </Button>
-        <Button onClick={downloadQuote} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={downloadQuote}>
           <Download className="mr-2 h-4 w-4" />
           Download PDF
         </Button>
