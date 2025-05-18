@@ -1,73 +1,161 @@
-
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import Quotes from "./pages/Quotes";
-import CreateQuote from "./pages/CreateQuote";
-import EditQuote from "./pages/EditQuote";
-import QuotePreview from "./pages/QuotePreview";
-import Clients from "./pages/Clients";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import Layout from "./components/Layout";
-import { Toaster } from "./components/ui/sonner";
-import Inquiries from "./pages/Inquiries";
-import CreateInquiry from "./pages/CreateInquiry";
-import Hotels from "./pages/Hotels";
-import CreateHotel from "./pages/CreateHotel";
-import HotelDetails from "./pages/HotelDetails";
-import EditHotel from "./pages/EditHotel";
-import { RoleProvider } from "./contexts/role";
-import { CurrencyProvider } from "./contexts/CurrencyContext";
-import Calendar from "./pages/Calendar";
-import AgentManagement from "./pages/AgentManagement";
-
-// New pages
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import AdminLogin from "./pages/AdminLogin";
+import React, { useContext } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { RoleProvider, RoleContext } from './contexts/RoleContext';
+import { ToastProvider } from 'sonner';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import AdminLogin from './pages/AdminLogin';
+import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+import Calendar from './pages/Calendar';
+import Hotels from './pages/Hotels';
+import HotelDetails from './pages/HotelDetails';
+import EditHotel from './pages/EditHotel';
+import CreateHotel from './pages/CreateHotel';
+import Clients from './pages/Clients';
+import Inquiries from './pages/Inquiries';
+import CreateInquiry from './pages/CreateInquiry';
+import Quotes from './pages/Quotes';
+import CreateQuote from './pages/CreateQuote';
+import EditQuote from './pages/EditQuote';
+import QuotePreview from './pages/QuotePreview';
+import AgentManagement from './pages/AgentManagement';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
+import Layout from './components/Layout';
+import Sidebar from './components/Sidebar';
+import Bookings from './pages/Bookings';
+import BookingDetails from './pages/BookingDetails';
+import Vouchers from './pages/Vouchers';
+import VoucherDetails from './pages/VoucherDetails';
 
 function App() {
+  const { currentUser } = useContext(RoleContext);
+
+  // Define a function to check if the user is authenticated
+  const isAuthenticated = () => {
+    return currentUser && currentUser.role; // Adjust this based on your actual authentication logic
+  };
+
+  // Create a wrapper component for protected routes
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!isAuthenticated()) {
+      // Redirect to the login page if not authenticated
+      return <Navigate to="/login" />;
+    }
+    return <>{children}</>;
+  };
+
   return (
-    <RoleProvider>
-      <CurrencyProvider>
-        <Router>
-          <Toaster position="top-right" />
+    <BrowserRouter>
+      <RoleProvider>
+        <ToastProvider>
           <Routes>
-            {/* Public pages */}
-            <Route path="/landing" element={<Landing />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
             <Route path="/admin-login" element={<AdminLogin />} />
-            
-            {/* Authenticated pages */}
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="quotes" element={<Quotes />} />
-              <Route path="quotes/create" element={<CreateQuote />} />
-              <Route path="quotes/create/:inquiryId" element={<CreateQuote />} />
-              <Route path="quotes/edit/:quoteId" element={<EditQuote />} />
-              <Route path="quote-preview" element={<QuotePreview />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="inquiries" element={<Inquiries />} />
-              <Route path="inquiries/create" element={<CreateInquiry />} />
-              <Route path="hotels" element={<Hotels />} />
-              <Route path="hotels/create" element={<CreateHotel />} />
-              <Route path="hotels/:hotelId" element={<HotelDetails />} />
-              <Route path="hotels/:hotelId/edit" element={<EditHotel />} />
-              <Route path="calendar" element={<Calendar />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="agents" element={<AgentManagement />} />
-              
-              {/* Admin routes */}
-              <Route path="admin/dashboard" element={<Dashboard />} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Route>
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/dashboard" element={
+              <Layout>
+                <Dashboard />
+              </Layout>
+            } />
+            <Route path="/calendar" element={
+              <Layout>
+                <Calendar />
+              </Layout>
+            } />
+            <Route path="/hotels" element={
+              <Layout>
+                <Hotels />
+              </Layout>
+            } />
+            <Route path="/hotels/:hotelId" element={
+              <Layout>
+                <HotelDetails />
+              </Layout>
+            } />
+            <Route path="/hotels/edit/:hotelId" element={
+              <Layout>
+                <EditHotel />
+              </Layout>
+            } />
+            <Route path="/hotels/create" element={
+              <Layout>
+                <CreateHotel />
+              </Layout>
+            } />
+            <Route path="/clients" element={
+              <Layout>
+                <Clients />
+              </Layout>
+            } />
+            <Route path="/inquiries" element={
+              <Layout>
+                <Inquiries />
+              </Layout>
+            } />
+            <Route path="/inquiries/create" element={
+              <Layout>
+                <CreateInquiry />
+              </Layout>
+            } />
+            <Route path="/quotes" element={
+              <Layout>
+                <Quotes />
+              </Layout>
+            } />
+            <Route path="/quotes/create" element={
+              <Layout>
+                <CreateQuote />
+              </Layout>
+            } />
+            <Route path="/quotes/edit/:quoteId" element={
+              <Layout>
+                <EditQuote />
+              </Layout>
+            } />
+            <Route path="/quote-preview" element={
+              <Layout>
+                <QuotePreview />
+              </Layout>
+            } />
+            {/* Add new routes for bookings and vouchers */}
+            <Route path="/bookings" element={
+              <Layout>
+                <Bookings />
+              </Layout>
+            } />
+            <Route path="/bookings/:bookingId" element={
+              <Layout>
+                <BookingDetails />
+              </Layout>
+            } />
+            <Route path="/vouchers" element={
+              <Layout>
+                <Vouchers />
+              </Layout>
+            } />
+            <Route path="/vouchers/:voucherId" element={
+              <Layout>
+                <VoucherDetails />
+              </Layout>
+            } />
+            <Route path="/agents" element={
+              <Layout>
+                <AgentManagement />
+              </Layout>
+            } />
+            <Route path="/settings" element={
+              <Layout>
+                <Settings />
+              </Layout>
+            } />
+            <Route path="*" element={<NotFound />} />
           </Routes>
-        </Router>
-      </CurrencyProvider>
-    </RoleProvider>
+        </ToastProvider>
+      </RoleProvider>
+    </BrowserRouter>
   );
 }
 

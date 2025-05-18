@@ -1,260 +1,202 @@
-
 import { useState } from "react";
-import { ChevronRight, HomeIcon, Users, Video, Image, Edit, Palette, Grid, LayoutGrid, Rss, Code, ChevronDown, BookOpen, HelpCircle, Sparkles, Palette as ThemeIcon, Newspaper, Clock, Bookmark, Heart, Album, Boxes } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  Calendar,
+  ClipboardList,
+  FileText,
+  Grid3X3,
+  Landmark,
+  List,
+  MessageSquare,
+  Receipt,
+  Settings,
+  User,
+  UserCog,
+  Users,
+} from "lucide-react";
 
-type SidebarItemProps = {
-  icon: React.ReactNode;
-  label: string;
-  isActive?: boolean;
-  isNew?: boolean;
-  hasDropdown?: boolean;
-  onClick?: () => void;
-};
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/contexts/RoleContext";
 
-type DropdownItemProps = {
-  icon: React.ReactNode;
-  label: string;
-  isExternal?: boolean;
-  isActive?: boolean;
-  onClick?: () => void;
-};
+interface SidebarProps {
+  mobile?: boolean;
+}
 
-const SidebarItem = ({ icon, label, isActive = false, isNew = false, hasDropdown = false, onClick }: SidebarItemProps) => (
-  <button 
-    className={`w-full flex items-center gap-3 p-3 rounded-md transition-colors ${isActive ? 'bg-accent' : 'hover:bg-accent'}`}
-    onClick={onClick}
-  >
-    <div className={isActive ? "text-white" : "text-gray-300"}>{icon}</div>
-    <span className="text-white text-sm font-medium flex-1 text-left">{label}</span>
-    {isNew && (
-      <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
-        NEW
-      </span>
-    )}
-    {hasDropdown && (
-      isActive ? <ChevronDown size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />
-    )}
-  </button>
-);
+const Sidebar = ({ mobile = false }: SidebarProps) => {
+  const location = useLocation();
+  const { currentUser, logout } = useAuth();
+  const { role, permissions } = useRole();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-const DropdownItem = ({ icon, label, isExternal = false, isActive = false, onClick }: DropdownItemProps) => (
-  <button 
-    className={`w-full flex items-center gap-3 p-3 pl-12 hover:bg-accent rounded-md transition-colors ${isActive ? 'bg-accent' : ''}`}
-    onClick={onClick}
-  >
-    <div className={isActive ? "text-white" : "text-gray-300"}>{icon}</div>
-    <span className={`text-sm ${isActive ? "text-white" : "text-gray-300"}`}>{label}</span>
-    {isExternal && <span className="ml-2 px-1 bg-muted rounded-sm text-[10px] text-gray-300">↗</span>}
-  </button>
-);
-
-export const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [resourcesOpen, setResourcesOpen] = useState(false);
-  const [myStuffOpen, setMyStuffOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState("Home");
-  const [activeDropdownItem, setActiveDropdownItem] = useState("");
-
-  if (isCollapsed) {
-    return (
-      <div className="w-16 bg-sidebar min-h-screen flex flex-col items-center py-4 border-r border-gray-800">
-        <div className="mb-8">
-          <img src="/lovable-uploads/407e5ec8-9b67-42ee-acf0-b238e194aa64.png" alt="Logo" className="w-8 h-8" />
-        </div>
-        <button
-          onClick={() => setIsCollapsed(false)}
-          className="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-800 rounded-full p-1 text-white hover:bg-gray-700 transition-colors"
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-    );
-  }
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
-    <div className="w-[232px] bg-sidebar min-h-screen flex flex-col border-r border-gray-800">
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <img src="/lovable-uploads/407e5ec8-9b67-42ee-acf0-b238e194aa64.png" alt="Logo" className="w-8 h-8" />
-          <span className="text-white font-semibold">OpenArt</span>
-        </div>
-        <button
-          onClick={() => setIsCollapsed(true)}
-          className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-gray-800"
+    <div className={cn("h-full px-4 bg-white border-r shadow-sm", mobile && "bg-blue-50")}>
+      <div className="flex items-center justify-between py-4">
+        <Link to="/" className="flex items-center text-xl font-bold">
+          <img src="/logo.png" alt="Logo" className="h-8 w-auto mr-2" />
+          <span>Tourify</span>
+        </Link>
+        {mobile && (
+          <button onClick={toggleMenu} className="focus:outline-none">
+            {isMenuOpen ? "Close" : "Menu"}
+          </button>
+        )}
+      </div>
+      
+      <div className="space-y-1 mt-6">
+        {/* Dashboard */}
+        <Link
+          to="/dashboard"
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+            location.pathname === "/dashboard" ? "bg-accent" : "transparent"
+          )}
         >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-
-      <div className="py-2 px-3 flex flex-col gap-1">
-        <SidebarItem 
-          icon={<HomeIcon size={20} />} 
-          label="Home" 
-          isActive={activeItem === "Home"}
-          onClick={() => setActiveItem("Home")}
-        />
-        <SidebarItem 
-          icon={<Users size={20} />} 
-          label="Characters" 
-          isNew 
-          isActive={activeItem === "Characters"}
-          onClick={() => setActiveItem("Characters")}
-        />
-        <SidebarItem 
-          icon={<Video size={20} />} 
-          label="Videos" 
-          isActive={activeItem === "Videos"}
-          onClick={() => setActiveItem("Videos")}
-        />
-        <SidebarItem 
-          icon={<Image size={20} />} 
-          label="Create Image" 
-          isActive={activeItem === "Create Image"}
-          onClick={() => setActiveItem("Create Image")}
-        />
-        <SidebarItem 
-          icon={<Edit size={20} />} 
-          label="Edit Image" 
-          isActive={activeItem === "Edit Image"}
-          onClick={() => setActiveItem("Edit Image")}
-        />
-        <SidebarItem 
-          icon={<Palette size={20} />} 
-          label="Style Palettes" 
-          isActive={activeItem === "Style Palettes"}
-          onClick={() => setActiveItem("Style Palettes")}
-        />
-        <SidebarItem 
-          icon={<Grid size={20} />} 
-          label="Models" 
-          isActive={activeItem === "Models"}
-          onClick={() => setActiveItem("Models")}
-        />
-        <SidebarItem 
-          icon={<LayoutGrid size={20} />} 
-          label="Apps" 
-          isActive={activeItem === "Apps"}
-          onClick={() => setActiveItem("Apps")}
-        />
-        <SidebarItem 
-          icon={<Rss size={20} />} 
-          label="Community Feed" 
-          isActive={activeItem === "Community Feed"}
-          onClick={() => setActiveItem("Community Feed")}
-        />
-        <SidebarItem 
-          icon={<Code size={20} />} 
-          label="ComfyUI Workflows" 
-          isActive={activeItem === "ComfyUI Workflows"}
-          onClick={() => setActiveItem("ComfyUI Workflows")}
-        />
-      </div>
-
-      <div className="flex-grow overflow-auto">
-        <div className="py-2 px-3">
-          <SidebarItem 
-            icon={myStuffOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            label="My stuff" 
-            isActive={activeItem === "My stuff"}
-            hasDropdown
-            onClick={() => {
-              setMyStuffOpen(!myStuffOpen);
-              setActiveItem("My stuff");
-            }}
-          />
-
-          {myStuffOpen && (
-            <div className="mt-1 space-y-1 animate-fade-in">
-              <DropdownItem 
-                icon={<Clock size={16} />} 
-                label="Creation History" 
-                isActive={activeDropdownItem === "Creation History"}
-                onClick={() => setActiveDropdownItem("Creation History")}
-              />
-              <DropdownItem 
-                icon={<Bookmark size={16} />} 
-                label="Bookmarks" 
-                isActive={activeDropdownItem === "Bookmarks"}
-                onClick={() => setActiveDropdownItem("Bookmarks")}
-              />
-              <DropdownItem 
-                icon={<Heart size={16} />} 
-                label="Liked" 
-                isActive={activeDropdownItem === "Liked"}
-                onClick={() => setActiveDropdownItem("Liked")}
-              />
-              <DropdownItem 
-                icon={<Album size={16} />} 
-                label="Saved Albums" 
-                isActive={activeDropdownItem === "Saved Albums"}
-                onClick={() => setActiveDropdownItem("Saved Albums")}
-              />
-              <DropdownItem 
-                icon={<Boxes size={16} />} 
-                label="Trained Models" 
-                isActive={activeDropdownItem === "Trained Models"}
-                onClick={() => setActiveDropdownItem("Trained Models")}
-              />
-            </div>
+          <Grid3X3 size={16} className="text-blue-600" />
+          <span>Dashboard</span>
+        </Link>
+        
+        {/* Calendar */}
+        <Link
+          to="/calendar"
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+            location.pathname === "/calendar" ? "bg-accent" : "transparent"
           )}
-        </div>
-
-        <div className="py-2 px-3">
-          <SidebarItem 
-            icon={resourcesOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            label="Resources" 
-            hasDropdown
-            isActive={activeItem === "Resources"}
-            onClick={() => {
-              setResourcesOpen(!resourcesOpen);
-              setActiveItem("Resources");
-            }}
-          />
-          
-          {resourcesOpen && (
-            <div className="mt-1 space-y-1 animate-fade-in">
-              <DropdownItem 
-                icon={<BookOpen size={16} />} 
-                label="Tutorials" 
-                isActive={activeDropdownItem === "Tutorials"}
-                onClick={() => setActiveDropdownItem("Tutorials")}
-              />
-              <DropdownItem 
-                icon={<HelpCircle size={16} />} 
-                label="Wiki" 
-                isExternal 
-                isActive={activeDropdownItem === "Wiki"}
-                onClick={() => setActiveDropdownItem("Wiki")}
-              />
-              <DropdownItem 
-                icon={<HelpCircle size={16} />} 
-                label="Help Center" 
-                isActive={activeDropdownItem === "Help Center"}
-                onClick={() => setActiveDropdownItem("Help Center")}
-              />
-              <DropdownItem 
-                icon={<Sparkles size={16} />} 
-                label="What's New" 
-                isActive={activeDropdownItem === "What's New"}
-                onClick={() => setActiveDropdownItem("What's New")}
-              />
-              <DropdownItem 
-                icon={<ThemeIcon size={16} />} 
-                label="Theme Gallery" 
-                isActive={activeDropdownItem === "Theme Gallery"}
-                onClick={() => setActiveDropdownItem("Theme Gallery")}
-              />
-              <DropdownItem 
-                icon={<Newspaper size={16} />} 
-                label="Blog" 
-                isExternal 
-                isActive={activeDropdownItem === "Blog"}
-                onClick={() => setActiveDropdownItem("Blog")}
-              />
-            </div>
+        >
+          <Calendar size={16} className="text-blue-600" />
+          <span>Calendar</span>
+        </Link>
+        
+        {/* Hotels */}
+        <Link
+          to="/hotels"
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+            location.pathname.includes("/hotels") ? "bg-accent" : "transparent"
           )}
+        >
+          <Landmark size={16} className="text-blue-600" />
+          <span>Hotels</span>
+        </Link>
+        
+        {/* Clients */}
+        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+          <Link
+            to="/clients"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              location.pathname.includes("/clients") ? "bg-accent" : "transparent"
+            )}
+          >
+            <Users size={16} className="text-blue-600" />
+            <span>Clients</span>
+          </Link>
+        )}
+        
+        {/* Inquiries */}
+        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+          <Link
+            to="/inquiries"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              location.pathname.includes("/inquiries") ? "bg-accent" : "transparent"
+            )}
+          >
+            <MessageSquare size={16} className="text-blue-600" />
+            <span>Inquiries</span>
+          </Link>
+        )}
+        
+        {/* Quotes */}
+        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+          <Link
+            to="/quotes"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              location.pathname.includes("/quotes") ? "bg-accent" : "transparent"
+            )}
+          >
+            <Receipt size={16} className="text-blue-600" />
+            <span>Quotes</span>
+          </Link>
+        )}
+        
+        {/* Bookings - new! */}
+        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+          <Link
+            to="/bookings"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              location.pathname.includes("/bookings") ? "bg-accent" : "transparent"
+            )}
+          >
+            <ClipboardList size={16} className="text-blue-600" />
+            <span>Bookings</span>
+          </Link>
+        )}
+        
+        {/* Vouchers - new! */}
+        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+          <Link
+            to="/vouchers"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              location.pathname.includes("/vouchers") ? "bg-accent" : "transparent"
+            )}
+          >
+            <FileText size={16} className="text-blue-600" />
+            <span>Vouchers</span>
+          </Link>
+        )}
+        
+        {/* Agent Management (only for org_owner and system_admin) */}
+        {(currentUser.role === "org_owner" || currentUser.role === "system_admin") && (
+          <Link
+            to="/agents"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              location.pathname === "/agents" ? "bg-accent" : "transparent"
+            )}
+          >
+            <UserCog size={16} className="text-blue-600" />
+            <span>Agent Management</span>
+          </Link>
+        )}
+        
+        {/* Settings */}
+        <Link
+          to="/settings"
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+            location.pathname === "/settings" ? "bg-accent" : "transparent"
+          )}
+        >
+          <Settings size={16} className="text-blue-600" />
+          <span>Settings</span>
+        </Link>
+      </div>
+      
+      <div className="mt-auto py-4">
+        <div className="border-t pt-4">
+          <div className="flex items-center gap-2">
+            <User size={16} className="text-gray-500" />
+            <span className="text-sm font-medium">{currentUser.email}</span>
+          </div>
+          <button
+            onClick={logout}
+            className="mt-2 block w-full rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </div>
   );
 };
+
+export default Sidebar;

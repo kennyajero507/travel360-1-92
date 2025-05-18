@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { QuoteData, RoomArrangement, QuoteActivity, QuoteTransport, QuoteTransfer } from "../types/quote.types";
 
@@ -72,7 +71,8 @@ export const getQuoteById = async (quoteId: string): Promise<QuoteData | null> =
       createdBy: data.created_by,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-      hotelId: data.hotel_id
+      hotelId: data.hotel_id,
+      approvedHotelId: data.approved_hotel_id
     };
   }
   
@@ -175,14 +175,22 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
 // Update quote status
 export const updateQuoteStatus = async (
   quoteId: string, 
-  status: "draft" | "sent" | "approved" | "rejected"
+  status: "draft" | "sent" | "approved" | "rejected",
+  approvedHotelId?: string
 ): Promise<boolean> => {
+  const updateData: any = { 
+    status: status,
+    updated_at: new Date().toISOString()
+  };
+  
+  // If approving quote with a specific hotel, include it
+  if (status === 'approved' && approvedHotelId) {
+    updateData.approved_hotel_id = approvedHotelId;
+  }
+  
   const { error } = await supabase
     .from('quotes')
-    .update({ 
-      status: status,
-      updated_at: new Date().toISOString()
-    })
+    .update(updateData)
     .eq('id', quoteId);
   
   if (error) {

@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { QuoteData, Hotel } from "../../types/quote.types";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table";
@@ -8,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { Hotel as HotelIcon, Check, EyeIcon } from "lucide-react";
 import { useQuoteCalculations } from "../../hooks/useQuoteCalculations";
 import { Button } from "../ui/button";
+import { createBookingFromQuote } from "../../services/bookingService"; 
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface QuoteSummaryProps {
   quote: QuoteData;
@@ -29,6 +31,7 @@ const QuoteSummary = ({
   onApproveQuote
 }: QuoteSummaryProps) => {
   const calculations = useQuoteCalculations(quote);
+  const navigate = useNavigate();
   
   // Group room arrangements by hotel
   const hotelSummaries = useMemo(() => {
@@ -106,6 +109,33 @@ const QuoteSummary = ({
     return summaries;
   }, [quote.roomArrangements, quote.travelers, quote.markup, hotels, calculations, clientPreviewMode]);
   
+  // Handler for quote approval
+  const handleApproveQuote = async (hotelId: string) => {
+    try {
+      // Call the onApproveQuote callback if provided (for custom handling)
+      if (onApproveQuote) {
+        onApproveQuote(hotelId);
+        return;
+      }
+      
+      // Otherwise create a booking from the quote
+      const booking = await createBookingFromQuote(quote.id!, hotelId);
+      
+      if (booking) {
+        toast.success("Quote approved! Booking created successfully.", {
+          description: `Booking reference: ${booking.booking_reference}`,
+          action: {
+            label: "View Booking",
+            onClick: () => navigate(`/bookings/${booking.id}`)
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error approving quote:", error);
+      toast.error("Failed to approve quote and create booking");
+    }
+  };
+  
   // Client preview mode - simplified view
   if (clientPreviewMode) {
     return (
@@ -164,7 +194,7 @@ const QuoteSummary = ({
                   </Button>
                   <Button 
                     className="bg-teal-600 hover:bg-teal-700"
-                    onClick={() => onApproveQuote?.(summary.hotel.id)}
+                    onClick={() => handleApproveQuote(summary.hotel.id)}
                   >
                     <Check className="w-4 h-4 mr-2" /> Approve This Option
                   </Button>
@@ -203,16 +233,29 @@ const QuoteSummary = ({
       {hotelSummaries.map((summary) => (
         <Card key={summary.hotel.id} className="border border-teal-100">
           <CardHeader className="bg-teal-50 pb-2">
-            <div className="flex items-center gap-2">
-              <HotelIcon className="h-5 w-5 text-teal-600" />
-              <CardTitle className="text-lg text-teal-700">
-                {summary.hotel.name}
-                {summary.hotel.category && 
-                  <span className="text-sm font-normal ml-2 text-teal-600">
-                    {summary.hotel.category}
-                  </span>
-                }
-              </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HotelIcon className="h-5 w-5 text-teal-600" />
+                <CardTitle className="text-lg text-teal-700">
+                  {summary.hotel.name}
+                  {summary.hotel.category && 
+                    <span className="text-sm font-normal ml-2 text-teal-600">
+                      {summary.hotel.category}
+                    </span>
+                  }
+                </CardTitle>
+              </div>
+              
+              {/* Add approve button for agent view */}
+              {quote.status !== 'approved' && (
+                <Button 
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => handleApproveQuote(summary.hotel.id)}
+                >
+                  <Check className="w-4 h-4 mr-1" /> Approve & Create Booking
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="pt-4">

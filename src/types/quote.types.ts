@@ -1,4 +1,3 @@
-
 export interface PersonTypeRates {
   adult: number;
   childWithBed: number;  // CWB
@@ -99,11 +98,12 @@ export interface QuoteData {
     value: number;
   };
   notes: string;
-  status: "draft" | "sent" | "approved" | "rejected";
-  hotelId?: string; // We'll keep this for backward compatibility
+  status?: "draft" | "sent" | "approved" | "rejected";
   createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
+  hotelId?: string; // We'll keep this for backward compatibility
+  approvedHotelId?: string; // New field for approved hotel
 }
 
 // Added new types to support the quote summary

@@ -9,6 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          activities: Json
+          agent_id: string | null
+          booking_reference: string
+          client: string
+          created_at: string | null
+          hotel_id: string
+          hotel_name: string
+          id: string
+          notes: string | null
+          quote_id: string
+          room_arrangement: Json
+          status: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          transfers: Json
+          transport: Json
+          travel_end: string
+          travel_start: string
+          updated_at: string | null
+        }
+        Insert: {
+          activities?: Json
+          agent_id?: string | null
+          booking_reference: string
+          client: string
+          created_at?: string | null
+          hotel_id: string
+          hotel_name: string
+          id?: string
+          notes?: string | null
+          quote_id: string
+          room_arrangement?: Json
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          transfers?: Json
+          transport?: Json
+          travel_end: string
+          travel_start: string
+          updated_at?: string | null
+        }
+        Update: {
+          activities?: Json
+          agent_id?: string | null
+          booking_reference?: string
+          client?: string
+          created_at?: string | null
+          hotel_id?: string
+          hotel_name?: string
+          id?: string
+          notes?: string | null
+          quote_id?: string
+          room_arrangement?: Json
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
+          transfers?: Json
+          transport?: Json
+          travel_end?: string
+          travel_start?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inquiries: {
         Row: {
           adults: number
@@ -285,6 +356,7 @@ export type Database = {
         Row: {
           activities: Json
           adults: number
+          approved_hotel_id: string | null
           children_no_bed: number
           children_with_bed: number
           client: string
@@ -312,6 +384,7 @@ export type Database = {
         Insert: {
           activities?: Json
           adults?: number
+          approved_hotel_id?: string | null
           children_no_bed?: number
           children_with_bed?: number
           client: string
@@ -339,6 +412,7 @@ export type Database = {
         Update: {
           activities?: Json
           adults?: number
+          approved_hotel_id?: string | null
           children_no_bed?: number
           children_with_bed?: number
           client?: string
@@ -373,6 +447,53 @@ export type Database = {
           },
         ]
       }
+      travel_vouchers: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          email_sent: boolean
+          id: string
+          issued_by: string | null
+          issued_date: string
+          notes: string | null
+          updated_at: string | null
+          voucher_pdf_url: string | null
+          voucher_reference: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          email_sent?: boolean
+          id?: string
+          issued_by?: string | null
+          issued_date?: string
+          notes?: string | null
+          updated_at?: string | null
+          voucher_pdf_url?: string | null
+          voucher_reference: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          email_sent?: boolean
+          id?: string
+          issued_by?: string | null
+          issued_date?: string
+          notes?: string | null
+          updated_at?: string | null
+          voucher_pdf_url?: string | null
+          voucher_reference?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_vouchers_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -381,7 +502,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      booking_status: "pending" | "confirmed" | "cancelled" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -496,6 +617,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_status: ["pending", "confirmed", "cancelled", "completed"],
+    },
   },
 } as const
