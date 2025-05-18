@@ -3,6 +3,38 @@ import { supabase } from "../integrations/supabase/client";
 import { Booking, BookingStatus, TravelVoucher } from "../types/booking.types";
 import { getQuoteById, updateQuoteStatus } from "./quoteService";
 
+// Helper for JSON parsing of complex data from Supabase
+const parseBookingData = (data: any): Booking => {
+  return {
+    id: data.id,
+    booking_reference: data.booking_reference,
+    quote_id: data.quote_id,
+    client: data.client,
+    agent_id: data.agent_id,
+    hotel_id: data.hotel_id,
+    hotel_name: data.hotel_name,
+    travel_start: data.travel_start,
+    travel_end: data.travel_end,
+    room_arrangement: Array.isArray(data.room_arrangement) 
+      ? data.room_arrangement 
+      : JSON.parse(data.room_arrangement || '[]'),
+    transport: Array.isArray(data.transport)
+      ? data.transport
+      : JSON.parse(data.transport || '[]'),
+    activities: Array.isArray(data.activities)
+      ? data.activities
+      : JSON.parse(data.activities || '[]'),
+    transfers: Array.isArray(data.transfers)
+      ? data.transfers
+      : JSON.parse(data.transfers || '[]'),
+    status: data.status as BookingStatus,
+    total_price: data.total_price,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    notes: data.notes
+  };
+};
+
 // Get all bookings
 export const getAllBookings = async () => {
   const { data, error } = await supabase
@@ -15,7 +47,7 @@ export const getAllBookings = async () => {
     throw error;
   }
   
-  return data || [];
+  return data ? data.map(parseBookingData) as Booking[] : [];
 };
 
 // Get booking by ID
@@ -31,7 +63,7 @@ export const getBookingById = async (bookingId: string): Promise<Booking | null>
     return null;
   }
   
-  return data as Booking;
+  return parseBookingData(data);
 };
 
 // Get bookings by quote ID
@@ -47,7 +79,7 @@ export const getBookingsByQuoteId = async (quoteId: string): Promise<Booking[]> 
     throw error;
   }
   
-  return data as Booking[] || [];
+  return data ? data.map(parseBookingData) as Booking[] : [];
 };
 
 // Create a booking from an approved quote
@@ -111,19 +143,19 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
       totalPrice += quote.markup.value;
     }
     
-    // 5. Create the booking
-    const bookingData: Partial<Booking> = {
+    // 5. Create the booking data
+    const bookingData = {
       quote_id: quote.id,
       client: quote.client,
       hotel_id: hotelId,
       hotel_name: hotelName,
       travel_start: quote.startDate,
       travel_end: quote.endDate,
-      room_arrangement: hotelRoomArrangements,
-      transport: quote.transports,
-      activities: quote.activities,
-      transfers: quote.transfers,
-      status: 'pending',
+      room_arrangement: JSON.stringify(hotelRoomArrangements),
+      transport: JSON.stringify(quote.transports),
+      activities: JSON.stringify(quote.activities),
+      transfers: JSON.stringify(quote.transfers),
+      status: 'pending' as BookingStatus,
       total_price: totalPrice,
       notes: `Booking created from quote ${quote.id}`
     };
@@ -150,7 +182,7 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
       })
       .eq('id', quoteId);
     
-    return newBooking as Booking;
+    return parseBookingData(newBooking);
     
   } catch (error) {
     console.error('Error in createBookingFromQuote:', error);
@@ -216,8 +248,8 @@ export const createVoucherForBooking = async (bookingId: string): Promise<Travel
       throw new Error('Booking not found');
     }
     
-    // 2. Create the voucher
-    const voucherData: Partial<TravelVoucher> = {
+    // 2. Create the voucher data
+    const voucherData = {
       booking_id: bookingId,
       issued_date: new Date().toISOString(),
       notes: `Voucher for booking ${booking.booking_reference}`,
