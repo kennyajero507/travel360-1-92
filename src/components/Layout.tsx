@@ -4,7 +4,11 @@ import VerticalNav from "./VerticalNav";
 import { useState } from "react";
 import { cn } from "../lib/utils";
 
-const Layout = () => {
+interface LayoutProps {
+  children?: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -14,7 +18,7 @@ const Layout = () => {
         collapsed ? "ml-20" : "ml-64"
       )}>
         <div className="container py-6 px-4 mx-auto">
-          <Outlet />
+          {children || <Outlet />}
         </div>
       </main>
     </div>
