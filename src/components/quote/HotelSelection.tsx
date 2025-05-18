@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { 
   Select,
   SelectContent,
@@ -7,6 +7,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "../ui/select";
+import { Alert, AlertDescription } from "../ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface HotelSelectionProps {
   selectedHotelId: string | null;
@@ -14,6 +16,9 @@ interface HotelSelectionProps {
   onHotelSelection: (hotelId: string) => void;
   onRoomTypesLoaded?: (roomTypes: any[]) => void;
   placeholder?: string;
+  isRequired?: boolean;
+  maxHotels?: number;
+  selectedHotelsCount?: number;
 }
 
 const HotelSelection = ({ 
@@ -21,8 +26,13 @@ const HotelSelection = ({
   hotels, 
   onHotelSelection,
   onRoomTypesLoaded,
-  placeholder = "Select a hotel from inventory"
+  placeholder = "Select a hotel from inventory",
+  isRequired = false,
+  maxHotels,
+  selectedHotelsCount = 0
 }: HotelSelectionProps) => {
+  const [showRequiredWarning, setShowRequiredWarning] = useState(false);
+  
   // When hotel selection changes, get its room types
   useEffect(() => {
     if (selectedHotelId && hotels.length > 0) {
@@ -32,19 +42,60 @@ const HotelSelection = ({
           onRoomTypesLoaded(selectedHotel.roomTypes);
         }
       }
+      
+      // Hide the warning when a hotel is selected
+      if (isRequired) {
+        setShowRequiredWarning(false);
+      }
     }
-  }, [selectedHotelId, hotels, onRoomTypesLoaded]);
+  }, [selectedHotelId, hotels, onRoomTypesLoaded, isRequired]);
 
   // Filter out any hotel that doesn't have a valid ID
   const validHotels = hotels.filter(hotel => hotel && hotel.id);
+  
+  const handleFocus = () => {
+    if (isRequired && !selectedHotelId) {
+      setShowRequiredWarning(true);
+    }
+  };
+
+  const limitReached = maxHotels !== undefined && selectedHotelsCount >= maxHotels;
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
+      {showRequiredWarning && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Please select a hotel before proceeding.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {limitReached && (
+        <Alert>
+          <AlertDescription>
+            Maximum of {maxHotels} hotels can be selected for comparison.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Select 
         value={selectedHotelId || "placeholder"} 
         onValueChange={(value) => value !== "placeholder" && onHotelSelection(value)}
+        disabled={limitReached}
+        onOpenChange={(open) => {
+          if (open && isRequired && !selectedHotelId) {
+            setShowRequiredWarning(true);
+          }
+        }}
       >
-        <SelectTrigger className="w-full bg-white text-gray-800 border border-teal-200 focus:ring-teal-500">
+        <SelectTrigger 
+          className={`w-full bg-white text-gray-800 border ${
+            isRequired && !selectedHotelId ? 'border-red-300' : 'border-teal-200'
+          } focus:ring-teal-500`}
+          onFocus={handleFocus}
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent className="bg-white">

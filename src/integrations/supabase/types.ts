@@ -75,6 +75,212 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_activities: {
+        Row: {
+          activity_id: string | null
+          cost_per_person: number
+          created_at: string | null
+          description: string | null
+          id: string
+          num_people: number
+          quote_hotel_id: string
+          title: string
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          activity_id?: string | null
+          cost_per_person?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          num_people?: number
+          quote_hotel_id: string
+          title: string
+          total?: number
+          updated_at?: string | null
+        }
+        Update: {
+          activity_id?: string | null
+          cost_per_person?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          num_people?: number
+          quote_hotel_id?: string
+          title?: string
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_activities_quote_hotel_id_fkey"
+            columns: ["quote_hotel_id"]
+            isOneToOne: false
+            referencedRelation: "quote_hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_hotels: {
+        Row: {
+          created_at: string | null
+          final_price: number
+          hotel_id: string
+          hotel_name: string
+          id: string
+          markup_percent: number
+          price_per_person: number
+          quote_id: string
+          total_cost: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          final_price?: number
+          hotel_id: string
+          hotel_name: string
+          id?: string
+          markup_percent?: number
+          price_per_person?: number
+          quote_id: string
+          total_cost?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          final_price?: number
+          hotel_id?: string
+          hotel_name?: string
+          id?: string
+          markup_percent?: number
+          price_per_person?: number
+          quote_id?: string
+          total_cost?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_hotels_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_room_arrangements: {
+        Row: {
+          adults: number
+          children: number
+          cost_per_adult: number
+          cost_per_child: number
+          cost_per_infant: number
+          created_at: string | null
+          id: string
+          infants: number
+          nights: number
+          num_rooms: number
+          quote_hotel_id: string
+          room_type: string
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          adults?: number
+          children?: number
+          cost_per_adult?: number
+          cost_per_child?: number
+          cost_per_infant?: number
+          created_at?: string | null
+          id?: string
+          infants?: number
+          nights?: number
+          num_rooms?: number
+          quote_hotel_id: string
+          room_type: string
+          total?: number
+          updated_at?: string | null
+        }
+        Update: {
+          adults?: number
+          children?: number
+          cost_per_adult?: number
+          cost_per_child?: number
+          cost_per_infant?: number
+          created_at?: string | null
+          id?: string
+          infants?: number
+          nights?: number
+          num_rooms?: number
+          quote_hotel_id?: string
+          room_type?: string
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_room_arrangements_quote_hotel_id_fkey"
+            columns: ["quote_hotel_id"]
+            isOneToOne: false
+            referencedRelation: "quote_hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_transfers: {
+        Row: {
+          cost_per_vehicle: number
+          created_at: string | null
+          details: string | null
+          from_location: string | null
+          id: string
+          num_vehicles: number
+          quote_hotel_id: string
+          to_location: string | null
+          total: number
+          transfer_type: string
+          updated_at: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          cost_per_vehicle?: number
+          created_at?: string | null
+          details?: string | null
+          from_location?: string | null
+          id?: string
+          num_vehicles?: number
+          quote_hotel_id: string
+          to_location?: string | null
+          total?: number
+          transfer_type: string
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          cost_per_vehicle?: number
+          created_at?: string | null
+          details?: string | null
+          from_location?: string | null
+          id?: string
+          num_vehicles?: number
+          quote_hotel_id?: string
+          to_location?: string | null
+          total?: number
+          transfer_type?: string
+          updated_at?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_transfers_quote_hotel_id_fkey"
+            columns: ["quote_hotel_id"]
+            isOneToOne: false
+            referencedRelation: "quote_hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           activities: Json

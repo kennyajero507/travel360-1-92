@@ -8,13 +8,19 @@ interface QuoteActionButtonsProps {
   handleSave: () => void;
   onCancel?: () => void;
   returnUrl?: string;
+  primaryButtonText?: string;
+  disablePrimary?: boolean;
+  showSaveIcon?: boolean;
 }
 
 const QuoteActionButtons = ({ 
   saving, 
   handleSave, 
   onCancel,
-  returnUrl = "/quotes" 
+  returnUrl = "/quotes",
+  primaryButtonText = "Save Changes",
+  disablePrimary = false,
+  showSaveIcon = true
 }: QuoteActionButtonsProps) => {
   const navigate = useNavigate();
   
@@ -33,10 +39,13 @@ const QuoteActionButtons = ({
       </Button>
       <Button 
         onClick={handleSave} 
-        disabled={saving}
+        disabled={saving || disablePrimary}
       >
-        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-        Save Changes
+        {saving ? 
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
+          (showSaveIcon && <Save className="mr-2 h-4 w-4" />)
+        }
+        {primaryButtonText}
       </Button>
     </div>
   );
