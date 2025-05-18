@@ -475,11 +475,9 @@ const CreateQuote = () => {
   const calculateMarkup = () => {
     const subtotal = calculateSubtotal();
     if (formData.markup.type === "percentage") {
-      return (subtotal * formData.markup.value) / 100;
-    } else if (formData.markup.type === "cost-plus") {
-      // For cost-plus, we calculate what would be 100% if the cost is 85%
-      return (subtotal / 0.85) - subtotal;
+      return (subtotal / (1 - formData.markup.value / 100)) - subtotal;
     } else {
+      // Fixed markup amount
       return formData.markup.value;
     }
   };

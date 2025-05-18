@@ -93,7 +93,7 @@ const mockQuotes = {
       }
     ],
     markup: {
-      type: "percentage" as "percentage" | "fixed" | "cost-plus",
+      type: "percentage" as "percentage" | "fixed",
       value: 15
     },
     notes: "Client prefers beachfront accommodation and has interest in water activities.",

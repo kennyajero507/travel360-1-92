@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -388,7 +387,7 @@ const QuotePreview = () => {
               <span>
                 {quoteData.markup?.type === "percentage" ? `Markup (${quoteData.markup.value}%)` : 
                 quoteData.markup?.type === "fixed" ? "Markup (Fixed)" : 
-                "Markup (Cost Plus 85%)"}
+                "Markup"}
               </span>
               <span>${quoteData.markup?.amount.toFixed(2) || "0.00"}</span>
             </div>
