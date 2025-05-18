@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRole } from "../contexts/RoleContext";
@@ -168,9 +167,10 @@ const Inquiries = () => {
   
   // Filter inquiries based on user role
   const userInquiries = inquiries.filter(inquiry => {
-    // If agent, show inquiries assigned to them AND unassigned inquiries they could claim
+    // For agents, only show inquiries that are ALREADY assigned to them or that they created
+    // (not showing unassigned inquiries that they could claim)
     if (role === 'agent') {
-      return inquiry.assignedTo === currentUser.id || inquiry.assignedTo === null;
+      return inquiry.assignedTo === currentUser.id;
     }
     // Otherwise show all inquiries if admin/owner/tour operator
     return true;
@@ -237,35 +237,15 @@ const Inquiries = () => {
     setDialogOpen(false);
   };
   
-  // New function to allow agent to assign inquiry to themselves
-  const handleAssignToMe = (inquiryId: string) => {
-    setInquiries(prev => prev.map(inquiry => {
-      if (inquiry.id === inquiryId && inquiry.assignedTo === null) {
-        return {
-          ...inquiry,
-          status: "Assigned",
-          assignedTo: currentUser.id,
-          assignedAgentName: currentUser.name
-        };
-      }
-      return inquiry;
-    }));
-    
-    toast.success(`Inquiry ${inquiryId} assigned to you`);
-    // Store in session storage for demonstration
-    sessionStorage.setItem(`inquiry-${inquiryId}`, JSON.stringify({
-      assignedTo: currentUser.id,
-      assignedAgentName: currentUser.name
-    }));
-  };
-
+  // Removed the handleAssignToMe function to prevent agents from self-assigning
+  
   // Get title based on role
   const getPageTitle = () => {
     switch(role) {
       case 'system_admin': return 'All System Inquiries';
       case 'org_owner': return 'Organization Inquiries';
       case 'tour_operator': return 'Tour Assignment';
-      case 'agent': return 'My Inquiries Dashboard'; // Updated title for agents
+      case 'agent': return 'My Inquiries Dashboard';
       default: return 'Inquiries';
     }
   };
@@ -290,7 +270,7 @@ const Inquiries = () => {
         <CardHeader className="flex flex-row items-start justify-between">
           <CardTitle>
             {role === 'agent' ? 
-              `Inquiries Available to ${currentUser.name}` : 
+              `Inquiries Assigned to ${currentUser.name}` : 
               'All Inquiries'}
           </CardTitle>
         </CardHeader>
@@ -370,16 +350,7 @@ const Inquiries = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {inquiry.assignedAgentName || 
-                          (role === 'agent' && inquiry.assignedTo === null ? (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleAssignToMe(inquiry.id)}
-                            >
-                              Assign to me
-                            </Button>
-                          ) : "-")}
+                        {inquiry.assignedAgentName || "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>

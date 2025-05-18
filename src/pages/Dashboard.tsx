@@ -61,6 +61,7 @@ const Dashboard = () => {
                 dates="Aug 20-27, 2024"
                 status="New"
                 isAssigned={false}
+                readOnly={true} // Set to true for agents to prevent assignment
               />
               <InquiryItem 
                 client="Michael Chen" 
@@ -200,9 +201,10 @@ interface InquiryItemProps {
   dates: string;
   status: string;
   isAssigned: boolean;
+  readOnly?: boolean;
 }
 
-const InquiryItem = ({ client, destination, dates, status, isAssigned }: InquiryItemProps) => {
+const InquiryItem = ({ client, destination, dates, status, isAssigned, readOnly = false }: InquiryItemProps) => {
   return (
     <div className="flex items-center justify-between border-b pb-3">
       <div className="flex items-start space-x-3">
@@ -228,9 +230,16 @@ const InquiryItem = ({ client, destination, dates, status, isAssigned }: Inquiry
               <Link to={`/quotes/create`}>Create Quote</Link>
             </Button>
           )}
-          {!isAssigned && (
+          {/* Only show "Assign to me" button if not assigned AND not readOnly */}
+          {!isAssigned && !readOnly && (
             <Button size="sm" variant="outline" className="text-xs h-7 px-2">
               Assign to me
+            </Button>
+          )}
+          {/* Show "View Details" for unassigned inquiries that are readOnly */}
+          {!isAssigned && readOnly && (
+            <Button size="sm" variant="outline" asChild className="text-xs h-7 px-2">
+              <Link to="/inquiries">View Details</Link>
             </Button>
           )}
         </div>
