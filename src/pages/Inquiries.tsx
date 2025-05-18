@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRole } from "../contexts/RoleContext";
@@ -33,7 +34,7 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { FileText, Plus, MoreHorizontal, MessageSquare, UserCheck, Phone } from "lucide-react";
+import { FileText, Plus, MoreHorizontal, MessageSquare, UserCheck, Phone, User } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
 
@@ -147,7 +148,7 @@ const Inquiries = () => {
   const navigate = useNavigate();
   const { role, permissions, currentUser } = useRole();
   
-  // Only organization owners and tour operators can see and assign inquiries
+  // Allow agents to access inquiries as well
   const canAccessInquiries = role === 'org_owner' || role === 'tour_operator' || role === 'system_admin' || role === 'agent';
   
   // Redirect if user doesn't have permission
@@ -264,7 +265,7 @@ const Inquiries = () => {
       case 'system_admin': return 'All System Inquiries';
       case 'org_owner': return 'Organization Inquiries';
       case 'tour_operator': return 'Tour Assignment';
-      case 'agent': return 'My Assigned Inquiries';
+      case 'agent': return 'My Inquiries Dashboard'; // Updated title for agents
       default: return 'Inquiries';
     }
   };
@@ -276,14 +277,13 @@ const Inquiries = () => {
           <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getPageTitle()}</h1>
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
         </div>
-        {(role !== 'agent') && (
-          <Button asChild className="self-start">
-            <Link to="/inquiries/create">
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Inquiry
-            </Link>
-          </Button>
-        )}
+        {/* Allow agents to create inquiries as well */}
+        <Button asChild className="self-start">
+          <Link to="/inquiries/create">
+            <Plus className="mr-2 h-4 w-4" />
+            Create New Inquiry
+          </Link>
+        </Button>
       </div>
 
       <Card>

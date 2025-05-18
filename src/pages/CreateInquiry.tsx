@@ -12,7 +12,7 @@ import {
   SelectValue 
 } from "../components/ui/select";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, User, MapPin, Calendar, Phone } from "lucide-react";
 import { useRole } from "../contexts/RoleContext";
 
 interface InquiryFormData {
@@ -64,6 +64,9 @@ const CreateInquiry = () => {
     { id: "agent-4", name: "Emma Wilson" }
   ]);
 
+  // Check if the current user is an agent
+  const isAgent = role === 'agent';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -74,8 +77,15 @@ const CreateInquiry = () => {
       return;
     }
     
+    // If the user is an agent, automatically assign the inquiry to themselves
+    const submittedFormData = { 
+      ...formData,
+      // Auto-assign to current agent if user is an agent
+      assignedAgent: isAgent ? currentUser.id : formData.assignedAgent
+    };
+    
     // In a real app, save to database via API
-    console.log("Inquiry data:", formData);
+    console.log("Inquiry data:", submittedFormData);
     
     toast.success("Inquiry created successfully!");
     navigate("/inquiries");
@@ -93,7 +103,10 @@ const CreateInquiry = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Client Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600" />
+              Client Information
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -127,15 +140,19 @@ const CreateInquiry = () => {
                 <label htmlFor="mobile" className="block text-sm font-medium mb-2">
                   Mobile Number *
                 </label>
-                <Input
-                  id="mobile"
-                  value={formData.mobile}
-                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                  placeholder="Mobile phone number"
-                  required
-                  className="bg-white text-black"
-                />
+                <div className="flex items-center">
+                  <Phone className="mr-2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="mobile"
+                    value={formData.mobile}
+                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                    placeholder="Mobile phone number"
+                    required
+                    className="bg-white text-black"
+                  />
+                </div>
               </div>
+              {/* Only show agent assignment if user has permission to assign inquiries */}
               {(role === 'org_owner' || role === 'tour_operator' || role === 'system_admin') && permissions.canAssignInquiries && (
                 <div>
                   <label htmlFor="assignedAgent" className="block text-sm font-medium mb-2">
@@ -162,7 +179,10 @@ const CreateInquiry = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Trip Details</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Trip Details
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -170,14 +190,17 @@ const CreateInquiry = () => {
                 <label htmlFor="destination" className="block text-sm font-medium mb-2">
                   Destination *
                 </label>
-                <Input
-                  id="destination"
-                  value={formData.destination}
-                  onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                  placeholder="Destination"
-                  required
-                  className="bg-white text-black"
-                />
+                <div className="flex items-center">
+                  <MapPin className="mr-2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="destination"
+                    value={formData.destination}
+                    onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                    placeholder="Destination"
+                    required
+                    className="bg-white text-black"
+                  />
+                </div>
               </div>
               <div>
                 <label htmlFor="priority" className="block text-sm font-medium mb-2">
@@ -202,27 +225,33 @@ const CreateInquiry = () => {
                 <label htmlFor="startDate" className="block text-sm font-medium mb-2">
                   Start Date *
                 </label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  required
-                  className="bg-white text-black"
-                />
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    required
+                    className="bg-white text-black"
+                  />
+                </div>
               </div>
               <div>
                 <label htmlFor="endDate" className="block text-sm font-medium mb-2">
                   End Date *
                 </label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  required
-                  className="bg-white text-black"
-                />
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    required
+                    className="bg-white text-black"
+                  />
+                </div>
               </div>
               
               <div className="grid grid-cols-3 gap-4 md:col-span-2">

@@ -1,449 +1,402 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useRole } from "../contexts/RoleContext";
-import { toast } from "sonner";
+import { useState } from "react";
 import { 
   Card, 
   CardContent, 
   CardHeader, 
-  CardTitle 
+  CardTitle, 
+  CardDescription 
 } from "../components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "../components/ui/table";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import { Input } from "../components/ui/input";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "../components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "../components/ui/dialog";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
-import { Badge } from "../components/ui/badge";
-import { UserCheck, Plus, Edit, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Users, User, MoreHorizontal, UserPlus, Mail, Phone } from "lucide-react";
+import { useRole } from "../contexts/RoleContext";
 
-// Mock agents data
+// Mock data for agents
 const mockAgents = [
   { 
-    id: "agent-1", 
-    name: "James Smith", 
-    email: "james@example.com",
+    id: "A001", 
+    name: "John Doe", 
+    email: "john@example.com", 
     phone: "+1 (555) 123-4567",
-    status: "Active",
-    assignedInquiries: 5,
-    completedQuotes: 12 
+    status: "Active", 
+    quotesCreated: 32,
+    lastActive: "2024-04-25",
+    assignedQuotes: ["Q-2023-001", "Q-2023-005", "Q-2023-010"]
   },
   { 
-    id: "agent-2", 
-    name: "Sarah Johnson", 
+    id: "A002", 
+    name: "Sarah Smith", 
     email: "sarah@example.com",
-    phone: "+1 (555) 234-5678",
-    status: "Active",
-    assignedInquiries: 3,
-    completedQuotes: 8 
+    phone: "+1 (555) 234-5678", 
+    status: "Active", 
+    quotesCreated: 18,
+    lastActive: "2024-04-28",
+    assignedQuotes: ["Q-2023-002", "Q-2023-007"]
   },
   { 
-    id: "agent-3", 
-    name: "Robert Lee", 
-    email: "robert@example.com",
+    id: "A003", 
+    name: "Michael Brown", 
+    email: "michael@example.com", 
     phone: "+1 (555) 345-6789",
-    status: "Inactive",
-    assignedInquiries: 0,
-    completedQuotes: 15 
+    status: "Inactive", 
+    quotesCreated: 7,
+    lastActive: "2024-03-15",
+    assignedQuotes: []
   },
   { 
-    id: "agent-4", 
-    name: "Emma Wilson", 
-    email: "emma@example.com",
+    id: "A004", 
+    name: "Emily Johnson", 
+    email: "emily@example.com", 
     phone: "+1 (555) 456-7890",
-    status: "Active",
-    assignedInquiries: 7,
-    completedQuotes: 9 
+    status: "Pending", 
+    quotesCreated: 0,
+    lastActive: "N/A",
+    assignedQuotes: [] 
   }
 ];
 
 const AgentManagement = () => {
-  const { role, tier, permissions, currentUser } = useRole();
-  const navigate = useNavigate();
-  
   const [agents, setAgents] = useState(mockAgents);
-  const [isAddAgentDialogOpen, setIsAddAgentDialogOpen] = useState(false);
-  const [isEditAgentDialogOpen, setIsEditAgentDialogOpen] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [newAgent, setNewAgent] = useState({
     name: "",
     email: "",
     phone: "",
-    status: "Active"
+    status: "Pending"
   });
   
-  useEffect(() => {
-    // Check if user has permission to manage agents
-    if (!permissions.canManageAgents) {
-      toast.error("You don't have permission to manage agents. This feature requires appropriate role and subscription tier.");
-      navigate("/settings");
-    }
-  }, [permissions, navigate]);
+  const { role, tier } = useRole();
 
-  // Generate appropriate title based on role
-  const getRoleTitle = () => {
-    switch(role) {
-      case 'system_admin': return 'Manage All Agents';
-      case 'org_owner': return 'Manage Organization Agents';
-      case 'tour_operator': return 'Manage Team Agents';
-      default: return 'Agent Management';
-    }
-  };
-
-  // Generate subtitle based on role and tier
-  const getSubtitle = () => {
-    if (role === 'system_admin') return 'System-wide agent management';
-    if (role === 'org_owner') return `Organization owner - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`;
-    if (role === 'tour_operator') return `Tour operator - ${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription`;
-    return '';
-  };
-
-  // Calculate the agent limit based on tier
-  const getAgentLimit = () => {
-    if (role === 'system_admin') return Infinity;
+  const filteredAgents = agents.filter(agent => {
+    const matchesFilter = filter === "all" || agent.status.toLowerCase() === filter.toLowerCase();
+    const matchesSearch = 
+      agent.name.toLowerCase().includes(search.toLowerCase()) || 
+      agent.email.toLowerCase().includes(search.toLowerCase()) ||
+      agent.id.toLowerCase().includes(search.toLowerCase());
     
-    switch(tier) {
-      case 'basic': return 3;
-      case 'pro': return 10;
-      case 'enterprise': return 50;
-      default: return 3;
-    }
+    return matchesFilter && matchesSearch;
+  });
+
+  const handleChangeStatus = (agentId: string, newStatus: string) => {
+    const updatedAgents = agents.map(agent => 
+      agent.id === agentId ? {...agent, status: newStatus} : agent
+    );
+    setAgents(updatedAgents);
+    toast.success(`Agent status updated to ${newStatus}`);
   };
 
-  const agentLimit = getAgentLimit();
-  const canAddMoreAgents = agents.length < agentLimit;
-
-  // Handle adding a new agent
   const handleAddAgent = () => {
-    if (!canAddMoreAgents) {
-      toast.error(`You've reached your limit of ${agentLimit} agents. Upgrade your subscription to add more agents.`);
-      return;
-    }
-    
-    if (!newAgent.name || !newAgent.email) {
+    setNewAgent({
+      name: "",
+      email: "",
+      phone: "",
+      status: "Pending"
+    });
+    setDialogOpen(true);
+  };
+  
+  const handleCreateAgent = () => {
+    // Validate form
+    if (!newAgent.name || !newAgent.email || !newAgent.phone) {
       toast.error("Please fill in all required fields");
       return;
     }
     
-    const newAgentId = `agent-${agents.length + 1}`;
-    
-    const newAgentData = {
+    // Create new agent
+    const newAgentId = `A00${agents.length + 1}`;
+    const createdAgent = {
       id: newAgentId,
       name: newAgent.name,
       email: newAgent.email,
       phone: newAgent.phone,
       status: newAgent.status,
-      assignedInquiries: 0,
-      completedQuotes: 0
+      quotesCreated: 0,
+      lastActive: "N/A",
+      assignedQuotes: []
     };
     
-    setAgents([...agents, newAgentData]);
-    setNewAgent({
-      name: "",
-      email: "",
-      phone: "",
-      status: "Active"
-    });
-    setIsAddAgentDialogOpen(false);
-    toast.success(`Agent ${newAgent.name} added successfully`);
+    setAgents([...agents, createdAgent]);
+    toast.success(`Agent ${newAgent.name} created successfully`);
+    setDialogOpen(false);
   };
 
-  // Handle editing an agent
-  const handleEditAgent = () => {
-    if (!selectedAgent) return;
-    
-    setAgents(agents.map(agent => 
-      agent.id === selectedAgent.id ? selectedAgent : agent
-    ));
-    
-    setIsEditAgentDialogOpen(false);
-    toast.success(`Agent ${selectedAgent.name} updated successfully`);
-  };
-
-  // Handle deleting an agent
-  const handleDeleteAgent = (agentId: string) => {
-    const agentToDelete = agents.find(agent => agent.id === agentId);
-    if (!agentToDelete) return;
-    
-    if (agentToDelete.assignedInquiries > 0) {
-      toast.error(`Cannot delete ${agentToDelete.name} because they have assigned inquiries`);
-      return;
-    }
-    
-    setAgents(agents.filter(agent => agent.id !== agentId));
-    toast.success(`Agent ${agentToDelete.name} deleted successfully`);
-  };
+  // Determine if the current user can manage agents based on role and tier
+  const canManageAgents = role === 'system_admin' || 
+                         role === 'org_owner' || 
+                         (role === 'tour_operator' && (tier === 'pro' || tier === 'enterprise'));
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getRoleTitle()}</h1>
-        <p className="text-gray-500 mt-2">{getSubtitle()}</p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-blue-600">Agent Management</h2>
+          <p className="text-gray-500">
+            {canManageAgents 
+              ? `Manage your travel agents - ${tier.charAt(0).toUpperCase() + tier.slice(1)} tier` 
+              : "Agent information"}
+          </p>
+        </div>
+        {canManageAgents && (
+          <Button onClick={handleAddAgent} className="self-start">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add New Agent
+          </Button>
+        )}
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Team Agents</CardTitle>
-          <div className="flex items-center gap-4">
-            <div className="text-sm">
-              <span className="font-medium">{agents.length}</span> of <span className="font-medium">{agentLimit === Infinity ? '∞' : agentLimit}</span> agents
-            </div>
-            <Button onClick={() => setIsAddAgentDialogOpen(true)} disabled={!canAddMoreAgents} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Agent
-            </Button>
+        <CardHeader>
+          <div className="flex flex-row items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            <CardTitle>Agent Directory</CardTitle>
           </div>
+          <CardDescription>Manage your team of travel agents and their access</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            {canManageAgents && (
+              <div className="w-full md:w-64">
+                <Select value={filter} onValueChange={setFilter}>
+                  <SelectTrigger className="bg-white text-black">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Agents</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex-1">
+              <Input
+                placeholder="Search agents..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-white text-black"
+              />
+            </div>
+          </div>
+
           <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>Quotes Created</TableHead>
+                  <TableHead>Last Active</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Assigned Inquiries</TableHead>
-                  <TableHead className="text-center">Completed Quotes</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Assigned Quotes</TableHead>
+                  {canManageAgents && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {agents.map((agent) => (
-                  <TableRow key={agent.id}>
-                    <TableCell className="font-medium">{agent.name}</TableCell>
-                    <TableCell>{agent.email}</TableCell>
-                    <TableCell>{agent.phone}</TableCell>
-                    <TableCell>
-                      <Badge variant={agent.status === 'Active' ? 'outline' : 'secondary'} className={
-                        agent.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }>
-                        {agent.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">{agent.assignedInquiries}</TableCell>
-                    <TableCell className="text-center">{agent.completedQuotes}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          setSelectedAgent(agent);
-                          setIsEditAgentDialogOpen(true);
-                        }}>
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          disabled={agent.assignedInquiries > 0}
-                          onClick={() => handleDeleteAgent(agent.id)}
+                {filteredAgents.length > 0 ? (
+                  filteredAgents.map((agent) => (
+                    <TableRow key={agent.id}>
+                      <TableCell className="font-medium">{agent.id}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-500" />
+                          {agent.name}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-500" />
+                          {agent.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-gray-500" />
+                          {agent.phone}
+                        </div>
+                      </TableCell>
+                      <TableCell>{agent.quotesCreated}</TableCell>
+                      <TableCell>{agent.lastActive}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            agent.status === "Active" ? "bg-green-100 text-green-800" : 
+                            agent.status === "Inactive" ? "bg-red-100 text-red-800" : 
+                            "bg-yellow-100 text-yellow-800"
+                          }
                         >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {agents.length === 0 && (
+                          {agent.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {agent.assignedQuotes.length > 0 ? (
+                          <span>{agent.assignedQuotes.length} quotes</span>
+                        ) : (
+                          <span className="text-gray-400">No quotes</span>
+                        )}
+                      </TableCell>
+                      {canManageAgents && (
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Actions</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => toast.info(`View details for ${agent.name}`)}>
+                                <User className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              {agent.status !== "Active" && (
+                                <DropdownMenuItem onClick={() => handleChangeStatus(agent.id, "Active")}>
+                                  <span className="text-green-600 flex items-center">
+                                    <User className="mr-2 h-4 w-4" />
+                                    Activate
+                                  </span>
+                                </DropdownMenuItem>
+                              )}
+                              {agent.status !== "Inactive" && (
+                                <DropdownMenuItem onClick={() => handleChangeStatus(agent.id, "Inactive")}>
+                                  <span className="text-red-600 flex items-center">
+                                    <User className="mr-2 h-4 w-4" />
+                                    Deactivate
+                                  </span>
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      No agents added yet. Click "Add Agent" to get started.
+                    <TableCell colSpan={8} className="text-center py-10">
+                      No agents found matching your criteria.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
-          
-          {tier !== 'enterprise' && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-              <h3 className="text-md font-medium text-blue-700">Need to manage more agents?</h3>
-              <p className="text-sm text-blue-600">
-                Upgrade to {tier === 'basic' ? 'Pro' : 'Enterprise'} to get {tier === 'basic' ? '10' : '50'} agent accounts and access to advanced features.
-              </p>
-              <Button className="mt-2 bg-blue-600 hover:bg-blue-700" onClick={() => navigate("/settings/subscription")}>
-                Upgrade Subscription
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Add Agent Dialog */}
-      <Dialog open={isAddAgentDialogOpen} onOpenChange={setIsAddAgentDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-white">
           <DialogHeader>
             <DialogTitle>Add New Agent</DialogTitle>
             <DialogDescription>
-              Add a new agent to your team. They will receive an email invitation to set up their account.
+              Create a new agent account for your organization.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-2">
-                Full Name
-              </label>
-              <Input
-                id="name"
-                value={newAgent.name}
-                onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                placeholder="Agent's full name"
-                required
-                className="bg-white text-black"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={newAgent.email}
-                onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })}
-                placeholder="agent@company.com"
-                required
-                className="bg-white text-black"
-              />
-            </div>
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                Phone
-              </label>
-              <Input
-                id="phone"
-                value={newAgent.phone}
-                onChange={(e) => setNewAgent({ ...newAgent, phone: e.target.value })}
-                placeholder="Phone number"
-                className="bg-white text-black"
-              />
-            </div>
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium mb-2">
-                Status
-              </label>
-              <Select 
-                value={newAgent.status} 
-                onValueChange={(value) => setNewAgent({ ...newAgent, status: value })}
-              >
-                <SelectTrigger id="status" className="bg-white text-black">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddAgentDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddAgent} className="bg-blue-600 hover:bg-blue-700">
-              <UserCheck className="h-4 w-4 mr-2" />
-              Add Agent
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Agent Dialog */}
-      <Dialog open={isEditAgentDialogOpen} onOpenChange={setIsEditAgentDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
-          <DialogHeader>
-            <DialogTitle>Edit Agent</DialogTitle>
-            <DialogDescription>
-              Update the agent's information.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedAgent && (
-            <div className="grid gap-4 py-4">
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <label htmlFor="edit-name" className="block text-sm font-medium mb-2">
-                  Full Name
+                <label htmlFor="name" className="text-sm font-medium mb-1 block">
+                  Agent Name *
                 </label>
                 <Input
-                  id="edit-name"
-                  value={selectedAgent.name}
-                  onChange={(e) => setSelectedAgent({ ...selectedAgent, name: e.target.value })}
-                  placeholder="Agent's full name"
-                  required
+                  id="name"
+                  placeholder="John Doe"
+                  value={newAgent.name}
+                  onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
                   className="bg-white text-black"
+                  required
                 />
               </div>
               <div>
-                <label htmlFor="edit-email" className="block text-sm font-medium mb-2">
-                  Email
+                <label htmlFor="email" className="text-sm font-medium mb-1 block">
+                  Email Address *
                 </label>
                 <Input
-                  id="edit-email"
+                  id="email"
                   type="email"
-                  value={selectedAgent.email}
-                  onChange={(e) => setSelectedAgent({ ...selectedAgent, email: e.target.value })}
-                  placeholder="agent@company.com"
-                  required
+                  placeholder="agent@example.com"
+                  value={newAgent.email}
+                  onChange={(e) => setNewAgent({...newAgent, email: e.target.value})}
                   className="bg-white text-black"
+                  required
                 />
               </div>
               <div>
-                <label htmlFor="edit-phone" className="block text-sm font-medium mb-2">
-                  Phone
+                <label htmlFor="phone" className="text-sm font-medium mb-1 block">
+                  Phone Number *
                 </label>
                 <Input
-                  id="edit-phone"
-                  value={selectedAgent.phone}
-                  onChange={(e) => setSelectedAgent({ ...selectedAgent, phone: e.target.value })}
-                  placeholder="Phone number"
+                  id="phone"
+                  placeholder="+1 (555) 123-4567"
+                  value={newAgent.phone}
+                  onChange={(e) => setNewAgent({...newAgent, phone: e.target.value})}
                   className="bg-white text-black"
+                  required
                 />
               </div>
               <div>
-                <label htmlFor="edit-status" className="block text-sm font-medium mb-2">
+                <label htmlFor="status" className="text-sm font-medium mb-1 block">
                   Status
                 </label>
                 <Select 
-                  value={selectedAgent.status} 
-                  onValueChange={(value) => setSelectedAgent({ ...selectedAgent, status: value })}
+                  value={newAgent.status} 
+                  onValueChange={(value) => setNewAgent({...newAgent, status: value})}
                 >
-                  <SelectTrigger id="edit-status" className="bg-white text-black">
+                  <SelectTrigger id="status" className="bg-white text-black">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="Inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-          )}
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditAgentDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditAgent} className="bg-blue-600 hover:bg-blue-700">
-              Save Changes
+            <Button onClick={handleCreateAgent} className="bg-blue-600 hover:bg-blue-700">
+              Create Agent
             </Button>
           </DialogFooter>
         </DialogContent>
