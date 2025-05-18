@@ -55,7 +55,8 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
             </SelectTrigger>
             <SelectContent>
               {availableRoomTypes.map(type => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
+                // Ensure each type is a valid non-empty string
+                <SelectItem key={type} value={type || "default-room-type"}>{type || "Default Room Type"}</SelectItem>
               ))}
             </SelectContent>
           </Select>

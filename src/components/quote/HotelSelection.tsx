@@ -41,7 +41,8 @@ const HotelSelection = ({
         </SelectTrigger>
         <SelectContent className="bg-white">
           {hotels.map(hotel => (
-            <SelectItem key={hotel.id} value={hotel.id}>
+            // Make sure hotel.id is always a non-empty string
+            <SelectItem key={hotel.id} value={hotel.id || `hotel-${hotel.name}`}>
               {hotel.name} - {hotel.category} ({hotel.destination})
             </SelectItem>
           ))}
