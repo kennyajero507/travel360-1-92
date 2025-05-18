@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { QuoteData, RoomArrangement } from "../types/quote.types";
+import { QuoteData, RoomArrangement, QuoteTransfer } from "../types/quote.types";
 import { getQuoteById, saveQuote } from "../services/quoteService";
 import { useQuoteCalculations } from "./useQuoteCalculations";
 
@@ -23,6 +23,11 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
         const quoteData = await getQuoteById(quoteId);
         
         if (quoteData) {
+          // Initialize transfers array if it doesn't exist
+          if (!quoteData.transfers) {
+            quoteData.transfers = [];
+          }
+          
           setQuote(quoteData);
           // If there's a saved hotelId in the quote, select it
           if (quoteData.hotelId) {
@@ -149,6 +154,20 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
     });
   };
   
+  // Handle transfers change
+  const handleTransfersChange = (transfers: QuoteTransfer[]) => {
+    if (!quote) return;
+    
+    setQuote(prev => {
+      if (!prev) return prev;
+      
+      return {
+        ...prev,
+        transfers: transfers,
+      };
+    });
+  };
+  
   // Handle save quote
   const handleSave = async () => {
     if (!quote) return;
@@ -210,6 +229,7 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
     populateRoomArrangementsFromHotel,
     addRoomArrangement,
     handleRoomArrangementsChange,
+    handleTransfersChange,
     handleSave,
     previewQuote,
     downloadQuote,

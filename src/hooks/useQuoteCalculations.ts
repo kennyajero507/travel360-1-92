@@ -1,57 +1,8 @@
 
-import { useState, useEffect } from "react";
+// src/hooks/useQuoteCalculations.ts
 import { QuoteData, RoomArrangement } from "../types/quote.types";
 
-export const useQuoteCalculations = (quoteData: QuoteData) => {
-  // Calculate accommodation subtotal
-  const calculateAccommodationSubtotal = () => {
-    return quoteData.roomArrangements.reduce((sum, item) => sum + item.total, 0);
-  };
-
-  // Calculate activities subtotal
-  const calculateActivitiesSubtotal = () => {
-    return quoteData.activities.reduce((sum, item) => sum + item.total, 0);
-  };
-
-  // Calculate transport subtotal
-  const calculateTransportSubtotal = () => {
-    return quoteData.transports.reduce((sum, item) => sum + item.total, 0);
-  };
-
-  // Calculate subtotal (without markup)
-  const calculateSubtotal = () => {
-    return calculateAccommodationSubtotal() + calculateActivitiesSubtotal() + calculateTransportSubtotal();
-  };
-
-  // Calculate markup amount using the formula: Full Price = Subtotal ÷ (1 - Markup%)
-  const calculateMarkup = () => {
-    const subtotal = calculateSubtotal();
-    if (quoteData.markup.type === "percentage") {
-      // Formula: Full Price = Subtotal ÷ (1 - Markup%)
-      // Markup amount = Full Price - Subtotal
-      const markupDecimal = quoteData.markup.value / 100;
-      const fullPrice = subtotal / (1 - markupDecimal);
-      return fullPrice - subtotal;
-    } else {
-      // Fixed markup amount
-      return quoteData.markup.value;
-    }
-  };
-
-  // Calculate grand total (with markup)
-  const calculateGrandTotal = () => {
-    return calculateSubtotal() + calculateMarkup();
-  };
-
-  // Calculate per person cost
-  const calculatePerPersonCost = () => {
-    const totalTravelers = 
-      quoteData.travelers.adults + 
-      quoteData.travelers.childrenWithBed + 
-      quoteData.travelers.childrenNoBed;
-    
-    return totalTravelers > 0 ? calculateGrandTotal() / totalTravelers : 0;
-  };
+export const useQuoteCalculations = (quote: QuoteData) => {
 
   // Calculate total travelers from room arrangements
   const calculateTotalTravelers = (arrangements: RoomArrangement[]) => {
@@ -67,37 +18,71 @@ export const useQuoteCalculations = (quoteData: QuoteData) => {
       infants: totalInfants
     };
   };
+  
+  // Calculate accommodation subtotal
+  const calculateAccommodationSubtotal = () => {
+    return quote.roomArrangements.reduce((sum, item) => sum + item.total, 0);
+  };
 
-  // Validate room arrangement (ensure not exceeding max capacity)
-  const validateRoomArrangement = (arrangement: RoomArrangement): string | null => {
-    const maxCapacityMap: Record<string, number> = {
-      "Single Room": 1,
-      "Double Room": 2,
-      "Twin Room": 2,
-      "Triple Room": 3,
-      "Quad Room": 4,
-      "Family Room": 6
-    };
-    
-    const maxCapacity = maxCapacityMap[arrangement.roomType] || 2;
-    const totalOccupants = arrangement.adults + arrangement.childrenWithBed;
-    
-    if (totalOccupants > maxCapacity) {
-      return `Maximum capacity for ${arrangement.roomType} is ${maxCapacity} persons (excluding CNB/Infants)`;
+  // Calculate activities subtotal
+  const calculateActivitiesSubtotal = () => {
+    return quote.activities?.reduce((sum, item) => sum + item.total, 0) || 0;
+  };
+
+  // Calculate transport subtotal
+  const calculateTransportSubtotal = () => {
+    return quote.transports?.reduce((sum, item) => sum + item.total, 0) || 0;
+  };
+  
+  // Calculate transfers subtotal
+  const calculateTransfersSubtotal = () => {
+    return quote.transfers?.reduce((sum, item) => sum + item.total, 0) || 0;
+  };
+
+  // Calculate overall subtotal
+  const calculateSubtotal = () => {
+    return (
+      calculateAccommodationSubtotal() + 
+      calculateActivitiesSubtotal() + 
+      calculateTransportSubtotal() + 
+      calculateTransfersSubtotal()
+    );
+  };
+
+  // Calculate markup
+  const calculateMarkup = () => {
+    const subtotal = calculateSubtotal();
+    if (quote.markup.type === "percentage") {
+      return (subtotal * quote.markup.value) / 100;
+    } else {
+      // Fixed markup amount
+      return quote.markup.value;
     }
-    
-    return null;
+  };
+
+  // Calculate grand total
+  const calculateGrandTotal = () => {
+    return calculateSubtotal() + calculateMarkup();
+  };
+
+  // Calculate per person cost
+  const calculatePerPersonCost = () => {
+    const totalTravelers = quote.travelers.adults + 
+      quote.travelers.childrenWithBed + 
+      quote.travelers.childrenNoBed;
+      
+    return totalTravelers > 0 ? calculateGrandTotal() / totalTravelers : 0;
   };
 
   return {
+    calculateTotalTravelers,
     calculateAccommodationSubtotal,
     calculateActivitiesSubtotal,
     calculateTransportSubtotal,
+    calculateTransfersSubtotal,
     calculateSubtotal,
     calculateMarkup,
     calculateGrandTotal,
-    calculatePerPersonCost,
-    calculateTotalTravelers,
-    validateRoomArrangement
+    calculatePerPersonCost
   };
 };

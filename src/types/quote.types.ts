@@ -1,3 +1,4 @@
+
 export interface PersonTypeRates {
   adult: number;
   childWithBed: number;  // CWB
@@ -53,6 +54,17 @@ export interface QuoteTransport {
   total: number;
 }
 
+export interface QuoteTransfer {
+  id: string;
+  transferType: "Airport to Hotel" | "Hotel to Hotel" | "Custom";
+  fromLocation: string;
+  toLocation: string;
+  vehicleType: string;
+  numberOfVehicles: number;
+  costPerVehicle: number;
+  total: number;
+}
+
 export interface QuoteData {
   id?: string;
   inquiryId?: string;
@@ -74,6 +86,7 @@ export interface QuoteData {
   roomArrangements: RoomArrangement[];
   activities: QuoteActivity[];
   transports: QuoteTransport[];
+  transfers: QuoteTransfer[]; // New field for transfers
   markup: {
     type: "percentage" | "fixed";
     value: number;

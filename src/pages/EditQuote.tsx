@@ -14,6 +14,7 @@ import HotelSelection from "../components/quote/HotelSelection";
 import RoomArrangementSection from "../components/quote/RoomArrangementSection";
 import HotelRoomList from "../components/quote/HotelRoomList";
 import QuoteActionButtons from "../components/quote/QuoteActionButtons";
+import TransferSection from "../components/quote/TransferSection";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Plus, Hotel, Bus, MapPin, Compass } from "lucide-react";
 
@@ -33,6 +34,7 @@ const EditQuote = () => {
     populateRoomArrangementsFromHotel,
     addRoomArrangement,
     handleRoomArrangementsChange,
+    handleTransfersChange, // Add this handler for transfers
     handleSave,
     previewQuote,
     downloadQuote,
@@ -235,9 +237,10 @@ const EditQuote = () => {
           <CardTitle>Transfer</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-10 border border-dashed border-gray-200 rounded-md">
-            <p className="text-gray-500">Transfer options will be configured here</p>
-          </div>
+          <TransferSection 
+            transfers={quote.transfers || []} 
+            onTransfersChange={handleTransfersChange}
+          />
         </CardContent>
       </Card>
       
