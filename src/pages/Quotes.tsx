@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -123,6 +123,7 @@ const Quotes = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Fetch quotes data
   useEffect(() => {
@@ -145,22 +146,27 @@ const Quotes = () => {
   const handleQuoteAction = (action, quoteId) => {
     switch (action) {
       case "view":
-        toast.info(`Viewing quote ${quoteId}...`);
+        navigate(`/quotes/${quoteId}`);
         break;
       case "edit":
-        toast.info(`Editing quote ${quoteId}...`);
+        navigate(`/quotes/edit/${quoteId}`);
         break;
       case "print":
         toast.info(`Printing quote ${quoteId}...`);
+        // Implement print functionality
+        window.open(`/quote-preview?id=${quoteId}`, '_blank');
         break;
       case "email":
         toast.success(`Quote ${quoteId} sent to client via email`);
+        // Implement email functionality
         break;
       case "download":
         toast.success(`Quote ${quoteId} downloaded`);
+        // Implement download functionality
         break;
       case "delete":
         toast.error(`Quote ${quoteId} deleted`);
+        // Implement delete functionality
         break;
       default:
         break;

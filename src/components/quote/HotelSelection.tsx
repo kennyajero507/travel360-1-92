@@ -9,17 +9,19 @@ import {
 } from "../ui/select";
 
 interface HotelSelectionProps {
-  selectedHotelId: string;
+  selectedHotelId: string | null;
   hotels: any[];
   onHotelSelection: (hotelId: string) => void;
   onRoomTypesLoaded?: (roomTypes: any[]) => void;
+  placeholder?: string;
 }
 
 const HotelSelection = ({ 
   selectedHotelId, 
   hotels, 
   onHotelSelection,
-  onRoomTypesLoaded
+  onRoomTypesLoaded,
+  placeholder = "Select a hotel from inventory"
 }: HotelSelectionProps) => {
   // When hotel selection changes, get its room types
   useEffect(() => {
@@ -38,13 +40,16 @@ const HotelSelection = ({
 
   return (
     <div className="w-full">
-      <Select value={selectedHotelId || "placeholder"} onValueChange={onHotelSelection}>
+      <Select 
+        value={selectedHotelId || "placeholder"} 
+        onValueChange={(value) => value !== "placeholder" && onHotelSelection(value)}
+      >
         <SelectTrigger className="w-full bg-white text-gray-800 border border-teal-200 focus:ring-teal-500">
-          <SelectValue placeholder="Select a hotel from inventory" />
+          <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent className="bg-white">
           {/* Add a placeholder option */}
-          <SelectItem value="placeholder" disabled>Select a hotel from inventory</SelectItem>
+          <SelectItem value="placeholder" disabled>{placeholder}</SelectItem>
           
           {validHotels.map(hotel => {
             // Ensure we have a valid ID string that's never empty

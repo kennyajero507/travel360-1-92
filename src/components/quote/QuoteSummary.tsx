@@ -12,9 +12,10 @@ interface QuoteSummaryProps {
   quote: QuoteData;
   hotels: Hotel[];
   className?: string;
+  previewMode?: boolean;
 }
 
-const QuoteSummary = ({ quote, hotels, className }: QuoteSummaryProps) => {
+const QuoteSummary = ({ quote, hotels, className, previewMode = false }: QuoteSummaryProps) => {
   const calculations = useQuoteCalculations(quote);
   
   // Group room arrangements by hotel
@@ -123,62 +124,94 @@ const QuoteSummary = ({ quote, hotels, className }: QuoteSummaryProps) => {
                 <span className="font-medium">Hotel Subtotal</span>
                 <span className="font-medium">${summary.totalCost.toFixed(2)}</span>
               </div>
+
+              {/* Display transport, transfer, and activities under each hotel in preview mode */}
+              {previewMode && (
+                <>
+                  {transportTotal > 0 && (
+                    <div className="flex justify-between py-2 px-2">
+                      <span>Transportation</span>
+                      <span>${transportTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {transferTotal > 0 && (
+                    <div className="flex justify-between py-2 px-2">
+                      <span>Transfers</span>
+                      <span>${transferTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {activityTotal > 0 && (
+                    <div className="flex justify-between py-2 px-2">
+                      <span>Activities</span>
+                      <span>${activityTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between py-2 px-2 font-bold">
+                    <span>Hotel Package Total</span>
+                    <span>${(summary.totalCost + transportTotal + transferTotal + activityTotal).toFixed(2)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
       ))}
       
-      <Card className="border border-teal-100">
-        <CardHeader className="bg-teal-50 pb-2">
-          <CardTitle className="text-lg text-teal-700">Quote Total</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div className="space-y-2">
-            {hotelTotal > 0 && (
+      {/* Only show this section when not in preview mode */}
+      {!previewMode && (
+        <Card className="border border-teal-100">
+          <CardHeader className="bg-teal-50 pb-2">
+            <CardTitle className="text-lg text-teal-700">Quote Total</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="space-y-2">
+              {hotelTotal > 0 && (
+                <div className="flex justify-between">
+                  <span>Accommodation</span>
+                  <span>${hotelTotal.toFixed(2)}</span>
+                </div>
+              )}
+              {transportTotal > 0 && (
+                <div className="flex justify-between">
+                  <span>Transportation</span>
+                  <span>${transportTotal.toFixed(2)}</span>
+                </div>
+              )}
+              {transferTotal > 0 && (
+                <div className="flex justify-between">
+                  <span>Transfers</span>
+                  <span>${transferTotal.toFixed(2)}</span>
+                </div>
+              )}
+              {activityTotal > 0 && (
+                <div className="flex justify-between">
+                  <span>Activities</span>
+                  <span>${activityTotal.toFixed(2)}</span>
+                </div>
+              )}
+              <Separator />
               <div className="flex justify-between">
-                <span>Accommodation</span>
-                <span>${hotelTotal.toFixed(2)}</span>
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
-            )}
-            {transportTotal > 0 && (
               <div className="flex justify-between">
-                <span>Transportation</span>
-                <span>${transportTotal.toFixed(2)}</span>
+                <span>
+                  {quote.markup.type === "percentage" 
+                    ? `Markup (${quote.markup.value}%)` 
+                    : "Markup"}
+                </span>
+                <span>${markup.toFixed(2)}</span>
               </div>
-            )}
-            {transferTotal > 0 && (
-              <div className="flex justify-between">
-                <span>Transfers</span>
-                <span>${transferTotal.toFixed(2)}</span>
+              <Separator />
+              <div className="flex justify-between font-bold text-lg">
+                <span>Grand Total</span>
+                <span>${total.toFixed(2)}</span>
               </div>
-            )}
-            {activityTotal > 0 && (
-              <div className="flex justify-between">
-                <span>Activities</span>
-                <span>${activityTotal.toFixed(2)}</span>
-              </div>
-            )}
-            <Separator />
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span>
-                {quote.markup.type === "percentage" 
-                  ? `Markup (${quote.markup.value}%)` 
-                  : "Markup"}
-              </span>
-              <span>${markup.toFixed(2)}</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-bold text-lg">
-              <span>Grand Total</span>
-              <span>${total.toFixed(2)}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
