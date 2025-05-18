@@ -168,7 +168,7 @@ const QuotePreview = () => {
             <div class="total">
               <p>Subtotal: $${quoteData.subtotal?.toFixed(2) || "0.00"}</p>
               <p>Markup (${quoteData.markup?.type === "percentage" ? quoteData.markup.value + "%" : 
-                           quoteData.markup?.type === "cost-plus" ? "Cost Plus" : "Fixed"}): 
+                           "Fixed"}): 
                  $${quoteData.markup?.amount.toFixed(2) || "0.00"}</p>
               <p>Total: $${quoteData.grandTotal?.toFixed(2) || "0.00"}</p>
               <p>Per Person: $${quoteData.perPersonCost?.toFixed(2) || "0.00"}</p>
