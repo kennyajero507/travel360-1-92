@@ -1,4 +1,3 @@
-
 import { QuoteData } from "../types/quote.types";
 
 // Mock data
@@ -92,6 +91,7 @@ const mockQuotes = {
         total: 120
       }
     ],
+    transfers: [], // Add empty transfers array
     markup: {
       type: "percentage" as "percentage" | "fixed",
       value: 15
@@ -129,6 +129,11 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
       quote.updatedAt = new Date().toISOString();
       if (!quote.createdAt) {
         quote.createdAt = quote.updatedAt;
+      }
+      
+      // Ensure the transfers array exists
+      if (!quote.transfers) {
+        quote.transfers = [];
       }
       
       // Ensure the markup type is one of the allowed values

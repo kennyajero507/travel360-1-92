@@ -25,6 +25,7 @@ import { useCurrency } from "../contexts/CurrencyContext";
 import { differenceInDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import RoomArrangementSection from "../components/quote/RoomArrangementSection";
+import TransferSection from "../components/quote/TransferSection";
 import { RoomArrangement, QuoteActivity, QuoteTransport, QuoteData } from "../types/quote.types";
 
 // Available room types
@@ -166,6 +167,7 @@ const CreateQuote = () => {
         total: 0
       }
     ],
+    transfers: [], // Add empty transfers array to satisfy type requirements
     markup: {
       type: "percentage",
       value: 15
@@ -444,7 +446,15 @@ const CreateQuote = () => {
     }));
   };
 
-  // Handle markup change
+  // Handle transfers change
+  const handleTransfersChange = (transfers: any[]) => {
+    setFormData(prev => ({
+      ...prev,
+      transfers
+    }));
+  };
+
+  // Update markup change
   const updateMarkup = (field: "type" | "value", value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -468,8 +478,14 @@ const CreateQuote = () => {
     return formData.transports.reduce((sum, item) => sum + item.total, 0);
   };
 
+  // Update calculateTransfersSubtotal function if it doesn't exist
+  const calculateTransfersSubtotal = () => {
+    return formData.transfers?.reduce((sum, item) => sum + item.total, 0) || 0;
+  };
+
+  // Update calculateSubtotal to include transfers
   const calculateSubtotal = () => {
-    return calculateAccommodationSubtotal() + calculateActivitiesSubtotal() + calculateTransportSubtotal();
+    return calculateAccommodationSubtotal() + calculateActivitiesSubtotal() + calculateTransportSubtotal() + calculateTransfersSubtotal();
   };
 
   const calculateMarkup = () => {
@@ -935,19 +951,16 @@ const CreateQuote = () => {
           </CardContent>
         </Card>
 
-        {/* 3. Transfer Section - Added new section */}
+        {/* 3. Transfer Section */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Transfer</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => toast.info("Transfer functionality coming soon")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Transfer
-            </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-10 border border-dashed border-gray-200 rounded-md">
-              <p className="text-gray-500">Transfer options will be configured here</p>
-            </div>
+            <TransferSection 
+              transfers={formData.transfers || []} 
+              onTransfersChange={handleTransfersChange}
+            />
           </CardContent>
         </Card>
 
@@ -1159,6 +1172,10 @@ const CreateQuote = () => {
               <div className="flex justify-between">
                 <span>Transportation Subtotal</span>
                 <span>${calculateTransportSubtotal().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Transfers Subtotal</span>
+                <span>${calculateTransfersSubtotal().toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between">
