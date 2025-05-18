@@ -40,12 +40,15 @@ const HotelSelection = ({
           <SelectValue placeholder="Select a hotel from inventory" />
         </SelectTrigger>
         <SelectContent className="bg-white">
-          {hotels.map(hotel => (
-            // Make sure hotel.id is always a non-empty string
-            <SelectItem key={hotel.id} value={hotel.id || `hotel-${hotel.name}`}>
-              {hotel.name} - {hotel.category} ({hotel.destination})
-            </SelectItem>
-          ))}
+          {hotels.map(hotel => {
+            // Ensure we have a valid ID string that's never empty
+            const safeId = hotel.id ? String(hotel.id) : `hotel-${hotel.name || Date.now()}`;
+            return (
+              <SelectItem key={safeId} value={safeId}>
+                {hotel.name} - {hotel.category} ({hotel.destination})
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>
