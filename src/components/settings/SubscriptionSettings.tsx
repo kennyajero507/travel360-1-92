@@ -8,14 +8,15 @@ import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 import { useState } from "react";
 import { DollarSign, BadgeDollarSign, Users } from "lucide-react";
+import { SubscriptionTier } from "../../contexts/role/types";
 
 const SubscriptionSettings = () => {
   const { tier, setTier, role } = useRole();
   const [isAnnualBilling, setIsAnnualBilling] = useState(true);
 
   const handleTierChange = (selectedTier: string) => {
-    setTier(selectedTier as 'basic' | 'pro' | 'enterprise');
-    toast.success(`Subscription plan changed to ${selectedTier === 'basic' ? 'Essentials' : selectedTier === 'pro' ? 'Professional' : 'Enterprise'}`);
+    setTier(selectedTier as SubscriptionTier);
+    toast.success(`Subscription plan changed to ${selectedTier === 'starter' ? 'Essentials' : selectedTier === 'pro' ? 'Professional' : 'Enterprise'}`);
   };
 
   // Format role name for display
@@ -41,7 +42,7 @@ const SubscriptionSettings = () => {
             <div className="flex items-center">
               <h3 className="font-medium">Current Plan:</h3>
               <Badge variant="outline" className="ml-2">
-                {tier === 'basic' ? 'Essentials' : tier === 'pro' ? 'Professional' : 'Enterprise'}
+                {tier === 'starter' ? 'Essentials' : tier === 'pro' ? 'Professional' : 'Enterprise'}
               </Badge>
             </div>
             <div className="flex items-center space-x-2">
@@ -57,14 +58,14 @@ const SubscriptionSettings = () => {
           <Separator />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <Card className={`border ${tier === 'basic' ? 'border-primary' : 'border-border'} h-full`}>
+            <Card className={`border ${tier === 'starter' ? 'border-primary' : 'border-border'} h-full`}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                   <div className="flex items-center">
                     <BadgeDollarSign className="mr-2 h-5 w-5" />
                     Essentials
                   </div>
-                  {tier === 'basic' && <Badge>Current</Badge>}
+                  {tier === 'starter' && <Badge>Current</Badge>}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -104,10 +105,10 @@ const SubscriptionSettings = () => {
                   </div>
                   <Button 
                     className="w-full" 
-                    variant={tier === 'basic' ? 'outline' : 'default'}
-                    onClick={() => handleTierChange('basic')}
+                    variant={tier === 'starter' ? 'outline' : 'default'}
+                    onClick={() => handleTierChange('starter')}
                   >
-                    {tier === 'basic' ? 'Current Plan' : 'Select Plan'}
+                    {tier === 'starter' ? 'Current Plan' : 'Select Plan'}
                   </Button>
                 </div>
               </CardContent>
