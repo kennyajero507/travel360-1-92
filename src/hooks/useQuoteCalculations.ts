@@ -23,15 +23,20 @@ export const useQuoteCalculations = (quoteData: QuoteData) => {
     return calculateAccommodationSubtotal() + calculateActivitiesSubtotal() + calculateTransportSubtotal();
   };
 
-  // Calculate markup amount
+  // Calculate markup amount using the updated formula
   const calculateMarkup = () => {
     const subtotal = calculateSubtotal();
     if (quoteData.markup.type === "percentage") {
-      return (subtotal * quoteData.markup.value) / 100;
+      // New formula: Full Price = Subtotal ÷ (1 - Markup%)
+      // Markup amount = Full Price - Subtotal
+      const markupDecimal = quoteData.markup.value / 100;
+      const fullPrice = subtotal / (1 - markupDecimal);
+      return fullPrice - subtotal;
     } else if (quoteData.markup.type === "cost-plus") {
-      // For cost-plus, we calculate what would be 100% if the cost is 85%
+      // For cost-plus, we use the same formula with 15% markup
       return (subtotal / 0.85) - subtotal;
     } else {
+      // Fixed markup amount
       return quoteData.markup.value;
     }
   };
