@@ -36,6 +36,7 @@ import { Input } from "../components/ui/input";
 import { FileText, Plus, MoreHorizontal, MessageSquare, UserCheck, Phone, User } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
+import { getAllInquiries } from "../services/inquiryService";
 
 // Mock inquiries data
 const mockInquiries = [
@@ -160,11 +161,28 @@ const Inquiries = () => {
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [inquiries, setInquiries] = useState(mockInquiries);
+  const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInquiries = async () => {
+      try {
+        const data = await getAllInquiries();
+        setInquiries(data);
+      } catch (error) {
+        console.error("Error fetching inquiries:", error);
+        toast.error("Failed to load inquiries");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInquiries();
+  }, []);
+
   // Filter inquiries based on user role
   const userInquiries = inquiries.filter(inquiry => {
     // For agents, only show inquiries that are ALREADY assigned to them or that they created

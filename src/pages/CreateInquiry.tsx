@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { Save, User, MapPin, Calendar, Phone } from "lucide-react";
 import { useRole } from "../contexts/RoleContext";
+import { createInquiry } from "../services/inquiryService";
 
 interface InquiryFormData {
   client: string;
@@ -67,7 +68,7 @@ const CreateInquiry = () => {
   // Check if the current user is an agent
   const isAgent = role === 'agent';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate for required fields
@@ -76,19 +77,39 @@ const CreateInquiry = () => {
       toast.error("Please fill in all required fields");
       return;
     }
-    
-    // If the user is an agent, automatically assign the inquiry to themselves
-    const submittedFormData = { 
-      ...formData,
-      // Auto-assign to current agent if user is an agent
-      assignedAgent: isAgent ? currentUser.id : formData.assignedAgent
-    };
-    
-    // In a real app, save to database via API
-    console.log("Inquiry data:", submittedFormData);
-    
-    toast.success("Inquiry created successfully!");
-    navigate("/inquiries");
+
+    try {
+      // If the user is an agent, automatically assign the inquiry to themselves
+      const submittedFormData = { 
+        client: formData.client,
+        mobile: formData.mobile,
+        destination: formData.destination,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        num_rooms: formData.numRooms,
+        adults: formData.travelers.adults,
+        children: formData.travelers.children,
+        infants: formData.travelers.infants,
+        budget: formData.budget,
+        priority: formData.priority,
+        preferences: formData.preferences,
+        // Auto-assign to current agent if user is an agent
+        assigned_to: isAgent ? currentUser.id : formData.assignedAgent,
+        assigned_agent_name: isAgent ? currentUser.name : 
+          formData.assignedAgent ? availableAgents.find(a => a.id === formData.assignedAgent)?.name : null,
+        created_by: currentUser.id,
+        status: "New"
+      };
+      
+      // Save to Supabase
+      await createInquiry(submittedFormData);
+      
+      toast.success("Inquiry created successfully!");
+      navigate("/inquiries");
+    } catch (error) {
+      console.error("Error creating inquiry:", error);
+      toast.error("Failed to create inquiry. Please try again.");
+    }
   };
 
   return (

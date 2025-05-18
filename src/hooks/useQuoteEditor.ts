@@ -1,183 +1,188 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { QuoteData, RoomArrangement, QuoteTransfer } from "../types/quote.types";
-import { getQuoteById, saveQuote } from "../services/quoteService";
-import { useQuoteCalculations } from "./useQuoteCalculations";
+import { useNavigate } from "react-router-dom";
+import { getQuoteById, saveQuote, updateQuoteStatus } from "../services/quoteService";
+import { QuoteData, RoomArrangement } from "../types/quote.types";
 
-export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+export const useQuoteEditor = (quoteId?: string, role?: string) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
   const [quote, setQuote] = useState<QuoteData | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [selectedHotelId, setSelectedHotelId] = useState<string>("");
-  
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
   // Load quote data
   useEffect(() => {
-    if (!quoteId) return;
-    
     const loadQuote = async () => {
-      try {
+      if (quoteId) {
         setLoading(true);
-        const quoteData = await getQuoteById(quoteId);
-        
-        if (quoteData) {
-          // Initialize transfers array if it doesn't exist
-          if (!quoteData.transfers) {
-            quoteData.transfers = [];
-          }
-          
+        try {
+          const quoteData = await getQuoteById(quoteId);
           setQuote(quoteData);
-          // If there's a saved hotelId in the quote, select it
-          if (quoteData.hotelId) {
+          
+          // Set selected hotel if present in the quote
+          if (quoteData?.hotelId) {
             setSelectedHotelId(quoteData.hotelId);
           }
-        } else {
-          toast.error("Quote not found");
-          navigate("/quotes");
+        } catch (error) {
+          console.error("Error loading quote:", error);
+          toast.error("Failed to load quote data");
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Error loading quote:", error);
-        toast.error("Failed to load quote data");
-      } finally {
-        setLoading(false);
       }
     };
     
     loadQuote();
-  }, [quoteId, navigate]);
-  
-  // Check permissions
-  useEffect(() => {
-    // Only allow agent, tour_operator, org_owner, or system_admin roles to edit quotes
-    if (!['agent', 'tour_operator', 'org_owner', 'system_admin'].includes(role)) {
-      toast.error("You don't have permission to edit quotes");
-      navigate("/");
-    }
-  }, [role, navigate]);
+  }, [quoteId]);
 
-  // Use the quote calculations hook if quote data is available
-  const calculations = quote ? useQuoteCalculations(quote) : null;
-  
-  // Handle hotel selection
+  // Handlers for quote modifications
   const handleHotelSelection = (hotelId: string) => {
     setSelectedHotelId(hotelId);
-    // We no longer update the quote's hotelId here since we now support multiple hotels
+    if (quote) {
+      setQuote({
+        ...quote,
+        hotelId: hotelId
+      });
+    }
   };
-  
-  // Create default room arrangement from hotel room type
-  const createDefaultRoomArrangement = (roomType: any, duration: number, hotelId: string): RoomArrangement => {
-    return {
-      id: `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      hotelId: hotelId, // Store which hotel this room arrangement belongs to
+
+  const populateRoomArrangementsFromHotel = (roomTypes: any[], nights: number) => {
+    if (!quote) return;
+    
+    // Don't modify existing arrangements
+    if (quote.roomArrangements.some(arr => arr.hotelId === selectedHotelId)) return;
+    
+    // Create a new room arrangement based on the first room type
+    if (roomTypes.length > 0) {
+      const firstRoomType = roomTypes[0];
+      
+      const newArrangement: RoomArrangement = {
+        id: `room-${Date.now()}`,
+        hotelId: selectedHotelId || undefined,
+        roomType: firstRoomType.name,
+        numRooms: 1,
+        adults: quote.travelers.adults,
+        childrenWithBed: quote.travelers.childrenWithBed,
+        childrenNoBed: quote.travelers.childrenNoBed,
+        infants: quote.travelers.infants,
+        ratePerNight: {
+          adult: firstRoomType.rate || 100,
+          childWithBed: firstRoomType.childRate || 70,
+          childNoBed: firstRoomType.childNoBedrRate || 40,
+          infant: 0
+        },
+        nights: nights,
+        total: calculateRoomTotal({
+          adults: quote.travelers.adults,
+          childrenWithBed: quote.travelers.childrenWithBed,
+          childrenNoBed: quote.travelers.childrenNoBed,
+          infants: quote.travelers.infants,
+          ratePerNight: {
+            adult: firstRoomType.rate || 100,
+            childWithBed: firstRoomType.childRate || 70,
+            childNoBed: firstRoomType.childNoBedrRate || 40,
+            infant: 0
+          },
+          numRooms: 1,
+          nights: nights
+        })
+      };
+      
+      setQuote({
+        ...quote,
+        roomArrangements: [...quote.roomArrangements, newArrangement]
+      });
+    }
+  };
+
+  const addRoomArrangement = (roomType: any, nights: number) => {
+    if (!quote) return;
+    
+    const newArrangement: RoomArrangement = {
+      id: `room-${Date.now()}`,
+      hotelId: selectedHotelId || undefined,
       roomType: roomType.name,
       numRooms: 1,
-      adults: Math.min(2, roomType.maxOccupancy || 2),
+      adults: 2,
       childrenWithBed: 0,
       childrenNoBed: 0,
       infants: 0,
       ratePerNight: {
-        adult: roomType.ratePerNight || 80,
-        childWithBed: roomType.ratePerNight * 0.75 || 60,
-        childNoBed: roomType.ratePerNight * 0.5 || 40,
+        adult: roomType.rate || 100,
+        childWithBed: roomType.childRate || 70,
+        childNoBed: roomType.childNoBedrRate || 40,
         infant: 0
       },
-      nights: duration,
-      total: roomType.ratePerNight * duration || 80 * duration
+      nights: nights,
+      total: calculateRoomTotal({
+        adults: 2,
+        childrenWithBed: 0,
+        childrenNoBed: 0,
+        infants: 0,
+        ratePerNight: {
+          adult: roomType.rate || 100,
+          childWithBed: roomType.childRate || 70,
+          childNoBed: roomType.childNoBedrRate || 40,
+          infant: 0
+        },
+        numRooms: 1,
+        nights: nights
+      })
     };
+    
+    setQuote({
+      ...quote,
+      roomArrangements: [...quote.roomArrangements, newArrangement]
+    });
   };
 
-  // Populate room arrangements from hotel room types
-  const populateRoomArrangementsFromHotel = (hotelRoomTypes: any[], duration: number) => {
-    if (!hotelRoomTypes || hotelRoomTypes.length === 0 || !quote || !selectedHotelId) return;
+  // Calculate total cost for a room arrangement
+  const calculateRoomTotal = (room: Partial<RoomArrangement>) => {
+    if (!room.ratePerNight || !room.nights) return 0;
     
-    // Create room arrangements from hotel room types
-    const newRoomArrangements = hotelRoomTypes.map(roomType => 
-      createDefaultRoomArrangement(roomType, duration, selectedHotelId)
+    return room.numRooms! * (
+      (room.adults! * room.ratePerNight.adult * room.nights) +
+      (room.childrenWithBed! * room.ratePerNight.childWithBed * room.nights) +
+      (room.childrenNoBed! * room.ratePerNight.childNoBed * room.nights) +
+      (room.infants! * room.ratePerNight.infant * room.nights)
     );
-    
-    // Update the quote with new room arrangements - preserve arrangements for other hotels
-    setQuote(prev => {
-      if (!prev) return prev;
-      
-      // Filter out any existing arrangements for this hotel
-      const otherHotelsArrangements = prev.roomArrangements.filter(arr => arr.hotelId !== selectedHotelId);
-      
-      const updatedArrangements = [...otherHotelsArrangements, ...newRoomArrangements];
-      
-      return {
-        ...prev,
-        roomArrangements: updatedArrangements,
-        travelers: calculations?.calculateTotalTravelers(updatedArrangements) || prev.travelers
-      };
-    });
   };
-  
-  // Add a new room arrangement
-  const addRoomArrangement = (roomType: any, duration: number) => {
-    if (!quote || !selectedHotelId) return;
-    
-    const newArrangement = createDefaultRoomArrangement(roomType, duration, selectedHotelId);
-    
-    setQuote(prev => {
-      if (!prev) return prev;
-      
-      const updatedArrangements = [...prev.roomArrangements, newArrangement];
-      
-      // Calculate total travelers
-      const totalTravelers = calculations?.calculateTotalTravelers(updatedArrangements) || prev.travelers;
-      
-      return {
-        ...prev,
-        roomArrangements: updatedArrangements,
-        travelers: totalTravelers
-      };
-    });
-  };
-  
-  // Handle room arrangements change
+
   const handleRoomArrangementsChange = (arrangements: RoomArrangement[]) => {
     if (!quote) return;
     
-    setQuote(prev => {
-      if (!prev) return prev;
-      
-      // Calculate total travelers from room arrangements
-      const totalTravelers = calculations?.calculateTotalTravelers(arrangements) || prev.travelers;
-      
-      return {
-        ...prev,
-        roomArrangements: arrangements,
-        travelers: totalTravelers
-      };
+    // Calculate totals for each room arrangement
+    const updatedArrangements = arrangements.map(arr => ({
+      ...arr,
+      total: calculateRoomTotal(arr)
+    }));
+    
+    setQuote({
+      ...quote,
+      roomArrangements: updatedArrangements
     });
   };
-  
-  // Handle transfers change
-  const handleTransfersChange = (transfers: QuoteTransfer[]) => {
+
+  const handleTransfersChange = (transfers: any[]) => {
     if (!quote) return;
     
-    setQuote(prev => {
-      if (!prev) return prev;
-      
-      return {
-        ...prev,
-        transfers: transfers,
-      };
+    setQuote({
+      ...quote,
+      transfers
     });
   };
-  
-  // Handle save quote
+
+  // Save the quote
   const handleSave = async () => {
     if (!quote) return;
     
+    setSaving(true);
     try {
-      setSaving(true);
-      // We now save all room arrangements with their respective hotelIds
       const savedQuote = await saveQuote(quote);
-      toast.success("Quote saved successfully");
       setQuote(savedQuote);
+      toast.success("Quote saved successfully");
     } catch (error) {
       console.error("Error saving quote:", error);
       toast.error("Failed to save quote");
@@ -185,38 +190,36 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
       setSaving(false);
     }
   };
-  
-  // Preview quote
+
+  // Preview, email, and download functions
   const previewQuote = () => {
-    if (!quote || !calculations) return;
+    if (!quote) return;
     
     // Store the current quote data in session storage for preview
-    sessionStorage.setItem('previewQuote', JSON.stringify({
-      ...quote,
-      subtotal: calculations.calculateSubtotal(),
-      markup: {
-        ...quote.markup,
-        amount: calculations.calculateMarkup()
-      },
-      grandTotal: calculations.calculateGrandTotal(),
-      perPersonCost: calculations.calculatePerPersonCost(),
-      hotelId: selectedHotelId
-    }));
-    
+    sessionStorage.setItem('previewQuote', JSON.stringify(quote));
     // Open in new tab
     window.open('/quote-preview', '_blank');
   };
   
-  // Download quote as PDF
+  const emailQuote = async () => {
+    if (!quote) return;
+    
+    toast.success("Quote sent to client via email");
+    // Update status to sent
+    try {
+      await updateQuoteStatus(quote.id!, "sent");
+      setQuote({
+        ...quote,
+        status: "sent"
+      });
+    } catch (error) {
+      console.error("Error updating quote status:", error);
+    }
+  };
+  
   const downloadQuote = () => {
     toast.success("Quote downloaded as PDF");
     // In a real app, this would generate and download a PDF
-  };
-  
-  // Email quote to client
-  const emailQuote = () => {
-    toast.success("Quote sent to client via email");
-    // In a real app, this would send an email
   };
 
   return {
@@ -224,7 +227,6 @@ export const useQuoteEditor = (quoteId: string | undefined, role: string) => {
     quote,
     saving,
     selectedHotelId,
-    calculations,
     handleHotelSelection,
     populateRoomArrangementsFromHotel,
     addRoomArrangement,

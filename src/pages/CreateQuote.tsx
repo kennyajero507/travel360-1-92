@@ -508,21 +508,42 @@ const CreateQuote = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, save to database via API
-    console.log("Quote data:", formData);
-    
-    toast.success("Quote created successfully!");
-    navigate("/quotes");
+    try {
+      // In a real app, save to database via API
+      const quoteData = {
+        ...formData,
+        inquiry_id: inquiryId || null,
+        status: "sent"
+      };
+      
+      await saveQuote(quoteData);
+      toast.success("Quote created successfully!");
+      navigate("/quotes");
+    } catch (error) {
+      console.error("Error creating quote:", error);
+      toast.error("Failed to create quote. Please try again.");
+    }
   };
 
   // Save as draft
-  const saveAsDraft = () => {
-    console.log("Draft saved:", formData);
-    toast.success("Quote saved as draft");
-    navigate("/quotes");
+  const saveAsDraft = async () => {
+    try {
+      const quoteData = {
+        ...formData,
+        inquiry_id: inquiryId || null,
+        status: "draft"
+      };
+      
+      await saveQuote(quoteData);
+      toast.success("Quote saved as draft");
+      navigate("/quotes");
+    } catch (error) {
+      console.error("Error saving quote draft:", error);
+      toast.error("Failed to save draft. Please try again.");
+    }
   };
   
   // Preview quote

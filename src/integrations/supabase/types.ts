@@ -9,7 +9,164 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      inquiries: {
+        Row: {
+          adults: number
+          assigned_agent_name: string | null
+          assigned_to: string | null
+          budget: number | null
+          children: number
+          client: string
+          created_at: string | null
+          created_by: string | null
+          destination: string
+          end_date: string
+          id: string
+          infants: number
+          mobile: string
+          num_rooms: number
+          preferences: string | null
+          priority: string | null
+          start_date: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          adults?: number
+          assigned_agent_name?: string | null
+          assigned_to?: string | null
+          budget?: number | null
+          children?: number
+          client: string
+          created_at?: string | null
+          created_by?: string | null
+          destination: string
+          end_date: string
+          id: string
+          infants?: number
+          mobile: string
+          num_rooms?: number
+          preferences?: string | null
+          priority?: string | null
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          adults?: number
+          assigned_agent_name?: string | null
+          assigned_to?: string | null
+          budget?: number | null
+          children?: number
+          client?: string
+          created_at?: string | null
+          created_by?: string | null
+          destination?: string
+          end_date?: string
+          id?: string
+          infants?: number
+          mobile?: string
+          num_rooms?: number
+          preferences?: string | null
+          priority?: string | null
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          activities: Json
+          adults: number
+          children_no_bed: number
+          children_with_bed: number
+          client: string
+          created_at: string | null
+          created_by: string | null
+          destination: string
+          duration_days: number
+          duration_nights: number
+          end_date: string
+          hotel_id: string | null
+          id: string
+          infants: number
+          inquiry_id: string | null
+          markup_type: string
+          markup_value: number
+          mobile: string
+          notes: string | null
+          room_arrangements: Json
+          start_date: string
+          status: string | null
+          transfers: Json
+          transports: Json
+          updated_at: string | null
+        }
+        Insert: {
+          activities?: Json
+          adults?: number
+          children_no_bed?: number
+          children_with_bed?: number
+          client: string
+          created_at?: string | null
+          created_by?: string | null
+          destination: string
+          duration_days: number
+          duration_nights: number
+          end_date: string
+          hotel_id?: string | null
+          id: string
+          infants?: number
+          inquiry_id?: string | null
+          markup_type: string
+          markup_value: number
+          mobile: string
+          notes?: string | null
+          room_arrangements?: Json
+          start_date: string
+          status?: string | null
+          transfers?: Json
+          transports?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          activities?: Json
+          adults?: number
+          children_no_bed?: number
+          children_with_bed?: number
+          client?: string
+          created_at?: string | null
+          created_by?: string | null
+          destination?: string
+          duration_days?: number
+          duration_nights?: number
+          end_date?: string
+          hotel_id?: string | null
+          id?: string
+          infants?: number
+          inquiry_id?: string | null
+          markup_type?: string
+          markup_value?: number
+          mobile?: string
+          notes?: string | null
+          room_arrangements?: Json
+          start_date?: string
+          status?: string | null
+          transfers?: Json
+          transports?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -29,6 +28,7 @@ import { FileText, Plus, MoreHorizontal, Download, Eye, Edit } from "lucide-reac
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
 import { useRole } from "../contexts/RoleContext";
+import { getAllQuotes } from "../services/quoteService";
 
 // Sample complete quote data for preview
 const mockQuoteData = {
@@ -126,12 +126,30 @@ const mockQuotes = [
 ];
 
 const Quotes = () => {
+  const [quotes, setQuotes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { currentUser, role } = useRole();
 
-  const filteredQuotes = mockQuotes.filter(quote => {
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      try {
+        const data = await getAllQuotes();
+        setQuotes(data);
+      } catch (error) {
+        console.error("Error fetching quotes:", error);
+        toast.error("Failed to load quotes");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuotes();
+  }, []);
+
+  const filteredQuotes = quotes.filter(quote => {
     const matchesFilter = filter === "all" || quote.status.toLowerCase() === filter.toLowerCase();
     const matchesSearch = quote.client.toLowerCase().includes(search.toLowerCase()) ||
                           quote.destination.toLowerCase().includes(search.toLowerCase()) ||
