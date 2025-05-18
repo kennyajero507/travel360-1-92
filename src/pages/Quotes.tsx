@@ -120,7 +120,7 @@ const mockQuoteData = [
 
 const Quotes = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -173,7 +173,7 @@ const Quotes = () => {
                        quote.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        quote.id.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "" || quote.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || quote.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -228,7 +228,7 @@ const Quotes = () => {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="sent">Sent</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
