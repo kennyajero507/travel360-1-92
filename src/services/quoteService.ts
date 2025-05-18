@@ -1,6 +1,6 @@
 
 import { supabase } from "../integrations/supabase/client";
-import { QuoteData } from "../types/quote.types";
+import { QuoteData, RoomArrangement, QuoteActivity, QuoteTransport, QuoteTransfer } from "../types/quote.types";
 
 // Get all quotes
 export const getAllQuotes = async () => {
@@ -51,10 +51,10 @@ export const getQuoteById = async (quoteId: string): Promise<QuoteData | null> =
         childrenNoBed: data.children_no_bed,
         infants: data.infants
       },
-      roomArrangements: data.room_arrangements || [],
-      activities: data.activities || [],
-      transports: data.transports || [],
-      transfers: data.transfers || [],
+      roomArrangements: data.room_arrangements as RoomArrangement[],
+      activities: data.activities as QuoteActivity[],
+      transports: data.transports as QuoteTransport[],
+      transfers: data.transfers as QuoteTransfer[],
       markup: {
         type: data.markup_type as "percentage" | "fixed",
         value: data.markup_value
@@ -111,10 +111,10 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
     children_with_bed: quote.travelers.childrenWithBed,
     children_no_bed: quote.travelers.childrenNoBed,
     infants: quote.travelers.infants,
-    room_arrangements: quote.roomArrangements,
-    activities: quote.activities,
-    transports: quote.transports,
-    transfers: quote.transfers,
+    room_arrangements: JSON.stringify(quote.roomArrangements),
+    activities: JSON.stringify(quote.activities),
+    transports: JSON.stringify(quote.transports),
+    transfers: JSON.stringify(quote.transfers),
     markup_type: quote.markup.type,
     markup_value: quote.markup.value,
     notes: quote.notes,

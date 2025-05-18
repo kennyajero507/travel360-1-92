@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import RoomArrangementSection from "../components/quote/RoomArrangementSection";
 import TransferSection from "../components/quote/TransferSection";
 import { RoomArrangement, QuoteActivity, QuoteTransport, QuoteData } from "../types/quote.types";
+import { saveQuote } from "../services/quoteService";
 
 // Available room types
 const availableRoomTypes = [
