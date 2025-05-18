@@ -33,19 +33,29 @@ const HotelSelection = ({
     }
   }, [selectedHotelId, hotels, onRoomTypesLoaded]);
 
+  // Filter out any hotel that doesn't have a valid ID
+  const validHotels = hotels.filter(hotel => hotel && hotel.id);
+
   return (
     <div className="w-full">
-      <Select value={selectedHotelId} onValueChange={onHotelSelection}>
+      <Select value={selectedHotelId || "placeholder"} onValueChange={onHotelSelection}>
         <SelectTrigger className="w-full bg-white text-gray-800 border border-teal-200 focus:ring-teal-500">
           <SelectValue placeholder="Select a hotel from inventory" />
         </SelectTrigger>
         <SelectContent className="bg-white">
-          {hotels.map(hotel => {
+          {/* Add a placeholder option */}
+          <SelectItem value="placeholder" disabled>Select a hotel from inventory</SelectItem>
+          
+          {validHotels.map(hotel => {
             // Ensure we have a valid ID string that's never empty
-            const safeId = hotel.id ? String(hotel.id) : `hotel-${hotel.name || Date.now()}`;
+            const safeId = hotel.id ? String(hotel.id) : `hotel-${Date.now()}-${Math.random()}`;
+            const displayName = hotel.name || "Unnamed Hotel";
+            const category = hotel.category || "";
+            const destination = hotel.destination || "";
+            
             return (
               <SelectItem key={safeId} value={safeId}>
-                {hotel.name} - {hotel.category} ({hotel.destination})
+                {displayName} {category && `- ${category}`} {destination && `(${destination})`}
               </SelectItem>
             );
           })}

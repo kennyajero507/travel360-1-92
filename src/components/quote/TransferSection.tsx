@@ -129,7 +129,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                   <div>
                     <label className="text-sm font-medium mb-2 block">Description</label>
                     <Input
-                      value={item.description}
+                      value={item.description || ""}
                       onChange={(e) => updateTransfer(item.id, "description", e.target.value)}
                       placeholder="E.g., Airport to hotel"
                       className="bg-white text-black"
@@ -141,7 +141,7 @@ const TransferSection: React.FC<TransferSectionProps> = ({
                   <div>
                     <label className="text-sm font-medium mb-2 block">Vehicle Type</label>
                     <Select 
-                      value={item.vehicle} 
+                      value={item.vehicle || "Sedan"} 
                       onValueChange={(value) => updateTransfer(item.id, "vehicle", value)}
                     >
                       <SelectTrigger className="bg-white text-black">

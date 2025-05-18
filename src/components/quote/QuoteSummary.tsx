@@ -23,7 +23,11 @@ const QuoteSummary = ({ quote, hotels, className }: QuoteSummaryProps) => {
     
     // Create a map of hotelId to hotel object
     const hotelMap = new Map<string, Hotel>();
-    hotels.forEach(hotel => hotelMap.set(hotel.id, hotel));
+    hotels.forEach(hotel => {
+      if (hotel && hotel.id) {
+        hotelMap.set(hotel.id, hotel);
+      }
+    });
     
     // Group room arrangements by hotel
     const hotelGroups = new Map<string, RoomArrangement[]>();
@@ -99,11 +103,11 @@ const QuoteSummary = ({ quote, hotels, className }: QuoteSummaryProps) => {
                   <TableBody>
                     {summary.roomArrangements.map((arrangement) => (
                       <TableRow key={arrangement.id}>
-                        <TableCell>{arrangement.roomType}</TableCell>
+                        <TableCell>{arrangement.roomType || "Standard Room"}</TableCell>
                         <TableCell className="text-right">{arrangement.numRooms}</TableCell>
                         <TableCell className="text-right">
                           {arrangement.adults + arrangement.childrenWithBed + arrangement.childrenNoBed}
-                          {arrangement.infants > 0 && `+${arrangement.infants} infant(s)`}
+                          {arrangement.infants > 0 && ` +${arrangement.infants} infant(s)`}
                         </TableCell>
                         <TableCell className="text-right">{arrangement.nights}</TableCell>
                         <TableCell className="text-right font-medium">

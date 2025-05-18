@@ -25,6 +25,13 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
   onRemove,
   onUpdate
 }) => {
+  // Make sure we have at least one valid room type
+  const validRoomTypes = availableRoomTypes.filter(type => type && type.trim() !== "");
+  
+  if (validRoomTypes.length === 0) {
+    validRoomTypes.push("Standard Room");
+  }
+
   return (
     <div className="border rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -47,21 +54,18 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
         <div>
           <label className="text-sm font-medium mb-2 block">Room Type</label>
           <Select
-            value={arrangement.roomType}
+            value={arrangement.roomType || validRoomTypes[0]}
             onValueChange={(value) => onUpdate(arrangement.id, "roomType", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select room type" />
             </SelectTrigger>
             <SelectContent>
-              {availableRoomTypes.map((type, idx) => {
-                // Ensure we have a valid room type string that's never empty
-                const safeType = type || `room-type-${idx}`;
-                const displayName = type || "Default Room Type";
-                return (
-                  <SelectItem key={idx} value={safeType}>{displayName}</SelectItem>
-                );
-              })}
+              {validRoomTypes.map((type, idx) => (
+                <SelectItem key={`room-type-${idx}`} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
