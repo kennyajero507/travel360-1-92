@@ -558,7 +558,7 @@ const CreateQuote = () => {
             <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
-          <Button type="submit" form="quote-form" className="bg-blue-600 hover:bg-blue-700">
+          <Button type="submit" form="quote-form">
             Create Quote
           </Button>
         </div>
@@ -1186,7 +1186,7 @@ const CreateQuote = () => {
                   <Mail className="h-4 w-4 mr-2" />
                   Email to Client
                 </Button>
-                <Button type="button" variant="outline" onClick={downloadQuote}>
+                <Button type="button" onClick={downloadQuote}>
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
                 </Button>
@@ -1199,7 +1199,7 @@ const CreateQuote = () => {
           <Button type="button" variant="outline" onClick={saveAsDraft}>
             Save as Draft
           </Button>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Create Quote</Button>
+          <Button type="submit">Create Quote</Button>
         </div>
       </form>
     </div>

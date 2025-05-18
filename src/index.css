@@ -78,17 +78,17 @@
   transform: translateY(-1px);
 }
 
-/* Fix textarea to have white background */
+/* Fix textarea to have transparent background */
 textarea {
-  @apply bg-white text-black;
+  @apply bg-transparent text-black;
 }
 
-/* Fix select and dropdowns to have white background */
+/* Fix select and dropdowns to have transparent background */
 .select-trigger, .select-content {
-  @apply bg-white text-black;
+  @apply bg-transparent text-black;
 }
 
 /* Fix dropdown menu to be visible */
 .dropdown-menu-content {
-  @apply bg-white text-black border border-gray-200 shadow-lg;
+  @apply bg-transparent text-black border border-gray-200 shadow-lg;
 }
