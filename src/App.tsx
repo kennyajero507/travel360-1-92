@@ -1,9 +1,9 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Quotes from "./pages/Quotes";
 import CreateQuote from "./pages/CreateQuote";
-import EditQuote from "./pages/EditQuote"; // Import the new EditQuote component
+import EditQuote from "./pages/EditQuote";
 import QuotePreview from "./pages/QuotePreview";
 import Clients from "./pages/Clients";
 import Settings from "./pages/Settings";
@@ -16,11 +16,16 @@ import Hotels from "./pages/Hotels";
 import CreateHotel from "./pages/CreateHotel";
 import HotelDetails from "./pages/HotelDetails";
 import EditHotel from "./pages/EditHotel";
-// Import from the new location
 import { RoleProvider } from "./contexts/role";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import Calendar from "./pages/Calendar";
 import AgentManagement from "./pages/AgentManagement";
+
+// New pages
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import AdminLogin from "./pages/AdminLogin";
 
 function App() {
   return (
@@ -29,12 +34,19 @@ function App() {
         <Router>
           <Toaster position="top-right" />
           <Routes>
+            {/* Public pages */}
+            <Route path="/landing" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            
+            {/* Authenticated pages */}
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="quotes" element={<Quotes />} />
               <Route path="quotes/create" element={<CreateQuote />} />
               <Route path="quotes/create/:inquiryId" element={<CreateQuote />} />
-              <Route path="quotes/edit/:quoteId" element={<EditQuote />} /> {/* Use new EditQuote component */}
+              <Route path="quotes/edit/:quoteId" element={<EditQuote />} />
               <Route path="quote-preview" element={<QuotePreview />} />
               <Route path="clients" element={<Clients />} />
               <Route path="inquiries" element={<Inquiries />} />
@@ -46,6 +58,10 @@ function App() {
               <Route path="calendar" element={<Calendar />} />
               <Route path="settings" element={<Settings />} />
               <Route path="agents" element={<AgentManagement />} />
+              
+              {/* Admin routes */}
+              <Route path="admin/dashboard" element={<Dashboard />} />
+              
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

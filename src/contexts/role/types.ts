@@ -3,13 +3,25 @@
 export type UserRole = 'system_admin' | 'org_owner' | 'tour_operator' | 'agent' | 'client';
 
 // Types of subscription tiers available
-export type SubscriptionTier = 'basic' | 'pro' | 'enterprise';
+export type SubscriptionTier = 'starter' | 'pro' | 'enterprise' | 'free_trial';
 
 // User with basic information
 export interface User {
   id: string;
   name: string;
   email: string;
+  organizationId?: string;
+  phone?: string;
+}
+
+// Organization information
+export interface Organization {
+  id: string;
+  name: string;
+  ownerId: string;
+  tier: SubscriptionTier;
+  memberCount: number;
+  createdAt: string;
 }
 
 // All possible permissions in the system
@@ -60,4 +72,6 @@ export interface RoleContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   permissions: Permissions;
+  organization?: Organization;
+  setOrganization: (org: Organization | undefined) => void;
 }

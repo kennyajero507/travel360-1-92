@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect } from 'react';
-import { UserRole, SubscriptionTier, RoleContextType, User, Permissions } from './types';
+import { UserRole, SubscriptionTier, RoleContextType, User, Permissions, Organization } from './types';
 import defaultPermissions from './defaultPermissions';
 
 // Create the context with a default undefined value and proper type
@@ -11,13 +11,14 @@ export const RoleContext = createContext<RoleContextType | undefined>(undefined)
  */
 export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>('agent');
-  const [tier, setTier] = useState<SubscriptionTier>('basic');
+  const [tier, setTier] = useState<SubscriptionTier>('starter');
   const [permissions, setPermissions] = useState<Permissions>(defaultPermissions.agent);
   const [currentUser, setCurrentUser] = useState<User>({
     id: 'usr-123',
     name: 'James Smith',
     email: 'james.smith@example.com'
   });
+  const [organization, setOrganization] = useState<Organization | undefined>();
 
   // Update permissions when role or tier changes
   useEffect(() => {
@@ -44,6 +45,25 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     
+    // Organization owners have additional permissions
+    if (role === 'org_owner') {
+      updatedPermissions.canManageTeamMembers = true;
+      updatedPermissions.canControlBilling = true;
+      
+      // Pro and enterprise tiers get additional permissions
+      if (tier === 'pro' || tier === 'enterprise') {
+        updatedPermissions.canImportExportHotels = true;
+        updatedPermissions.canViewCompanyReports = true;
+      }
+    }
+    
+    // System admins always have full permissions regardless of tier
+    if (role === 'system_admin') {
+      Object.keys(updatedPermissions).forEach(key => {
+        updatedPermissions[key as keyof Permissions] = true;
+      });
+    }
+    
     setPermissions(updatedPermissions);
   }, [role, tier]);
 
@@ -65,7 +85,9 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasPermission,
     permissions,
     currentUser,
-    setCurrentUser
+    setCurrentUser,
+    organization,
+    setOrganization
   };
 
   return (
