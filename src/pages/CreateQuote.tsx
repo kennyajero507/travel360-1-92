@@ -1099,7 +1099,7 @@ const CreateQuote = () => {
                 <label className="text-sm font-medium mb-2 block">Markup Type</label>
                 <Select 
                   value={formData.markup.type} 
-                  onValueChange={(value: "percentage" | "fixed" | "cost-plus") => updateMarkup("type", value)}
+                  onValueChange={(value: "percentage" | "fixed") => updateMarkup("type", value)}
                 >
                   <SelectTrigger className="bg-white text-black">
                     <SelectValue placeholder="Select markup type" />
@@ -1107,15 +1107,12 @@ const CreateQuote = () => {
                   <SelectContent>
                     <SelectItem value="percentage">Percentage (%)</SelectItem>
                     <SelectItem value="fixed">Fixed Amount</SelectItem>
-                    <SelectItem value="cost-plus">Cost Plus (85%)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  {formData.markup.type === "percentage" ? "Percentage (%)" : 
-                   formData.markup.type === "fixed" ? "Amount" : 
-                   "Cost Percentage (%)"}
+                  {formData.markup.type === "percentage" ? "Percentage (%)" : "Amount"}
                 </label>
                 <Input
                   type="number"
@@ -1125,13 +1122,7 @@ const CreateQuote = () => {
                   onChange={(e) => updateMarkup("value", parseFloat(e.target.value))}
                   required
                   className="bg-white text-black"
-                  disabled={formData.markup.type === "cost-plus"}
                 />
-                {formData.markup.type === "cost-plus" && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Fixed at 85% cost, 15% markup
-                  </p>
-                )}
               </div>
             </div>
           </CardContent>
@@ -1178,9 +1169,7 @@ const CreateQuote = () => {
               </div>
               <div className="flex justify-between">
                 <span>
-                  {formData.markup.type === "percentage" ? `Markup (${formData.markup.value}%)` : 
-                   formData.markup.type === "fixed" ? "Markup (Fixed)" : 
-                   "Markup (Cost Plus 85%)"}
+                  {formData.markup.type === "percentage" ? `Markup (${formData.markup.value}%)` : "Markup (Fixed)"}
                 </span>
                 <span>${calculateMarkup().toFixed(2)}</span>
               </div>

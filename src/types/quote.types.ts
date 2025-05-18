@@ -1,4 +1,3 @@
-
 export interface PersonTypeRates {
   adult: number;
   childWithBed: number;  // CWB
@@ -76,7 +75,7 @@ export interface QuoteData {
   activities: QuoteActivity[];
   transports: QuoteTransport[];
   markup: {
-    type: "percentage" | "fixed" | "cost-plus";
+    type: "percentage" | "fixed";
     value: number;
   };
   notes: string;
