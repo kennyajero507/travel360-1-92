@@ -1,6 +1,6 @@
 
 import { useMemo } from "react";
-import { QuoteData, Hotel, HotelSummary } from "../../types/quote.types";
+import { QuoteData, Hotel, HotelSummary, RoomArrangement } from "../../types/quote.types";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Separator } from "../ui/separator";
