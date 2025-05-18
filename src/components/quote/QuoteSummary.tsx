@@ -5,7 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from ".
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Separator } from "../ui/separator";
 import { cn } from "@/lib/utils";
-import { Hotel as HotelIcon, Check } from "lucide-react";
+import { Hotel as HotelIcon, Check, EyeIcon } from "lucide-react";
 import { useQuoteCalculations } from "../../hooks/useQuoteCalculations";
 import { Button } from "../ui/button";
 
@@ -70,9 +70,9 @@ const QuoteSummary = ({
       };
       
       const accommodationTotal = arrangements.reduce((sum, arr) => sum + arr.total, 0);
-      const transportTotal = calculations.calculateTransportSubtotal(hotelId);
-      const transferTotal = calculations.calculateTransfersSubtotal(hotelId);
-      const activityTotal = calculations.calculateActivitiesSubtotal(hotelId);
+      const transportTotal = calculations.calculateTransportSubtotal();
+      const transferTotal = calculations.calculateTransfersSubtotal();
+      const activityTotal = calculations.calculateActivitiesSubtotal();
       const subtotal = accommodationTotal + transportTotal + transferTotal + activityTotal;
       
       // Apply markup based on the quote's markup type
@@ -195,7 +195,7 @@ const QuoteSummary = ({
         
         {/* Toggle for client view */}
         <Button variant="outline" size="sm" onClick={() => window.open(`/quote-preview?id=${quote.id}`, '_blank')}>
-          <Eye className="h-4 w-4 mr-2" />
+          <EyeIcon className="h-4 w-4 mr-2" />
           Client Preview
         </Button>
       </div>
