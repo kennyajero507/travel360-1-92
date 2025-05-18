@@ -36,7 +36,7 @@ const HotelSelection = ({
   return (
     <div className="w-full">
       <Select value={selectedHotelId} onValueChange={onHotelSelection}>
-        <SelectTrigger className="w-full bg-white text-black">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder="Select a hotel from inventory" />
         </SelectTrigger>
         <SelectContent>

@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "../../ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { Plus } from "lucide-react";
 import { toast } from "../../ui/use-toast";
 import { RoomArrangement, PersonTypeRates } from "../../../types/quote.types";
 import TotalSummary from "./TotalSummary";
+import ArrangementCard from "./ArrangementCard";
 
 interface RoomArrangementSectionProps {
   roomArrangements: RoomArrangement[];
@@ -70,7 +70,7 @@ const RoomArrangementSection = ({
   };
 
   const addArrangement = () => {
-    const newId = `room-${Date.now()}`;
+    const newId = `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const newArrangement: RoomArrangement = {
       id: newId,
       hotelId: hotelId || "", // Set the hotel ID if provided
@@ -189,122 +189,24 @@ const RoomArrangementSection = ({
     <div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium">Room Arrangement Details</h3>
-        <Button type="button" variant="outline" size="sm" onClick={addArrangement}>
+        <Button onClick={addArrangement}>
           <Plus className="h-4 w-4 mr-2" />
           Add Room Arrangement
         </Button>
       </div>
       
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Room Arrangement</TableHead>
-              <TableHead>Room Type</TableHead>
-              <TableHead>No. of Rooms</TableHead>
-              <TableHead>No. of Adults</TableHead>
-              <TableHead>No. of CWB</TableHead>
-              <TableHead>No. of CNB</TableHead>
-              <TableHead>No. of Infants</TableHead>
-              <TableHead>Adult Cost</TableHead>
-              <TableHead>CWB Cost</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {arrangements.map((arrangement, index) => (
-              <TableRow key={arrangement.id}>
-                <TableCell>Arrangement {index + 1}</TableCell>
-                <TableCell>
-                  <select 
-                    className="w-full border rounded p-1"
-                    value={arrangement.roomType}
-                    onChange={(e) => updateArrangement(arrangement.id, "roomType", e.target.value)}
-                  >
-                    {availableRoomTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </TableCell>
-                <TableCell>
-                  <input 
-                    type="number" 
-                    min="1" 
-                    value={arrangement.numRooms}
-                    onChange={(e) => updateArrangement(arrangement.id, "numRooms", parseInt(e.target.value) || 1)}
-                    className="w-16 border rounded p-1"
-                  />
-                </TableCell>
-                <TableCell>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    value={arrangement.adults}
-                    onChange={(e) => updateArrangement(arrangement.id, "adults", parseInt(e.target.value) || 0)}
-                    className="w-16 border rounded p-1"
-                  />
-                </TableCell>
-                <TableCell>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    value={arrangement.childrenWithBed}
-                    onChange={(e) => updateArrangement(arrangement.id, "childrenWithBed", parseInt(e.target.value) || 0)}
-                    className="w-16 border rounded p-1"
-                  />
-                </TableCell>
-                <TableCell>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    value={arrangement.childrenNoBed}
-                    onChange={(e) => updateArrangement(arrangement.id, "childrenNoBed", parseInt(e.target.value) || 0)}
-                    className="w-16 border rounded p-1"
-                  />
-                </TableCell>
-                <TableCell>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    value={arrangement.infants}
-                    onChange={(e) => updateArrangement(arrangement.id, "infants", parseInt(e.target.value) || 0)}
-                    className="w-16 border rounded p-1"
-                  />
-                </TableCell>
-                <TableCell>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    step="0.01"
-                    value={arrangement.ratePerNight.adult}
-                    onChange={(e) => updateArrangement(arrangement.id, "rate_adult", parseFloat(e.target.value) || 0)}
-                    className="w-16 border rounded p-1"
-                  />
-                </TableCell>
-                <TableCell>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    step="0.01"
-                    value={arrangement.ratePerNight.childWithBed}
-                    onChange={(e) => updateArrangement(arrangement.id, "rate_childWithBed", parseFloat(e.target.value) || 0)}
-                    className="w-16 border rounded p-1"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => removeArrangement(arrangement.id)}
-                    className="text-red-600"
-                  >
-                    Remove
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="space-y-4 mb-6">
+        {arrangements.map((arrangement, index) => (
+          <ArrangementCard 
+            key={arrangement.id}
+            arrangement={arrangement}
+            index={index}
+            roomTypeMaxOccupancy={roomTypeMaxOccupancy}
+            availableRoomTypes={availableRoomTypes}
+            onRemove={removeArrangement}
+            onUpdate={updateArrangement}
+          />
+        ))}
       </div>
       
       <TotalSummary totalGuests={totalGuests} totalAmount={totalAmount} />

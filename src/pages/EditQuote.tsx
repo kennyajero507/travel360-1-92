@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -202,7 +203,6 @@ const EditQuote = () => {
               
               <div className="flex justify-center mt-4">
                 <Button 
-                  variant="outline" 
                   onClick={() => handleHotelSelection("")}
                   className="flex items-center gap-2"
                 >

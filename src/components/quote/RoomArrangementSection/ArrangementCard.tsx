@@ -33,10 +33,10 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
           Room Arrangement {index + 1}
         </h4>
         <Button
-          type="button"
           variant="ghost"
           size="sm"
           onClick={() => onRemove(arrangement.id)}
+          className="text-red-600"
         >
           <Minus className="h-4 w-4" />
           <span className="sr-only">Remove</span>
@@ -50,7 +50,7 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
             value={arrangement.roomType}
             onValueChange={(value) => onUpdate(arrangement.id, "roomType", value)}
           >
-            <SelectTrigger className="bg-white text-black">
+            <SelectTrigger>
               <SelectValue placeholder="Select room type" />
             </SelectTrigger>
             <SelectContent>
@@ -67,7 +67,6 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
             min="1"
             value={arrangement.numRooms}
             onChange={(e) => onUpdate(arrangement.id, "numRooms", parseInt(e.target.value) || 1)}
-            className="bg-white text-black"
           />
         </div>
       </div>
