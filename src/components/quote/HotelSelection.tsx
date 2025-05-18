@@ -36,10 +36,10 @@ const HotelSelection = ({
   return (
     <div className="w-full">
       <Select value={selectedHotelId} onValueChange={onHotelSelection}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full bg-white text-gray-800 border border-teal-200 focus:ring-teal-500">
           <SelectValue placeholder="Select a hotel from inventory" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white">
           {hotels.map(hotel => (
             <SelectItem key={hotel.id} value={hotel.id}>
               {hotel.name} - {hotel.category} ({hotel.destination})

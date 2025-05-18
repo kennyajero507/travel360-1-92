@@ -5,46 +5,46 @@
 
 @layer base {
   :root {
-    --background: 0 0% 12%;
-    --foreground: 0 0% 100%;
+    --background: 0 0% 100%;
+    --foreground: 202 24% 9%;
 
-    --card: 0 0% 15%;
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 202 24% 9%;
 
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 202 24% 9%;
 
-    --primary: 220 90% 50%;
+    --primary: 173 80% 30%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 173 80% 95%;
+    --secondary-foreground: 173 80% 40%;
 
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 80%;
+    --muted: 200 14% 96%;
+    --muted-foreground: 202 16% 56%;
 
-    --accent: 0 0% 25%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 173 80% 96%;
+    --accent-foreground: 173 80% 30%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 30%;
+    --border: 173 40% 92%;
+    --input: 173 40% 92%;
+    --ring: 173 80% 50%;
 
     --radius: 0.5rem;
     
-    --sidebar-background: 0 0% 10%;
+    --sidebar-background: 173 80% 12%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 15%;
+    --sidebar-primary: 173 80% 70%;
+    --sidebar-primary-foreground: 173 80% 12%;
+    --sidebar-accent: 173 80% 20%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 0 0% 80%;
+    --sidebar-border: 173 80% 20%;
+    --sidebar-ring: 173 80% 80%;
     
-    --promo: 220 90% 60%;
+    --promo: 173 80% 50%;
     --promo-foreground: 0 0% 100%;
   }
 }
@@ -57,7 +57,7 @@
     @apply bg-background text-foreground overflow-x-hidden font-sans;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply text-blue-600;
+    @apply text-teal-600;
   }
 }
 
@@ -80,15 +80,15 @@
 
 /* Fix textarea to have transparent background */
 textarea {
-  @apply bg-transparent text-black;
+  @apply bg-transparent text-foreground;
 }
 
 /* Fix select and dropdowns to have transparent background */
 .select-trigger, .select-content {
-  @apply bg-transparent text-black;
+  @apply bg-transparent text-foreground;
 }
 
 /* Fix dropdown menu to be visible */
 .dropdown-menu-content {
-  @apply bg-transparent text-black border border-gray-200 shadow-lg;
+  @apply bg-white text-foreground border border-gray-200 shadow-lg;
 }
