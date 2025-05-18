@@ -66,10 +66,14 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
 
   const addArrangement = () => {
     const newId = `room-${Date.now()}`;
+    const defaultRoomType = availableRoomTypes && availableRoomTypes.length > 0 
+      ? availableRoomTypes[0] 
+      : "Double Room";
+      
     const newArrangement: RoomArrangement = {
       id: newId,
       hotelId: hotelId || "", // Use the hotelId prop if provided
-      roomType: availableRoomTypes[0] || "Double Room",
+      roomType: defaultRoomType,
       numRooms: 1,
       adults: 2,
       childrenWithBed: 0,
@@ -208,9 +212,13 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                     <SelectValue placeholder="Select room type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableRoomTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
+                    {availableRoomTypes.map((type, idx) => {
+                      // Ensure we have a valid room type string that's never empty
+                      const safeType = type || `room-type-${idx}`;
+                      return (
+                        <SelectItem key={idx} value={safeType}>{safeType}</SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -355,3 +363,4 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
 };
 
 export default RoomArrangementSection;
+

@@ -1,227 +1,212 @@
 
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "../ui/select";
-import { QuoteTransfer } from "@/types/quote.types";
-import { Card } from "../ui/card";
-import { Minus, Plus } from "lucide-react";
-import { toast } from "sonner";
-
-// Vehicle types for dropdown
-const vehicleTypes = [
-  "Sedan",
-  "SUV",
-  "Van",
-  "Minibus",
-  "Coaster",
-  "Bus"
-];
+import { Plus, Minus } from "lucide-react";
 
 interface TransferSectionProps {
-  transfers: QuoteTransfer[];
-  onTransfersChange: (transfers: QuoteTransfer[]) => void;
+  transfers: any[];
+  onTransfersChange: (transfers: any[]) => void;
 }
 
-const TransferSection = ({ transfers, onTransfersChange }: TransferSectionProps) => {
-  // Add new transfer
+const TransferSection: React.FC<TransferSectionProps> = ({ 
+  transfers = [], 
+  onTransfersChange 
+}) => {
+  const [transferItems, setTransferItems] = useState<any[]>(transfers);
+  
+  // Add a new transfer item
   const addTransfer = () => {
-    const newTransfer: QuoteTransfer = {
-      id: `transfer-${Date.now()}`,
-      transferType: "Airport to Hotel",
-      fromLocation: "",
-      toLocation: "",
-      vehicleType: "Van",
-      numberOfVehicles: 1,
+    const newId = `transfer-${Date.now()}`;
+    const newTransfer = {
+      id: newId,
+      type: "Airport Transfer",
+      description: "",
+      vehicle: "Sedan",
+      passengers: 2,
       costPerVehicle: 50,
-      total: 50 // Initial total = 1 vehicle × $50
+      quantity: 1,
+      total: 50
     };
     
-    onTransfersChange([...transfers, newTransfer]);
-    toast.success("Transfer added");
-  };
-  
-  // Remove transfer
-  const removeTransfer = (id: string) => {
-    onTransfersChange(transfers.filter(transfer => transfer.id !== id));
-    toast.success("Transfer removed");
-  };
-  
-  // Update transfer field
-  const updateTransfer = (id: string, field: keyof QuoteTransfer, value: any) => {
-    const updatedTransfers = transfers.map(transfer => {
-      if (transfer.id === id) {
-        const updatedTransfer = {
-          ...transfer,
-          [field]: value
-        };
-        
-        // Recalculate total when number of vehicles or cost per vehicle changes
-        if (field === 'numberOfVehicles' || field === 'costPerVehicle') {
-          updatedTransfer.total = updatedTransfer.numberOfVehicles * updatedTransfer.costPerVehicle;
-        }
-        
-        return updatedTransfer;
-      }
-      return transfer;
-    });
-    
+    const updatedTransfers = [...transferItems, newTransfer];
+    setTransferItems(updatedTransfers);
     onTransfersChange(updatedTransfers);
   };
-
-  // Calculate subtotal for all transfers
+  
+  // Remove a transfer item
+  const removeTransfer = (id: string) => {
+    const updatedTransfers = transferItems.filter(item => item.id !== id);
+    setTransferItems(updatedTransfers);
+    onTransfersChange(updatedTransfers);
+  };
+  
+  // Update a transfer item field
+  const updateTransfer = (id: string, field: string, value: any) => {
+    const updatedTransfers = transferItems.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value };
+        
+        // Recalculate total
+        updatedItem.total = updatedItem.costPerVehicle * updatedItem.quantity;
+        return updatedItem;
+      }
+      return item;
+    });
+    
+    setTransferItems(updatedTransfers);
+    onTransfersChange(updatedTransfers);
+  };
+  
+  // Calculate transfer subtotal
   const calculateTransferSubtotal = () => {
-    return transfers.reduce((sum, transfer) => sum + transfer.total, 0);
+    return transferItems.reduce((sum, item) => sum + item.total, 0);
   };
 
   return (
     <div className="space-y-4">
-      {transfers.length === 0 ? (
-        <div className="text-center py-8 border border-dashed border-gray-200 rounded-md">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Transfers</h3>
+        <Button type="button" variant="outline" size="sm" onClick={addTransfer}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Transfer
+        </Button>
+      </div>
+      
+      {transferItems.length === 0 ? (
+        <div className="text-center py-6 border border-dashed border-gray-200 rounded-md">
           <p className="text-gray-500">No transfers added yet</p>
-          <Button 
-            onClick={addTransfer} 
-            className="mt-4"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add First Transfer
+          <Button type="button" variant="ghost" size="sm" onClick={addTransfer} className="mt-2">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Transfer
           </Button>
         </div>
       ) : (
-        <>
-          {transfers.map((transfer, index) => (
-            <Card key={transfer.id} className="p-4 border border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-medium">Transfer #{index + 1}</h4>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => removeTransfer(transfer.id)}
-                >
-                  <Minus className="h-4 w-4" />
-                  <span className="sr-only">Remove</span>
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Transfer Type</label>
-                  <Select 
-                    value={transfer.transferType} 
-                    onValueChange={(value) => updateTransfer(transfer.id, "transferType", value)}
+        <div className="space-y-4">
+          {transferItems.map((item, index) => (
+            <Card key={item.id} className="border border-gray-200">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Transfer {index + 1}</h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeTransfer(item.id)}
+                    className="text-red-600"
                   >
-                    <SelectTrigger className="w-full bg-white text-gray-800 border border-teal-200 focus:ring-teal-500">
-                      <SelectValue placeholder="Select transfer type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="Airport to Hotel">Airport to Hotel</SelectItem>
-                      <SelectItem value="Hotel to Hotel">Hotel to Hotel</SelectItem>
-                      <SelectItem value="Custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Minus className="h-4 w-4" />
+                    <span className="sr-only">Remove</span>
+                  </Button>
                 </div>
                 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Vehicle Type</label>
-                  <Select 
-                    value={transfer.vehicleType} 
-                    onValueChange={(value) => updateTransfer(transfer.id, "vehicleType", value)}
-                  >
-                    <SelectTrigger className="w-full bg-white text-gray-800 border border-teal-200 focus:ring-teal-500">
-                      <SelectValue placeholder="Select vehicle type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      {vehicleTypes.map(vehicle => (
-                        <SelectItem key={vehicle} value={vehicle}>{vehicle}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Transfer Type</label>
+                    <Select 
+                      value={item.type} 
+                      onValueChange={(value) => updateTransfer(item.id, "type", value)}
+                    >
+                      <SelectTrigger className="bg-white text-black">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Airport Transfer">Airport Transfer</SelectItem>
+                        <SelectItem value="Hotel to Hotel">Hotel to Hotel</SelectItem>
+                        <SelectItem value="Hotel to Activity">Hotel to Activity</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Description</label>
+                    <Input
+                      value={item.description}
+                      onChange={(e) => updateTransfer(item.id, "description", e.target.value)}
+                      placeholder="E.g., Airport to hotel"
+                      className="bg-white text-black"
+                    />
+                  </div>
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">From Location</label>
-                  <Input
-                    type="text"
-                    value={transfer.fromLocation}
-                    onChange={(e) => updateTransfer(transfer.id, "fromLocation", e.target.value)}
-                    placeholder="e.g., Airport name, Hotel name"
-                    className="bg-white text-gray-800"
-                  />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Vehicle Type</label>
+                    <Select 
+                      value={item.vehicle} 
+                      onValueChange={(value) => updateTransfer(item.id, "vehicle", value)}
+                    >
+                      <SelectTrigger className="bg-white text-black">
+                        <SelectValue placeholder="Select vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sedan">Sedan (up to 3 pax)</SelectItem>
+                        <SelectItem value="SUV">SUV (up to 5 pax)</SelectItem>
+                        <SelectItem value="Minivan">Minivan (up to 7 pax)</SelectItem>
+                        <SelectItem value="Van">Van (up to 12 pax)</SelectItem>
+                        <SelectItem value="Bus">Bus (13+ pax)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Maximum Passengers</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.passengers}
+                      onChange={(e) => updateTransfer(item.id, "passengers", parseInt(e.target.value) || 1)}
+                      className="bg-white text-black"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">To Location</label>
-                  <Input
-                    type="text"
-                    value={transfer.toLocation}
-                    onChange={(e) => updateTransfer(transfer.id, "toLocation", e.target.value)}
-                    placeholder="e.g., Hotel name, Activity site"
-                    className="bg-white text-gray-800"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Number of Vehicles</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={transfer.numberOfVehicles}
-                    onChange={(e) => updateTransfer(transfer.id, "numberOfVehicles", parseInt(e.target.value) || 1)}
-                    className="bg-white text-gray-800"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Cost per Vehicle</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Cost Per Vehicle</label>
                     <Input
                       type="number"
                       min="0"
                       step="0.01"
-                      value={transfer.costPerVehicle}
-                      onChange={(e) => updateTransfer(transfer.id, "costPerVehicle", parseFloat(e.target.value) || 0)}
-                      className="pl-6 bg-white text-gray-800"
+                      value={item.costPerVehicle}
+                      onChange={(e) => updateTransfer(item.id, "costPerVehicle", parseFloat(e.target.value) || 0)}
+                      className="bg-white text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Quantity</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => updateTransfer(item.id, "quantity", parseInt(e.target.value) || 1)}
+                      className="bg-white text-black"
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Total Cost</label>
-                  <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 flex items-center">
-                    <span className="text-gray-500">$</span>
-                    <span className="ml-1">{transfer.total.toFixed(2)}</span>
-                  </div>
+                
+                <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
+                  <span className="text-sm">
+                    {item.quantity} x {item.vehicle} ({item.type})
+                  </span>
+                  <span className="font-medium">${item.total.toFixed(2)}</span>
                 </div>
-              </div>
-              
-              <div className="mt-4 p-2 bg-gray-50 rounded-md">
-                <p className="text-sm">
-                  {transfer.transferType}: {transfer.fromLocation || "[From]"} → {transfer.toLocation || "[To]"} | 
-                  {transfer.numberOfVehicles} {transfer.vehicleType}(s) × ${transfer.costPerVehicle.toFixed(2)}
-                </p>
-              </div>
+              </CardContent>
             </Card>
           ))}
           
-          <div className="flex justify-between items-center">
-            <Button onClick={addTransfer}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Another Transfer
-            </Button>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Subtotal</p>
-              <p className="font-medium">${calculateTransferSubtotal().toFixed(2)}</p>
-            </div>
+          <div className="flex justify-between items-center pt-2">
+            <span className="text-sm font-medium">Transfers Subtotal</span>
+            <span className="font-medium">${calculateTransferSubtotal().toFixed(2)}</span>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
