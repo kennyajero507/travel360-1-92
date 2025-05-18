@@ -517,7 +517,7 @@ const CreateQuote = () => {
       const quoteData = {
         ...formData,
         inquiry_id: inquiryId || null,
-        status: "sent"
+        status: "sent" as "draft" | "sent" | "approved" | "rejected"
       };
       
       await saveQuote(quoteData);
@@ -535,7 +535,7 @@ const CreateQuote = () => {
       const quoteData = {
         ...formData,
         inquiry_id: inquiryId || null,
-        status: "draft"
+        status: "draft" as "draft" | "sent" | "approved" | "rejected"
       };
       
       await saveQuote(quoteData);

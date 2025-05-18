@@ -51,10 +51,18 @@ export const getQuoteById = async (quoteId: string): Promise<QuoteData | null> =
         childrenNoBed: data.children_no_bed,
         infants: data.infants
       },
-      roomArrangements: data.room_arrangements as RoomArrangement[],
-      activities: data.activities as QuoteActivity[],
-      transports: data.transports as QuoteTransport[],
-      transfers: data.transfers as QuoteTransfer[],
+      roomArrangements: (typeof data.room_arrangements === 'string'
+        ? JSON.parse(data.room_arrangements)
+        : data.room_arrangements) as RoomArrangement[],
+      activities: (typeof data.activities === 'string'
+        ? JSON.parse(data.activities)
+        : data.activities) as QuoteActivity[],
+      transports: (typeof data.transports === 'string'
+        ? JSON.parse(data.transports)
+        : data.transports) as QuoteTransport[],
+      transfers: (typeof data.transfers === 'string'
+        ? JSON.parse(data.transfers)
+        : data.transfers) as QuoteTransfer[],
       markup: {
         type: data.markup_type as "percentage" | "fixed",
         value: data.markup_value
