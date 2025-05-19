@@ -64,7 +64,7 @@ export const InquiryRow = ({ inquiry, openAssignDialog, permissions, role, curre
           openAssignDialog={openAssignDialog}
           permissions={permissions}
           role={role}
-          currentUserId={currentUser?.id}
+          currentUserId={currentUser?.id || ''}
         />
       </TableCell>
     </TableRow>

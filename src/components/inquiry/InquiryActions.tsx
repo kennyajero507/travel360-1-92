@@ -22,20 +22,20 @@ export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, c
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
           <MoreHorizontal className="h-4 w-4" />
-          <span className="sr-only">Actions</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="bg-white">
         <DropdownMenuItem asChild>
-          <Link to={`/inquiries/${inquiry.id}`} className="flex items-center w-full">
+          <Link to={`/inquiries/${inquiry.id}`} className="flex items-center w-full cursor-pointer">
             <MessageSquare className="mr-2 h-4 w-4" />
             View Inquiry
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to={`/inquiries/${inquiry.id}/edit`} className="flex items-center w-full">
+          <Link to={`/inquiries/${inquiry.id}/edit`} className="flex items-center w-full cursor-pointer">
             <MessageSquare className="mr-2 h-4 w-4" />
             Edit Inquiry
           </Link>
@@ -43,7 +43,7 @@ export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, c
         {/* Only show create quote option if inquiry is assigned to the current agent or if user is admin/operator */}
         {(role !== 'agent' || inquiry.assigned_to === currentUserId) && (
           <DropdownMenuItem asChild>
-            <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full">
+            <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full cursor-pointer">
               <FileText className="mr-2 h-4 w-4" />
               Create Quote
             </Link>
@@ -52,7 +52,10 @@ export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, c
         {permissions.canAssignInquiries && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => openAssignDialog(inquiry.id)} className="flex items-center w-full">
+            <DropdownMenuItem 
+              onClick={() => openAssignDialog(inquiry.id)}
+              className="flex items-center w-full cursor-pointer"
+            >
               <UserCheck className="mr-2 h-4 w-4" />
               Assign to Agent
             </DropdownMenuItem>
