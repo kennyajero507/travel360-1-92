@@ -38,103 +38,6 @@ import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
 import { getAllInquiries } from "../services/inquiryService";
 
-// Mock inquiries data
-const mockInquiries = [
-  {
-    id: "I-2024-001",
-    client: "John Smith",
-    mobile: "+1 (555) 123-4567",
-    destination: "Zanzibar",
-    dates: "Aug 20-27, 2024",
-    travelers: {
-      adults: 2,
-      children: 0,
-      infants: 0
-    },
-    roomType: "Deluxe",
-    numRooms: 1,
-    budget: "$5,000",
-    status: "New",
-    priority: "Normal",
-    assignedTo: null,
-  },
-  {
-    id: "I-2024-002",
-    client: "Emily Wilson",
-    mobile: "+1 (555) 234-5678",
-    destination: "Serengeti Safari",
-    dates: "Sept 10-20, 2024",
-    travelers: {
-      adults: 2,
-      children: 2,
-      infants: 0
-    },
-    roomType: "Family",
-    numRooms: 1,
-    budget: "$12,000",
-    status: "Assigned",
-    priority: "High",
-    assignedTo: "agent-1",
-    assignedAgentName: "James Smith",
-  },
-  {
-    id: "I-2024-003",
-    client: "Michael Chang",
-    mobile: "+1 (555) 345-6789",
-    destination: "Cape Town",
-    dates: "Oct 5-15, 2024",
-    travelers: {
-      adults: 2,
-      children: 0,
-      infants: 0
-    },
-    roomType: "Suite",
-    numRooms: 1,
-    budget: "$6,500",
-    status: "Quoted",
-    priority: "Urgent",
-    assignedTo: "agent-2",
-    assignedAgentName: "Sarah Johnson",
-  },
-  {
-    id: "I-2024-004",
-    client: "Sarah Johnson",
-    mobile: "+1 (555) 456-7890",
-    destination: "Morocco",
-    dates: "Nov 12-22, 2024",
-    travelers: {
-      adults: 2,
-      children: 1,
-      infants: 0
-    },
-    roomType: "Standard",
-    numRooms: 1,
-    budget: "$8,000",
-    status: "New",
-    priority: "Normal",
-    assignedTo: null,
-  },
-  {
-    id: "I-2024-005",
-    client: "Robert Davis",
-    mobile: "+1 (555) 567-8901",
-    destination: "Nairobi & Maasai Mara",
-    dates: "Dec 18-30, 2024",
-    travelers: {
-      adults: 4,
-      children: 2,
-      infants: 0
-    },
-    roomType: "Villa",
-    numRooms: 2,
-    budget: "$15,000",
-    status: "Assigned",
-    priority: "Normal",
-    assignedTo: "agent-3",
-    assignedAgentName: "Robert Lee",
-  },
-];
-
 // Mock agents data
 const mockAgents = [
   { id: "agent-1", name: "James Smith" },
@@ -171,6 +74,7 @@ const Inquiries = () => {
     const fetchInquiries = async () => {
       try {
         const data = await getAllInquiries();
+        console.log("Fetched inquiries:", data);
         setInquiries(data);
       } catch (error) {
         console.error("Error fetching inquiries:", error);
@@ -188,7 +92,7 @@ const Inquiries = () => {
     // For agents, only show inquiries that are ALREADY assigned to them or that they created
     // (not showing unassigned inquiries that they could claim)
     if (role === 'agent') {
-      return inquiry.assignedTo === currentUser.id;
+      return inquiry.assigned_to === currentUser.id;
     }
     // Otherwise show all inquiries if admin/owner/tour operator
     return true;
@@ -244,8 +148,8 @@ const Inquiries = () => {
         return {
           ...inquiry,
           status: "Assigned",
-          assignedTo: agent?.id || "",
-          assignedAgentName: agent?.name || ""
+          assigned_to: agent?.id || "",
+          assigned_agent_name: agent?.name || ""
         };
       }
       return inquiry;
@@ -254,8 +158,6 @@ const Inquiries = () => {
     toast.success(`Inquiry ${selectedInquiry} assigned to ${agent?.name}`);
     setDialogOpen(false);
   };
-  
-  // Removed the handleAssignToMe function to prevent agents from self-assigning
   
   // Get title based on role
   const getPageTitle = () => {
@@ -266,6 +168,18 @@ const Inquiries = () => {
       case 'agent': return 'My Inquiries Dashboard';
       default: return 'Inquiries';
     }
+  };
+
+  // Format travelers information
+  const formatTravelers = (inquiry) => {
+    let result = `${inquiry.adults || 0} A`;
+    if (inquiry.children && inquiry.children > 0) {
+      result += `, ${inquiry.children} C`;
+    }
+    if (inquiry.infants && inquiry.infants > 0) {
+      result += `, ${inquiry.infants} I`;
+    }
+    return result;
   };
 
   return (
@@ -349,26 +263,29 @@ const Inquiries = () => {
                         </div>
                       </TableCell>
                       <TableCell>{inquiry.destination}</TableCell>
-                      <TableCell>{inquiry.dates}</TableCell>
                       <TableCell>
-                        {inquiry.travelers.adults} A
-                        {inquiry.travelers.children > 0 ? `, ${inquiry.travelers.children} C` : ''}
-                        {inquiry.travelers.infants > 0 ? `, ${inquiry.travelers.infants} I` : ''}
+                        {inquiry.start_date && inquiry.end_date ? 
+                          `${new Date(inquiry.start_date).toLocaleDateString()} - ${new Date(inquiry.end_date).toLocaleDateString()}` :
+                          "Not specified"
+                        }
                       </TableCell>
-                      <TableCell>{inquiry.numRooms} {inquiry.roomType}</TableCell>
-                      <TableCell>{inquiry.budget}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getStatusColor(inquiry.status)}>
-                          {inquiry.status}
+                        {formatTravelers(inquiry)}
+                      </TableCell>
+                      <TableCell>{inquiry.num_rooms || 1} {inquiry.room_type || 'Room'}</TableCell>
+                      <TableCell>{inquiry.budget ? `$${inquiry.budget}` : 'Not specified'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusColor(inquiry.status || 'New')}>
+                          {inquiry.status || 'New'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getPriorityColor(inquiry.priority)}>
-                          {inquiry.priority}
+                        <Badge variant="outline" className={getPriorityColor(inquiry.priority || 'Normal')}>
+                          {inquiry.priority || 'Normal'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {inquiry.assignedAgentName || "-"}
+                        {inquiry.assigned_agent_name || "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -392,7 +309,7 @@ const Inquiries = () => {
                               </Link>
                             </DropdownMenuItem>
                             {/* Only show create quote option if inquiry is assigned to the current agent or if user is admin/operator */}
-                            {(role !== 'agent' || inquiry.assignedTo === currentUser.id) && (
+                            {(role !== 'agent' || inquiry.assigned_to === currentUser.id) && (
                               <DropdownMenuItem asChild>
                                 <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full">
                                   <FileText className="mr-2 h-4 w-4" />
