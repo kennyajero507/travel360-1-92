@@ -34,8 +34,9 @@ export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, c
             View Inquiry
           </Link>
         </DropdownMenuItem>
+        {/* Fixed the Edit Inquiry route */}
         <DropdownMenuItem asChild>
-          <Link to={`/inquiries/${inquiry.id}/edit`} className="flex items-center w-full cursor-pointer">
+          <Link to={`/inquiries/edit/${inquiry.id}`} className="flex items-center w-full cursor-pointer">
             <MessageSquare className="mr-2 h-4 w-4" />
             Edit Inquiry
           </Link>
@@ -43,7 +44,8 @@ export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, c
         {/* Only show create quote option if inquiry is assigned to the current agent or if user is admin/operator */}
         {(role !== 'agent' || inquiry.assigned_to === currentUserId) && (
           <DropdownMenuItem asChild>
-            <Link to={`/quotes/create/${inquiry.id}`} className="flex items-center w-full cursor-pointer">
+            {/* Fixed the Create Quote route with proper parameter formatting */}
+            <Link to={`/quotes/create?inquiryId=${inquiry.id}`} className="flex items-center w-full cursor-pointer">
               <FileText className="mr-2 h-4 w-4" />
               Create Quote
             </Link>

@@ -30,6 +30,7 @@ import Vouchers from './pages/Vouchers';
 import VoucherDetails from './pages/VoucherDetails';
 import { AuthProvider } from './contexts/AuthContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import EditInquiry from './pages/EditInquiry'; // We'll need to create this page
 
 function App() {
   const roleContext = useContext(RoleContext);
@@ -102,6 +103,12 @@ function App() {
               <Route path="/inquiries/create" element={
                 <Layout>
                   <CreateInquiry />
+                </Layout>
+              } />
+              {/* Add route for editing inquiries */}
+              <Route path="/inquiries/edit/:inquiryId" element={
+                <Layout>
+                  <EditInquiry />
                 </Layout>
               } />
               <Route path="/quotes" element={
