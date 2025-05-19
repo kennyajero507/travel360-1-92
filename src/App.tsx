@@ -29,6 +29,7 @@ import BookingDetails from './pages/BookingDetails';
 import Vouchers from './pages/Vouchers';
 import VoucherDetails from './pages/VoucherDetails';
 import { AuthProvider } from './contexts/AuthContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 
 function App() {
   const roleContext = useContext(RoleContext);
@@ -36,7 +37,7 @@ function App() {
 
   // Define a function to check if the user is authenticated
   const isAuthenticated = () => {
-    return currentUser && currentUser.id; // Check for id instead of role
+    return currentUser && currentUser.id;
   };
 
   // Create a wrapper component for protected routes
@@ -52,109 +53,111 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <RoleProvider>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={
-              <Layout>
-                <Dashboard />
-              </Layout>
-            } />
-            <Route path="/calendar" element={
-              <Layout>
-                <Calendar />
-              </Layout>
-            } />
-            <Route path="/hotels" element={
-              <Layout>
-                <Hotels />
-              </Layout>
-            } />
-            <Route path="/hotels/:hotelId" element={
-              <Layout>
-                <HotelDetails />
-              </Layout>
-            } />
-            <Route path="/hotels/edit/:hotelId" element={
-              <Layout>
-                <EditHotel />
-              </Layout>
-            } />
-            <Route path="/hotels/create" element={
-              <Layout>
-                <CreateHotel />
-              </Layout>
-            } />
-            <Route path="/clients" element={
-              <Layout>
-                <Clients />
-              </Layout>
-            } />
-            <Route path="/inquiries" element={
-              <Layout>
-                <Inquiries />
-              </Layout>
-            } />
-            <Route path="/inquiries/create" element={
-              <Layout>
-                <CreateInquiry />
-              </Layout>
-            } />
-            <Route path="/quotes" element={
-              <Layout>
-                <Quotes />
-              </Layout>
-            } />
-            <Route path="/quotes/create" element={
-              <Layout>
-                <CreateQuote />
-              </Layout>
-            } />
-            <Route path="/quotes/edit/:quoteId" element={
-              <Layout>
-                <EditQuote />
-              </Layout>
-            } />
-            <Route path="/quote-preview" element={
-              <Layout>
-                <QuotePreview />
-              </Layout>
-            } />
-            <Route path="/bookings" element={
-              <Layout>
-                <Bookings />
-              </Layout>
-            } />
-            <Route path="/bookings/:bookingId" element={
-              <Layout>
-                <BookingDetails />
-              </Layout>
-            } />
-            <Route path="/vouchers" element={
-              <Layout>
-                <Vouchers />
-              </Layout>
-            } />
-            <Route path="/vouchers/:voucherId" element={
-              <Layout>
-                <VoucherDetails />
-              </Layout>
-            } />
-            <Route path="/agents" element={
-              <Layout>
-                <AgentManagement />
-              </Layout>
-            } />
-            <Route path="/settings" element={
-              <Layout>
-                <Settings />
-              </Layout>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
+          <CurrencyProvider>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/dashboard" element={
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              } />
+              <Route path="/calendar" element={
+                <Layout>
+                  <Calendar />
+                </Layout>
+              } />
+              <Route path="/hotels" element={
+                <Layout>
+                  <Hotels />
+                </Layout>
+              } />
+              <Route path="/hotels/:hotelId" element={
+                <Layout>
+                  <HotelDetails />
+                </Layout>
+              } />
+              <Route path="/hotels/edit/:hotelId" element={
+                <Layout>
+                  <EditHotel />
+                </Layout>
+              } />
+              <Route path="/hotels/create" element={
+                <Layout>
+                  <CreateHotel />
+                </Layout>
+              } />
+              <Route path="/clients" element={
+                <Layout>
+                  <Clients />
+                </Layout>
+              } />
+              <Route path="/inquiries" element={
+                <Layout>
+                  <Inquiries />
+                </Layout>
+              } />
+              <Route path="/inquiries/create" element={
+                <Layout>
+                  <CreateInquiry />
+                </Layout>
+              } />
+              <Route path="/quotes" element={
+                <Layout>
+                  <Quotes />
+                </Layout>
+              } />
+              <Route path="/quotes/create" element={
+                <Layout>
+                  <CreateQuote />
+                </Layout>
+              } />
+              <Route path="/quotes/edit/:quoteId" element={
+                <Layout>
+                  <EditQuote />
+                </Layout>
+              } />
+              <Route path="/quote-preview" element={
+                <Layout>
+                  <QuotePreview />
+                </Layout>
+              } />
+              <Route path="/bookings" element={
+                <Layout>
+                  <Bookings />
+                </Layout>
+              } />
+              <Route path="/bookings/:bookingId" element={
+                <Layout>
+                  <BookingDetails />
+                </Layout>
+              } />
+              <Route path="/vouchers" element={
+                <Layout>
+                  <Vouchers />
+                </Layout>
+              } />
+              <Route path="/vouchers/:voucherId" element={
+                <Layout>
+                  <VoucherDetails />
+                </Layout>
+              } />
+              <Route path="/agents" element={
+                <Layout>
+                  <AgentManagement />
+                </Layout>
+              } />
+              <Route path="/settings" element={
+                <Layout>
+                  <Settings />
+                </Layout>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </CurrencyProvider>
         </RoleProvider>
       </AuthProvider>
     </BrowserRouter>

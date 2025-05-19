@@ -12,7 +12,9 @@ interface HotelRoomListProps {
 }
 
 const HotelRoomList = ({ roomTypes, selectedHotel, onAddRoom }: HotelRoomListProps) => {
-  const { formatAmount } = useCurrency?.() || { formatAmount: (val: number) => `$${val}` };
+  // Get currency formatting from context
+  const currency = useCurrency();
+  const formatAmount = currency ? currency.formatAmount : (val: number) => `$${val}`;
 
   if (!roomTypes || roomTypes.length === 0) {
     return (
