@@ -1,7 +1,6 @@
 
-import React, { useContext } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { RoleProvider, RoleContext } from './contexts/RoleContext';
 import { Toaster } from 'sonner';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -28,146 +27,211 @@ import Bookings from './pages/Bookings';
 import BookingDetails from './pages/BookingDetails';
 import Vouchers from './pages/Vouchers';
 import VoucherDetails from './pages/VoucherDetails';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
-import EditInquiry from './pages/EditInquiry'; // We'll need to create this page
+import { RoleProvider } from './contexts/RoleContext';
+import EditInquiry from './pages/EditInquiry';
 
 function App() {
-  const roleContext = useContext(RoleContext);
-  const currentUser = roleContext?.currentUser;
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <RoleProvider>
+          <CurrencyProvider>
+            <AppRoutes />
+            <Toaster />
+          </CurrencyProvider>
+        </RoleProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
+
+// Separate component for routes to use the auth context
+function AppRoutes() {
+  const { currentUser, loading } = useAuth();
+
+  if (loading) {
+    // Show loading state while checking authentication
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
 
   // Define a function to check if the user is authenticated
-  const isAuthenticated = () => {
-    return currentUser && currentUser.id;
-  };
+  const isAuthenticated = !!currentUser;
 
   // Create a wrapper component for protected routes
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       // Redirect to the login page if not authenticated
       return <Navigate to="/login" />;
     }
     return <>{children}</>;
   };
 
+  // Create a wrapper component for public routes (accessible only when not logged in)
+  const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+    if (isAuthenticated) {
+      // Redirect to dashboard if already authenticated
+      return <Navigate to="/dashboard" />;
+    }
+    return <>{children}</>;
+  };
+
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <RoleProvider>
-          <CurrencyProvider>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin-login" element={<AdminLogin />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/dashboard" element={
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              } />
-              <Route path="/calendar" element={
-                <Layout>
-                  <Calendar />
-                </Layout>
-              } />
-              <Route path="/hotels" element={
-                <Layout>
-                  <Hotels />
-                </Layout>
-              } />
-              <Route path="/hotels/:hotelId" element={
-                <Layout>
-                  <HotelDetails />
-                </Layout>
-              } />
-              <Route path="/hotels/edit/:hotelId" element={
-                <Layout>
-                  <EditHotel />
-                </Layout>
-              } />
-              <Route path="/hotels/create" element={
-                <Layout>
-                  <CreateHotel />
-                </Layout>
-              } />
-              <Route path="/clients" element={
-                <Layout>
-                  <Clients />
-                </Layout>
-              } />
-              <Route path="/inquiries" element={
-                <Layout>
-                  <Inquiries />
-                </Layout>
-              } />
-              <Route path="/inquiries/create" element={
-                <Layout>
-                  <CreateInquiry />
-                </Layout>
-              } />
-              {/* Add route for editing inquiries */}
-              <Route path="/inquiries/edit/:inquiryId" element={
-                <Layout>
-                  <EditInquiry />
-                </Layout>
-              } />
-              <Route path="/quotes" element={
-                <Layout>
-                  <Quotes />
-                </Layout>
-              } />
-              <Route path="/quotes/create" element={
-                <Layout>
-                  <CreateQuote />
-                </Layout>
-              } />
-              <Route path="/quotes/edit/:quoteId" element={
-                <Layout>
-                  <EditQuote />
-                </Layout>
-              } />
-              <Route path="/quote-preview" element={
-                <Layout>
-                  <QuotePreview />
-                </Layout>
-              } />
-              <Route path="/bookings" element={
-                <Layout>
-                  <Bookings />
-                </Layout>
-              } />
-              <Route path="/bookings/:bookingId" element={
-                <Layout>
-                  <BookingDetails />
-                </Layout>
-              } />
-              <Route path="/vouchers" element={
-                <Layout>
-                  <Vouchers />
-                </Layout>
-              } />
-              <Route path="/vouchers/:voucherId" element={
-                <Layout>
-                  <VoucherDetails />
-                </Layout>
-              } />
-              <Route path="/agents" element={
-                <Layout>
-                  <AgentManagement />
-                </Layout>
-              } />
-              <Route path="/settings" element={
-                <Layout>
-                  <Settings />
-                </Layout>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-          </CurrencyProvider>
-        </RoleProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <Routes>
+      {/* Public routes - accessible when not logged in */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/admin-login" element={<PublicRoute><AdminLogin /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+
+      {/* Protected routes - require authentication */}
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <Layout>
+            <Dashboard />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/calendar" element={
+        <ProtectedRoute>
+          <Layout>
+            <Calendar />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/hotels" element={
+        <ProtectedRoute>
+          <Layout>
+            <Hotels />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/hotels/:hotelId" element={
+        <ProtectedRoute>
+          <Layout>
+            <HotelDetails />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/hotels/edit/:hotelId" element={
+        <ProtectedRoute>
+          <Layout>
+            <EditHotel />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/hotels/create" element={
+        <ProtectedRoute>
+          <Layout>
+            <CreateHotel />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/clients" element={
+        <ProtectedRoute>
+          <Layout>
+            <Clients />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/inquiries" element={
+        <ProtectedRoute>
+          <Layout>
+            <Inquiries />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/inquiries/create" element={
+        <ProtectedRoute>
+          <Layout>
+            <CreateInquiry />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/inquiries/edit/:inquiryId" element={
+        <ProtectedRoute>
+          <Layout>
+            <EditInquiry />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/quotes" element={
+        <ProtectedRoute>
+          <Layout>
+            <Quotes />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/quotes/create" element={
+        <ProtectedRoute>
+          <Layout>
+            <CreateQuote />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/quotes/edit/:quoteId" element={
+        <ProtectedRoute>
+          <Layout>
+            <EditQuote />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/quote-preview" element={
+        <ProtectedRoute>
+          <Layout>
+            <QuotePreview />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/bookings" element={
+        <ProtectedRoute>
+          <Layout>
+            <Bookings />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/bookings/:bookingId" element={
+        <ProtectedRoute>
+          <Layout>
+            <BookingDetails />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/vouchers" element={
+        <ProtectedRoute>
+          <Layout>
+            <Vouchers />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/vouchers/:voucherId" element={
+        <ProtectedRoute>
+          <Layout>
+            <VoucherDetails />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/agents" element={
+        <ProtectedRoute>
+          <Layout>
+            <AgentManagement />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <Layout>
+            <Settings />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 

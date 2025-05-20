@@ -14,11 +14,11 @@ import {
 } from "../components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff, Globe } from "lucide-react";
-import { useRole } from "../contexts/RoleContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { setRole, setCurrentUser } = useRole();
+  const { login } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +38,7 @@ const Login = () => {
     }));
   };
   
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password) {
@@ -48,31 +48,18 @@ const Login = () => {
     
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const success = await login(formData.email, formData.password);
       
-      // Determine role based on email for demo purposes
-      let role: "system_admin" | "org_owner" | "tour_operator" | "agent" = "agent";
-      
-      if (formData.email.includes("admin")) {
-        role = "system_admin";
-      } else if (formData.email.includes("owner")) {
-        role = "org_owner";
-      } else if (formData.email.includes("operator")) {
-        role = "tour_operator";
+      if (success) {
+        navigate("/dashboard");
       }
-      
-      setRole(role);
-      setCurrentUser({
-        id: `user-${Math.random().toString(36).substr(2, 9)}`,
-        name: formData.email.split('@')[0],
-        email: formData.email,
-      });
-      
-      toast.success("Login successful!");
-      navigate("/");
-    }, 1500);
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("An error occurred during login");
+    } finally {
+      setLoading(false);
+    }
   };
   
   return (
