@@ -8,8 +8,9 @@ import {
   DropdownMenuSeparator,
 } from "../../components/ui/dropdown-menu";
 import { Button } from "../../components/ui/button";
-import { FileText, MoreHorizontal, MessageSquare, UserCheck } from "lucide-react";
+import { FileText, MoreHorizontal, MessageSquare, UserCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { deleteInquiry } from "../../services/inquiryService";
 
 interface InquiryActionsProps {
   inquiry: any;
@@ -17,9 +18,17 @@ interface InquiryActionsProps {
   permissions: any;
   role: string;
   currentUserId: string;
+  onDelete?: () => void;
 }
 
-export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, currentUserId }: InquiryActionsProps) => {
+export const InquiryActions = ({ 
+  inquiry, 
+  openAssignDialog, 
+  permissions, 
+  role, 
+  currentUserId,
+  onDelete
+}: InquiryActionsProps) => {
   const navigate = useNavigate();
   
   const handleCreateQuote = () => {
@@ -30,6 +39,24 @@ export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, c
     
     // Navigate to create quote page with inquiry ID
     navigate(`/quotes/create?inquiryId=${inquiry.id}`);
+  };
+  
+  const handleDeleteInquiry = async () => {
+    if (!inquiry.id) {
+      toast.error("Inquiry ID is required to delete");
+      return;
+    }
+    
+    try {
+      if (window.confirm("Are you sure you want to delete this inquiry?")) {
+        await deleteInquiry(inquiry.id);
+        toast.success("Inquiry deleted successfully");
+        if (onDelete) onDelete();
+      }
+    } catch (error) {
+      console.error("Error deleting inquiry:", error);
+      toast.error("Failed to delete inquiry");
+    }
   };
   
   return (
@@ -78,6 +105,19 @@ export const InquiryActions = ({ inquiry, openAssignDialog, permissions, role, c
             >
               <UserCheck className="mr-2 h-4 w-4" />
               Assign to Agent
+            </DropdownMenuItem>
+          </>
+        )}
+        
+        {permissions.canDeleteInquiries && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={handleDeleteInquiry}
+              className="flex items-center w-full cursor-pointer text-red-600 hover:text-red-800 hover:bg-red-50"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Inquiry
             </DropdownMenuItem>
           </>
         )}

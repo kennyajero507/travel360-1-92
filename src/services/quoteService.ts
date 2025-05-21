@@ -46,18 +46,56 @@ export const getQuoteById = async (quoteId: string): Promise<QuoteData | null> =
     }
     
     // Fetch related room arrangements from proper table
-    const { data: roomArrangements, error: roomError } = await supabase
+    const { data: roomArrangementsData, error: roomError } = await supabase
       .from('quote_room_arrangements')
       .select('*')
       .eq('quote_hotel_id', quoteData.approved_hotel_id || quoteData.hotel_id)
       .order('id');
       
     // Fetch related activities
-    const { data: activities, error: activitiesError } = await supabase
+    const { data: activitiesData, error: activitiesError } = await supabase
       .from('quote_activities')
       .select('*')
       .eq('quote_hotel_id', quoteData.approved_hotel_id || quoteData.hotel_id)
       .order('id');
+      
+    // Transform room arrangements to match our TypeScript type
+    const roomArrangements: RoomArrangement[] = roomArrangementsData?.map(item => ({
+      id: item.id,
+      hotelId: quoteData.approved_hotel_id || quoteData.hotel_id,
+      roomType: item.room_type,
+      numRooms: item.num_rooms,
+      adults: item.adults,
+      childrenWithBed: item.children || 0, // Map DB 'children' to our 'childrenWithBed'
+      childrenNoBed: 0, // Not stored separately in the DB
+      infants: item.infants || 0,
+      ratePerNight: {
+        adult: item.cost_per_adult || 0,
+        childWithBed: item.cost_per_child || 0,
+        childNoBed: 0, // Not stored separately in the DB
+        infant: item.cost_per_infant || 0
+      },
+      nights: item.nights,
+      total: item.total
+    })) || [];
+
+    // Transform activities to match our TypeScript type
+    const activities: QuoteActivity[] = activitiesData?.map(item => ({
+      id: item.id,
+      name: item.title,
+      description: item.description || '',
+      costPerPerson: {
+        adult: item.cost_per_person,
+        child: item.cost_per_person * 0.7, // Assuming child cost is 70% of adult cost
+        infant: 0
+      },
+      included: {
+        adults: Math.floor(item.num_people / 2), // Rough estimate
+        children: Math.ceil(item.num_people / 2), // Rough estimate
+        infants: 0
+      },
+      total: item.total
+    })) || [];
       
     // Transform data to match QuoteData structure
     const quote: QuoteData = {
@@ -79,8 +117,8 @@ export const getQuoteById = async (quoteId: string): Promise<QuoteData | null> =
         childrenNoBed: quoteData.children_no_bed,
         infants: quoteData.infants
       },
-      roomArrangements: roomArrangements || [],
-      activities: activities || [],
+      roomArrangements: roomArrangements,
+      activities: activities,
       transports: (typeof quoteData.transports === 'string'
         ? JSON.parse(quoteData.transports)
         : quoteData.transports) as QuoteTransport[],
@@ -230,13 +268,13 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
               quote_hotel_id: hotelData.id,
               room_type: arrangement.roomType,
               adults: arrangement.adults,
-              children: arrangement.children || 0,
+              children: arrangement.childrenWithBed + arrangement.childrenNoBed, // Combine children types for DB
               infants: arrangement.infants || 0,
               num_rooms: arrangement.numRooms,
               nights: quote.duration.nights,
-              cost_per_adult: arrangement.costPerAdult,
-              cost_per_child: arrangement.costPerChild || 0,
-              cost_per_infant: arrangement.costPerInfant || 0,
+              cost_per_adult: arrangement.ratePerNight.adult,
+              cost_per_child: arrangement.ratePerNight.childWithBed, // Use childWithBed rate for DB
+              cost_per_infant: arrangement.ratePerNight.infant || 0,
               total: arrangement.total || 0
             };
             
