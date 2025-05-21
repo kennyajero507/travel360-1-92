@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -18,7 +18,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, session, userProfile } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +29,18 @@ const Login = () => {
     password: "",
     rememberMe: false,
   });
+  
+  // Check if user is already logged in
+  useEffect(() => {
+    if (session && userProfile) {
+      // Redirect based on user role
+      if (userProfile.role === 'system_admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [session, userProfile, navigate]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -52,7 +64,7 @@ const Login = () => {
       const success = await login(formData.email, formData.password);
       
       if (success) {
-        navigate("/dashboard");
+        // Navigation will happen in the useEffect when session is updated
       }
     } catch (error) {
       console.error("Login error:", error);

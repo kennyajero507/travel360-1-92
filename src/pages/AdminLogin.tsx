@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -14,11 +14,10 @@ import {
 } from "../components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff, Globe, ShieldAlert } from "lucide-react";
-import { useRole } from "../contexts/RoleContext";
+import { supabase } from "../integrations/supabase/client";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { setRole, setCurrentUser } = useRole();
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +29,27 @@ const AdminLogin = () => {
     code: "",
   });
   
+  // Check if already logged in as admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (data?.role === 'system_admin') {
+          navigate('/admin/dashboard');
+        }
+      }
+    };
+    
+    checkAdminStatus();
+  }, [navigate]);
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -38,7 +58,7 @@ const AdminLogin = () => {
     }));
   };
   
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.email || !formData.password) {
@@ -53,24 +73,51 @@ const AdminLogin = () => {
     
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Sign in with email and password
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
       
-      if (formData.email.includes("admin") && formData.code === "123456") {
-        setRole("system_admin");
-        setCurrentUser({
-          id: `admin-${Math.random().toString(36).substr(2, 9)}`,
-          name: "System Administrator",
-          email: formData.email,
-        });
-        
-        toast.success("Admin login successful!");
-        navigate("/admin/dashboard");
-      } else {
-        toast.error("Invalid admin credentials or authentication code");
+      if (authError) {
+        toast.error(authError.message);
+        setLoading(false);
+        return;
       }
-    }, 1500);
+      
+      // Check if the user has system_admin role
+      if (authData.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', authData.user.id)
+          .single();
+          
+        if (profileError) {
+          toast.error("Failed to verify admin credentials");
+          // Sign out since not an admin
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
+        
+        // Verify if user is admin and 2FA code is correct (simple check for demo)
+        if (profileData.role === 'system_admin' && formData.code === '123456') {
+          toast.success("Admin login successful!");
+          navigate("/admin/dashboard");
+        } else {
+          toast.error("Invalid admin credentials or authentication code");
+          // Sign out since not an admin
+          await supabase.auth.signOut();
+        }
+      }
+    } catch (error) {
+      console.error("Admin login error:", error);
+      toast.error("An error occurred during admin login");
+    } finally {
+      setLoading(false);
+    }
   };
   
   return (

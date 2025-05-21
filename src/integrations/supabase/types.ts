@@ -146,26 +146,67 @@ export type Database = {
         }
         Relationships: []
       }
+      organizations: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          subscription_status: string | null
+          trial_end: string | null
+          trial_start: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          subscription_status?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          subscription_status?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
           full_name: string | null
           id: string
+          org_id: string | null
           role: string | null
+          trial_ends_at: string | null
         }
         Insert: {
           created_at?: string | null
           full_name?: string | null
           id: string
+          org_id?: string | null
           role?: string | null
+          trial_ends_at?: string | null
         }
         Update: {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          org_id?: string | null
           role?: string | null
+          trial_ends_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_activities: {
         Row: {
@@ -520,7 +561,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_organization: {
+        Args: { org_name: string }
+        Returns: string
+      }
+      is_trial_expired: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled" | "completed"

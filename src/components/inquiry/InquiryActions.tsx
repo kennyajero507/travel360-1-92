@@ -11,6 +11,7 @@ import { Button } from "../../components/ui/button";
 import { FileText, MoreHorizontal, MessageSquare, UserCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteInquiry } from "../../services/inquiryService";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface InquiryActionsProps {
   inquiry: any;
@@ -30,6 +31,7 @@ export const InquiryActions = ({
   onDelete
 }: InquiryActionsProps) => {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   
   const handleCreateQuote = () => {
     if (!inquiry.id) {
@@ -59,6 +61,42 @@ export const InquiryActions = ({
     }
   };
   
+  // Check if user can modify this inquiry based on role
+  const canModify = () => {
+    if (!userProfile) return false;
+    
+    // System admins can modify anything
+    if (userProfile.role === 'system_admin') return true;
+    
+    // Organization owners and tour operators can modify anything within their org
+    if (['org_owner', 'tour_operator'].includes(userProfile.role)) return true;
+    
+    // Agents can only modify their assigned inquiries
+    if (userProfile.role === 'agent') {
+      return inquiry.assigned_to === currentUserId;
+    }
+    
+    return false;
+  };
+  
+  // Check if user can create quote based on role and assignment
+  const canCreateQuote = () => {
+    if (!userProfile) return false;
+    
+    // System admins can create quotes for any inquiry
+    if (userProfile.role === 'system_admin') return true;
+    
+    // Organization owners and tour operators can create quotes for any inquiry in their org
+    if (['org_owner', 'tour_operator'].includes(userProfile.role)) return true;
+    
+    // Agents can only create quotes for inquiries assigned to them
+    if (userProfile.role === 'agent') {
+      return inquiry.assigned_to === currentUserId;
+    }
+    
+    return false;
+  };
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -78,25 +116,28 @@ export const InquiryActions = ({
           </Link>
         </DropdownMenuItem>
         
-        <DropdownMenuItem asChild>
-          <Link 
-            to={`/inquiries/edit/${inquiry.id}`} 
-            className="flex items-center w-full cursor-pointer"
-          >
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Edit Inquiry
-          </Link>
-        </DropdownMenuItem>
+        {canModify() && (
+          <DropdownMenuItem asChild>
+            <Link 
+              to={`/inquiries/edit/${inquiry.id}`} 
+              className="flex items-center w-full cursor-pointer"
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Edit Inquiry
+            </Link>
+          </DropdownMenuItem>
+        )}
         
-        {/* Only show create quote option if inquiry is assigned to the current agent or if user is admin/operator */}
-        {(role !== 'agent' || inquiry.assigned_to === currentUserId) && (
+        {/* Show create quote based on role and assignment */}
+        {canCreateQuote() && (
           <DropdownMenuItem onClick={handleCreateQuote} className="flex items-center w-full cursor-pointer">
             <FileText className="mr-2 h-4 w-4" />
             Create Quote
           </DropdownMenuItem>
         )}
         
-        {permissions.canAssignInquiries && (
+        {/* Only tour operators and above can assign inquiries */}
+        {userProfile && ['system_admin', 'org_owner', 'tour_operator'].includes(userProfile.role) && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
@@ -109,7 +150,8 @@ export const InquiryActions = ({
           </>
         )}
         
-        {permissions.canDeleteInquiries && (
+        {/* Only system admins, org owners and tour operators can delete inquiries */}
+        {userProfile && ['system_admin', 'org_owner', 'tour_operator'].includes(userProfile.role) && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
