@@ -1,8 +1,8 @@
 
 import React from 'react';
 import {
-  createBrowserRouter,
-  RouterProvider,
+  Routes,
+  Route,
 } from "react-router-dom";
 import './App.css';
 import Layout from './components/Layout';
@@ -24,74 +24,27 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminSettings from './pages/admin/AdminSettings';
 import { AuthProvider } from './contexts/AuthContext';
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Landing />,
-    errorElement: <NotFound />,
-  },
-  {
-    path: '/login',
-    element: <Login />,
-  },
-  {
-    path: '/signup',
-    element: <Signup />,
-  },
-  {
-    path: "/dashboard",
-    element: <Layout><Dashboard /></Layout>,
-  },
-  {
-    path: "/quotes",
-    element: <Layout><Quotes /></Layout>,
-  },
-  {
-    path: "/clients",
-    element: <Layout><Clients /></Layout>,
-  },
-  {
-    path: "/hotels",
-    element: <Layout><Hotels /></Layout>,
-  },
-  {
-    path: "/calendar",
-    element: <Layout><Calendar /></Layout>,
-  },
-  {
-    path: "/settings",
-    element: <Layout><Settings /></Layout>,
-  },
-  {
-    path: "/inquiries",
-    element: <Layout><Inquiries /></Layout>,
-  },
-  {
-    path: "/admin-login",
-    element: <AdminLogin />,
-  },
-  {
-    path: "/forgot-password",
-    element: <ForgotPassword />,
-  },
-  {
-    path: "/reset-password",
-    element: <ResetPassword />,
-  },
-  {
-    path: "/admin/dashboard",
-    element: <Layout><AdminDashboard /></Layout>,
-  },
-  {
-    path: "/admin/settings",
-    element: <Layout><AdminSettings /></Layout>,
-  },
-]);
-
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+        <Route path="/quotes" element={<Layout><Quotes /></Layout>} />
+        <Route path="/clients" element={<Layout><Clients /></Layout>} />
+        <Route path="/hotels" element={<Layout><Hotels /></Layout>} />
+        <Route path="/calendar" element={<Layout><Calendar /></Layout>} />
+        <Route path="/settings" element={<Layout><Settings /></Layout>} />
+        <Route path="/inquiries" element={<Layout><Inquiries /></Layout>} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/admin/dashboard" element={<Layout><AdminDashboard /></Layout>} />
+        <Route path="/admin/settings" element={<Layout><AdminSettings /></Layout>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </AuthProvider>
   );
 }
