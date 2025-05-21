@@ -26,6 +26,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminSettings from './pages/admin/AdminSettings';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RoleProvider } from './contexts/role/RoleProvider';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 
 // Protected route component that checks authentication
 const ProtectedRoute = ({ 
@@ -141,7 +142,9 @@ function App() {
   return (
     <AuthProvider>
       <RoleProvider>
-        <AppRoutes />
+        <CurrencyProvider>
+          <AppRoutes />
+        </CurrencyProvider>
       </RoleProvider>
     </AuthProvider>
   );
