@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -24,6 +25,8 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (password: string) => Promise<boolean>;
   switchRole: (role: string) => Promise<boolean>;
+  getUserRolePermissions: () => Promise<any>;
+  checkRoleAccess: (allowedRoles: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -39,6 +42,8 @@ const AuthContext = createContext<AuthContextType>({
   resetPassword: async () => false,
   updatePassword: async () => false,
   switchRole: async () => false,
+  getUserRolePermissions: async () => ({}),
+  checkRoleAccess: () => false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -148,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Login function - configured for persistent sessions
   const login = async (email: string, password: string) => {
     try {
-      // Use signInWithPassword without the options.persistSession property
+      // Use signInWithPassword
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password
@@ -323,6 +328,91 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Get user role permissions based on their role and subscription tier
+  const getUserRolePermissions = async () => {
+    try {
+      if (!userProfile) return null;
+      
+      // Get organization subscription tier
+      let tier = 'starter';
+      if (userProfile.org_id) {
+        const { data: orgData } = await supabase
+          .from('organizations')
+          .select('subscription_status')
+          .eq('id', userProfile.org_id)
+          .single();
+          
+        if (orgData) {
+          tier = orgData.subscription_status;
+        }
+      }
+      
+      // Define role-based permissions
+      const permissions = {
+        system_admin: {
+          canManageAllOrgs: true,
+          canManageSubscription: true,
+          canManageTeam: true,
+          canManageHotels: true,
+          canAssignAgents: true,
+          canCreateQuotes: true,
+          maxTeamMembers: Infinity,
+        },
+        org_owner: {
+          canManageAllOrgs: false,
+          canManageSubscription: true,
+          canManageTeam: true,
+          canManageHotels: true,
+          canAssignAgents: true,
+          canCreateQuotes: true,
+          maxTeamMembers: tier === 'starter' ? 5 : tier === 'pro' ? 25 : 100,
+        },
+        tour_operator: {
+          canManageAllOrgs: false,
+          canManageSubscription: false,
+          canManageTeam: false,
+          canManageHotels: true,
+          canAssignAgents: true,
+          canCreateQuotes: true,
+          maxTeamMembers: 0,
+        },
+        agent: {
+          canManageAllOrgs: false,
+          canManageSubscription: false,
+          canManageTeam: false,
+          canManageHotels: false,
+          canAssignAgents: false,
+          canCreateQuotes: true,
+          maxTeamMembers: 0,
+        },
+        client: {
+          canManageAllOrgs: false,
+          canManageSubscription: false,
+          canManageTeam: false,
+          canManageHotels: false,
+          canAssignAgents: false,
+          canCreateQuotes: false,
+          maxTeamMembers: 0,
+        }
+      };
+      
+      return permissions[userProfile.role as keyof typeof permissions] || permissions.client;
+    } catch (error) {
+      console.error('Error getting user permissions:', error);
+      return null;
+    }
+  };
+
+  // Check if user role is included in allowed roles
+  const checkRoleAccess = (allowedRoles: string[]): boolean => {
+    if (!userProfile) return false;
+    
+    // Always grant access to system admins
+    if (userProfile.role === 'system_admin') return true;
+    
+    return allowedRoles.includes(userProfile.role);
+  };
+
   const value = {
     currentUser,
     session,
@@ -336,6 +426,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resetPassword,
     updatePassword,
     switchRole,
+    getUserRolePermissions,
+    checkRoleAccess,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

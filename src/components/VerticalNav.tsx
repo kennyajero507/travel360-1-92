@@ -2,7 +2,8 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare } from "lucide-react";
-import { useRole } from "../contexts/RoleContext";
+import { useRole } from "../contexts/role/useRole";
+import { useAuth } from "../contexts/AuthContext";
 
 interface VerticalNavProps {
   collapsed: boolean;
@@ -11,10 +12,13 @@ interface VerticalNavProps {
 
 const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
   const { role, hasPermission } = useRole();
+  const { userProfile, checkRoleAccess } = useAuth();
   
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
   };
+
+  const currentRole = userProfile?.role || role;
 
   return (
     <nav
@@ -39,30 +43,51 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
       </div>
 
       <div className="py-4">
-        <NavItem to="/" collapsed={collapsed} icon={<Home size={20} />} label="Dashboard" />
-        <NavItem to="/quotes" collapsed={collapsed} icon={<FileText size={20} />} label="Quotes" />
-        <NavItem to="/clients" collapsed={collapsed} icon={<Users size={20} />} label="Clients" />
+        {/* Dashboard - available to all */}
+        <NavItem to="/dashboard" collapsed={collapsed} icon={<Home size={20} />} label="Dashboard" />
         
-        {/* Show Inquiries for all roles, including agents */}
-        <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
+        {/* Quotes - available to all except clients */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
+          <NavItem to="/quotes" collapsed={collapsed} icon={<FileText size={20} />} label="Quotes" />
+        )}
         
-        {hasPermission(['system_admin', 'org_owner', 'tour_operator']) && (
+        {/* Clients - available to all except clients */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
+          <NavItem to="/clients" collapsed={collapsed} icon={<Users size={20} />} label="Clients" />
+        )}
+        
+        {/* Inquiries - available to all except clients */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
+          <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
+        )}
+        
+        {/* Hotels - restricted to admin, org_owner, tour_operator */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator']) && (
           <NavItem to="/hotels" collapsed={collapsed} icon={<Hotel size={20} />} label="Hotels" />
         )}
         
+        {/* Calendar - available to all */}
         <NavItem to="/calendar" collapsed={collapsed} icon={<Calendar size={20} />} label="Calendar" />
+        
+        {/* Settings - available to all */}
         <NavItem to="/settings" collapsed={collapsed} icon={<Settings size={20} />} label="Settings" />
+        
+        {/* Admin Dashboard - only for system_admin */}
+        {checkRoleAccess(['system_admin']) && (
+          <NavItem to="/admin/dashboard" collapsed={collapsed} icon={<Home size={20} />} label="Admin Dashboard" />
+        )}
       </div>
       
-      {!collapsed && (
+      {!collapsed && userProfile && (
         <div className="absolute bottom-4 left-0 right-0 px-4">
           <div className="bg-white/10 rounded-md p-2 text-center text-xs">
             <div className="font-medium">Current Role:</div>
             <div className="uppercase mt-1">
-              {role === 'agent' && 'Travel Agent'}
-              {role === 'tour_operator' && 'Tour Operator'}
-              {role === 'org_owner' && 'Organization Owner'}
-              {role === 'system_admin' && 'System Admin'}
+              {userProfile.role === 'agent' && 'Travel Agent'}
+              {userProfile.role === 'tour_operator' && 'Tour Operator'}
+              {userProfile.role === 'org_owner' && 'Organization Owner'}
+              {userProfile.role === 'system_admin' && 'System Admin'}
+              {userProfile.role === 'client' && 'Client'}
             </div>
           </div>
         </div>

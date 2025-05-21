@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -18,7 +18,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, createOrganization } = useAuth();
+  const { signup, createOrganization, session } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -31,8 +31,15 @@ const Signup = () => {
     password: "",
     agreeToTerms: false,
     organizationName: "",
-    isOrgOwner: false,
+    isOrgOwner: true, // Default to organization owner
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (session) {
+      navigate("/dashboard");
+    }
+  }, [session, navigate]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -66,12 +73,8 @@ const Signup = () => {
       const success = await signup(formData.email, formData.password, formData.fullName);
       
       if (success) {
-        if (formData.isOrgOwner) {
-          setCreateOrgStep(true);
-        } else {
-          toast.success("Account created successfully! Please check your email for verification.");
-          navigate("/login");
-        }
+        // Since we default to org owner now, we always move to the org step
+        setCreateOrgStep(true);
       }
     } catch (error) {
       console.error("Signup error:", error);
@@ -133,7 +136,7 @@ const Signup = () => {
             <CardDescription>
               {createOrgStep 
                 ? "Set up your travel business on TravelFlow360" 
-                : "Join TravelFlow360 to manage your travel business"}
+                : "Welcome to TravelFlow360! Let's get your organization set up. Start by creating your account."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -198,20 +201,6 @@ const Signup = () => {
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="isOrgOwner"
-                    name="isOrgOwner"
-                    checked={formData.isOrgOwner}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-600"
-                  />
-                  <Label htmlFor="isOrgOwner" className="text-sm cursor-pointer">
-                    I want to create a travel organization (for travel agencies and operators)
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
                     id="agreeToTerms"
                     name="agreeToTerms"
                     checked={formData.agreeToTerms}
@@ -236,7 +225,7 @@ const Signup = () => {
                   className="w-full bg-teal-600 hover:bg-teal-700"
                   disabled={loading}
                 >
-                  {loading ? "Creating Account..." : "Create Account"}
+                  {loading ? "Creating Account..." : "Continue"}
                 </Button>
               </form>
             ) : (
@@ -246,7 +235,7 @@ const Signup = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="organizationName">Organization Name</Label>
+                  <Label htmlFor="organizationName">Organization Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="organizationName"
                     name="organizationName"
@@ -256,15 +245,19 @@ const Signup = () => {
                     onChange={handleInputChange}
                     required
                   />
+                  <p className="text-xs text-gray-500">
+                    This will be the name of your travel business in TravelFlow360
+                  </p>
                 </div>
                 
                 <div className="bg-blue-50 p-4 rounded-md border border-blue-200 text-sm">
                   <p className="font-semibold text-blue-700">Your organization benefits:</p>
                   <ul className="list-disc ml-5 mt-2 text-blue-700">
                     <li>2-week free trial automatically included</li>
-                    <li>Ability to invite team members</li>
+                    <li>Ability to invite up to 5 team members on Starter plan</li>
                     <li>Custom dashboards and reports</li>
                     <li>Manage hotel inventory and preferred suppliers</li>
+                    <li>Upgrade anytime to add more team members</li>
                   </ul>
                 </div>
                 
@@ -273,7 +266,7 @@ const Signup = () => {
                   className="w-full bg-teal-600 hover:bg-teal-700"
                   disabled={loading}
                 >
-                  {loading ? "Creating Organization..." : "Create Organization"}
+                  {loading ? "Creating Organization..." : "Create My Organization"}
                 </Button>
               </form>
             )}
