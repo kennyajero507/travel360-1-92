@@ -20,6 +20,9 @@ import NotFound from './pages/NotFound';
 import AdminLogin from './pages/AdminLogin';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminSettings from './pages/admin/AdminSettings';
+import { AuthProvider } from './contexts/AuthContext';
 
 const router = createBrowserRouter([
   {
@@ -75,11 +78,21 @@ const router = createBrowserRouter([
     path: "/reset-password",
     element: <ResetPassword />,
   },
+  {
+    path: "/admin/dashboard",
+    element: <Layout><AdminDashboard /></Layout>,
+  },
+  {
+    path: "/admin/settings",
+    element: <Layout><AdminSettings /></Layout>,
+  },
 ]);
 
 function App() {
   return (
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }
 

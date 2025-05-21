@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -59,8 +60,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up the auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        // Update session in state
         setSession(newSession);
         setCurrentUser(newSession?.user ?? null);
+        
+        // Store session in localStorage for persistence if needed
+        if (event === 'SIGNED_IN' && newSession) {
+          localStorage.setItem('supabase.auth.token', JSON.stringify(newSession));
+        } else if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('supabase.auth.token');
+        }
         
         // If user changes, fetch their profile
         if (newSession?.user) {
@@ -137,17 +146,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Login function
+  // Login function - configured for persistent sessions
   const login = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Use persistSession: true to maintain login state across page refreshes/browser restarts
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password,
+        options: {
+          // Configure persistent login
+          persistSession: true
+        }
+      });
       
       if (error) {
         toast.error(error.message);
         return false;
       }
       
-      toast.success('Logged in successfully');
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -165,7 +181,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         options: {
           data: {
             full_name: fullName
-          }
+          },
+          // Configure persistent registration
+          persistSession: true
         }
       });
       

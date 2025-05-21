@@ -27,7 +27,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    rememberMe: false,
+    rememberMe: true, // Default to true for persistent sessions
   });
   
   // Check if user is already logged in
@@ -65,6 +65,7 @@ const Login = () => {
       
       if (success) {
         // Navigation will happen in the useEffect when session is updated
+        toast.success("Login successful!");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -176,6 +177,7 @@ const Login = () => {
                 </div>
               </div>
               
+              {/* Only show Admin login if needed - could be conditionally rendered */}
               <div className="mt-6">
                 <Link to="/admin-login">
                   <Button variant="outline" className="w-full">

@@ -26,7 +26,6 @@ const AdminLogin = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    code: "",
   });
   
   // Check if already logged in as admin
@@ -66,11 +65,6 @@ const AdminLogin = () => {
       return;
     }
     
-    if (!formData.code) {
-      toast.error("Please enter the authentication code");
-      return;
-    }
-    
     setLoading(true);
     
     try {
@@ -102,12 +96,12 @@ const AdminLogin = () => {
           return;
         }
         
-        // Verify if user is admin and 2FA code is correct (simple check for demo)
-        if (profileData.role === 'system_admin' && formData.code === '123456') {
+        // Verify if user is admin (removed 2FA check for development)
+        if (profileData.role === 'system_admin') {
           toast.success("Admin login successful!");
           navigate("/admin/dashboard");
         } else {
-          toast.error("Invalid admin credentials or authentication code");
+          toast.error("Only system administrators can access this area");
           // Sign out since not an admin
           await supabase.auth.signOut();
         }
@@ -188,22 +182,6 @@ const AdminLogin = () => {
                   </button>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="code">Two-Factor Authentication Code</Label>
-                <Input
-                  id="code"
-                  name="code"
-                  type="text"
-                  placeholder="123456"
-                  maxLength={6}
-                  value={formData.code}
-                  onChange={handleInputChange}
-                  required
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Enter the code from your authenticator app
-                </p>
-              </div>
               <Button
                 type="submit"
                 className="w-full bg-red-600 hover:bg-red-700"
@@ -211,6 +189,9 @@ const AdminLogin = () => {
               >
                 {loading ? "Verifying..." : "Secure Sign In"}
               </Button>
+              <p className="text-sm text-center text-gray-500">
+                Development mode: 2FA validation disabled
+              </p>
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-2 border-t pt-4">
