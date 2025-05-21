@@ -1,4 +1,3 @@
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -149,14 +148,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Login function - configured for persistent sessions
   const login = async (email: string, password: string) => {
     try {
-      // Use persistSession: true to maintain login state across page refreshes/browser restarts
+      // Use signInWithPassword without the options.persistSession property
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
-        password,
-        options: {
-          // Configure persistent login
-          persistSession: true
-        }
+        password
       });
       
       if (error) {
@@ -181,9 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         options: {
           data: {
             full_name: fullName
-          },
-          // Configure persistent registration
-          persistSession: true
+          }
         }
       });
       
