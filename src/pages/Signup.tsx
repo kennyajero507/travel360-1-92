@@ -119,9 +119,9 @@ const Signup = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col w-full">
       {/* Navigation */}
-      <header className="border-b py-4">
+      <header className="border-b py-4 w-full">
         <nav className="container mx-auto px-4 flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <Globe className="h-6 w-6 text-teal-600" />
@@ -136,7 +136,7 @@ const Signup = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center py-12 px-4 bg-slate-50">
+      <main className="flex-1 flex items-center justify-center py-12 px-4 bg-slate-50 w-full">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
@@ -145,7 +145,7 @@ const Signup = () => {
             <CardDescription>
               {createOrgStep 
                 ? "Set up your travel business on TravelFlow360" 
-                : "Welcome to TravelFlow360! Let's get your organization set up. Start by creating your account."}
+                : "Start your journey with TravelFlow360 by creating your organization. Once registered, you'll be able to invite tour operators and agents."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,6 +167,7 @@ const Signup = () => {
                     value={formData.fullName}
                     onChange={handleInputChange}
                     required
+                    className="w-full"
                   />
                 </div>
                 
@@ -180,6 +181,7 @@ const Signup = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
+                    className="w-full"
                   />
                 </div>
                 
@@ -195,6 +197,7 @@ const Signup = () => {
                       onChange={handleInputChange}
                       required
                       minLength={6}
+                      className="w-full"
                     />
                     <button
                       type="button"
@@ -259,6 +262,7 @@ const Signup = () => {
                     value={formData.organizationName}
                     onChange={handleInputChange}
                     required
+                    className="w-full"
                   />
                   <p className="text-xs text-gray-500">
                     This will be the name of your travel business in TravelFlow360
@@ -298,7 +302,7 @@ const Signup = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t py-6">
+      <footer className="bg-white border-t py-6 w-full">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-slate-500">
             © 2025 TravelFlow360. All rights reserved.

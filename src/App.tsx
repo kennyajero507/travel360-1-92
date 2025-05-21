@@ -41,7 +41,7 @@ const ProtectedRoute = ({
   
   if (loading) {
     // Show loading state while checking auth
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen w-full">Loading...</div>;
   }
   
   if (!session) {
@@ -67,7 +67,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen w-full">Loading...</div>;
   }
   
   if (session) {
@@ -80,73 +80,77 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
 function AppRoutes() {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-      <Route path="/admin-login" element={<PublicRoute><AdminLogin /></PublicRoute>} />
-      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-      <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-      
-      {/* Protected routes for all authenticated users */}
-      <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-      <Route path="/calendar" element={<ProtectedRoute><Layout><Calendar /></Layout></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
-      
-      {/* Role-specific routes */}
-      <Route path="/quotes" element={
-        <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
-          <Layout><Quotes /></Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/clients" element={
-        <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
-          <Layout><Clients /></Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/hotels" element={
-        <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
-          <Layout><Hotels /></Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/inquiries" element={
-        <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
-          <Layout><Inquiries /></Layout>
-        </ProtectedRoute>
-      } />
-      
-      {/* Admin-only routes */}
-      <Route path="/admin/dashboard" element={
-        <ProtectedRoute allowedRoles={['system_admin']}>
-          <Layout><AdminDashboard /></Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/admin/settings" element={
-        <ProtectedRoute allowedRoles={['system_admin']}>
-          <Layout><AdminSettings /></Layout>
-        </ProtectedRoute>
-      } />
-      
-      {/* 404 page */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <div className="w-full min-h-screen">
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+        <Route path="/admin-login" element={<PublicRoute><AdminLogin /></PublicRoute>} />
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+        <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+        
+        {/* Protected routes for all authenticated users */}
+        <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><Layout><Calendar /></Layout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+        
+        {/* Role-specific routes */}
+        <Route path="/quotes" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><Quotes /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/clients" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><Clients /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/hotels" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+            <Layout><Hotels /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/inquiries" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><Inquiries /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Admin-only routes */}
+        <Route path="/admin/dashboard" element={
+          <ProtectedRoute allowedRoles={['system_admin']}>
+            <Layout><AdminDashboard /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/settings" element={
+          <ProtectedRoute allowedRoles={['system_admin']}>
+            <Layout><AdminSettings /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        {/* 404 page */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <RoleProvider>
-        <CurrencyProvider>
-          <AppRoutes />
-        </CurrencyProvider>
-      </RoleProvider>
-    </AuthProvider>
+    <div className="w-full min-h-screen">
+      <AuthProvider>
+        <RoleProvider>
+          <CurrencyProvider>
+            <AppRoutes />
+          </CurrencyProvider>
+        </RoleProvider>
+      </AuthProvider>
+    </div>
   );
 }
 

@@ -76,9 +76,9 @@ const Login = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen w-full flex flex-col">
       {/* Navigation */}
-      <header className="border-b py-4">
+      <header className="border-b py-4 w-full">
         <nav className="container mx-auto px-4 flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <Globe className="h-6 w-6 text-teal-600" />
@@ -93,7 +93,7 @@ const Login = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center py-12 px-4 bg-slate-50">
+      <main className="flex-1 flex items-center justify-center py-12 px-4 bg-slate-50 w-full">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Welcome Back</CardTitle>
@@ -113,6 +113,7 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -122,7 +123,7 @@ const Login = () => {
                     Forgot password?
                   </Link>
                 </div>
-                <div className="relative">
+                <div className="relative w-full">
                   <Input
                     id="password"
                     name="password"
@@ -131,6 +132,7 @@ const Login = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
+                    className="w-full"
                   />
                   <button
                     type="button"
@@ -177,7 +179,6 @@ const Login = () => {
                 </div>
               </div>
               
-              {/* Only show Admin login if needed - could be conditionally rendered */}
               <div className="mt-6">
                 <Link to="/admin-login">
                   <Button variant="outline" className="w-full">
@@ -203,7 +204,7 @@ const Login = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t py-6">
+      <footer className="bg-white border-t py-6 w-full">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-slate-500">
             © 2025 TravelFlow360. All rights reserved.

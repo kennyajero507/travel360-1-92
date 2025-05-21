@@ -115,9 +115,9 @@ const AdminLogin = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col w-full">
       {/* Navigation */}
-      <header className="border-b py-4">
+      <header className="border-b py-4 w-full">
         <nav className="container mx-auto px-4 flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <Globe className="h-6 w-6 text-teal-600" />
@@ -132,7 +132,7 @@ const AdminLogin = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center py-12 px-4 bg-slate-50">
+      <main className="flex-1 flex items-center justify-center py-12 px-4 bg-slate-50 w-full">
         <Card className="w-full max-w-md border-red-200">
           <CardHeader className="text-center">
             <div className="mx-auto w-fit mb-2">
@@ -155,6 +155,7 @@ const AdminLogin = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -168,6 +169,7 @@ const AdminLogin = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
+                    className="w-full"
                   />
                   <button
                     type="button"
@@ -203,7 +205,7 @@ const AdminLogin = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t py-6">
+      <footer className="bg-white border-t py-6 w-full">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-slate-500">
             © 2025 TravelFlow360. All rights reserved.
