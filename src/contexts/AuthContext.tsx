@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up the auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log("Auth state changed:", event);
         // Update session in state
         setSession(newSession);
         setCurrentUser(newSession?.user ?? null);
@@ -106,9 +107,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Fetch user profile from the profiles table
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log("Fetching user profile for ID:", userId);
+      
+      // First fetch the profile directly without joining organizations
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, organizations(*)')
+        .select('*')
         .eq('id', userId)
         .single();
       
@@ -118,21 +122,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (data) {
-        // Check if trial has expired for org owners
-        if (data.role === 'org_owner' && data.org_id) {
-          const { data: orgData } = await supabase
+        // If we have an org_id, fetch organization details separately
+        let orgData = null;
+        if (data.org_id) {
+          const { data: orgResult, error: orgError } = await supabase
             .from('organizations')
             .select('subscription_status, trial_end')
             .eq('id', data.org_id)
             .single();
             
-          const isExpired = orgData?.trial_end && new Date(orgData.trial_end) < new Date();
-          if (isExpired && orgData?.subscription_status === 'trial') {
-            // Update subscription status to expired
-            await supabase
-              .from('organizations')
-              .update({ subscription_status: 'expired' })
-              .eq('id', data.org_id);
+          if (!orgError) {
+            orgData = orgResult;
+            
+            const isExpired = orgData?.trial_end && new Date(orgData.trial_end) < new Date();
+            if (isExpired && orgData?.subscription_status === 'trial') {
+              // Update subscription status to expired
+              await supabase
+                .from('organizations')
+                .update({ subscription_status: 'expired' })
+                .eq('id', data.org_id);
+            }
+          } else {
+            console.error('Error fetching organization:', orgError);
           }
         }
         
@@ -143,6 +154,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           full_name: data.full_name,
           org_id: data.org_id,
           trial_ends_at: data.trial_ends_at
+        });
+        
+        console.log("User profile fetched successfully:", {
+          id: data.id,
+          role: data.role || 'agent',
+          org_id: data.org_id
         });
       }
     } catch (error) {
@@ -175,6 +192,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Signup function
   const signup = async (email: string, password: string, fullName: string) => {
     try {
+      console.log("Starting signup process for:", email);
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -186,11 +204,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       if (error) {
+        console.error("Signup error:", error);
         toast.error(error.message);
         return false;
       }
       
-      toast.success('Sign up successful! Please check your email for verification.');
+      console.log("Signup successful:", data);
+      
+      if (data.user) {
+        // Wait for a moment to ensure the profile is created by the trigger
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await fetchUserProfile(data.user.id);
+      }
+      
+      toast.success('Sign up successful!');
       return true;
     } catch (error) {
       console.error('Signup error:', error);
@@ -220,18 +247,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Create organization and set user as owner
   const createOrganization = async (name: string): Promise<boolean> => {
     try {
+      console.log("Creating organization:", name);
+      
+      if (!currentUser) {
+        console.error("No authenticated user found");
+        toast.error("You must be logged in to create an organization");
+        return false;
+      }
+      
+      // Call the RPC function to create an organization
       const { data, error } = await supabase
         .rpc('create_organization', { org_name: name });
 
       if (error) {
+        console.error("Organization creation error:", error);
         toast.error('Failed to create organization: ' + error.message);
         return false;
       }
 
+      console.log("Organization created with ID:", data);
+
       // Refresh user profile to get the updated role
-      if (currentUser) {
-        await fetchUserProfile(currentUser.id);
-      }
+      await fetchUserProfile(currentUser.id);
       
       toast.success('Organization created successfully!');
       return true;
