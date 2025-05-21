@@ -1,26 +1,30 @@
+import React, { useState } from 'react';
+import VerticalNav from './VerticalNav';
+import Header from './Header';
+import { useAuth } from '../contexts/AuthContext';
+import AdminRoleSwitcher from './AdminRoleSwitcher';
 
-import { Outlet } from "react-router-dom";
-import VerticalNav from "./VerticalNav";
-import { useState } from "react";
-import { cn } from "../lib/utils";
-
-interface LayoutProps {
-  children?: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout = ({ children }: { children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
-
+  const { userProfile } = useAuth();
+  
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-slate-50">
       <VerticalNav collapsed={collapsed} setCollapsed={setCollapsed} />
-      <main className={cn("flex-1 overflow-auto transition-all duration-300", 
-        collapsed ? "ml-20" : "ml-64"
-      )}>
-        <div className="container py-6 px-4 mx-auto">
-          {children || <Outlet />}
-        </div>
-      </main>
+      <div className={`flex flex-col flex-1 transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-64'}`}>
+        <Header />
+        
+        {/* Add AdminRoleSwitcher if user is system_admin */}
+        {userProfile && userProfile.role === 'system_admin' && (
+          <div className="bg-amber-50 px-4 py-2 border-b border-amber-200">
+            <AdminRoleSwitcher />
+          </div>
+        )}
+        
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

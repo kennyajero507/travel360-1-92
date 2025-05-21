@@ -1,4 +1,3 @@
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -22,6 +21,9 @@ interface AuthContextType {
   } | null;
   createOrganization: (name: string) => Promise<boolean>;
   isTrialExpired: () => Promise<boolean>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updatePassword: (password: string) => Promise<boolean>;
+  switchRole: (role: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -34,6 +36,9 @@ const AuthContext = createContext<AuthContextType>({
   userProfile: null,
   createOrganization: async () => false,
   isTrialExpired: async () => false,
+  resetPassword: async () => false,
+  updatePassword: async () => false,
+  switchRole: async () => false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -238,6 +243,75 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Password reset request
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+      
+      toast.success('Password reset email sent. Please check your inbox.');
+      return true;
+    } catch (error) {
+      console.error('Error in resetPassword:', error);
+      toast.error('An error occurred during password reset');
+      return false;
+    }
+  };
+
+  // Update password after reset
+  const updatePassword = async (password: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+      
+      toast.success('Password updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error in updatePassword:', error);
+      toast.error('An error occurred while updating password');
+      return false;
+    }
+  };
+
+  // Role switching for admin users
+  const switchRole = async (role: string): Promise<boolean> => {
+    try {
+      // Only system admins can change their role
+      if (!currentUser || !userProfile || userProfile.role !== 'system_admin') {
+        return false;
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', currentUser.id);
+      
+      if (error) {
+        toast.error(`Failed to switch role: ${error.message}`);
+        return false;
+      }
+      
+      // Update local state
+      setUserProfile(prev => prev ? {...prev, role} : null);
+      toast.success(`Role switched to ${role}`);
+      return true;
+    } catch (error) {
+      console.error('Error in switchRole:', error);
+      toast.error('An error occurred while switching roles');
+      return false;
+    }
+  };
+
   const value = {
     currentUser,
     session,
@@ -248,6 +322,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     userProfile,
     createOrganization,
     isTrialExpired,
+    resetPassword,
+    updatePassword,
+    switchRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
