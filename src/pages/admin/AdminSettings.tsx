@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { useAuth } from "../../contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import SystemSettings from '../../components/admin/SystemSettings';
 
 const AdminSettings = () => {
   const { userProfile } = useAuth();
@@ -21,52 +21,9 @@ const AdminSettings = () => {
   }
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <h1 className="text-3xl font-bold">Admin Settings</h1>
-      
-      <Tabs defaultValue="general">
-        <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="system">System</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="general" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-              <CardDescription>Manage system-wide general settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="security" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Manage system-wide security settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="system" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-              <CardDescription>Manage advanced system settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <SystemSettings />
     </div>
   );
 };

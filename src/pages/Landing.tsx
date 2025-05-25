@@ -1,7 +1,7 @@
-
 import React from "react";
-import { Link } from "react-router-dom";
-import { Button } from "../components/ui/button";
+import Navigation from "../components/landing/Navigation";
+import HeroSection from "../components/landing/HeroSection";
+import Footer from "../components/landing/Footer";
 import {
   Card,
   CardContent,
@@ -14,63 +14,12 @@ import { CheckCircle, Globe, Users, CreditCard, Hotel, PieChart, Send, Star, Arr
 const Landing = () => {
   return (
     <div className="min-h-screen flex flex-col w-full">
-      {/* Navigation */}
-      <header className="border-b py-4 w-full">
-        <nav className="container mx-auto px-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Globe className="h-6 w-6 text-teal-600" />
-            <span className="text-xl font-bold text-teal-600">TravelFlow360</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-slate-600 hover:text-teal-600">Login</Link>
-            <Link to="/signup">
-              <Button size="sm" className="bg-teal-600 hover:bg-teal-700">Start Free Trial</Button>
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <Navigation />
+      <HeroSection />
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-b from-white to-teal-50 py-20 w-full">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-slate-800">
-            The Complete Travel Business Management Platform
-          </h1>
-          <p className="text-xl md:text-2xl text-slate-600 mb-10 max-w-4xl mx-auto">
-            Create professional quotes in minutes, manage your team, track bookings, and grow your travel business with our all-in-one platform.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-            <Link to="/signup">
-              <Button className="bg-teal-600 hover:bg-teal-700 text-lg px-8 py-6">
-                Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Button variant="outline" className="text-lg px-8 py-6 border-teal-600 text-teal-600 hover:bg-teal-50">
-              View Demo
-            </Button>
-          </div>
-          
-          {/* Trust Indicators */}
-          <div className="flex flex-col md:flex-row justify-center items-center gap-8 text-sm text-slate-500">
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-              14-day free trial
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-              No credit card required
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-              Cancel anytime
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Overview */}
-      <section className="py-20 w-full">
-        <div className="container mx-auto px-4">
+      {/* Features Overview Section */}
+      <section className="w-full py-20">
+        <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-800">
               Everything You Need to Run Your Travel Business
@@ -159,8 +108,8 @@ const Landing = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-slate-50 w-full">
-        <div className="container mx-auto px-4">
+      <section className="w-full py-20 bg-slate-50">
+        <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-800">
               Simple, Transparent Pricing
@@ -235,8 +184,8 @@ const Landing = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 w-full">
-        <div className="container mx-auto px-4">
+      <section className="w-full py-20">
+        <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-800">
               Trusted by Travel Professionals Worldwide
@@ -296,8 +245,8 @@ const Landing = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-teal-600 text-white w-full">
-        <div className="container mx-auto px-4 text-center">
+      <section className="w-full py-20 bg-teal-600 text-white">
+        <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Ready to Transform Your Travel Business?
           </h2>
@@ -320,56 +269,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-800 text-white py-12 w-full">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-teal-400">About Us</a></li>
-                <li><a href="#" className="hover:text-teal-400">Careers</a></li>
-                <li><a href="#" className="hover:text-teal-400">Blog</a></li>
-                <li><a href="#" className="hover:text-teal-400">Press</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-teal-400">Features</a></li>
-                <li><a href="#" className="hover:text-teal-400">Pricing</a></li>
-                <li><a href="#" className="hover:text-teal-400">Integrations</a></li>
-                <li><a href="#" className="hover:text-teal-400">API</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-teal-400">Documentation</a></li>
-                <li><a href="#" className="hover:text-teal-400">Help Center</a></li>
-                <li><a href="#" className="hover:text-teal-400">Tutorials</a></li>
-                <li><a href="#" className="hover:text-teal-400">Community</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-teal-400">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-teal-400">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-teal-400">Cookie Policy</a></li>
-                <li><a href="#" className="hover:text-teal-400">GDPR</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <Globe className="h-5 w-5 mr-2 text-teal-500" />
-              <span className="font-bold text-teal-500">TravelFlow360</span>
-            </div>
-            <p className="text-sm text-slate-400">© 2025 TravelFlow360. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
