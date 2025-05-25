@@ -27,17 +27,30 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    rememberMe: true, // Default to true for persistent sessions
+    rememberMe: true,
   });
   
-  // Check if user is already logged in
+  // Role-based redirect logic
   useEffect(() => {
     if (session && userProfile) {
+      console.log("Redirecting user based on role:", userProfile.role);
+      
       // Redirect based on user role
-      if (userProfile.role === 'system_admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
+      switch (userProfile.role) {
+        case 'system_admin':
+          navigate('/admin/dashboard');
+          break;
+        case 'org_owner':
+          navigate('/dashboard');
+          break;
+        case 'tour_operator':
+          navigate('/dashboard');
+          break;
+        case 'agent':
+          navigate('/dashboard');
+          break;
+        default:
+          navigate('/dashboard');
       }
     }
   }, [session, userProfile, navigate]);
@@ -61,6 +74,7 @@ const Login = () => {
     setLoading(true);
     
     try {
+      console.log("Attempting login for:", formData.email);
       const success = await login(formData.email, formData.password);
       
       if (success) {

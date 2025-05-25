@@ -1,4 +1,3 @@
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -217,7 +216,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await fetchUserProfile(data.user.id);
       }
       
-      toast.success('Sign up successful!');
       return true;
     } catch (error) {
       console.error('Signup error:', error);
@@ -270,7 +268,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Refresh user profile to get the updated role
       await fetchUserProfile(currentUser.id);
       
-      toast.success('Organization created successfully!');
       return true;
     } catch (error) {
       console.error('Error creating organization:', error);
