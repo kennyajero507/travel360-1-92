@@ -17,6 +17,7 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Inquiries from './pages/Inquiries';
+import CreateInquiry from './pages/CreateInquiry';
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Features from './pages/Features';
@@ -123,6 +124,12 @@ function AppRoutes() {
         <Route path="/inquiries" element={
           <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
             <Layout><Inquiries /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/inquiries/create" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><CreateInquiry /></Layout>
           </ProtectedRoute>
         } />
         
