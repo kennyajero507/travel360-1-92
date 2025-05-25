@@ -18,6 +18,9 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Inquiries from './pages/Inquiries';
 import Landing from './pages/Landing';
+import About from './pages/About';
+import Features from './pages/Features';
+import Pricing from './pages/Pricing';
 import NotFound from './pages/NotFound';
 import AdminLogin from './pages/AdminLogin';
 import ForgotPassword from './pages/ForgotPassword';
@@ -84,6 +87,9 @@ function AppRoutes() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/admin-login" element={<PublicRoute><AdminLogin /></PublicRoute>} />

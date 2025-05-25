@@ -2,6 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Navigation from "../components/landing/Navigation";
+import HeroSection from "../components/landing/HeroSection";
 import Footer from "../components/landing/Footer";
 import { Button } from "../components/ui/button";
 import { ArrowRight, CheckCircle, Zap, Shield, Users, Globe, BarChart3, Sparkles, Star } from "lucide-react";
@@ -11,42 +12,11 @@ const Landing = () => {
     <div className="min-h-screen flex flex-col w-full bg-white">
       <Navigation />
       
-      {/* Hero Section - OpenAI Style */}
-      <section className="w-full pt-20 pb-12 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight text-gray-900 mb-6 leading-tight">
-            Travel quotations
-            <br />
-            <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
-              made simple
-            </span>
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
-            Create professional travel quotes in minutes with multi-hotel comparison, 
-            team management, and client-friendly sharing.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link to="/signup">
-              <Button size="lg" className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-6 text-lg font-medium">
-                Start free trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/pricing">
-              <Button size="lg" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full px-8 py-6 text-lg font-medium">
-                View pricing
-              </Button>
-            </Link>
-          </div>
-          <p className="text-sm text-gray-500 mt-6">
-            No credit card required • 14-day free trial • Cancel anytime
-          </p>
-        </div>
-      </section>
+      <HeroSection />
 
-      {/* Features Section */}
+      {/* Features Section - Full Width */}
       <section className="w-full py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="w-full px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-normal text-gray-900 mb-6 tracking-tight">
               Everything you need to run your travel business
@@ -57,7 +27,7 @@ const Landing = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             <FeatureCard 
               icon={<Zap className="h-8 w-8 text-teal-600" />}
               title="Lightning-fast quotes"
@@ -92,13 +62,13 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section - Full Width */}
       <section className="w-full py-20">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="w-full px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-normal text-gray-900 mb-16 tracking-tight">
             Trusted by travel professionals worldwide
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-4xl mx-auto">
             <div>
               <div className="text-4xl md:text-5xl font-light text-teal-600 mb-2">10+</div>
               <div className="text-lg text-gray-600">Hours saved per week</div>
@@ -115,9 +85,9 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section - Full Width */}
       <section className="w-full py-20 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4">
+        <div className="w-full px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-normal text-gray-900 mb-6 tracking-tight">
               Simple, transparent pricing
@@ -127,7 +97,7 @@ const Landing = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <PricingCard 
               tier="Free Trial"
               price="0"
@@ -175,10 +145,10 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Testimonial Section */}
+      {/* Testimonial Section - Full Width */}
       <section className="w-full py-20">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-3xl p-12">
+        <div className="w-full px-6 lg:px-8 text-center">
+          <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-3xl p-12 max-w-4xl mx-auto">
             <div className="flex justify-center mb-6">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="h-6 w-6 text-yellow-400 fill-current" />
@@ -196,9 +166,9 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/* Final CTA - Full Width */}
       <section className="w-full py-20 bg-black text-white">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="w-full px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-normal mb-6 tracking-tight">
             Ready to transform your travel business?
           </h2>

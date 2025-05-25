@@ -6,9 +6,9 @@ import { ArrowRight } from 'lucide-react';
 
 const HeroSection = () => {
   return (
-    <section className="w-full pt-20 pb-12 px-4">
-      <div className="max-w-4xl mx-auto text-center">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight text-gray-900 mb-6 leading-tight">
+    <section className="w-full pt-20 pb-12 px-6 lg:px-8">
+      <div className="w-full text-center">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight text-gray-900 mb-6 leading-tight max-w-4xl mx-auto">
           Travel quotations
           <br />
           <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
