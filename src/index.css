@@ -52,10 +52,30 @@
 @layer base {
   * {
     @apply border-border;
+    margin: 0;
+    padding: 0;
   }
+  
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
   body {
-    @apply bg-background text-foreground overflow-x-hidden font-sans;
+    @apply bg-background text-foreground font-sans;
+    width: 100%;
+    min-height: 100vh;
   }
+  
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+  
   h1, h2, h3, h4, h5, h6 {
     @apply text-teal-600;
   }

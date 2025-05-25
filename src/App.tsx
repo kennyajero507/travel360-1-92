@@ -28,6 +28,18 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminSettings from './pages/admin/AdminSettings';
+import CreateQuote from './pages/CreateQuote';
+import EditQuote from './pages/EditQuote';
+import QuotePreview from './pages/QuotePreview';
+import CreateHotel from './pages/CreateHotel';
+import EditHotel from './pages/EditHotel';
+import HotelDetails from './pages/HotelDetails';
+import EditInquiry from './pages/EditInquiry';
+import Bookings from './pages/Bookings';
+import BookingDetails from './pages/BookingDetails';
+import Vouchers from './pages/Vouchers';
+import VoucherDetails from './pages/VoucherDetails';
+import AgentManagement from './pages/AgentManagement';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RoleProvider } from './contexts/role/RoleProvider';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -45,7 +57,7 @@ const ProtectedRoute = ({
   
   if (loading) {
     // Show loading state while checking auth
-    return <div className="flex items-center justify-center h-screen w-full">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
   
   if (!session) {
@@ -71,7 +83,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex items-center justify-center h-screen w-full">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
   
   if (session) {
@@ -84,7 +96,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
 function AppRoutes() {
   return (
-    <div className="w-full min-h-screen">
+    <div className="min-h-screen">
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
@@ -102,34 +114,102 @@ function AppRoutes() {
         <Route path="/calendar" element={<ProtectedRoute><Layout><Calendar /></Layout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
         
-        {/* Role-specific routes */}
+        {/* Quote management routes */}
         <Route path="/quotes" element={
           <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
             <Layout><Quotes /></Layout>
           </ProtectedRoute>
         } />
+        <Route path="/quotes/create" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><CreateQuote /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/quotes/:id/edit" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><EditQuote /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/quotes/:id/preview" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><QuotePreview /></Layout>
+          </ProtectedRoute>
+        } />
         
+        {/* Client management routes */}
         <Route path="/clients" element={
           <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
             <Layout><Clients /></Layout>
           </ProtectedRoute>
         } />
         
+        {/* Hotel management routes */}
         <Route path="/hotels" element={
           <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
             <Layout><Hotels /></Layout>
           </ProtectedRoute>
         } />
+        <Route path="/hotels/create" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+            <Layout><CreateHotel /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/hotels/:id/edit" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+            <Layout><EditHotel /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/hotels/:id" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+            <Layout><HotelDetails /></Layout>
+          </ProtectedRoute>
+        } />
         
+        {/* Inquiry management routes */}
         <Route path="/inquiries" element={
           <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
             <Layout><Inquiries /></Layout>
           </ProtectedRoute>
         } />
-        
         <Route path="/inquiries/create" element={
           <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
             <Layout><CreateInquiry /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/inquiries/:id/edit" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><EditInquiry /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Booking management routes */}
+        <Route path="/bookings" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><Bookings /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/bookings/:id" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><BookingDetails /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Voucher management routes */}
+        <Route path="/vouchers" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><Vouchers /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/vouchers/:id" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator', 'agent']}>
+            <Layout><VoucherDetails /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Agent management routes */}
+        <Route path="/agents" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+            <Layout><AgentManagement /></Layout>
           </ProtectedRoute>
         } />
         
@@ -139,7 +219,6 @@ function AppRoutes() {
             <Layout><AdminDashboard /></Layout>
           </ProtectedRoute>
         } />
-        
         <Route path="/admin/settings" element={
           <ProtectedRoute allowedRoles={['system_admin']}>
             <Layout><AdminSettings /></Layout>
@@ -155,7 +234,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <div className="w-full min-h-screen">
+    <div className="min-h-screen">
       <AuthProvider>
         <RoleProvider>
           <CurrencyProvider>
