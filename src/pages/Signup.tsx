@@ -62,6 +62,19 @@ const Signup = () => {
       setError("Password must be at least 6 characters long");
       return;
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // Don't allow example emails
+    if (formData.email.includes('@example.com')) {
+      setError("Please use a real email address, not an example email");
+      return;
+    }
     
     setLoading(true);
     
@@ -72,26 +85,17 @@ const Signup = () => {
       const signupSuccess = await signup(formData.email, formData.password, formData.fullName);
       
       if (!signupSuccess) {
-        setError("Failed to create user account");
+        setError("Failed to create user account. Please try again.");
         return;
       }
       
-      console.log("User account created, creating organization...");
+      console.log("User account created successfully");
       
-      // Step 2: Create organization with the user as owner
-      const orgSuccess = await createOrganization(formData.companyName);
+      // Show success message for email confirmation
+      toast.success("Account created! Please check your email to confirm your account before signing in.");
       
-      if (!orgSuccess) {
-        setError("Failed to create organization. Please try again.");
-        return;
-      }
-      
-      console.log("Organization created successfully");
-      
-      // Success! Show success message
-      toast.success(`Welcome! Your organization "${formData.companyName}" has been created successfully.`);
-      
-      // The redirect will happen automatically via useEffect when userProfile updates
+      // Redirect to login page
+      navigate("/login");
       
     } catch (error) {
       console.error("Signup error:", error);

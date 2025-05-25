@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -64,23 +65,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         console.log("Auth state changed:", event);
-        // Update session in state
         setSession(newSession);
         setCurrentUser(newSession?.user ?? null);
         
         // Store session in localStorage for persistence if needed
         if (event === 'SIGNED_IN' && newSession) {
           localStorage.setItem('supabase.auth.token', JSON.stringify(newSession));
+          // Defer profile fetch to avoid recursion
+          setTimeout(() => {
+            if (newSession.user) {
+              fetchUserProfile(newSession.user.id);
+            }
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
           localStorage.removeItem('supabase.auth.token');
-        }
-        
-        // If user changes, fetch their profile
-        if (newSession?.user) {
-          setTimeout(() => {
-            fetchUserProfile(newSession.user.id);
-          }, 0);
-        } else {
           setUserProfile(null);
         }
       }
@@ -92,7 +90,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setCurrentUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
-        fetchUserProfile(existingSession.user.id);
+        setTimeout(() => {
+          fetchUserProfile(existingSession.user.id);
+        }, 100);
       }
       
       setLoading(false);
@@ -101,51 +101,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   // Fetch user profile from the profiles table
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // First fetch the profile directly without joining organizations
+      // Use a more direct query to avoid RLS recursion
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, role, org_id, trial_ends_at')
         .eq('id', userId)
         .single();
       
       if (error) {
         console.error('Error fetching user profile:', error);
+        // If profile doesn't exist, create a basic one
+        if (error.code === 'PGRST116') {
+          console.log("Profile not found, creating basic profile");
+          const { data: insertData, error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              full_name: currentUser?.user_metadata?.full_name || currentUser?.email || 'User',
+              role: 'agent'
+            })
+            .select()
+            .single();
+            
+          if (!insertError && insertData) {
+            setUserProfile({
+              id: insertData.id,
+              email: currentUser?.email || '',
+              role: insertData.role || 'agent',
+              full_name: insertData.full_name,
+              org_id: insertData.org_id,
+              trial_ends_at: insertData.trial_ends_at
+            });
+          }
+        }
         return;
       }
       
       if (data) {
-        // If we have an org_id, fetch organization details separately
-        let orgData = null;
-        if (data.org_id) {
-          const { data: orgResult, error: orgError } = await supabase
-            .from('organizations')
-            .select('subscription_status, trial_end')
-            .eq('id', data.org_id)
-            .single();
-            
-          if (!orgError) {
-            orgData = orgResult;
-            
-            const isExpired = orgData?.trial_end && new Date(orgData.trial_end) < new Date();
-            if (isExpired && orgData?.subscription_status === 'trial') {
-              // Update subscription status to expired
-              await supabase
-                .from('organizations')
-                .update({ subscription_status: 'expired' })
-                .eq('id', data.org_id);
-            }
-          } else {
-            console.error('Error fetching organization:', orgError);
-          }
-        }
-        
         setUserProfile({
           id: data.id,
           email: currentUser?.email || '',
@@ -169,17 +168,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Login function - configured for persistent sessions
   const login = async (email: string, password: string) => {
     try {
-      // Use signInWithPassword
+      console.log("Attempting login for:", email);
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password
       });
       
       if (error) {
+        console.error("Login error:", error);
         toast.error(error.message);
         return false;
       }
       
+      console.log("Login successful");
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -192,6 +193,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signup = async (email: string, password: string, fullName: string) => {
     try {
       console.log("Starting signup process for:", email);
+      
+      // Validate email format before sending to Supabase
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error("Please enter a valid email address");
+        return false;
+      }
+      
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -210,10 +219,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       console.log("Signup successful:", data);
       
-      if (data.user) {
-        // Wait for a moment to ensure the profile is created by the trigger
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await fetchUserProfile(data.user.id);
+      if (data.user && !data.user.email_confirmed_at) {
+        toast.success("Please check your email to confirm your account before signing in.");
       }
       
       return true;
@@ -266,7 +273,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Organization created with ID:", data);
 
       // Refresh user profile to get the updated role
-      await fetchUserProfile(currentUser.id);
+      setTimeout(() => {
+        fetchUserProfile(currentUser.id);
+      }, 500);
       
       return true;
     } catch (error) {
