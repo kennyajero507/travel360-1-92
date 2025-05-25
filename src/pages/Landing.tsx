@@ -2,127 +2,132 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Navigation from "../components/landing/Navigation";
-import HeroSection from "../components/landing/HeroSection";
 import Footer from "../components/landing/Footer";
 import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
-import { CheckCircle, Globe, Users, CreditCard, Hotel, PieChart, Send, Star, ArrowRight, Zap, Shield, Clock } from "lucide-react";
+import { ArrowRight, CheckCircle, Zap, Shield, Users, Globe, BarChart3, Sparkles, Star } from "lucide-react";
 
 const Landing = () => {
   return (
-    <div className="min-h-screen flex flex-col w-full">
+    <div className="min-h-screen flex flex-col w-full bg-white">
       <Navigation />
-      <HeroSection />
+      
+      {/* Hero Section - OpenAI Style */}
+      <section className="w-full pt-20 pb-12 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight text-gray-900 mb-6 leading-tight">
+            Travel quotations
+            <br />
+            <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
+              made simple
+            </span>
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
+            Create professional travel quotes in minutes with multi-hotel comparison, 
+            team management, and client-friendly sharing.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link to="/signup">
+              <Button size="lg" className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-6 text-lg font-medium">
+                Start free trial
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link to="/pricing">
+              <Button size="lg" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full px-8 py-6 text-lg font-medium">
+                View pricing
+              </Button>
+            </Link>
+          </div>
+          <p className="text-sm text-gray-500 mt-6">
+            No credit card required • 14-day free trial • Cancel anytime
+          </p>
+        </div>
+      </section>
 
-      {/* Features Overview Section */}
-      <section className="w-full py-20">
-        <div className="container mx-auto px-6">
+      {/* Features Section */}
+      <section className="w-full py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-800">
-              Everything You Need to Run Your Travel Business
+            <h2 className="text-4xl md:text-5xl font-normal text-gray-900 mb-6 tracking-tight">
+              Everything you need to run your travel business
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              From quote creation to team management, TravelFlow360 provides all the tools you need to streamline operations and delight customers.
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto font-light">
+              From quote creation to team management, TravelFlow360 provides all the tools 
+              you need to streamline operations and delight customers.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard 
               icon={<Zap className="h-8 w-8 text-teal-600" />}
-              title="Lightning-Fast Quote Builder"
-              description="Create professional travel quotes in under 5 minutes with our intuitive drag-and-drop interface. Compare multiple hotels and build custom itineraries."
+              title="Lightning-fast quotes"
+              description="Create professional travel quotes in under 5 minutes with our intuitive interface."
             />
             <FeatureCard 
-              icon={<Hotel className="h-8 w-8 text-teal-600" />}
-              title="Multi-Hotel Comparison"
-              description="Compare rates, amenities, and availability across multiple properties. Present the best options to your clients with detailed comparisons."
+              icon={<Globe className="h-8 w-8 text-teal-600" />}
+              title="Multi-hotel comparison"
+              description="Compare rates and amenities across multiple properties in real-time."
             />
             <FeatureCard 
               icon={<Users className="h-8 w-8 text-teal-600" />}
-              title="Advanced Agent Tools"
-              description="Empower your team with role-based dashboards, assignment management, and performance tracking tools designed for travel professionals."
-            />
-            <FeatureCard 
-              icon={<Send className="h-8 w-8 text-teal-600" />}
-              title="Client-Friendly Sharing"
-              description="Share beautiful, responsive quotes via email, WhatsApp, or secure links. Clients can view and approve quotes on any device."
-            />
-            <FeatureCard 
-              icon={<PieChart className="h-8 w-8 text-teal-600" />}
-              title="Business Analytics"
-              description="Track conversion rates, agent performance, and revenue insights with powerful dashboards and automated reporting."
+              title="Team management"
+              description="Manage agents and track performance with role-based dashboards."
             />
             <FeatureCard 
               icon={<Shield className="h-8 w-8 text-teal-600" />}
-              title="Secure & Compliant"
-              description="Enterprise-grade security with role-based access control, data encryption, and GDPR compliance built-in."
+              title="Secure & compliant"
+              description="Enterprise-grade security with GDPR compliance built-in."
+            />
+            <FeatureCard 
+              icon={<BarChart3 className="h-8 w-8 text-teal-600" />}
+              title="Business insights"
+              description="Track conversion rates and revenue with powerful analytics."
+            />
+            <FeatureCard 
+              icon={<Sparkles className="h-8 w-8 text-teal-600" />}
+              title="Client-friendly sharing"
+              description="Share beautiful quotes via email, WhatsApp, or secure links."
             />
           </div>
+        </div>
+      </section>
 
-          {/* Feature Showcase */}
-          <div className="bg-slate-50 rounded-2xl p-8 md:p-12">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-6 text-slate-800">
-                  Built for Travel Professionals, By Travel Professionals
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-teal-600 mr-3 mt-1 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-slate-800">Real-time Collaboration</h4>
-                      <p className="text-slate-600">Team members can collaborate on quotes and share updates instantly.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-teal-600 mr-3 mt-1 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-slate-800">Mobile-First Design</h4>
-                      <p className="text-slate-600">Access your business on the go with our responsive mobile interface.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-teal-600 mr-3 mt-1 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-slate-800">Custom Branding</h4>
-                      <p className="text-slate-600">Add your logo and branding to all client-facing materials.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl p-6 shadow-lg">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-full mb-4">
-                    <Clock className="h-8 w-8 text-teal-600" />
-                  </div>
-                  <h4 className="text-xl font-bold text-slate-800 mb-2">Save 10+ Hours Per Week</h4>
-                  <p className="text-slate-600">Our customers report saving over 10 hours per week on quote creation and client management.</p>
-                </div>
-              </div>
+      {/* Stats Section */}
+      <section className="w-full py-20">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-4xl md:text-5xl font-normal text-gray-900 mb-16 tracking-tight">
+            Trusted by travel professionals worldwide
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div>
+              <div className="text-4xl md:text-5xl font-light text-teal-600 mb-2">10+</div>
+              <div className="text-lg text-gray-600">Hours saved per week</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-light text-teal-600 mb-2">40%</div>
+              <div className="text-lg text-gray-600">Higher conversion rates</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-light text-teal-600 mb-2">500+</div>
+              <div className="text-lg text-gray-600">Travel businesses using TravelFlow360</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="w-full py-20 bg-slate-50">
-        <div className="container mx-auto px-6">
+      <section className="w-full py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-800">
-              Simple, Transparent Pricing
+            <h2 className="text-4xl md:text-5xl font-normal text-gray-900 mb-6 tracking-tight">
+              Simple, transparent pricing
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto font-light">
               Choose the plan that fits your business. Start with our free trial and upgrade as you grow.
             </p>
           </div>
 
-          <div className="flex flex-col lg:flex-row justify-center gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <PricingCard 
               tier="Free Trial"
               price="0"
@@ -131,12 +136,9 @@ const Landing = () => {
                 "Up to 2 team members",
                 "10 quotes per month",
                 "Basic hotel database",
-                "Email support",
-                "Mobile app access",
-                "Basic analytics"
+                "Email support"
               ]}
-              recommended={false}
-              ctaText="Start Free Trial"
+              ctaText="Start free trial"
               popular={false}
             />
             <PricingCard 
@@ -147,14 +149,11 @@ const Landing = () => {
                 "Up to 5 team members",
                 "50 quotes per month",
                 "Advanced hotel database",
-                "WhatsApp & email sharing",
-                "Custom branding",
                 "Priority support",
-                "Advanced analytics",
-                "API access"
+                "Custom branding",
+                "Advanced analytics"
               ]}
-              recommended={true}
-              ctaText="Start Basic Plan"
+              ctaText="Get started"
               popular={true}
             />
             <PricingCard 
@@ -165,110 +164,60 @@ const Landing = () => {
                 "Unlimited team members",
                 "Unlimited quotes",
                 "Premium hotel database",
+                "Dedicated support",
                 "White-label solution",
-                "Dedicated account manager",
-                "Custom integrations",
-                "Advanced reporting",
-                "SLA guarantee"
+                "Custom integrations"
               ]}
-              recommended={false}
-              ctaText="Start Pro Plan"
+              ctaText="Contact sales"
               popular={false}
             />
-          </div>
-
-          <div className="text-center mt-12">
-            <p className="text-slate-600 mb-4">Need a custom solution for your enterprise?</p>
-            <Button variant="outline" size="lg">
-              Contact Sales
-            </Button>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonial Section */}
       <section className="w-full py-20">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-800">
-              Trusted by Travel Professionals Worldwide
-            </h2>
-            <p className="text-xl text-slate-600">
-              See what our customers have to say about TravelFlow360
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <TestimonialCard 
-              quote="TravelFlow360 has transformed how we create quotes. What used to take hours now takes minutes, and our clients love the professional presentation."
-              author="Sarah Johnson"
-              title="Founder, Safari Dreams"
-              rating={5}
-            />
-            <TestimonialCard 
-              quote="The team management features are incredible. I can track all my agents' performance and ensure consistent quality across all our quotes."
-              author="Michael Chen"
-              title="Operations Manager, Adventure Tours Ltd"
-              rating={5}
-            />
-            <TestimonialCard 
-              quote="Our conversion rate has increased by 40% since switching to TravelFlow360. The quote presentation is just so much more professional."
-              author="Emily Rodriguez"
-              title="Travel Consultant, Wanderlust Travel"
-              rating={5}
-            />
-          </div>
-
-          {/* Case Study Highlight */}
-          <div className="mt-16 bg-teal-50 rounded-2xl p-8 md:p-12">
-            <div className="text-center">
-              <h3 className="text-2xl md:text-3xl font-bold mb-6 text-slate-800">
-                Case Study: Adventure Tours Ltd
-              </h3>
-              <div className="grid md:grid-cols-3 gap-8 mb-8">
-                <div>
-                  <div className="text-3xl font-bold text-teal-600 mb-2">40%</div>
-                  <div className="text-slate-600">Increase in conversion rate</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-teal-600 mb-2">60%</div>
-                  <div className="text-slate-600">Faster quote creation</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-teal-600 mb-2">25%</div>
-                  <div className="text-slate-600">Revenue growth in 6 months</div>
-                </div>
-              </div>
-              <Button variant="outline">
-                Read Full Case Study
-              </Button>
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-3xl p-12">
+            <div className="flex justify-center mb-6">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-6 w-6 text-yellow-400 fill-current" />
+              ))}
+            </div>
+            <blockquote className="text-2xl md:text-3xl font-light text-gray-900 mb-8 leading-relaxed">
+              "TravelFlow360 has transformed how we create quotes. What used to take hours 
+              now takes minutes, and our clients love the professional presentation."
+            </blockquote>
+            <div>
+              <div className="font-medium text-gray-900 text-lg">Sarah Johnson</div>
+              <div className="text-gray-600">Founder, Safari Dreams</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="w-full py-20 bg-teal-600 text-white">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Transform Your Travel Business?
+      <section className="w-full py-20 bg-black text-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-4xl md:text-5xl font-normal mb-6 tracking-tight">
+            Ready to transform your travel business?
           </h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
+          <p className="text-xl mb-12 max-w-2xl mx-auto font-light text-gray-300">
             Join thousands of travel professionals who are already using TravelFlow360 to grow their business.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link to="/signup">
-              <Button size="lg" className="bg-white text-teal-600 hover:bg-slate-100">
-                Start Free Trial
+              <Button size="lg" className="bg-white text-black hover:bg-gray-100 rounded-full px-8 py-6 text-lg font-medium">
+                Start free trial
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-teal-600">
-              View Pricing
-            </Button>
+            <Link to="/pricing">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-black rounded-full px-8 py-6 text-lg font-medium">
+                View pricing
+              </Button>
+            </Link>
           </div>
-          <p className="text-teal-100 mt-4 text-sm">
-            No credit card required • 14-day free trial • Cancel anytime
-          </p>
         </div>
       </section>
 
@@ -279,15 +228,11 @@ const Landing = () => {
 
 // Feature Card Component
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
-  <Card className="border border-slate-200 hover:border-teal-200 hover:shadow-lg transition-all duration-300">
-    <CardHeader>
-      <div className="mb-4">{icon}</div>
-      <CardTitle className="text-xl">{title}</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <CardDescription className="text-slate-600 text-base leading-relaxed">{description}</CardDescription>
-    </CardContent>
-  </Card>
+  <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <div className="mb-6">{icon}</div>
+    <h3 className="text-xl font-semibold text-gray-900 mb-4">{title}</h3>
+    <p className="text-gray-600 leading-relaxed">{description}</p>
+  </div>
 );
 
 // Pricing Card Component
@@ -296,7 +241,6 @@ const PricingCard = ({
   price, 
   period,
   features, 
-  recommended,
   ctaText,
   popular
 }: { 
@@ -304,69 +248,38 @@ const PricingCard = ({
   price: string, 
   period: string,
   features: string[], 
-  recommended: boolean,
   ctaText: string,
   popular: boolean
 }) => (
-  <Card className={`${recommended ? 'border-teal-500 border-2 scale-105' : 'border-slate-200'} relative max-w-sm w-full`}>
+  <div className={`bg-white rounded-2xl p-8 shadow-sm border ${popular ? 'border-teal-200 ring-2 ring-teal-100' : 'border-gray-100'} relative`}>
     {popular && (
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-        <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+        <span className="bg-teal-600 text-white px-4 py-1 rounded-full text-sm font-medium">
           Most Popular
         </span>
       </div>
     )}
-    <CardHeader className={`${recommended ? 'bg-teal-50' : ''} text-center`}>
-      <CardTitle className="text-2xl font-bold">{tier}</CardTitle>
-      <div className="mt-4">
-        <span className="text-4xl font-bold">${price}</span>
-        <span className="text-slate-600 ml-1">/{period}</span>
-      </div>
-    </CardHeader>
-    <CardContent className="pt-6">
-      <ul className="space-y-3 mb-8">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-start">
-            <CheckCircle className="h-5 w-5 text-teal-500 mr-3 shrink-0 mt-0.5" />
-            <span className="text-slate-700">{feature}</span>
-          </li>
-        ))}
-      </ul>
-      <Link to="/signup">
-        <Button className={`w-full ${recommended ? 'bg-teal-600 hover:bg-teal-700' : 'bg-slate-800 hover:bg-slate-900'}`}>
-          {ctaText}
-        </Button>
-      </Link>
-    </CardContent>
-  </Card>
-);
-
-// Testimonial Card Component
-const TestimonialCard = ({ 
-  quote, 
-  author, 
-  title, 
-  rating 
-}: { 
-  quote: string, 
-  author: string, 
-  title: string, 
-  rating: number 
-}) => (
-  <Card className="border border-slate-200">
-    <CardContent className="pt-6">
-      <div className="flex mb-4">
-        {[...Array(rating)].map((_, i) => (
-          <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-        ))}
-      </div>
-      <blockquote className="text-slate-700 mb-4 italic">"{quote}"</blockquote>
+    <div className="text-center mb-8">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">{tier}</h3>
       <div>
-        <div className="font-semibold text-slate-800">{author}</div>
-        <div className="text-sm text-slate-600">{title}</div>
+        <span className="text-4xl font-light text-gray-900">${price}</span>
+        <span className="text-gray-600 ml-2">/{period}</span>
       </div>
-    </CardContent>
-  </Card>
+    </div>
+    <ul className="space-y-4 mb-8">
+      {features.map((feature, index) => (
+        <li key={index} className="flex items-start">
+          <CheckCircle className="h-5 w-5 text-teal-600 mr-3 shrink-0 mt-0.5" />
+          <span className="text-gray-700">{feature}</span>
+        </li>
+      ))}
+    </ul>
+    <Link to="/signup">
+      <Button className={`w-full rounded-full py-6 text-lg font-medium ${popular ? 'bg-black text-white hover:bg-gray-800' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}>
+        {ctaText}
+      </Button>
+    </Link>
+  </div>
 );
 
 export default Landing;

@@ -2,47 +2,39 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const HeroSection = () => {
   return (
-    <section className="w-full bg-gradient-to-br from-teal-600 to-blue-700 text-white py-24 px-6">
-      <div className="container mx-auto text-center max-w-6xl">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-          Simplify Travel Quotations with Confidence
+    <section className="w-full pt-20 pb-12 px-4">
+      <div className="max-w-4xl mx-auto text-center">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight text-gray-900 mb-6 leading-tight">
+          Travel quotations
+          <br />
+          <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
+            made simple
+          </span>
         </h1>
-        <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
-          Generate, compare, and send quotes in minutes with multi-hotel support and agent tools. 
-          The complete travel business management platform.
+        <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
+          Create professional travel quotes in minutes with multi-hotel comparison, 
+          team management, and client-friendly sharing.
         </p>
-        
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link to="/signup">
-            <Button size="lg" className="bg-white text-teal-600 hover:bg-slate-100 text-lg px-8 py-6">
-              Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-6 text-lg font-medium">
+              Start free trial
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
           <Link to="/pricing">
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-teal-600 text-lg px-8 py-6">
-              View Pricing
+            <Button size="lg" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full px-8 py-6 text-lg font-medium">
+              View pricing
             </Button>
           </Link>
         </div>
-        
-        <div className="flex flex-col md:flex-row justify-center items-center gap-8 text-sm">
-          <div className="flex items-center">
-            <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
-            14-day free trial
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
-            No credit card required
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
-            Cancel anytime
-          </div>
-        </div>
+        <p className="text-sm text-gray-500 mt-6">
+          No credit card required • 14-day free trial • Cancel anytime
+        </p>
       </div>
     </section>
   );
