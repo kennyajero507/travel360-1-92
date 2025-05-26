@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -211,7 +212,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Signup function
+  // Signup function with proper duplicate email handling
   const signup = async (email: string, password: string, fullName: string) => {
     try {
       console.log("Starting signup process for:", email);
@@ -223,6 +224,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
       
+      // Check if email already exists by attempting to sign up
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -235,17 +237,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) {
         console.error("Signup error:", error);
+        
+        // Handle specific error cases
+        if (error.message.includes('already registered') || 
+            error.message.includes('User already registered') ||
+            error.message.includes('already been registered')) {
+          toast.error("This email is already registered. Please use a different email or try signing in.");
+          return false;
+        }
+        
         toast.error(error.message);
         return false;
       }
       
-      console.log("Signup successful:", data);
+      console.log("Signup response:", data);
       
-      if (data.user && !data.user.email_confirmed_at) {
-        toast.success("Please check your email to confirm your account before signing in.");
+      // Check if user was created successfully
+      if (data.user) {
+        // If email confirmation is disabled and user is immediately confirmed
+        if (data.user.email_confirmed_at) {
+          toast.success("Account created successfully! You can now sign in.");
+        } else {
+          // If email confirmation is enabled
+          toast.success("Please check your email to confirm your account before signing in.");
+        }
+        return true;
+      } else {
+        // This case handles when the email already exists but Supabase doesn't return an error
+        // This can happen when email confirmations are disabled
+        toast.error("This email is already registered. Please use a different email or try signing in.");
+        return false;
       }
       
-      return true;
     } catch (error) {
       console.error('Signup error:', error);
       toast.error('An error occurred during signup');

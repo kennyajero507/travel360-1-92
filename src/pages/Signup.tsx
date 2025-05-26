@@ -85,21 +85,28 @@ const Signup = () => {
       const signupSuccess = await signup(formData.email, formData.password, formData.fullName);
       
       if (!signupSuccess) {
-        setError("Failed to create user account. Please try again.");
+        setError("Registration failed. The email might already be in use or there was an error creating the account.");
         return;
       }
       
       console.log("User account created successfully");
       
-      // Show success message for email confirmation
-      toast.success("Account created! Please check your email to confirm your account before signing in.");
+      // Show success message and redirect to login
+      toast.success("Account created successfully! You can now sign in with your credentials.");
       
-      // Redirect to login page
-      navigate("/login");
+      // Add a small delay before redirect to ensure user sees the success message
+      setTimeout(() => {
+        navigate("/login", { 
+          state: { 
+            message: "Account created! Please sign in with your new credentials.",
+            email: formData.email 
+          }
+        });
+      }, 1500);
       
     } catch (error) {
       console.error("Signup error:", error);
-      setError("An unexpected error occurred during registration");
+      setError("An unexpected error occurred during registration. Please try again.");
     } finally {
       setLoading(false);
     }

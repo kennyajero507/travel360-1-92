@@ -21,6 +21,23 @@ const Login = () => {
   const location = useLocation();
   
   const from = location.state?.from?.pathname || null;
+  const successMessage = location.state?.message || null;
+  const prefilledEmail = location.state?.email || "";
+
+  // Pre-fill email if provided from signup
+  useEffect(() => {
+    if (prefilledEmail) {
+      setEmail(prefilledEmail);
+    }
+  }, [prefilledEmail]);
+
+  // Show success message from signup if present
+  useEffect(() => {
+    if (successMessage) {
+      // Clear the state to prevent showing message on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [successMessage]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -75,6 +92,12 @@ const Login = () => {
       navLink={{ text: "Need an account? Sign up", to: "/signup" }}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {successMessage && (
+          <Alert className="mb-4 bg-green-50 border-green-200">
+            <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
+          </Alert>
+        )}
+        
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>{error}</AlertDescription>
