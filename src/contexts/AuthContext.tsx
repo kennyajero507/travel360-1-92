@@ -124,10 +124,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // Use RPC function to safely get profile
-      const { data, error } = await supabase.rpc('get_user_profile', { 
-        user_id: userId 
-      });
+      // Use direct table query instead of RPC function
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
       
       if (error) {
         console.error('Error fetching user profile:', error);
