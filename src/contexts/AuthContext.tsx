@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -384,15 +385,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
 
-      if (data.success) {
-        toast.success('Invitation accepted successfully');
-        // Refresh user profile
-        if (currentUser) {
-          await fetchUserProfile(currentUser.id);
+      // Type guard to ensure data is an object with the expected structure
+      if (data && typeof data === 'object' && 'success' in data) {
+        const result = data as { success: boolean; error?: string; org_id?: string; role?: string };
+        
+        if (result.success) {
+          toast.success('Invitation accepted successfully');
+          // Refresh user profile
+          if (currentUser) {
+            await fetchUserProfile(currentUser.id);
+          }
+          return true;
+        } else {
+          toast.error(result.error || 'Failed to accept invitation');
+          return false;
         }
-        return true;
       } else {
-        toast.error(data.error || 'Failed to accept invitation');
+        toast.error('Invalid response from server');
         return false;
       }
     } catch (error) {
