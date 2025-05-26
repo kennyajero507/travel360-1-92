@@ -1,4 +1,3 @@
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -61,44 +60,61 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up the auth state listener FIRST
+    let isMounted = true;
+
+    // Set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
+      async (event, newSession) => {
         console.log("Auth state changed:", event);
+        
+        if (!isMounted) return;
+
         setSession(newSession);
         setCurrentUser(newSession?.user ?? null);
         
-        // Store session in localStorage for persistence if needed
-        if (event === 'SIGNED_IN' && newSession) {
-          localStorage.setItem('supabase.auth.token', JSON.stringify(newSession));
-          // Defer profile fetch to avoid recursion
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          // Fetch profile after a short delay to avoid recursion
           setTimeout(() => {
-            if (newSession.user) {
+            if (isMounted) {
               fetchUserProfile(newSession.user.id);
             }
           }, 100);
         } else if (event === 'SIGNED_OUT') {
-          localStorage.removeItem('supabase.auth.token');
           setUserProfile(null);
         }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setCurrentUser(existingSession?.user ?? null);
-      
-      if (existingSession?.user) {
-        setTimeout(() => {
-          fetchUserProfile(existingSession.user.id);
-        }, 100);
+    // Check for existing session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+
+        setSession(existingSession);
+        setCurrentUser(existingSession?.user ?? null);
+        
+        if (existingSession?.user) {
+          setTimeout(() => {
+            if (isMounted) {
+              fetchUserProfile(existingSession.user.id);
+            }
+          }, 100);
+        }
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-      
-      setLoading(false);
-    });
+    };
+
+    getInitialSession();
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -108,17 +124,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // Use a more direct query to avoid RLS recursion
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, role, org_id, trial_ends_at')
-        .eq('id', userId)
-        .single();
+      // Use RPC function to safely get profile
+      const { data, error } = await supabase.rpc('get_user_profile', { 
+        user_id: userId 
+      });
       
       if (error) {
         console.error('Error fetching user profile:', error);
+        
         // If profile doesn't exist, create a basic one
-        if (error.code === 'PGRST116') {
+        if (error.code === 'PGRST116' || error.message.includes('no rows')) {
           console.log("Profile not found, creating basic profile");
           const { data: insertData, error: insertError } = await supabase
             .from('profiles')
@@ -165,10 +180,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Login function - configured for persistent sessions
+  // Login function
   const login = async (email: string, password: string) => {
     try {
       console.log("Attempting login for:", email);
+      setLoading(true);
+      
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password
@@ -181,11 +198,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log("Login successful");
+      toast.success('Logged in successfully');
       return true;
     } catch (error) {
       console.error('Login error:', error);
       toast.error('An error occurred during login');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -260,7 +280,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
       
-      // Call the RPC function to create an organization
       const { data, error } = await supabase
         .rpc('create_organization', { org_name: name });
 
@@ -272,7 +291,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log("Organization created with ID:", data);
 
-      // Refresh user profile to get the updated role
       setTimeout(() => {
         fetchUserProfile(currentUser.id);
       }, 500);
@@ -376,7 +394,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (!userProfile) return null;
       
-      // Get organization subscription tier
       let tier = 'starter';
       if (userProfile.org_id) {
         const { data: orgData } = await supabase
@@ -390,7 +407,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
       
-      // Define role-based permissions
       const permissions = {
         system_admin: {
           canManageAllOrgs: true,

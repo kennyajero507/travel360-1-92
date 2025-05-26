@@ -20,13 +20,13 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get the intended destination from location state
   const from = location.state?.from?.pathname || null;
 
   // Redirect if already logged in
   useEffect(() => {
     if (session && userProfile) {
       const destination = from || (userProfile.role === 'system_admin' ? '/admin/dashboard' : '/dashboard');
+      console.log("Redirecting to:", destination);
       navigate(destination, { replace: true });
     }
   }, [session, userProfile, navigate, from]);
@@ -40,7 +40,6 @@ const Login = () => {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError("Please enter a valid email address");
@@ -50,9 +49,12 @@ const Login = () => {
     setLoading(true);
     
     try {
+      console.log("Starting login process...");
       const success = await login(email, password);
+      
       if (success) {
-        // Redirect will be handled by useEffect
+        console.log("Login successful, waiting for redirect...");
+        // The useEffect above will handle the redirect once userProfile is loaded
       } else {
         setError("Login failed. Please check your credentials and try again.");
       }
@@ -88,6 +90,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         
@@ -101,11 +104,13 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              disabled={loading}
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
