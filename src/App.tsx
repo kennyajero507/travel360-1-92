@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Routes,
@@ -40,6 +39,7 @@ import BookingDetails from './pages/BookingDetails';
 import Vouchers from './pages/Vouchers';
 import VoucherDetails from './pages/VoucherDetails';
 import AgentManagement from './pages/AgentManagement';
+import AcceptInvitation from './pages/AcceptInvitation';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RoleProvider } from './contexts/role/RoleProvider';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -137,6 +137,9 @@ function AppRoutes() {
         <Route path="/admin-login" element={<PublicRoute><AdminLogin /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+        
+        {/* Invitation acceptance route */}
+        <Route path="/invite" element={<AcceptInvitation />} />
         
         {/* Protected routes for authenticated users */}
         <Route path="/dashboard" element={

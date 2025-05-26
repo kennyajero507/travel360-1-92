@@ -146,11 +146,64 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          org_id: string | null
+          role: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id?: string | null
+          role: string
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id?: string | null
+          role?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
           id: string
           name: string
+          owner_id: string | null
+          settings: Json | null
           subscription_status: string | null
           trial_end: string | null
           trial_start: string | null
@@ -159,6 +212,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
+          owner_id?: string | null
+          settings?: Json | null
           subscription_status?: string | null
           trial_end?: string | null
           trial_start?: string | null
@@ -167,11 +222,21 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          owner_id?: string | null
+          settings?: Json | null
           subscription_status?: string | null
           trial_end?: string | null
           trial_start?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -596,6 +661,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: {
+        Args: { invitation_token: string }
+        Returns: Json
+      }
       create_organization: {
         Args: { org_name: string }
         Returns: string

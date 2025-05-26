@@ -1,4 +1,3 @@
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -27,6 +26,9 @@ interface AuthContextType {
   switchRole: (role: string) => Promise<boolean>;
   getUserRolePermissions: () => Promise<any>;
   checkRoleAccess: (allowedRoles: string[]) => boolean;
+  sendInvitation: (email: string, role: string) => Promise<boolean>;
+  acceptInvitation: (token: string) => Promise<boolean>;
+  getInvitations: () => Promise<any[]>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -44,6 +46,9 @@ const AuthContext = createContext<AuthContextType>({
   switchRole: async () => false,
   getUserRolePermissions: async () => ({}),
   checkRoleAccess: () => false,
+  sendInvitation: async () => false,
+  acceptInvitation: async () => false,
+  getInvitations: async () => [],
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -74,7 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentUser(newSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && newSession?.user) {
-          // Fetch profile after a short delay to avoid recursion
+          // Fetch profile after auth state change
           setTimeout(() => {
             if (isMounted) {
               fetchUserProfile(newSession.user.id);
@@ -125,7 +130,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log("Fetching user profile for ID:", userId);
       
-      // Use direct table query instead of RPC function
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -180,6 +184,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -316,6 +322,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log("Organization created with ID:", data);
 
+      // Update organization with owner_id
+      await supabase
+        .from('organizations')
+        .update({ owner_id: currentUser.id })
+        .eq('id', data);
+
       setTimeout(() => {
         fetchUserProfile(currentUser.id);
       }, 500);
@@ -325,6 +337,93 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Error creating organization:', error);
       toast.error('An error occurred while creating the organization');
       return false;
+    }
+  };
+
+  // Send invitation to join organization
+  const sendInvitation = async (email: string, role: string): Promise<boolean> => {
+    try {
+      if (!userProfile?.org_id) {
+        toast.error("You must be part of an organization to send invitations");
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('invitations')
+        .insert({
+          email,
+          role,
+          org_id: userProfile.org_id,
+          invited_by: currentUser?.id
+        });
+
+      if (error) {
+        console.error("Invitation error:", error);
+        toast.error('Failed to send invitation');
+        return false;
+      }
+
+      toast.success(`Invitation sent to ${email}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      toast.error('An error occurred while sending invitation');
+      return false;
+    }
+  };
+
+  // Accept invitation
+  const acceptInvitation = async (token: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .rpc('accept_invitation', { invitation_token: token });
+
+      if (error) {
+        console.error("Accept invitation error:", error);
+        toast.error('Failed to accept invitation');
+        return false;
+      }
+
+      if (data.success) {
+        toast.success('Invitation accepted successfully');
+        // Refresh user profile
+        if (currentUser) {
+          await fetchUserProfile(currentUser.id);
+        }
+        return true;
+      } else {
+        toast.error(data.error || 'Failed to accept invitation');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+      toast.error('An error occurred while accepting invitation');
+      return false;
+    }
+  };
+
+  // Get invitations for current organization
+  const getInvitations = async (): Promise<any[]> => {
+    try {
+      if (!userProfile?.org_id) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('invitations')
+        .select('*')
+        .eq('org_id', userProfile.org_id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Get invitations error:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error getting invitations:', error);
+      return [];
     }
   };
 
@@ -512,6 +611,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     switchRole,
     getUserRolePermissions,
     checkRoleAccess,
+    sendInvitation,
+    acceptInvitation,
+    getInvitations,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -19,10 +19,12 @@ const Login = () => {
   const { login, session, userProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   
   const from = location.state?.from?.pathname || null;
   const successMessage = location.state?.message || null;
   const prefilledEmail = location.state?.email || "";
+  const invitationToken = searchParams.get('invitation');
 
   // Pre-fill email if provided from signup
   useEffect(() => {
@@ -42,11 +44,17 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (session && userProfile) {
+      // If there's an invitation token, redirect to accept invitation page
+      if (invitationToken) {
+        navigate(`/invite?token=${invitationToken}`, { replace: true });
+        return;
+      }
+      
       const destination = from || (userProfile.role === 'system_admin' ? '/admin/dashboard' : '/dashboard');
       console.log("Redirecting to:", destination);
       navigate(destination, { replace: true });
     }
-  }, [session, userProfile, navigate, from]);
+  }, [session, userProfile, navigate, from, invitationToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +81,7 @@ const Login = () => {
         console.log("Login successful, waiting for redirect...");
         // The useEffect above will handle the redirect once userProfile is loaded
       } else {
-        setError("Login failed. Please check your credentials and try again.");
+        setError("Invalid email or password. Please check your credentials and try again.");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -92,6 +100,14 @@ const Login = () => {
       navLink={{ text: "Need an account? Sign up", to: "/signup" }}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {invitationToken && (
+          <Alert className="mb-4 bg-blue-50 border-blue-200">
+            <AlertDescription className="text-blue-800">
+              You have an invitation to join an organization. Please log in to accept it.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {successMessage && (
           <Alert className="mb-4 bg-green-50 border-green-200">
             <AlertDescription className="text-green-800">{successMessage}</AlertDescription>

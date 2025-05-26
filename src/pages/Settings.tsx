@@ -1,56 +1,50 @@
 
-import { useRole } from "../contexts/RoleContext";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import GeneralSettings from "../components/settings/GeneralSettings";
 import AccountSettings from "../components/settings/AccountSettings";
 import SubscriptionSettings from "../components/settings/SubscriptionSettings";
-import AdminSettings from "../components/AdminSettings";
+import InvitationManager from "../components/InvitationManager";
+import { useAuth } from "../contexts/AuthContext";
 
 const Settings = () => {
-  const { role, permissions } = useRole();
+  const { userProfile } = useAuth();
   
-  // Only system admins can access admin settings
-  const canAccessAdmin = permissions.canAccessSystemSettings;
-  
-  // Only system admins and organization owners can see subscription settings
-  const canSeeSubscription = role === 'system_admin' || role === 'org_owner';
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-gray-500 mt-2">Manage your account and application preferences</p>
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">
+          Manage your account preferences and organization settings.
+        </p>
       </div>
 
-      <Tabs defaultValue="general">
-        <TabsList>
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
-          {canSeeSubscription && (
-            <TabsTrigger value="subscription">Subscription</TabsTrigger>
-          )}
-          {canAccessAdmin && (
-            <TabsTrigger value="admin">Administration</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          {userProfile?.role === 'org_owner' && (
+            <TabsTrigger value="team">Team</TabsTrigger>
           )}
         </TabsList>
-        
-        <TabsContent value="general" className="space-y-4 mt-4">
+
+        <TabsContent value="general" className="space-y-6">
           <GeneralSettings />
         </TabsContent>
 
-        <TabsContent value="account" className="space-y-4 mt-4">
+        <TabsContent value="account" className="space-y-6">
           <AccountSettings />
         </TabsContent>
 
-        {canSeeSubscription && (
-          <TabsContent value="subscription" className="space-y-4 mt-4">
-            <SubscriptionSettings />
-          </TabsContent>
-        )}
-        
-        {canAccessAdmin && (
-          <TabsContent value="admin" className="space-y-4 mt-4">
-            <AdminSettings />
+        <TabsContent value="subscription" className="space-y-6">
+          <SubscriptionSettings />
+        </TabsContent>
+
+        {userProfile?.role === 'org_owner' && (
+          <TabsContent value="team" className="space-y-6">
+            <InvitationManager />
           </TabsContent>
         )}
       </Tabs>
