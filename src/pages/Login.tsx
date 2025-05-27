@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -17,44 +17,24 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   
   const { login, session, userProfile } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
   
-  const from = location.state?.from?.pathname || null;
-  const successMessage = location.state?.message || null;
-  const prefilledEmail = location.state?.email || "";
   const invitationToken = searchParams.get('invitation');
-
-  // Pre-fill email if provided from signup
-  useEffect(() => {
-    if (prefilledEmail) {
-      setEmail(prefilledEmail);
-    }
-  }, [prefilledEmail]);
-
-  // Show success message from signup if present
-  useEffect(() => {
-    if (successMessage) {
-      // Clear the state to prevent showing message on refresh
-      window.history.replaceState({}, document.title);
-    }
-  }, [successMessage]);
 
   // Redirect if already logged in
   useEffect(() => {
     if (session && userProfile) {
-      // If there's an invitation token, redirect to accept invitation page
-      if (invitationToken) {
-        navigate(`/invite?token=${invitationToken}`, { replace: true });
-        return;
-      }
+      // Don't redirect if there's an invitation to process
+      if (invitationToken) return;
       
-      const destination = from || (userProfile.role === 'system_admin' ? '/admin/dashboard' : '/dashboard');
-      console.log("Redirecting to:", destination);
-      navigate(destination, { replace: true });
+      // Role-based redirect
+      if (userProfile.role === 'system_admin') {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/dashboard';
+      }
     }
-  }, [session, userProfile, navigate, from, invitationToken]);
+  }, [session, userProfile, invitationToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,13 +54,9 @@ const Login = () => {
     setLoading(true);
     
     try {
-      console.log("Starting login process...");
       const success = await login(email, password);
       
-      if (success) {
-        console.log("Login successful, waiting for redirect...");
-        // The useEffect above will handle the redirect once userProfile is loaded
-      } else {
+      if (!success) {
         setError("Invalid email or password. Please check your credentials and try again.");
       }
     } catch (error) {
@@ -105,12 +81,6 @@ const Login = () => {
             <AlertDescription className="text-blue-800">
               You have an invitation to join an organization. Please log in to accept it.
             </AlertDescription>
-          </Alert>
-        )}
-        
-        {successMessage && (
-          <Alert className="mb-4 bg-green-50 border-green-200">
-            <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
           </Alert>
         )}
         

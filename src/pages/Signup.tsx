@@ -8,30 +8,18 @@ import SignupForm from "../components/auth/SignupForm";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, createOrganization, session, userProfile } = useAuth();
+  const { signup, session, userProfile } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if already logged in based on role
+  // Redirect if already logged in
   useEffect(() => {
     if (session && userProfile) {
-      // Role-based redirect
-      switch (userProfile.role) {
-        case 'system_admin':
-          navigate("/admin/dashboard");
-          break;
-        case 'org_owner':
-          navigate("/dashboard");
-          break;
-        case 'tour_operator':
-          navigate("/dashboard");
-          break;
-        case 'agent':
-          navigate("/dashboard");
-          break;
-        default:
-          navigate("/dashboard");
+      if (userProfile.role === 'system_admin') {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/dashboard");
       }
     }
   }, [session, userProfile, navigate]);
@@ -63,14 +51,12 @@ const Signup = () => {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address");
       return;
     }
 
-    // Don't allow example emails
     if (formData.email.includes('@example.com')) {
       setError("Please use a real email address, not an example email");
       return;
@@ -81,7 +67,6 @@ const Signup = () => {
     try {
       console.log("Starting signup process for:", formData.email);
       
-      // Step 1: Create user account
       const signupSuccess = await signup(formData.email, formData.password, formData.fullName);
       
       if (!signupSuccess) {
@@ -91,10 +76,8 @@ const Signup = () => {
       
       console.log("User account created successfully");
       
-      // Show success message and redirect to login
       toast.success("Account created successfully! You can now sign in with your credentials.");
       
-      // Add a small delay before redirect to ensure user sees the success message
       setTimeout(() => {
         navigate("/login", { 
           state: { 

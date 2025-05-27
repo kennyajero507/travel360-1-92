@@ -1,9 +1,9 @@
+
 import React from 'react';
 import {
   Routes,
   Route,
   Navigate,
-  useLocation,
 } from "react-router-dom";
 import './App.css';
 import Layout from './components/Layout';
@@ -43,8 +43,9 @@ import AcceptInvitation from './pages/AcceptInvitation';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RoleProvider } from './contexts/role/RoleProvider';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import { AuthGuard } from './components/auth/AuthGuard';
 
-// Protected route component that requires authentication and role access
+// Protected route component
 const ProtectedRoute = ({ 
   children, 
   allowedRoles = [] 
@@ -52,36 +53,11 @@ const ProtectedRoute = ({
   children: React.ReactNode, 
   allowedRoles?: string[] 
 }) => {
-  const { session, userProfile, loading, checkRoleAccess } = useAuth();
-  const location = useLocation();
-  
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Redirect to login if not authenticated
-  if (!session || !userProfile) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-  
-  // Check role-based access if roles are specified
-  if (allowedRoles.length > 0) {
-    const hasAccess = checkRoleAccess(allowedRoles);
-    if (!hasAccess) {
-      // Redirect to appropriate dashboard based on user role
-      const redirectPath = userProfile.role === 'system_admin' ? '/admin/dashboard' : '/dashboard';
-      return <Navigate to={redirectPath} replace />;
-    }
-  }
-  
-  return <>{children}</>;
+  return (
+    <AuthGuard allowedRoles={allowedRoles} requireAuth={true}>
+      {children}
+    </AuthGuard>
+  );
 };
 
 // Public route component that redirects authenticated users
@@ -101,22 +77,17 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   
   // Redirect authenticated users to their appropriate dashboard
   if (session && userProfile) {
-    switch (userProfile.role) {
-      case 'system_admin':
-        return <Navigate to="/admin/dashboard" replace />;
-      case 'org_owner':
-      case 'tour_operator':
-      case 'agent':
-        return <Navigate to="/dashboard" replace />;
-      default:
-        return <Navigate to="/dashboard" replace />;
+    if (userProfile.role === 'system_admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
     }
   }
   
   return <>{children}</>;
 };
 
-// Guest route component for public pages accessible to everyone
+// Guest route component for public pages
 const GuestRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
@@ -125,13 +96,13 @@ function AppRoutes() {
   return (
     <div className="min-h-screen">
       <Routes>
-        {/* Public routes accessible to everyone */}
+        {/* Public routes */}
         <Route path="/" element={<GuestRoute><Landing /></GuestRoute>} />
         <Route path="/about" element={<GuestRoute><About /></GuestRoute>} />
         <Route path="/features" element={<GuestRoute><Features /></GuestRoute>} />
         <Route path="/pricing" element={<GuestRoute><Pricing /></GuestRoute>} />
         
-        {/* Authentication routes - redirect if already logged in */}
+        {/* Authentication routes */}
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/admin-login" element={<PublicRoute><AdminLogin /></PublicRoute>} />
@@ -141,7 +112,7 @@ function AppRoutes() {
         {/* Invitation acceptance route */}
         <Route path="/invite" element={<AcceptInvitation />} />
         
-        {/* Protected routes for authenticated users */}
+        {/* Protected routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Layout><Dashboard /></Layout>
