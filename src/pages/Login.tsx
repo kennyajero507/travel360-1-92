@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -16,25 +16,26 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { login, session, userProfile } = useAuth();
+  const { login, session, userProfile, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   const invitationToken = searchParams.get('invitation');
 
   // Redirect if already logged in
   useEffect(() => {
-    if (session && userProfile) {
+    if (!authLoading && session && userProfile) {
       // Don't redirect if there's an invitation to process
       if (invitationToken) return;
       
       // Role-based redirect
       if (userProfile.role === 'system_admin') {
-        window.location.href = '/admin/dashboard';
+        navigate('/admin/dashboard');
       } else {
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       }
     }
-  }, [session, userProfile, invitationToken]);
+  }, [session, userProfile, invitationToken, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,11 +62,23 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("An unexpected error occurred during login");
+      setError("An unexpected error occurred during login. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading state during auth check
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthLayout

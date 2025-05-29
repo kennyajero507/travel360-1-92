@@ -1,9 +1,9 @@
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { getDefaultRedirectPath } from '../utils/authHelpers';
 
 interface UserProfile {
   id: string;
@@ -29,6 +29,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (password: string) => Promise<boolean>;
   checkRoleAccess: (allowedRoles: string[]) => boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -46,6 +47,7 @@ const AuthContext = createContext<AuthContextType>({
   resetPassword: async () => false,
   updatePassword: async () => false,
   checkRoleAccess: () => false,
+  refreshProfile: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -55,8 +57,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
 
-  // Fetch user profile from profiles table
-  const fetchUserProfile = async (userId: string): Promise<void> => {
+  // Fetch user profile safely
+  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       console.log("Fetching user profile for ID:", userId);
       
@@ -64,61 +66,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching user profile:', error);
-        
-        // If profile doesn't exist, create a basic one
-        if (error.code === 'PGRST116') {
-          console.log("Profile not found, creating basic profile");
-          const { data: user } = await supabase.auth.getUser();
-          
-          if (user.user) {
-            const { data: insertData, error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: userId,
-                full_name: user.user.user_metadata?.full_name || user.user.email || 'User',
-                role: 'agent'
-              })
-              .select()
-              .single();
-              
-            if (!insertError && insertData) {
-              setUserProfile({
-                id: insertData.id,
-                email: user.user.email || '',
-                role: insertData.role || 'agent',
-                full_name: insertData.full_name,
-                org_id: insertData.org_id,
-                trial_ends_at: insertData.trial_ends_at
-              });
-            }
-          }
-        }
-        return;
+        return null;
       }
       
-      if (data) {
-        const { data: user } = await supabase.auth.getUser();
-        setUserProfile({
-          id: data.id,
-          email: user.user?.email || '',
-          role: data.role || 'agent',
-          full_name: data.full_name,
-          org_id: data.org_id,
-          trial_ends_at: data.trial_ends_at
-        });
-        
-        console.log("User profile fetched successfully:", {
-          id: data.id,
-          role: data.role || 'agent',
-          org_id: data.org_id
-        });
+      if (!data) {
+        console.log("No profile found, user may need to complete signup");
+        return null;
       }
+      
+      const { data: user } = await supabase.auth.getUser();
+      const profile: UserProfile = {
+        id: data.id,
+        email: user.user?.email || '',
+        role: data.role || 'agent',
+        full_name: data.full_name,
+        org_id: data.org_id,
+        trial_ends_at: data.trial_ends_at
+      };
+      
+      console.log("User profile fetched successfully:", {
+        id: profile.id,
+        role: profile.role,
+        org_id: profile.org_id
+      });
+      
+      return profile;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+      return null;
+    }
+  };
+
+  // Refresh profile function
+  const refreshProfile = async () => {
+    if (currentUser) {
+      const profile = await fetchUserProfile(currentUser.id);
+      setUserProfile(profile);
     }
   };
 
@@ -136,7 +123,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentUser(newSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && newSession?.user) {
-          await fetchUserProfile(newSession.user.id);
+          const profile = await fetchUserProfile(newSession.user.id);
+          if (isMounted) {
+            setUserProfile(profile);
+          }
         } else if (event === 'SIGNED_OUT') {
           setUserProfile(null);
         }
@@ -156,7 +146,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentUser(existingSession?.user ?? null);
         
         if (existingSession?.user) {
-          await fetchUserProfile(existingSession.user.id);
+          const profile = await fetchUserProfile(existingSession.user.id);
+          if (isMounted) {
+            setUserProfile(profile);
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
@@ -194,23 +187,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (data.user) {
         console.log("Login successful");
-        toast.success('Logged in successfully');
         
-        // Fetch profile and then redirect based on role
-        await fetchUserProfile(data.user.id);
+        // Fetch profile to determine redirect
+        const profile = await fetchUserProfile(data.user.id);
         
-        // Get the updated profile to determine redirect
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-        
-        // Role-based redirect
-        if (profileData?.role === 'system_admin') {
-          navigate('/admin/dashboard');
+        if (profile) {
+          setUserProfile(profile);
+          toast.success('Logged in successfully');
+          
+          // Role-based redirect
+          const redirectPath = getDefaultRedirectPath(profile.role);
+          console.log(`Redirecting ${profile.role} to ${redirectPath}`);
+          navigate(redirectPath);
         } else {
-          navigate('/dashboard');
+          toast.error('Profile not found. Please contact support.');
+          return false;
         }
         
         return true;
@@ -231,7 +222,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log("Starting signup process for:", email);
       
-      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         toast.error("Please enter a valid email address");
@@ -324,7 +314,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', data);
 
       // Refresh user profile
-      await fetchUserProfile(currentUser.id);
+      await refreshProfile();
       
       return true;
     } catch (error) {
@@ -384,7 +374,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (result.success) {
           toast.success('Invitation accepted successfully');
           if (currentUser) {
-            await fetchUserProfile(currentUser.id);
+            await refreshProfile();
           }
           return true;
         } else {
@@ -492,6 +482,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resetPassword,
     updatePassword,
     checkRoleAccess,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
