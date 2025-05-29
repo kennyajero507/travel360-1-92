@@ -28,15 +28,28 @@ export const AuthGuard = ({
   }
 
   // If authentication is required but user is not logged in
-  if (requireAuth && (!session || !userProfile)) {
+  if (requireAuth && !session) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If user is authenticated but profile is still loading, show loading state
+  if (requireAuth && session && !userProfile) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 mb-4">Loading your profile...</p>
+          <p className="text-sm text-slate-500">This should only take a moment</p>
+        </div>
+      </div>
+    );
   }
 
   // If user is authenticated but doesn't have required role
   if (requireAuth && session && userProfile && allowedRoles.length > 0) {
     const hasAccess = checkRoleAccess(allowedRoles);
     if (!hasAccess) {
-      // Redirect based on user role
+      // Redirect based on user role with fallback
       const redirectPath = userProfile.role === 'system_admin' ? '/admin/dashboard' : '/dashboard';
       return <Navigate to={redirectPath} replace />;
     }

@@ -1,3 +1,4 @@
+
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -57,25 +58,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
 
-  // Fetch user profile safely
-  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  // Fetch user profile with timeout and retry logic
+  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
+    const maxRetries = 3;
+    const timeout = 5000; // 5 seconds
+    
     try {
-      console.log("Fetching user profile for ID:", userId);
+      console.log(`Fetching user profile for ID: ${userId} (attempt ${retryCount + 1})`);
       
-      const { data, error } = await supabase
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), timeout);
+      });
+      
+      // Race between the actual query and timeout
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
       
+      const { data, error } = await Promise.race([profilePromise, timeoutPromise]);
+      
       if (error) {
         console.error('Error fetching user profile:', error);
-        return null;
+        throw error;
       }
       
       if (!data) {
-        console.log("No profile found, user may need to complete signup");
-        return null;
+        console.log("No profile found for user, creating fallback profile");
+        // Create a fallback profile if none exists
+        return {
+          id: userId,
+          email: currentUser?.email || '',
+          role: 'agent',
+          full_name: currentUser?.user_metadata?.full_name || null,
+        };
       }
       
       const { data: user } = await supabase.auth.getUser();
@@ -96,8 +114,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       return profile;
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-      return null;
+      console.error(`Error in fetchUserProfile (attempt ${retryCount + 1}):`, error);
+      
+      // Retry logic
+      if (retryCount < maxRetries) {
+        console.log(`Retrying profile fetch in ${(retryCount + 1) * 1000}ms...`);
+        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
+        return fetchUserProfile(userId, retryCount + 1);
+      }
+      
+      // If all retries failed, create a fallback profile
+      console.log("All retries failed, creating fallback profile");
+      return {
+        id: userId,
+        email: currentUser?.email || '',
+        role: 'agent',
+        full_name: currentUser?.user_metadata?.full_name || null,
+      };
     }
   };
 
@@ -109,12 +142,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Handle authentication state changes
+  // Handle authentication state changes with better error handling
   useEffect(() => {
     let isMounted = true;
+    let profileFetchTimeout: NodeJS.Timeout;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
         console.log("Auth state changed:", event);
         
         if (!isMounted) return;
@@ -122,16 +156,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(newSession);
         setCurrentUser(newSession?.user ?? null);
         
+        // Clear any existing timeout
+        if (profileFetchTimeout) {
+          clearTimeout(profileFetchTimeout);
+        }
+        
         if (event === 'SIGNED_IN' && newSession?.user) {
-          const profile = await fetchUserProfile(newSession.user.id);
-          if (isMounted) {
-            setUserProfile(profile);
-          }
+          // Don't block the auth state change with profile fetching
+          profileFetchTimeout = setTimeout(async () => {
+            if (isMounted) {
+              const profile = await fetchUserProfile(newSession.user.id);
+              if (isMounted) {
+                setUserProfile(profile);
+              }
+            }
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
           setUserProfile(null);
         }
         
-        setLoading(false);
+        // Always set loading to false after auth state change
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
@@ -164,15 +211,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       isMounted = false;
+      if (profileFetchTimeout) {
+        clearTimeout(profileFetchTimeout);
+      }
       subscription.unsubscribe();
     };
   }, []);
 
-  // Login function
+  // Login function with better error handling
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       console.log("Attempting login for:", email);
-      setLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
@@ -187,23 +236,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (data.user) {
         console.log("Login successful");
-        
-        // Fetch profile to determine redirect
-        const profile = await fetchUserProfile(data.user.id);
-        
-        if (profile) {
-          setUserProfile(profile);
-          toast.success('Logged in successfully');
-          
-          // Role-based redirect
-          const redirectPath = getDefaultRedirectPath(profile.role);
-          console.log(`Redirecting ${profile.role} to ${redirectPath}`);
-          navigate(redirectPath);
-        } else {
-          toast.error('Profile not found. Please contact support.');
-          return false;
-        }
-        
+        toast.success('Logged in successfully');
         return true;
       }
       
@@ -212,8 +245,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Login error:', error);
       toast.error('An error occurred during login');
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -4,10 +4,11 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import AuthLayout from "../components/auth/AuthLayout";
+import { getDefaultRedirectPath } from "../utils/authHelpers";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   
   const { login, session, userProfile, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -22,20 +24,39 @@ const Login = () => {
   
   const invitationToken = searchParams.get('invitation');
 
-  // Redirect if already logged in
+  // Handle redirect when user is authenticated and profile is loaded
   useEffect(() => {
-    if (!authLoading && session && userProfile) {
+    if (!authLoading && session && userProfile && !redirecting) {
       // Don't redirect if there's an invitation to process
       if (invitationToken) return;
       
-      // Role-based redirect
-      if (userProfile.role === 'system_admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      setRedirecting(true);
+      
+      // Role-based redirect with fallback
+      const redirectPath = getDefaultRedirectPath(userProfile.role);
+      console.log(`Redirecting ${userProfile.role} to ${redirectPath}`);
+      
+      setTimeout(() => {
+        navigate(redirectPath);
+      }, 100);
     }
-  }, [session, userProfile, invitationToken, authLoading, navigate]);
+  }, [session, userProfile, invitationToken, authLoading, navigate, redirecting]);
+
+  // Handle redirect when session exists but profile is still loading
+  useEffect(() => {
+    if (!authLoading && session && !userProfile && !redirecting) {
+      // Give profile time to load, then redirect with fallback
+      const fallbackTimer = setTimeout(() => {
+        if (session && !userProfile && !redirecting) {
+          console.log("Profile loading timeout, redirecting to dashboard");
+          setRedirecting(true);
+          navigate('/dashboard');
+        }
+      }, 3000); // 3 second fallback
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [session, userProfile, authLoading, navigate, redirecting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +89,12 @@ const Login = () => {
     }
   };
 
+  const handleRetry = () => {
+    setError(null);
+    setLoading(false);
+    setRedirecting(false);
+  };
+
   // Show loading state during auth check
   if (authLoading) {
     return (
@@ -75,6 +102,37 @@ const Login = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show redirecting state
+  if (redirecting || (session && userProfile)) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show profile loading state for authenticated users
+  if (session && !userProfile) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 mb-4">Loading your profile...</p>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+            className="text-sm"
+          >
+            Continue to Dashboard
+          </Button>
         </div>
       </div>
     );
@@ -99,7 +157,18 @@ const Login = () => {
         
         {error && (
           <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleRetry}
+                className="ml-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </AlertDescription>
           </Alert>
         )}
         
@@ -157,7 +226,14 @@ const Login = () => {
           className="w-full bg-teal-600 hover:bg-teal-700"
           disabled={loading}
         >
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Signing in...
+            </div>
+          ) : (
+            "Sign In"
+          )}
         </Button>
       </form>
     </AuthLayout>
