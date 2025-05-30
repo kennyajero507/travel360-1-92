@@ -65,23 +65,23 @@ const Signup = () => {
     setLoading(true);
     
     try {
-      console.log("Starting signup process for:", formData.email);
+      console.log("Starting organization owner signup process for:", formData.email);
       
-      const signupSuccess = await signup(formData.email, formData.password, formData.fullName);
+      const signupSuccess = await signup(formData.email, formData.password, formData.fullName, formData.companyName);
       
       if (!signupSuccess) {
         setError("Registration failed. The email might already be in use or there was an error creating the account.");
         return;
       }
       
-      console.log("User account created successfully");
+      console.log("Organization owner account created successfully");
       
-      toast.success("Account created successfully! You can now sign in with your credentials.");
+      toast.success("Organization created successfully! You can now sign in as the organization owner.");
       
       setTimeout(() => {
         navigate("/login", { 
           state: { 
-            message: "Account created! Please sign in with your new credentials.",
+            message: "Organization created! Please sign in with your new credentials.",
             email: formData.email 
           }
         });

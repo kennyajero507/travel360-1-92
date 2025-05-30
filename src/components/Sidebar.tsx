@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -126,7 +127,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
           </Link>
         )}
         
-        {/* Bookings - new! */}
+        {/* Bookings */}
         {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
           <Link
             to="/bookings"
@@ -140,7 +141,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
           </Link>
         )}
         
-        {/* Vouchers - new! */}
+        {/* Vouchers */}
         {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
           <Link
             to="/vouchers"
@@ -154,17 +155,17 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
           </Link>
         )}
         
-        {/* Agent Management (only for org_owner and system_admin) */}
-        {(currentUser.role === "org_owner" || currentUser.role === "system_admin") && (
+        {/* Team Management (for org_owner and tour_operator) */}
+        {(currentUser.role === "org_owner" || currentUser.role === "tour_operator") && (
           <Link
-            to="/agents"
+            to="/team"
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname === "/agents" ? "bg-accent" : "transparent"
+              location.pathname === "/team" ? "bg-accent" : "transparent"
             )}
           >
             <UserCog size={16} className="text-blue-600" />
-            <span>Agent Management</span>
+            <span>Team Management</span>
           </Link>
         )}
         

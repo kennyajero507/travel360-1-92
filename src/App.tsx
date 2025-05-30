@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Routes,
@@ -39,6 +38,7 @@ import BookingDetails from './pages/BookingDetails';
 import Vouchers from './pages/Vouchers';
 import VoucherDetails from './pages/VoucherDetails';
 import AgentManagement from './pages/AgentManagement';
+import TeamManagement from './pages/TeamManagement';
 import AcceptInvitation from './pages/AcceptInvitation';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RoleProvider } from './contexts/role/RoleProvider';
@@ -223,7 +223,14 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
         
-        {/* Agent management routes */}
+        {/* Team Management routes */}
+        <Route path="/team" element={
+          <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+            <Layout><TeamManagement /></Layout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Legacy Agent management routes (keeping for backward compatibility) */}
         <Route path="/agents" element={
           <ProtectedRoute allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
             <Layout><AgentManagement /></Layout>

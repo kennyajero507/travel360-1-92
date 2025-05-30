@@ -32,9 +32,9 @@ export const authService = {
     }
   },
 
-  async signup(email: string, password: string, fullName: string): Promise<boolean> {
+  async signup(email: string, password: string, fullName: string, companyName: string): Promise<boolean> {
     try {
-      console.log("Starting signup process for:", email);
+      console.log("Starting signup process for organization owner:", email);
       
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
@@ -47,7 +47,9 @@ export const authService = {
         password,
         options: {
           data: {
-            full_name: fullName
+            full_name: fullName,
+            company_name: companyName,
+            role: 'org_owner' // Default role for new signups
           }
         }
       });
@@ -66,8 +68,21 @@ export const authService = {
       }
       
       if (data.user) {
+        // Create organization after user is created
+        if (data.user.email_confirmed_at || !data.user.email_confirmed_at) {
+          // Wait a moment for the user profile to be created by the trigger
+          setTimeout(async () => {
+            try {
+              await this.createOrganizationForNewUser(companyName, data.user!.id);
+            } catch (orgError) {
+              console.error('Error creating organization:', orgError);
+              // Don't fail the signup if organization creation fails
+            }
+          }, 1000);
+        }
+        
         if (data.user.email_confirmed_at) {
-          toast.success("Account created successfully! You can now sign in.");
+          toast.success("Organization account created successfully! You can now sign in.");
         } else {
           toast.success("Please check your email to confirm your account before signing in.");
         }
@@ -79,6 +94,42 @@ export const authService = {
       console.error('Signup error:', error);
       toast.error('An error occurred during signup');
       return false;
+    }
+  },
+
+  async createOrganizationForNewUser(companyName: string, userId: string): Promise<void> {
+    try {
+      console.log("Creating organization for new user:", companyName);
+      
+      const { data, error } = await supabase
+        .rpc('create_organization', { org_name: companyName });
+
+      if (error) {
+        console.error("Organization creation error:", error);
+        throw error;
+      }
+
+      console.log("Organization created with ID:", data);
+
+      // Update organization with owner_id
+      await supabase
+        .from('organizations')
+        .update({ owner_id: userId })
+        .eq('id', data);
+      
+      // Update user profile to org_owner role and link to organization
+      await supabase
+        .from('profiles')
+        .update({ 
+          role: 'org_owner',
+          org_id: data 
+        })
+        .eq('id', userId);
+        
+      console.log("User profile updated to organization owner");
+    } catch (error) {
+      console.error('Error in createOrganizationForNewUser:', error);
+      throw error;
     }
   },
 

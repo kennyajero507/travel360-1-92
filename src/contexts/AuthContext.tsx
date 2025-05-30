@@ -1,4 +1,3 @@
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -9,23 +8,15 @@ import { profileService } from './auth/profileService';
 import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
 
-const AuthContext = createContext<AuthContextType>({
-  currentUser: null,
-  session: null,
-  loading: true,
-  userProfile: null,
-  login: async () => false,
-  signup: async () => false,
-  logout: async () => {},
-  createOrganization: async () => false,
-  sendInvitation: async () => false,
-  acceptInvitation: async () => false,
-  getInvitations: async () => [],
-  resetPassword: async () => false,
-  updatePassword: async () => false,
-  checkRoleAccess: () => false,
-  refreshProfile: async () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -34,7 +25,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
 
-  // Refresh profile function
   const refreshProfile = async () => {
     if (currentUser) {
       const profile = await profileService.fetchUserProfile(currentUser.id);
@@ -42,7 +32,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Handle authentication state changes with better error handling
   useEffect(() => {
     let isMounted = true;
     let profileFetchTimeout: NodeJS.Timeout;
@@ -118,55 +107,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Enhanced logout function with navigation
-  const logout = async (): Promise<void> => {
-    await authService.logout();
-    navigate('/login');
+  const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
+    return authService.signup(email, password, fullName, companyName);
   };
 
-  // Enhanced organization creation with refresh
   const createOrganization = async (name: string): Promise<boolean> => {
-    const success = await organizationService.createOrganization(name, currentUser?.id || '');
-    if (success) {
-      await refreshProfile();
-    }
-    return success;
+    if (!currentUser) return false;
+    return organizationService.createOrganization(name, currentUser.id);
   };
 
-  // Enhanced invitation acceptance with refresh
+  const sendInvitation = async (email: string, role: string): Promise<boolean> => {
+    return invitationService.sendInvitation(email, role, userProfile, currentUser?.id);
+  };
+
   const acceptInvitation = async (token: string): Promise<boolean> => {
-    const success = await invitationService.acceptInvitation(token);
-    if (success && currentUser) {
-      await refreshProfile();
-    }
-    return success;
+    return invitationService.acceptInvitation(token);
   };
 
-  const value = {
+  const getInvitations = async (): Promise<any[]> => {
+    return invitationService.getInvitations(userProfile);
+  };
+
+  const checkRoleAccess = (allowedRoles: string[]): boolean => {
+    return profileService.checkRoleAccess(userProfile, allowedRoles);
+  };
+
+  const value: AuthContextType = {
     currentUser,
     session,
     loading,
     userProfile,
     login: authService.login,
-    signup: authService.signup,
-    logout,
+    signup,
+    logout: authService.logout,
     createOrganization,
-    sendInvitation: (email: string, role: string) => 
-      invitationService.sendInvitation(email, role, userProfile, currentUser?.id),
+    sendInvitation,
     acceptInvitation,
-    getInvitations: () => invitationService.getInvitations(userProfile),
+    getInvitations,
     resetPassword: authService.resetPassword,
     updatePassword: authService.updatePassword,
-    checkRoleAccess: (allowedRoles: string[]) => 
-      profileService.checkRoleAccess(userProfile, allowedRoles),
+    checkRoleAccess,
     refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = () => {
-  return useContext(AuthContext);
 };
 
 export default AuthContext;
