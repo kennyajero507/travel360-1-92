@@ -36,7 +36,7 @@ export const profileService = {
         return {
           id: userId,
           email: user.user?.email || '',
-          role: 'agent',
+          role: 'org_owner', // Default to org_owner instead of agent
           full_name: user.user?.user_metadata?.full_name || null,
         };
       }
@@ -45,7 +45,7 @@ export const profileService = {
       const profile: UserProfile = {
         id: data.id,
         email: user.user?.email || '',
-        role: data.role || 'agent',
+        role: data.role || 'org_owner', // Default to org_owner
         full_name: data.full_name,
         org_id: data.org_id,
         trial_ends_at: data.trial_ends_at
@@ -74,7 +74,7 @@ export const profileService = {
       return {
         id: userId,
         email: user.user?.email || '',
-        role: 'agent',
+        role: 'org_owner', // Default to org_owner instead of agent
         full_name: user.user?.user_metadata?.full_name || null,
       };
     }

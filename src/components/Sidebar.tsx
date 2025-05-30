@@ -18,7 +18,6 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRole } from "@/contexts/RoleContext";
 
 interface SidebarProps {
   mobile?: boolean;
@@ -26,8 +25,7 @@ interface SidebarProps {
 
 const Sidebar = ({ mobile = false }: SidebarProps) => {
   const location = useLocation();
-  const { currentUser, logout } = useAuth();
-  const { role, permissions } = useRole();
+  const { currentUser, logout, userProfile } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -86,7 +84,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
         </Link>
         
         {/* Clients */}
-        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
           <Link
             to="/clients"
             className={cn(
@@ -100,7 +98,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
         )}
         
         {/* Inquiries */}
-        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
           <Link
             to="/inquiries"
             className={cn(
@@ -114,7 +112,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
         )}
         
         {/* Quotes */}
-        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
           <Link
             to="/quotes"
             className={cn(
@@ -128,7 +126,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
         )}
         
         {/* Bookings */}
-        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
           <Link
             to="/bookings"
             className={cn(
@@ -142,7 +140,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
         )}
         
         {/* Vouchers */}
-        {(currentUser.role === "agent" || currentUser.role === "tour_operator" || currentUser.role === "org_owner") && (
+        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
           <Link
             to="/vouchers"
             className={cn(
@@ -156,7 +154,7 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
         )}
         
         {/* Team Management (for org_owner and tour_operator) */}
-        {(currentUser.role === "org_owner" || currentUser.role === "tour_operator") && (
+        {userProfile && (userProfile.role === "org_owner" || userProfile.role === "tour_operator") && (
           <Link
             to="/team"
             className={cn(
@@ -186,7 +184,12 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
         <div className="border-t pt-4">
           <div className="flex items-center gap-2">
             <User size={16} className="text-gray-500" />
-            <span className="text-sm font-medium">{currentUser.email}</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">{userProfile?.full_name || currentUser?.email}</span>
+              <span className="text-xs text-gray-500 capitalize">
+                {userProfile?.role?.replace('_', ' ') || 'Organization Owner'}
+              </span>
+            </div>
           </div>
           <button
             onClick={logout}

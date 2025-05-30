@@ -76,16 +76,16 @@ const Signup = () => {
       
       console.log("Organization owner account created successfully");
       
-      toast.success("Organization created successfully! You can now sign in as the organization owner.");
+      toast.success("Organization created successfully! You are now set up as the organization owner and can start building your team.");
       
       setTimeout(() => {
         navigate("/login", { 
           state: { 
-            message: "Organization created! Please sign in with your new credentials.",
+            message: "Organization created! Please sign in to access your organization dashboard and start managing your team.",
             email: formData.email 
           }
         });
-      }, 1500);
+      }, 2000);
       
     } catch (error) {
       console.error("Signup error:", error);
@@ -98,7 +98,7 @@ const Signup = () => {
   return (
     <AuthLayout
       title="Create Your Organization"
-      description="Set up your travel business on TravelFlow360 and start managing quotes, team members, and client relationships."
+      description="Set up your travel business on TravelFlow360 as the organization owner. You'll be able to invite and manage tour operators and agents after registration."
       footerText="Already have an account?"
       footerLink={{ text: "Sign In", to: "/login" }}
       navLink={{ text: "Already have an account? Sign in", to: "/login" }}

@@ -60,7 +60,7 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
       name: "Free Trial",
       description: "14-day free trial with full access",
       price: "Free for 14 days",
-      features: ["Up to 5 team members", "Unlimited quotes", "Basic support"]
+      features: ["Unlimited team members", "Unlimited quotes", "Basic support", "Full organization management"]
     },
     {
       id: "basic",
@@ -105,9 +105,12 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
         </div>
       </div>
 
-      {/* Owner Information */}
+      {/* Organization Owner Information */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-900">Organization Owner Details</h3>
+        <p className="text-sm text-gray-600">
+          You will be registered as the organization owner with full access to manage your team and organization.
+        </p>
         
         <div className="space-y-2">
           <Label htmlFor="fullName">Full Name <span className="text-red-500">*</span></Label>
@@ -236,10 +239,7 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
           </Select>
           
           <p className="text-xs text-gray-500">
-            {formData.selectedPlan === 'trial' 
-              ? 'No payment required during trial period' 
-              : 'You can update payment details after registration'
-            }
+            You can update payment details after registration
           </p>
         </div>
       )}
@@ -271,15 +271,18 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
         className="w-full bg-teal-600 hover:bg-teal-700"
         disabled={loading}
       >
-        {loading ? "Creating Organization..." : "Create Organization & Start Trial"}
+        {loading ? "Creating Organization..." : "Create Organization & Become Owner"}
       </Button>
       
       <div className="text-center">
         <p className="text-sm text-gray-500">
           {formData.selectedPlan === 'trial' 
-            ? 'Start your 14-day free trial. No credit card required.' 
-            : 'Your subscription will begin immediately after registration.'
+            ? 'Start your 14-day free trial as organization owner. No credit card required.' 
+            : 'Your subscription and organization ownership will begin immediately after registration.'
           }
+        </p>
+        <p className="text-xs text-gray-400 mt-2">
+          As the organization owner, you'll have full control to invite and manage tour operators and agents.
         </p>
       </div>
     </form>
