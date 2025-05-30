@@ -23,6 +23,28 @@ export const getAllInquiries = async () => {
   }
 };
 
+// Get inquiries by tour type
+export const getInquiriesByTourType = async (tourType: 'domestic' | 'international') => {
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .eq('tour_type', tourType)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching inquiries by tour type:', error);
+      toast.error('Failed to fetch inquiries');
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getInquiriesByTourType:', error);
+    throw error;
+  }
+};
+
 // Create a new inquiry
 export const createInquiry = async (inquiryData: any) => {
   try {

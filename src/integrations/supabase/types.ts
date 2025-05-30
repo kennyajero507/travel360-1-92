@@ -85,63 +85,90 @@ export type Database = {
           adults: number
           assigned_agent_name: string | null
           assigned_to: string | null
-          budget: number | null
+          check_in_date: string
+          check_out_date: string
           children: number
-          client: string
+          client_email: string | null
+          client_mobile: string
+          client_name: string
           created_at: string | null
           created_by: string | null
+          custom_destination: string | null
+          custom_package: string | null
+          days_count: number | null
+          description: string | null
           destination: string
-          end_date: string
+          enquiry_number: string
           id: string
           infants: number
-          mobile: string
-          num_rooms: number
-          preferences: string | null
+          lead_source: string | null
+          nights_count: number | null
+          num_rooms: number | null
+          package_name: string | null
           priority: string | null
-          start_date: string
-          status: string | null
+          status: string
+          tour_consultant: string | null
+          tour_type: string
           updated_at: string | null
         }
         Insert: {
           adults?: number
           assigned_agent_name?: string | null
           assigned_to?: string | null
-          budget?: number | null
+          check_in_date: string
+          check_out_date: string
           children?: number
-          client: string
+          client_email?: string | null
+          client_mobile: string
+          client_name: string
           created_at?: string | null
           created_by?: string | null
+          custom_destination?: string | null
+          custom_package?: string | null
+          days_count?: number | null
+          description?: string | null
           destination: string
-          end_date: string
+          enquiry_number: string
           id: string
           infants?: number
-          mobile: string
-          num_rooms?: number
-          preferences?: string | null
+          lead_source?: string | null
+          nights_count?: number | null
+          num_rooms?: number | null
+          package_name?: string | null
           priority?: string | null
-          start_date: string
-          status?: string | null
+          status?: string
+          tour_consultant?: string | null
+          tour_type: string
           updated_at?: string | null
         }
         Update: {
           adults?: number
           assigned_agent_name?: string | null
           assigned_to?: string | null
-          budget?: number | null
+          check_in_date?: string
+          check_out_date?: string
           children?: number
-          client?: string
+          client_email?: string | null
+          client_mobile?: string
+          client_name?: string
           created_at?: string | null
           created_by?: string | null
+          custom_destination?: string | null
+          custom_package?: string | null
+          days_count?: number | null
+          description?: string | null
           destination?: string
-          end_date?: string
+          enquiry_number?: string
           id?: string
           infants?: number
-          mobile?: string
-          num_rooms?: number
-          preferences?: string | null
+          lead_source?: string | null
+          nights_count?: number | null
+          num_rooms?: number | null
+          package_name?: string | null
           priority?: string | null
-          start_date?: string
-          status?: string | null
+          status?: string
+          tour_consultant?: string | null
+          tour_type?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -564,15 +591,7 @@ export type Database = {
           transports?: Json
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "quotes_inquiry_id_fkey"
-            columns: ["inquiry_id"]
-            isOneToOne: false
-            referencedRelation: "inquiries"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       travel_vouchers: {
         Row: {
@@ -671,6 +690,10 @@ export type Database = {
       }
       create_organization: {
         Args: { org_name: string }
+        Returns: string
+      }
+      generate_enquiry_number: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_current_user_role: {

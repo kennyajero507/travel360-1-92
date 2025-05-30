@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useRole } from "../contexts/RoleContext";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { getAllInquiries } from "../services/inquiryService";
+import { getInquiriesByTourType } from "../services/inquiryService";
 import { InquiryFilters } from "../components/inquiry/InquiryFilters";
 import { InquiryTable } from "../components/inquiry/InquiryTable";
 import { AgentAssignmentDialog } from "../components/inquiry/AgentAssignmentDialog";
@@ -36,18 +37,27 @@ const Inquiries = () => {
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [inquiries, setInquiries] = useState([]);
+  const [domesticInquiries, setDomesticInquiries] = useState([]);
+  const [internationalInquiries, setInternationalInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("domestic");
 
   useEffect(() => {
     const fetchInquiries = async () => {
       try {
-        const data = await getAllInquiries();
-        console.log("Fetched inquiries:", data);
-        setInquiries(data);
+        const [domesticData, internationalData] = await Promise.all([
+          getInquiriesByTourType('domestic'),
+          getInquiriesByTourType('international')
+        ]);
+        
+        console.log("Fetched domestic inquiries:", domesticData);
+        console.log("Fetched international inquiries:", internationalData);
+        
+        setDomesticInquiries(domesticData);
+        setInternationalInquiries(internationalData);
       } catch (error) {
         console.error("Error fetching inquiries:", error);
         toast.error("Failed to load inquiries");
@@ -60,24 +70,28 @@ const Inquiries = () => {
   }, []);
 
   // Filter inquiries based on user role
-  const userInquiries = inquiries.filter(inquiry => {
-    // For agents, only show inquiries that are ALREADY assigned to them or that they created
-    // (not showing unassigned inquiries that they could claim)
-    if (role === 'agent') {
-      return inquiry.assigned_to === currentUser.id;
-    }
-    // Otherwise show all inquiries if admin/owner/tour operator
-    return true;
-  });
-  
-  const filteredInquiries = userInquiries.filter(inquiry => {
-    const matchesFilter = filter === "all" || inquiry.status.toLowerCase() === filter.toLowerCase();
-    const matchesSearch = inquiry.client.toLowerCase().includes(search.toLowerCase()) ||
-                         inquiry.destination.toLowerCase().includes(search.toLowerCase()) ||
-                         inquiry.id.toLowerCase().includes(search.toLowerCase());
+  const filterUserInquiries = (inquiries: any[]) => {
+    const userInquiries = inquiries.filter(inquiry => {
+      // For agents, only show inquiries that are assigned to them
+      if (role === 'agent') {
+        return inquiry.assigned_to === currentUser.id;
+      }
+      // Otherwise show all inquiries if admin/owner/tour operator
+      return true;
+    });
     
-    return matchesFilter && matchesSearch;
-  });
+    return userInquiries.filter(inquiry => {
+      const matchesFilter = filter === "all" || inquiry.status.toLowerCase() === filter.toLowerCase();
+      const matchesSearch = inquiry.client_name?.toLowerCase().includes(search.toLowerCase()) ||
+                           inquiry.destination?.toLowerCase().includes(search.toLowerCase()) ||
+                           inquiry.enquiry_number?.toLowerCase().includes(search.toLowerCase());
+      
+      return matchesFilter && matchesSearch;
+    });
+  };
+
+  const filteredDomesticInquiries = filterUserInquiries(domesticInquiries);
+  const filteredInternationalInquiries = filterUserInquiries(internationalInquiries);
 
   const openAssignDialog = (inquiryId: string) => {
     setSelectedInquiry(inquiryId);
@@ -94,18 +108,22 @@ const Inquiries = () => {
     // Find the selected agent
     const agent = mockAgents.find(a => a.id === selectedAgent);
     
-    // Update the inquiries
-    setInquiries(prev => prev.map(inquiry => {
-      if (inquiry.id === selectedInquiry) {
-        return {
-          ...inquiry,
-          status: "Assigned",
-          assigned_to: agent?.id || "",
-          assigned_agent_name: agent?.name || ""
-        };
-      }
-      return inquiry;
-    }));
+    // Update the inquiries in both arrays
+    const updateInquiries = (inquiries: any[]) => 
+      inquiries.map(inquiry => {
+        if (inquiry.id === selectedInquiry) {
+          return {
+            ...inquiry,
+            status: "Assigned",
+            assigned_to: agent?.id || "",
+            assigned_agent_name: agent?.name || ""
+          };
+        }
+        return inquiry;
+      });
+
+    setDomesticInquiries(prev => updateInquiries(prev));
+    setInternationalInquiries(prev => updateInquiries(prev));
 
     toast.success(`Inquiry ${selectedInquiry} assigned to ${agent?.name}`);
     setDialogOpen(false);
@@ -122,6 +140,10 @@ const Inquiries = () => {
     }
   };
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Loading inquiries...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -129,7 +151,6 @@ const Inquiries = () => {
           <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getPageTitle()}</h1>
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
         </div>
-        {/* Allow agents to create inquiries as well */}
         <Button asChild className="self-start">
           <Link to="/inquiries/create">
             <Plus className="mr-2 h-4 w-4" />
@@ -138,31 +159,64 @@ const Inquiries = () => {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
-          <CardTitle>
-            {role === 'agent' ? 
-              `Inquiries Assigned to ${currentUser.name}` : 
-              'All Inquiries'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InquiryFilters 
-            filter={filter} 
-            setFilter={setFilter} 
-            search={search} 
-            setSearch={setSearch} 
-          />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="domestic">
+            Domestic Tours ({filteredDomesticInquiries.length})
+          </TabsTrigger>
+          <TabsTrigger value="international">
+            International Tours ({filteredInternationalInquiries.length})
+          </TabsTrigger>
+        </TabsList>
 
-          <InquiryTable 
-            filteredInquiries={filteredInquiries}
-            openAssignDialog={openAssignDialog}
-            permissions={permissions}
-            role={role}
-            currentUser={currentUser}
-          />
-        </CardContent>
-      </Card>
+        <TabsContent value="domestic" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Domestic Tour Inquiries</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InquiryFilters 
+                filter={filter} 
+                setFilter={setFilter} 
+                search={search} 
+                setSearch={setSearch} 
+              />
+
+              <InquiryTable 
+                filteredInquiries={filteredDomesticInquiries}
+                openAssignDialog={openAssignDialog}
+                permissions={permissions}
+                role={role}
+                currentUser={currentUser}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="international" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>International Tour Inquiries</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InquiryFilters 
+                filter={filter} 
+                setFilter={setFilter} 
+                search={search} 
+                setSearch={setSearch} 
+              />
+
+              <InquiryTable 
+                filteredInquiries={filteredInternationalInquiries}
+                openAssignDialog={openAssignDialog}
+                permissions={permissions}
+                role={role}
+                currentUser={currentUser}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <AgentAssignmentDialog 
         dialogOpen={dialogOpen}

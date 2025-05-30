@@ -29,17 +29,20 @@ export const InquiryTable = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
+            <TableHead>Enquiry #</TableHead>
+            <TableHead>Tour Type</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Mobile</TableHead>
             <TableHead>Destination</TableHead>
-            <TableHead>Dates</TableHead>
+            <TableHead>Package</TableHead>
+            <TableHead>Travel Dates</TableHead>
+            <TableHead>Duration</TableHead>
             <TableHead>Travelers</TableHead>
             <TableHead>Rooms</TableHead>
-            <TableHead>Budget</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Priority</TableHead>
             <TableHead>Assigned To</TableHead>
+            <TableHead>Lead Source</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -57,7 +60,7 @@ export const InquiryTable = ({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={12} className="text-center py-10">
+              <TableCell colSpan={15} className="text-center py-10">
                 {role === 'agent' ? 
                   "No inquiries assigned to you yet." : 
                   "No inquiries found."}
