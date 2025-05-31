@@ -108,6 +108,7 @@ export const useInquiryForm = () => {
 
   const prepareInquiryData = (status: 'Draft' | 'New'): InquiryInsertData => {
     const inquiryData: InquiryInsertData = {
+      id: crypto.randomUUID(), // Generate UUID here
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,
       tour_consultant: formData.tour_consultant || null,
