@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -48,16 +47,11 @@ export const getInquiriesByTourType = async (tourType: 'domestic' | 'internation
 // Create a new inquiry
 export const createInquiry = async (inquiryData: any) => {
   try {
-    // Clean the data - remove any undefined values
-    const cleanedData = Object.fromEntries(
-      Object.entries(inquiryData).filter(([_, value]) => value !== undefined)
-    );
-    
-    console.log("Creating inquiry with cleaned data:", cleanedData);
+    console.log("Creating inquiry with data:", inquiryData);
     
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(cleanedData)
+      .insert(inquiryData)
       .select()
       .single();
     

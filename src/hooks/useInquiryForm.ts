@@ -111,7 +111,8 @@ export const useInquiryForm = () => {
   const prepareInquiryData = (status: 'Draft' | 'New') => {
     const { days, nights } = calculateDaysAndNights();
     
-    return {
+    // Create a properly typed object for the inquiry
+    const inquiryData = {
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,
       tour_consultant: formData.tour_consultant || null,
@@ -138,6 +139,8 @@ export const useInquiryForm = () => {
       created_by: currentUser?.id || null,
       status: status
     };
+
+    return inquiryData;
   };
 
   const saveDraft = async () => {
