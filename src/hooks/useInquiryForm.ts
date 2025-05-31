@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useRole } from "../contexts/RoleContext";
 import { createInquiry } from "../services/inquiryService";
-import { InquiryFormData, AvailableAgent, InquiryData } from "../types/inquiry.types";
+import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inquiry.types";
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
@@ -118,10 +118,10 @@ export const useInquiryForm = () => {
     return { days: 0, nights: 0 };
   };
 
-  const prepareInquiryData = (status: 'Draft' | 'New'): InquiryData => {
+  const prepareInquiryData = (status: 'Draft' | 'New'): InquiryInsertData => {
     const { days, nights } = calculateDaysAndNights();
     
-    const inquiryData: InquiryData = {
+    const inquiryData: InquiryInsertData = {
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,
       tour_consultant: formData.tour_consultant || null,

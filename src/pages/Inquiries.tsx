@@ -48,6 +48,7 @@ const Inquiries = () => {
   useEffect(() => {
     const fetchInquiries = async () => {
       try {
+        setLoading(true);
         const [domesticData, internationalData] = await Promise.all([
           getInquiriesByTourType('domestic'),
           getInquiriesByTourType('international')
@@ -56,32 +57,40 @@ const Inquiries = () => {
         console.log("Fetched domestic inquiries:", domesticData);
         console.log("Fetched international inquiries:", internationalData);
         
-        setDomesticInquiries(domesticData);
-        setInternationalInquiries(internationalData);
+        setDomesticInquiries(domesticData || []);
+        setInternationalInquiries(internationalData || []);
       } catch (error) {
         console.error("Error fetching inquiries:", error);
         toast.error("Failed to load inquiries");
+        setDomesticInquiries([]);
+        setInternationalInquiries([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchInquiries();
-  }, []);
+    if (canAccessInquiries) {
+      fetchInquiries();
+    }
+  }, [canAccessInquiries]);
 
   // Filter inquiries based on user role
   const filterUserInquiries = (inquiries: any[]) => {
+    if (!Array.isArray(inquiries)) {
+      return [];
+    }
+
     const userInquiries = inquiries.filter(inquiry => {
       // For agents, only show inquiries that are assigned to them
       if (role === 'agent') {
-        return inquiry.assigned_to === currentUser.id;
+        return inquiry.assigned_to === currentUser?.id;
       }
       // Otherwise show all inquiries if admin/owner/tour operator
       return true;
     });
     
     return userInquiries.filter(inquiry => {
-      const matchesFilter = filter === "all" || inquiry.status.toLowerCase() === filter.toLowerCase();
+      const matchesFilter = filter === "all" || inquiry.status?.toLowerCase() === filter.toLowerCase();
       const matchesSearch = inquiry.client_name?.toLowerCase().includes(search.toLowerCase()) ||
                            inquiry.destination?.toLowerCase().includes(search.toLowerCase()) ||
                            inquiry.enquiry_number?.toLowerCase().includes(search.toLowerCase());
@@ -140,8 +149,17 @@ const Inquiries = () => {
     }
   };
 
+  if (!canAccessInquiries) {
+    return null;
+  }
+
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading inquiries...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading inquiries...</span>
+      </div>
+    );
   }
 
   return (
