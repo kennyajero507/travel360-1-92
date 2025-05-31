@@ -14,6 +14,7 @@ import {
   User,
   UserCog,
   Users,
+  UserPlus,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -150,6 +151,20 @@ const Sidebar = ({ mobile = false }: SidebarProps) => {
           >
             <FileText size={16} className="text-blue-600" />
             <span>Vouchers</span>
+          </Link>
+        )}
+        
+        {/* Agent Management - NEW */}
+        {userProfile && (userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
+          <Link
+            to="/agent-management"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              location.pathname === "/agent-management" ? "bg-accent" : "transparent"
+            )}
+          >
+            <UserPlus size={16} className="text-blue-600" />
+            <span>Agent Management</span>
           </Link>
         )}
         

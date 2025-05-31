@@ -9,8 +9,10 @@ import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
 import { toast } from "sonner";
+import { useCurrency } from "../../contexts/CurrencyContext";
 
 export const QuoteSettings = () => {
+  const { currencies } = useCurrency();
   const [settings, setSettings] = useState({
     defaultMarkup: 15,
     multiHotelComparison: true,
@@ -31,15 +33,6 @@ export const QuoteSettings = () => {
       footerText: '',
     }
   });
-
-  const currencies = [
-    { code: 'USD', name: 'US Dollar' },
-    { code: 'EUR', name: 'Euro' },
-    { code: 'GBP', name: 'British Pound' },
-    { code: 'KES', name: 'Kenyan Shilling' },
-    { code: 'TZS', name: 'Tanzanian Shilling' },
-    { code: 'UGX', name: 'Ugandan Shilling' },
-  ];
 
   const handleSave = () => {
     toast.success("Quote settings saved successfully");
@@ -129,7 +122,7 @@ export const QuoteSettings = () => {
           <CardTitle>Active Currencies</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4 max-h-96 overflow-y-auto">
             {currencies.map((currency) => (
               <div key={currency.code} className="flex items-center space-x-2">
                 <Checkbox
@@ -137,7 +130,9 @@ export const QuoteSettings = () => {
                   checked={settings.activeCurrencies.includes(currency.code)}
                   onCheckedChange={() => toggleCurrency(currency.code)}
                 />
-                <Label htmlFor={currency.code}>{currency.code} - {currency.name}</Label>
+                <Label htmlFor={currency.code} className="text-sm">
+                  {currency.code} - {currency.symbol}
+                </Label>
               </div>
             ))}
           </div>
