@@ -21,10 +21,8 @@ export interface InquiryFormData {
   assigned_agent: string;
 }
 
-// Database insert type - matches Supabase expectations with auto-generated fields as optional
+// Database insert type - for creating new inquiries
 export interface InquiryInsertData {
-  id?: string; // Auto-generated, but Supabase types expect it
-  enquiry_number?: string; // Auto-generated, but Supabase types expect it
   tour_type: string;
   lead_source?: string | null;
   tour_consultant?: string | null;
