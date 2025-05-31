@@ -47,7 +47,7 @@ export const getInquiriesByTourType = async (tourType: 'domestic' | 'internation
 };
 
 // Create a new inquiry
-export const createInquiry = async (inquiryData: InquiryInsertData) => {
+export const createInquiry = async (inquiryData: InquiryInsertData): Promise<InquiryData> => {
   try {
     console.log("Creating inquiry with data:", inquiryData);
     
@@ -74,7 +74,7 @@ export const createInquiry = async (inquiryData: InquiryInsertData) => {
     }
     
     console.log("Inquiry created successfully:", data);
-    return data;
+    return data as InquiryData;
   } catch (error) {
     console.error('Error in createInquiry:', error);
     throw error;
@@ -82,7 +82,7 @@ export const createInquiry = async (inquiryData: InquiryInsertData) => {
 };
 
 // Update an inquiry
-export const updateInquiry = async (id: string, updateData: Partial<InquiryInsertData>) => {
+export const updateInquiry = async (id: string, updateData: Partial<InquiryInsertData>): Promise<InquiryData> => {
   try {
     const { data, error } = await supabase
       .from('inquiries')
@@ -100,7 +100,7 @@ export const updateInquiry = async (id: string, updateData: Partial<InquiryInser
       throw error;
     }
     
-    return data;
+    return data as InquiryData;
   } catch (error) {
     console.error('Error in updateInquiry:', error);
     throw error;
