@@ -227,6 +227,8 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string | null
+          default_currency: string | null
+          default_markup_percentage: number | null
           id: string
           name: string
           owner_id: string | null
@@ -237,6 +239,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          default_currency?: string | null
+          default_markup_percentage?: number | null
           id?: string
           name: string
           owner_id?: string | null
@@ -247,6 +251,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          default_currency?: string | null
+          default_markup_percentage?: number | null
           id?: string
           name?: string
           owner_id?: string | null
@@ -516,6 +522,7 @@ export type Database = {
           client: string
           created_at: string | null
           created_by: string | null
+          currency_code: string | null
           destination: string
           duration_days: number
           duration_nights: number
@@ -531,6 +538,7 @@ export type Database = {
           room_arrangements: Json
           start_date: string
           status: string | null
+          tour_type: string | null
           transfers: Json
           transports: Json
           updated_at: string | null
@@ -544,6 +552,7 @@ export type Database = {
           client: string
           created_at?: string | null
           created_by?: string | null
+          currency_code?: string | null
           destination: string
           duration_days: number
           duration_nights: number
@@ -559,6 +568,7 @@ export type Database = {
           room_arrangements?: Json
           start_date: string
           status?: string | null
+          tour_type?: string | null
           transfers?: Json
           transports?: Json
           updated_at?: string | null
@@ -572,6 +582,7 @@ export type Database = {
           client?: string
           created_at?: string | null
           created_by?: string | null
+          currency_code?: string | null
           destination?: string
           duration_days?: number
           duration_nights?: number
@@ -587,6 +598,7 @@ export type Database = {
           room_arrangements?: Json
           start_date?: string
           status?: string | null
+          tour_type?: string | null
           transfers?: Json
           transports?: Json
           updated_at?: string | null
@@ -683,6 +695,10 @@ export type Database = {
       accept_invitation: {
         Args: { invitation_token: string }
         Returns: Json
+      }
+      calculate_nights: {
+        Args: { start_date: string; end_date: string }
+        Returns: number
       }
       can_access_profile: {
         Args: { profile_user_id: string }

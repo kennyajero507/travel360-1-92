@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { getQuoteById, saveQuote, updateQuoteStatus } from "../services/quoteService";
+import { getQuoteById, saveQuote, updateQuoteStatus, generateClientPreview } from "../services/quoteService";
 import { QuoteData, RoomArrangement } from "../types/quote.types";
 
 export const useQuoteEditor = (quoteId?: string, role?: string) => {
@@ -222,19 +221,31 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     });
   };
 
-  // Check if hotel selection is complete
-  const isHotelSelectionComplete = () => {
-    if (!quote) return false;
+  // Enhanced preview function for client view
+  const previewQuote = async () => {
+    if (!quote) return;
     
-    // Must have at least one hotel with room arrangements
-    return (
-      selectedHotels.length > 0 && 
-      selectedHotels.every(hotelId => 
-        quote.roomArrangements.some(arr => arr.hotelId === hotelId)
-      )
-    );
+    if (!isHotelSelectionComplete()) {
+      toast.error("Please complete hotel selection before previewing");
+      return;
+    }
+    
+    try {
+      const clientPreview = await generateClientPreview(quote.id!);
+      if (clientPreview) {
+        // Store the preview data in session storage
+        sessionStorage.setItem('previewQuote', JSON.stringify(clientPreview));
+        // Open in new tab
+        window.open('/quote-preview', '_blank');
+      } else {
+        toast.error("Failed to generate preview");
+      }
+    } catch (error) {
+      console.error("Error generating preview:", error);
+      toast.error("Failed to generate preview");
+    }
   };
-
+  
   // Handle stage changes
   const handleStageChange = (stage: 'hotel-selection' | 'quote-details') => {
     // Only allow proceeding to quote details if hotels are selected
@@ -275,21 +286,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     }
   };
 
-  // Preview, email, and download functions
-  const previewQuote = () => {
-    if (!quote) return;
-    
-    if (!isHotelSelectionComplete()) {
-      toast.error("Please complete hotel selection before previewing");
-      return;
-    }
-    
-    // Store the current quote data in session storage for preview
-    sessionStorage.setItem('previewQuote', JSON.stringify(quote));
-    // Open in new tab
-    window.open('/quote-preview', '_blank');
-  };
-  
+  // Email the quote
   const emailQuote = async () => {
     if (!quote) return;
     
@@ -311,6 +308,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     }
   };
   
+  // Download the quote
   const downloadQuote = () => {
     if (!quote) return;
     
@@ -321,6 +319,19 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     
     toast.success("Quote downloaded as PDF");
     // In a real app, this would generate and download a PDF
+  };
+
+  // Check if hotel selection is complete
+  const isHotelSelectionComplete = () => {
+    if (!quote) return false;
+    
+    // Must have at least one hotel with room arrangements
+    return (
+      selectedHotels.length > 0 && 
+      selectedHotels.every(hotelId => 
+        quote.roomArrangements.some(arr => arr.hotelId === hotelId)
+      )
+    );
   };
 
   return {

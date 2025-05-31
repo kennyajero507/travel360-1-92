@@ -1,3 +1,4 @@
+
 export interface PersonTypeRates {
   adult: number;
   childWithBed: number;  // CWB
@@ -7,7 +8,7 @@ export interface PersonTypeRates {
 
 export interface RoomArrangement {
   id: string;
-  hotelId?: string;      // Added hotelId to link a room arrangement to a specific hotel
+  hotelId?: string;      
   roomType: string;
   numRooms: number;
   adults: number;
@@ -74,9 +75,11 @@ export interface Hotel {
 export interface QuoteData {
   id?: string;
   inquiryId?: string;
+  inquiryNumber?: string; // New field for inquiry number display
   client: string;
   mobile: string;
   destination: string;
+  packageName?: string; // New field for package name
   startDate: string;
   endDate: string;
   duration: {
@@ -89,10 +92,12 @@ export interface QuoteData {
     childrenNoBed: number;
     infants: number;
   };
+  tourType: 'domestic' | 'international'; // New field
+  currencyCode: string; // New field
   roomArrangements: RoomArrangement[];
   activities: QuoteActivity[];
   transports: QuoteTransport[];
-  transfers: QuoteTransfer[]; // New field for transfers
+  transfers: QuoteTransfer[];
   markup: {
     type: "percentage" | "fixed";
     value: number;
@@ -100,13 +105,42 @@ export interface QuoteData {
   notes: string;
   status?: "draft" | "sent" | "approved" | "rejected";
   createdBy?: string;
+  assignedAgent?: string; // New field
   createdAt?: string;
   updatedAt?: string;
-  hotelId?: string; // We'll keep this for backward compatibility
-  approvedHotelId?: string; // New field for approved hotel
+  hotelId?: string;
+  approvedHotelId?: string;
 }
 
-// Added new types to support the quote summary
+// New types for client preview
+export interface HotelOption {
+  id: string;
+  name: string;
+  totalPrice: number;
+  currencyCode: string;
+}
+
+export interface ClientQuotePreview {
+  inquiryNumber: string;
+  client: string;
+  destination: string;
+  packageName?: string;
+  startDate: string;
+  endDate: string;
+  duration: {
+    days: number;
+    nights: number;
+  };
+  travelers: {
+    adults: number;
+    childrenWithBed: number;
+    childrenNoBed: number;
+    infants: number;
+  };
+  tourType: 'domestic' | 'international';
+  hotelOptions: HotelOption[];
+  createdAt: string;
+}
 
 export interface HotelSummary {
   hotel: Hotel;
