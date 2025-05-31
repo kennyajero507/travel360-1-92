@@ -51,9 +51,12 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
   try {
     console.log("Creating inquiry with data:", inquiryData);
     
+    // Remove id and enquiry_number from the data to let database auto-generate them
+    const { id, enquiry_number, ...dataToInsert } = inquiryData;
+    
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(inquiryData)
+      .insert(dataToInsert)
       .select()
       .single();
     
