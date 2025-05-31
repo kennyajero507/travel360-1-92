@@ -2,6 +2,7 @@
 import { QuoteActivity, QuoteTransport, QuoteTransfer, RoomArrangement } from "./quote.types";
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type PaymentStatus = 'paid' | 'partially_paid' | 'pending';
 
 export interface Booking {
   id: string;
@@ -18,6 +19,7 @@ export interface Booking {
   activities: QuoteActivity[];
   transfers: QuoteTransfer[];
   status: BookingStatus;
+  payment_status?: PaymentStatus;
   total_price: number;
   created_at?: string;
   updated_at?: string;
@@ -35,4 +37,10 @@ export interface TravelVoucher {
   created_at?: string;
   updated_at?: string;
   email_sent: boolean;
+}
+
+export interface BookingFormData {
+  hotel_id: string;
+  payment_status: PaymentStatus;
+  notes?: string;
 }

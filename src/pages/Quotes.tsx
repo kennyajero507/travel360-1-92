@@ -49,9 +49,11 @@ import {
   Plus, 
   Printer, 
   Search,
-  X 
+  X,
+  ClipboardList
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../contexts/AuthContext";
 
 // Status badge color mapping
 const statusColorMap = {
@@ -124,6 +126,7 @@ const Quotes = () => {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
 
   // Fetch quotes data
   useEffect(() => {
@@ -150,6 +153,9 @@ const Quotes = () => {
         break;
       case "edit":
         navigate(`/quotes/edit/${quoteId}`);
+        break;
+      case "create-booking":
+        navigate(`/quotes/${quoteId}/create-booking`);
         break;
       case "print":
         toast.info(`Printing quote ${quoteId}...`);
@@ -183,6 +189,9 @@ const Quotes = () => {
     
     return matchesSearch && matchesStatus;
   });
+
+  const canCreateBooking = userProfile && 
+    ['agent', 'tour_operator', 'org_owner'].includes(userProfile.role);
 
   return (
     <div className="space-y-6">
@@ -299,6 +308,15 @@ const Quotes = () => {
                               <PenLine className="mr-2 h-4 w-4" />
                               <span>Edit</span>
                             </DropdownMenuItem>
+                            {quote.status === "approved" && canCreateBooking && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleQuoteAction("create-booking", quote.id)}>
+                                  <ClipboardList className="mr-2 h-4 w-4" />
+                                  <span>Create Booking</span>
+                                </DropdownMenuItem>
+                              </>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleQuoteAction("print", quote.id)}>
                               <Printer className="mr-2 h-4 w-4" />

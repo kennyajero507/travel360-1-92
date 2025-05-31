@@ -1,7 +1,7 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList } from "lucide-react";
 import { useRole } from "../contexts/role/useRole";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -46,19 +46,29 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         {/* Dashboard - available to all */}
         <NavItem to="/dashboard" collapsed={collapsed} icon={<Home size={20} />} label="Dashboard" />
         
+        {/* Inquiries - available to all except clients */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
+          <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
+        )}
+        
         {/* Quotes - available to all except clients */}
         {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
-          <NavItem to="/quotes" collapsed={collapsed} icon={<FileText size={20} />} label="Quotes" />
+          <NavItem to="/quotes" collapsed={collapsed} icon={<Receipt size={20} />} label="Quotes" />
+        )}
+        
+        {/* Bookings - available to all except clients */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
+          <NavItem to="/bookings" collapsed={collapsed} icon={<ClipboardList size={20} />} label="Bookings" />
+        )}
+        
+        {/* Vouchers - available to all except clients */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
+          <NavItem to="/vouchers" collapsed={collapsed} icon={<FileText size={20} />} label="Vouchers" />
         )}
         
         {/* Clients - available to all except clients */}
         {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
           <NavItem to="/clients" collapsed={collapsed} icon={<Users size={20} />} label="Clients" />
-        )}
-        
-        {/* Inquiries - available to all except clients */}
-        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
-          <NavItem to="/inquiries" collapsed={collapsed} icon={<MessageSquare size={20} />} label="Inquiries" />
         )}
         
         {/* Hotels - restricted to admin, org_owner, tour_operator */}
