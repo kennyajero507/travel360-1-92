@@ -1,7 +1,7 @@
 
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Save, Globe, Package, FileText } from "lucide-react";
+import { Save, Globe, Package, FileText, Loader2 } from "lucide-react";
 import { useRole } from "../../contexts/RoleContext";
 import { ValidationErrorsCard } from "./ValidationErrorsCard";
 import { BasicInformationCard } from "./BasicInformationCard";
@@ -21,6 +21,7 @@ export const CreateInquiryForm = () => {
     validationErrors,
     availableAgents,
     isAgent,
+    isSubmitting,
     handleTabChange,
     saveDraft,
     handleSubmit,
@@ -91,15 +92,37 @@ export const CreateInquiryForm = () => {
             )}
 
             <div className="flex justify-end space-x-4 pt-4">
-              <Button type="button" variant="outline" onClick={handleCancel}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button type="button" variant="outline" onClick={saveDraft}>
-                <FileText className="mr-2 h-4 w-4" />
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={saveDraft}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="mr-2 h-4 w-4" />
+                )}
                 Save Draft
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                <Save className="mr-2 h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
                 Create Inquiry
               </Button>
             </div>

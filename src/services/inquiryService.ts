@@ -1,5 +1,6 @@
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
+import { InquiryData } from "../types/inquiry.types";
 
 // Get all inquiries
 export const getAllInquiries = async () => {
@@ -45,7 +46,7 @@ export const getInquiriesByTourType = async (tourType: 'domestic' | 'internation
 };
 
 // Create a new inquiry
-export const createInquiry = async (inquiryData: any) => {
+export const createInquiry = async (inquiryData: InquiryData) => {
   try {
     console.log("Creating inquiry with data:", inquiryData);
     
@@ -63,6 +64,8 @@ export const createInquiry = async (inquiryData: any) => {
         toast.error('An inquiry with this reference already exists');
       } else if (error.code === '23502') {
         toast.error('Required fields are missing');
+      } else if (error.code === '42501') {
+        toast.error('You do not have permission to create inquiries');
       } else {
         toast.error('Failed to create inquiry. Please check all required fields.');
       }

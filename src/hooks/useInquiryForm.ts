@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useRole } from "../contexts/RoleContext";
 import { createInquiry } from "../services/inquiryService";
-import { InquiryFormData, AvailableAgent } from "../types/inquiry.types";
+import { InquiryFormData, AvailableAgent, InquiryData } from "../types/inquiry.types";
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
@@ -34,6 +34,7 @@ export const useInquiryForm = () => {
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const availableAgents: AvailableAgent[] = [
     { id: "agent-1", name: "James Smith" },
@@ -91,6 +92,15 @@ export const useInquiryForm = () => {
     if (!formData.destination && !formData.custom_destination?.trim()) {
       errors.push("Please select a destination or enter a custom destination");
     }
+
+    // Validate numeric fields
+    if (formData.adults < 1) {
+      errors.push("At least 1 adult is required");
+    }
+
+    if (formData.num_rooms < 1) {
+      errors.push("At least 1 room is required");
+    }
     
     setValidationErrors(errors);
     return errors.length === 0;
@@ -108,11 +118,10 @@ export const useInquiryForm = () => {
     return { days: 0, nights: 0 };
   };
 
-  const prepareInquiryData = (status: 'Draft' | 'New') => {
+  const prepareInquiryData = (status: 'Draft' | 'New'): InquiryData => {
     const { days, nights } = calculateDaysAndNights();
     
-    // Create a properly typed object for the inquiry
-    const inquiryData = {
+    const inquiryData: InquiryData = {
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,
       tour_consultant: formData.tour_consultant || null,
@@ -144,7 +153,10 @@ export const useInquiryForm = () => {
   };
 
   const saveDraft = async () => {
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
       const draftData = prepareInquiryData('Draft');
       
       console.log("Saving draft inquiry data:", draftData);
@@ -155,11 +167,15 @@ export const useInquiryForm = () => {
     } catch (error) {
       console.error("Error saving draft:", error);
       toast.error("Failed to save draft. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
     
     if (!validateForm()) {
       toast.error("Please fix the validation errors before submitting");
@@ -167,16 +183,24 @@ export const useInquiryForm = () => {
     }
 
     try {
+      setIsSubmitting(true);
       const submittedFormData = prepareInquiryData('New');
       
       console.log("Submitting inquiry data:", submittedFormData);
-      await createInquiry(submittedFormData);
+      const createdInquiry = await createInquiry(submittedFormData);
       
-      toast.success("Inquiry created successfully!");
-      navigate("/inquiries");
+      toast.success(`Inquiry created successfully! Reference: ${createdInquiry.enquiry_number || 'N/A'}`);
+      
+      // Enhanced post-submission flow
+      setTimeout(() => {
+        navigate("/inquiries");
+      }, 1500);
+      
     } catch (error) {
       console.error("Error creating inquiry:", error);
       toast.error("Failed to create inquiry. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -187,6 +211,7 @@ export const useInquiryForm = () => {
     validationErrors,
     availableAgents,
     isAgent,
+    isSubmitting,
     handleTabChange,
     saveDraft,
     handleSubmit,
