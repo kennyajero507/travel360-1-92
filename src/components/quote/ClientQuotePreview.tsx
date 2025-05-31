@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Calendar, Users, MapPin, Package, Phone, Mail } from "lucide-react";
-import { ClientQuotePreview, HotelOption } from "../../types/quote.types";
+import { type ClientQuotePreview, HotelOption } from "../../types/quote.types";
 import { useCurrency } from "../../contexts/CurrencyContext";
 
 interface ClientQuotePreviewProps {
@@ -12,7 +12,7 @@ interface ClientQuotePreviewProps {
   onRequestChanges?: () => void;
 }
 
-const ClientQuotePreview = ({ quote, onChoosePackage, onRequestChanges }: ClientQuotePreviewProps) => {
+const ClientQuotePreviewComponent = ({ quote, onChoosePackage, onRequestChanges }: ClientQuotePreviewProps) => {
   const { formatAmount } = useCurrency();
 
   const formatCurrency = (amount: number, currencyCode: string) => {
@@ -174,4 +174,4 @@ const ClientQuotePreview = ({ quote, onChoosePackage, onRequestChanges }: Client
   );
 };
 
-export default ClientQuotePreview;
+export default ClientQuotePreviewComponent;

@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
-import ClientQuotePreview from "../components/quote/ClientQuotePreview";
+import ClientQuotePreviewComponent from "../components/quote/ClientQuotePreview";
 import { ClientQuotePreview as ClientQuotePreviewType } from "../types/quote.types";
 import { generateClientPreview, updateQuoteStatus } from "../services/quoteService";
 import { toast } from "sonner";
@@ -87,7 +88,7 @@ const QuotePreview = () => {
   
   return (
     <div className="p-6">
-      <ClientQuotePreview
+      <ClientQuotePreviewComponent
         quote={clientPreview}
         onChoosePackage={handleChoosePackage}
         onRequestChanges={handleRequestChanges}

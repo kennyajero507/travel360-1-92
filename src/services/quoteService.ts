@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { QuoteData, RoomArrangement, QuoteActivity, QuoteTransport, QuoteTransfer, ClientQuotePreview, HotelOption } from "../types/quote.types";
 import { toast } from "sonner";
@@ -138,6 +139,11 @@ export const getQuoteById = async (quoteId: string): Promise<QuoteData | null> =
         .maybeSingle();
       inquiryData = inquiry;
     }
+
+    // Safely handle tour_type conversion
+    const tourType = (quoteData.tour_type === 'domestic' || quoteData.tour_type === 'international') 
+      ? quoteData.tour_type 
+      : 'domestic' as const;
       
     // Transform data to match QuoteData structure
     const quote: QuoteData = {
@@ -162,7 +168,7 @@ export const getQuoteById = async (quoteId: string): Promise<QuoteData | null> =
         childrenNoBed: quoteData.children_no_bed,
         infants: quoteData.infants
       },
-      tourType: quoteData.tour_type || 'domestic',
+      tourType: tourType,
       currencyCode: quoteData.currency_code || 'USD',
       roomArrangements: roomArrangements,
       activities: activities,
