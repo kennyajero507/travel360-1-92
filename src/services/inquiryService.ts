@@ -13,10 +13,31 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
       throw new Error("User not authenticated");
     }
 
-    // Prepare the data for insertion - exclude enquiry_number as it's auto-generated
-    const { ...insertData } = {
-      ...inquiryData,
+    // Prepare the data for insertion - explicitly structure the data for Supabase
+    const insertData = {
+      id: inquiryData.id,
+      tour_type: inquiryData.tour_type,
+      lead_source: inquiryData.lead_source,
+      tour_consultant: inquiryData.tour_consultant,
+      client_name: inquiryData.client_name,
+      client_email: inquiryData.client_email,
+      client_mobile: inquiryData.client_mobile,
+      destination: inquiryData.destination,
+      package_name: inquiryData.package_name,
+      custom_package: inquiryData.custom_package,
+      custom_destination: inquiryData.custom_destination,
+      description: inquiryData.description,
+      check_in_date: inquiryData.check_in_date,
+      check_out_date: inquiryData.check_out_date,
+      adults: inquiryData.adults,
+      children: inquiryData.children,
+      infants: inquiryData.infants,
+      num_rooms: inquiryData.num_rooms,
+      priority: inquiryData.priority,
+      assigned_to: inquiryData.assigned_to,
+      assigned_agent_name: inquiryData.assigned_agent_name,
       created_by: user.id,
+      status: inquiryData.status,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
