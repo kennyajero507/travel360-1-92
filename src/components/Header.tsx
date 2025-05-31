@@ -25,7 +25,10 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Right side actions */}
+        {/* Spacer to push everything to the right */}
+        <div className="flex-1" />
+
+        {/* Right side actions - aligned to far right */}
         <div className="flex items-center gap-4">
           {/* Calendar Button */}
           <Button variant="ghost" size="sm" asChild>

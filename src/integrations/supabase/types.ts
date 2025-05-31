@@ -226,38 +226,47 @@ export type Database = {
       }
       organizations: {
         Row: {
+          company_name: string | null
           created_at: string | null
           default_currency: string | null
           default_markup_percentage: number | null
           id: string
+          logo_url: string | null
           name: string
           owner_id: string | null
           settings: Json | null
           subscription_status: string | null
+          tagline: string | null
           trial_end: string | null
           trial_start: string | null
         }
         Insert: {
+          company_name?: string | null
           created_at?: string | null
           default_currency?: string | null
           default_markup_percentage?: number | null
           id?: string
+          logo_url?: string | null
           name: string
           owner_id?: string | null
           settings?: Json | null
           subscription_status?: string | null
+          tagline?: string | null
           trial_end?: string | null
           trial_start?: string | null
         }
         Update: {
+          company_name?: string | null
           created_at?: string | null
           default_currency?: string | null
           default_markup_percentage?: number | null
           id?: string
+          logo_url?: string | null
           name?: string
           owner_id?: string | null
           settings?: Json | null
           subscription_status?: string | null
+          tagline?: string | null
           trial_end?: string | null
           trial_start?: string | null
         }
@@ -722,6 +731,10 @@ export type Database = {
       }
       user_has_role: {
         Args: { check_role: string; check_org_id?: string }
+        Returns: boolean
+      }
+      user_in_same_org: {
+        Args: { target_user_id: string }
         Returns: boolean
       }
     }

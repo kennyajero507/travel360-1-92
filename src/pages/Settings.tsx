@@ -6,6 +6,7 @@ import { DestinationManagement } from "../components/settings/DestinationManagem
 import { PackageTemplates } from "../components/settings/PackageTemplates";
 import { QuoteSettings } from "../components/settings/QuoteSettings";
 import { TransferSettings } from "../components/settings/TransferSettings";
+import { LogoSettings } from "../components/settings/LogoSettings";
 import InvitationManager from "../components/InvitationManager";
 import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import { useAuth } from "../contexts/AuthContext";
@@ -33,6 +34,10 @@ const Settings = () => {
         <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           
+          {(isOrgOwner || isSystemAdmin) && (
+            <TabsTrigger value="branding">Branding</TabsTrigger>
+          )}
+          
           {canManageBusinessSettings && (
             <>
               <TabsTrigger value="destinations">Destinations</TabsTrigger>
@@ -53,6 +58,12 @@ const Settings = () => {
         <TabsContent value="profile" className="space-y-6">
           <ProfileSettings />
         </TabsContent>
+
+        {(isOrgOwner || isSystemAdmin) && (
+          <TabsContent value="branding" className="space-y-6">
+            <LogoSettings />
+          </TabsContent>
+        )}
 
         {canManageBusinessSettings && (
           <>
