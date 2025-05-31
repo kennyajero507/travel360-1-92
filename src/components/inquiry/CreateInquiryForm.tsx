@@ -24,7 +24,7 @@ export const CreateInquiryForm = () => {
     handleTabChange,
     saveDraft,
     handleSubmit,
-    navigate
+    handleCancel
   } = useInquiryForm();
 
   return (
@@ -91,7 +91,7 @@ export const CreateInquiryForm = () => {
             )}
 
             <div className="flex justify-end space-x-4 pt-4">
-              <Button type="button" variant="outline" onClick={() => navigate("/inquiries")}>
+              <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button type="button" variant="outline" onClick={saveDraft}>

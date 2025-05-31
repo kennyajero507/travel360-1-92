@@ -55,6 +55,10 @@ export const useInquiryForm = () => {
     }));
   };
 
+  const handleCancel = () => {
+    navigate("/inquiries");
+  };
+
   const validateForm = () => {
     const errors: string[] = [];
     
@@ -145,6 +149,6 @@ export const useInquiryForm = () => {
     handleTabChange,
     saveDraft,
     handleSubmit,
-    navigate
+    handleCancel
   };
 };
