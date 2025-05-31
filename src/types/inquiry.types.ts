@@ -36,8 +36,6 @@ export interface InquiryInsertData {
   description?: string | null;
   check_in_date: string;
   check_out_date: string;
-  days_count?: number | null;
-  nights_count?: number | null;
   adults: number;
   children: number;
   infants: number;

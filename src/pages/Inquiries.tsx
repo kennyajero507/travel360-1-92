@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getInquiriesByTourType } from "../services/inquiryService";
+import { getInquiriesByTourType, assignInquiryToAgent } from "../services/inquiryService";
 import { InquiryFilters } from "../components/inquiry/InquiryFilters";
 import { InquiryTable } from "../components/inquiry/InquiryTable";
 import { AgentAssignmentDialog } from "../components/inquiry/AgentAssignmentDialog";
@@ -45,30 +45,30 @@ const Inquiries = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("domestic");
 
-  useEffect(() => {
-    const fetchInquiries = async () => {
-      try {
-        setLoading(true);
-        const [domesticData, internationalData] = await Promise.all([
-          getInquiriesByTourType('domestic'),
-          getInquiriesByTourType('international')
-        ]);
-        
-        console.log("Fetched domestic inquiries:", domesticData);
-        console.log("Fetched international inquiries:", internationalData);
-        
-        setDomesticInquiries(domesticData || []);
-        setInternationalInquiries(internationalData || []);
-      } catch (error) {
-        console.error("Error fetching inquiries:", error);
-        toast.error("Failed to load inquiries");
-        setDomesticInquiries([]);
-        setInternationalInquiries([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchInquiries = async () => {
+    try {
+      setLoading(true);
+      const [domesticData, internationalData] = await Promise.all([
+        getInquiriesByTourType('domestic'),
+        getInquiriesByTourType('international')
+      ]);
+      
+      console.log("Fetched domestic inquiries:", domesticData);
+      console.log("Fetched international inquiries:", internationalData);
+      
+      setDomesticInquiries(domesticData || []);
+      setInternationalInquiries(internationalData || []);
+    } catch (error) {
+      console.error("Error fetching inquiries:", error);
+      toast.error("Failed to load inquiries");
+      setDomesticInquiries([]);
+      setInternationalInquiries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (canAccessInquiries) {
       fetchInquiries();
     }
@@ -108,34 +108,30 @@ const Inquiries = () => {
     setDialogOpen(true);
   };
 
-  const handleAssignInquiry = () => {
+  const handleAssignInquiry = async () => {
     if (!selectedInquiry || !selectedAgent) {
       toast.error("Please select an agent");
       return;
     }
 
-    // Find the selected agent
-    const agent = mockAgents.find(a => a.id === selectedAgent);
-    
-    // Update the inquiries in both arrays
-    const updateInquiries = (inquiries: any[]) => 
-      inquiries.map(inquiry => {
-        if (inquiry.id === selectedInquiry) {
-          return {
-            ...inquiry,
-            status: "Assigned",
-            assigned_to: agent?.id || "",
-            assigned_agent_name: agent?.name || ""
-          };
-        }
-        return inquiry;
-      });
+    try {
+      // Find the selected agent
+      const agent = mockAgents.find(a => a.id === selectedAgent);
+      if (!agent) {
+        toast.error("Selected agent not found");
+        return;
+      }
 
-    setDomesticInquiries(prev => updateInquiries(prev));
-    setInternationalInquiries(prev => updateInquiries(prev));
-
-    toast.success(`Inquiry ${selectedInquiry} assigned to ${agent?.name}`);
-    setDialogOpen(false);
+      // Call the actual assignment function
+      await assignInquiryToAgent(selectedInquiry, agent.id, agent.name);
+      
+      // Refresh the inquiries list
+      await fetchInquiries();
+      
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Error assigning inquiry:", error);
+    }
   };
   
   // Get title based on role

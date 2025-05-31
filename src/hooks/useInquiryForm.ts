@@ -106,21 +106,7 @@ export const useInquiryForm = () => {
     return errors.length === 0;
   };
 
-  const calculateDaysAndNights = () => {
-    if (formData.check_in_date && formData.check_out_date) {
-      const checkIn = new Date(formData.check_in_date);
-      const checkOut = new Date(formData.check_out_date);
-      const diffTime = checkOut.getTime() - checkIn.getTime();
-      const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const days = nights + 1;
-      return { days: Math.max(days, 0), nights: Math.max(nights, 0) };
-    }
-    return { days: 0, nights: 0 };
-  };
-
   const prepareInquiryData = (status: 'Draft' | 'New'): InquiryInsertData => {
-    const { days, nights } = calculateDaysAndNights();
-    
     const inquiryData: InquiryInsertData = {
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,
@@ -135,8 +121,6 @@ export const useInquiryForm = () => {
       description: formData.description || null,
       check_in_date: formData.check_in_date,
       check_out_date: formData.check_out_date,
-      days_count: days,
-      nights_count: nights,
       adults: formData.adults,
       children: formData.children,
       infants: formData.infants,
@@ -162,11 +146,9 @@ export const useInquiryForm = () => {
       console.log("Saving draft inquiry data:", draftData);
       await createInquiry(draftData);
       
-      toast.success("Draft saved successfully!");
       navigate("/inquiries");
     } catch (error) {
       console.error("Error saving draft:", error);
-      toast.error("Failed to save draft. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -187,9 +169,7 @@ export const useInquiryForm = () => {
       const submittedFormData = prepareInquiryData('New');
       
       console.log("Submitting inquiry data:", submittedFormData);
-      const createdInquiry = await createInquiry(submittedFormData);
-      
-      toast.success(`Inquiry created successfully! Reference: ${createdInquiry.enquiry_number || 'N/A'}`);
+      await createInquiry(submittedFormData);
       
       // Enhanced post-submission flow
       setTimeout(() => {
@@ -198,7 +178,6 @@ export const useInquiryForm = () => {
       
     } catch (error) {
       console.error("Error creating inquiry:", error);
-      toast.error("Failed to create inquiry. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
