@@ -6,8 +6,8 @@ import { DestinationManagement } from "../components/settings/DestinationManagem
 import { PackageTemplates } from "../components/settings/PackageTemplates";
 import { QuoteSettings } from "../components/settings/QuoteSettings";
 import { TransferSettings } from "../components/settings/TransferSettings";
-import { InvitationManager } from "../components/InvitationManager";
-import { SubscriptionSettings } from "../components/settings/SubscriptionSettings";
+import InvitationManager from "../components/InvitationManager";
+import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import { useAuth } from "../contexts/AuthContext";
 
 const Settings = () => {
