@@ -39,7 +39,7 @@ export const InquiryActions = ({
       return;
     }
     
-    // Navigate to create quote page with inquiry ID
+    // Navigate to create quote page with inquiry ID as query parameter
     navigate(`/quotes/create?inquiryId=${inquiry.id}`);
   };
   
@@ -54,6 +54,8 @@ export const InquiryActions = ({
         await deleteInquiry(inquiry.id);
         toast.success("Inquiry deleted successfully");
         if (onDelete) onDelete();
+        // Refresh the page to update the list
+        window.location.reload();
       }
     } catch (error) {
       console.error("Error deleting inquiry:", error);

@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRole } from "../contexts/RoleContext";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { getInquiriesByTourType, assignInquiryToAgent } from "../services/inquiryService";
 import { InquiryFilters } from "../components/inquiry/InquiryFilters";
@@ -43,21 +44,33 @@ const Inquiries = () => {
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("domestic");
 
-  const fetchInquiries = async () => {
+  const fetchInquiries = async (showRefreshToast = false) => {
     try {
-      setLoading(true);
+      if (showRefreshToast) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      console.log("Fetching inquiries for user role:", role);
+      
       const [domesticData, internationalData] = await Promise.all([
         getInquiriesByTourType('domestic'),
         getInquiriesByTourType('international')
       ]);
       
-      console.log("Fetched domestic inquiries:", domesticData);
-      console.log("Fetched international inquiries:", internationalData);
+      console.log("Fetched domestic inquiries:", domesticData?.length || 0);
+      console.log("Fetched international inquiries:", internationalData?.length || 0);
       
       setDomesticInquiries(domesticData || []);
       setInternationalInquiries(internationalData || []);
+      
+      if (showRefreshToast) {
+        toast.success("Inquiries refreshed successfully");
+      }
     } catch (error) {
       console.error("Error fetching inquiries:", error);
       toast.error("Failed to load inquiries");
@@ -65,6 +78,7 @@ const Inquiries = () => {
       setInternationalInquiries([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -133,6 +147,10 @@ const Inquiries = () => {
       console.error("Error assigning inquiry:", error);
     }
   };
+
+  const handleRefresh = () => {
+    fetchInquiries(true);
+  };
   
   // Get title based on role
   const getPageTitle = () => {
@@ -165,12 +183,23 @@ const Inquiries = () => {
           <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getPageTitle()}</h1>
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
         </div>
-        <Button asChild className="self-start">
-          <Link to="/inquiries/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Inquiry
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="self-start"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button asChild className="self-start">
+            <Link to="/inquiries/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Create New Inquiry
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

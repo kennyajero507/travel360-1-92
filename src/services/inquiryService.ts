@@ -1,68 +1,78 @@
 
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
+import { InquiryInsertData, InquiryData } from "../types/inquiry.types";
 
-export const createInquiry = async (inquiryData: any) => {
-  console.log("Creating inquiry:", inquiryData);
+export const createInquiry = async (inquiryData: InquiryInsertData): Promise<InquiryData> => {
+  console.log("Creating inquiry with data:", inquiryData);
   
   try {
+    // Ensure the user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Prepare the data for insertion
+    const insertData = {
+      ...inquiryData,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    console.log("Inserting inquiry data:", insertData);
+
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(inquiryData)
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
-      console.error("Error creating inquiry:", error);
-      toast.error("Failed to create inquiry");
+      console.error("Database error creating inquiry:", error);
+      toast.error(`Failed to create inquiry: ${error.message}`);
       throw error;
     }
 
+    console.log("Successfully created inquiry:", data);
     toast.success("Inquiry created successfully");
     return data;
   } catch (error) {
     console.error("Error in createInquiry:", error);
+    if (error instanceof Error) {
+      toast.error(`Error: ${error.message}`);
+    } else {
+      toast.error("Failed to create inquiry");
+    }
     throw error;
   }
 };
 
-export const updateInquiry = async (id: string, inquiryData: any) => {
+export const updateInquiry = async (id: string, inquiryData: Partial<InquiryInsertData>): Promise<InquiryData> => {
   console.log("Updating inquiry:", id, inquiryData);
   
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    const updateData = {
+      ...inquiryData,
+      updated_at: new Date().toISOString()
+    };
+
     const { data, error } = await supabase
       .from('inquiries')
-      .update({
-        tour_type: inquiryData.tourType,
-        lead_source: inquiryData.leadSource,
-        tour_consultant: inquiryData.tourConsultant,
-        client_name: inquiryData.clientName,
-        client_email: inquiryData.clientEmail,
-        client_mobile: inquiryData.clientMobile,
-        destination: inquiryData.destination,
-        package_name: inquiryData.packageName,
-        custom_destination: inquiryData.customDestination,
-        custom_package: inquiryData.customPackage,
-        check_in_date: inquiryData.checkInDate,
-        check_out_date: inquiryData.checkOutDate,
-        adults: inquiryData.adults,
-        children: inquiryData.children,
-        infants: inquiryData.infants,
-        num_rooms: inquiryData.numRooms,
-        description: inquiryData.description,
-        priority: inquiryData.priority,
-        assigned_to: inquiryData.assignedTo,
-        assigned_agent_name: inquiryData.assignedAgentName,
-        status: inquiryData.status,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
       console.error("Error updating inquiry:", error);
-      toast.error("Failed to update inquiry");
+      toast.error(`Failed to update inquiry: ${error.message}`);
       throw error;
     }
 
@@ -74,10 +84,16 @@ export const updateInquiry = async (id: string, inquiryData: any) => {
   }
 };
 
-export const getAllInquiries = async () => {
+export const getAllInquiries = async (): Promise<InquiryData[]> => {
   console.log("Fetching all inquiries...");
   
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('inquiries')
       .select('*')
@@ -85,11 +101,11 @@ export const getAllInquiries = async () => {
 
     if (error) {
       console.error("Error fetching inquiries:", error);
-      toast.error("Failed to fetch inquiries");
-      throw error;
+      toast.error(`Failed to fetch inquiries: ${error.message}`);
+      return [];
     }
 
-    console.log("Fetched inquiries:", data);
+    console.log("Successfully fetched inquiries:", data?.length || 0);
     return data || [];
   } catch (error) {
     console.error("Error in getAllInquiries:", error);
@@ -97,10 +113,16 @@ export const getAllInquiries = async () => {
   }
 };
 
-export const getInquiriesByTourType = async (tourType: string) => {
+export const getInquiriesByTourType = async (tourType: string): Promise<InquiryData[]> => {
   console.log("Fetching inquiries by tour type:", tourType);
   
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("User not authenticated");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('inquiries')
       .select('*')
@@ -109,11 +131,11 @@ export const getInquiriesByTourType = async (tourType: string) => {
 
     if (error) {
       console.error("Error fetching inquiries by tour type:", error);
-      toast.error("Failed to fetch inquiries");
-      throw error;
+      toast.error(`Failed to fetch inquiries: ${error.message}`);
+      return [];
     }
 
-    console.log("Fetched inquiries by tour type:", data);
+    console.log("Successfully fetched inquiries by tour type:", data?.length || 0);
     return data || [];
   } catch (error) {
     console.error("Error in getInquiriesByTourType:", error);
@@ -121,22 +143,33 @@ export const getInquiriesByTourType = async (tourType: string) => {
   }
 };
 
-export const getInquiryById = async (id: string) => {
+export const getInquiryById = async (id: string): Promise<InquiryData | null> => {
   console.log("Fetching inquiry by ID:", id);
   
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
     const { data, error } = await supabase
       .from('inquiries')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching inquiry:", error);
-      toast.error("Failed to fetch inquiry");
+      toast.error(`Failed to fetch inquiry: ${error.message}`);
       throw error;
     }
 
+    if (!data) {
+      console.log("No inquiry found with ID:", id);
+      return null;
+    }
+
+    console.log("Successfully fetched inquiry:", data);
     return data;
   } catch (error) {
     console.error("Error in getInquiryById:", error);
@@ -144,10 +177,15 @@ export const getInquiryById = async (id: string) => {
   }
 };
 
-export const deleteInquiry = async (id: string) => {
+export const deleteInquiry = async (id: string): Promise<boolean> => {
   console.log("Deleting inquiry:", id);
   
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
     const { error } = await supabase
       .from('inquiries')
       .delete()
@@ -155,7 +193,7 @@ export const deleteInquiry = async (id: string) => {
 
     if (error) {
       console.error("Error deleting inquiry:", error);
-      toast.error("Failed to delete inquiry");
+      toast.error(`Failed to delete inquiry: ${error.message}`);
       throw error;
     }
 
@@ -167,10 +205,15 @@ export const deleteInquiry = async (id: string) => {
   }
 };
 
-export const assignInquiry = async (inquiryId: string, agentId: string, agentName: string) => {
+export const assignInquiry = async (inquiryId: string, agentId: string, agentName: string): Promise<InquiryData> => {
   console.log("Assigning inquiry:", inquiryId, "to agent:", agentId);
   
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
     const { data, error } = await supabase
       .from('inquiries')
       .update({
@@ -185,7 +228,7 @@ export const assignInquiry = async (inquiryId: string, agentId: string, agentNam
 
     if (error) {
       console.error("Error assigning inquiry:", error);
-      toast.error("Failed to assign inquiry");
+      toast.error(`Failed to assign inquiry: ${error.message}`);
       throw error;
     }
 
@@ -197,6 +240,6 @@ export const assignInquiry = async (inquiryId: string, agentId: string, agentNam
   }
 };
 
-export const assignInquiryToAgent = async (inquiryId: string, agentId: string, agentName: string) => {
+export const assignInquiryToAgent = async (inquiryId: string, agentId: string, agentName: string): Promise<InquiryData> => {
   return assignInquiry(inquiryId, agentId, agentName);
 };

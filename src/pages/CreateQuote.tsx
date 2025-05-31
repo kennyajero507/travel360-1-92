@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import QuoteInitializer from "../components/quote/QuoteInitializer";
-import { getAllInquiries } from "../services/inquiryService";
+import { getAllInquiries, getInquiryById } from "../services/inquiryService";
 import { saveQuote } from "../services/quoteService";
 import { QuoteData } from "../types/quote.types";
 import LoadingIndicator from "../components/quote/LoadingIndicator";
@@ -11,27 +11,47 @@ import LoadingIndicator from "../components/quote/LoadingIndicator";
 const CreateQuote = () => {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inquiryId = searchParams.get('inquiryId');
 
   useEffect(() => {
-    const loadInquiries = async () => {
+    const loadData = async () => {
       try {
-        const data = await getAllInquiries();
-        // Filter for assigned inquiries that don't have quotes yet
-        const availableInquiries = data.filter((inquiry: any) => 
-          inquiry.status === 'Assigned' || inquiry.status === 'New'
-        );
-        setInquiries(availableInquiries);
+        setLoading(true);
+        
+        // If there's an inquiryId in the URL, load that specific inquiry
+        if (inquiryId) {
+          console.log("Loading specific inquiry:", inquiryId);
+          const inquiry = await getInquiryById(inquiryId);
+          if (inquiry) {
+            setSelectedInquiry(inquiry);
+            setInquiries([inquiry]);
+          } else {
+            toast.error("Inquiry not found");
+            navigate("/inquiries");
+            return;
+          }
+        } else {
+          // Load all inquiries
+          const data = await getAllInquiries();
+          // Filter for assigned inquiries that don't have quotes yet
+          const availableInquiries = data.filter((inquiry: any) => 
+            inquiry.status === 'Assigned' || inquiry.status === 'New'
+          );
+          setInquiries(availableInquiries);
+        }
       } catch (error) {
-        console.error("Error loading inquiries:", error);
-        toast.error("Failed to load inquiries");
+        console.error("Error loading data:", error);
+        toast.error("Failed to load inquiry data");
       } finally {
         setLoading(false);
       }
     };
 
-    loadInquiries();
-  }, []);
+    loadData();
+  }, [inquiryId, navigate]);
 
   const handleInitializeQuote = async (quote: QuoteData) => {
     try {
@@ -47,19 +67,28 @@ const CreateQuote = () => {
   };
 
   const handleCancel = () => {
-    navigate("/quotes");
+    if (inquiryId) {
+      navigate(`/inquiries/${inquiryId}`);
+    } else {
+      navigate("/quotes");
+    }
   };
 
   if (loading) {
-    return <LoadingIndicator message="Loading inquiries..." />;
+    return <LoadingIndicator message="Loading inquiry data..." />;
   }
 
   if (inquiries.length === 0) {
     return (
       <div className="text-center py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">No Inquiries Available</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          {inquiryId ? "Inquiry Not Found" : "No Inquiries Available"}
+        </h2>
         <p className="text-gray-600 mb-6">
-          There are no assigned inquiries available for quote creation.
+          {inquiryId 
+            ? "The requested inquiry could not be found or accessed." 
+            : "There are no assigned inquiries available for quote creation."
+          }
         </p>
         <button 
           onClick={() => navigate("/inquiries")}
@@ -76,7 +105,10 @@ const CreateQuote = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-teal-600">Create New Quote</h1>
         <p className="text-gray-500 mt-2">
-          Select an inquiry to initialize a new quote with pre-filled information.
+          {selectedInquiry 
+            ? `Creating quote for inquiry ${selectedInquiry.enquiry_number || selectedInquiry.id}` 
+            : "Select an inquiry to initialize a new quote with pre-filled information."
+          }
         </p>
       </div>
       
@@ -84,6 +116,7 @@ const CreateQuote = () => {
         inquiries={inquiries}
         onInitializeQuote={handleInitializeQuote}
         onCancel={handleCancel}
+        preselectedInquiry={selectedInquiry}
       />
     </div>
   );
