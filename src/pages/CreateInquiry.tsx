@@ -14,7 +14,7 @@ import {
 } from "../components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { toast } from "sonner";
-import { Save, User, MapPin, Calendar, Phone, Package, Globe } from "lucide-react";
+import { Save, User, MapPin, Calendar, Phone, Package, Globe, FileText } from "lucide-react";
 import { useRole } from "../contexts/RoleContext";
 import { createInquiry } from "../services/inquiryService";
 
@@ -66,6 +66,8 @@ const CreateInquiry = () => {
     priority: 'Normal',
     assigned_agent: ''
   });
+
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Sample data for dropdowns
   const leadSources = [
@@ -124,18 +126,80 @@ const CreateInquiry = () => {
     }));
   };
 
+  const validateForm = () => {
+    const errors: string[] = [];
+    
+    if (!formData.client_name.trim()) {
+      errors.push("Client Name is required");
+    }
+    
+    if (!formData.client_mobile.trim()) {
+      errors.push("Mobile Number is required");
+    }
+    
+    if (!formData.check_in_date) {
+      errors.push("Check-in Date is required");
+    }
+    
+    if (!formData.check_out_date) {
+      errors.push("Check-out Date is required");
+    }
+    
+    if (formData.check_in_date && formData.check_out_date) {
+      if (new Date(formData.check_out_date) <= new Date(formData.check_in_date)) {
+        errors.push("Check-out date must be after check-in date");
+      }
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
+  const saveDraft = async () => {
+    try {
+      const draftData = { 
+        ...formData,
+        tour_type: formData.tour_type,
+        lead_source: formData.lead_source,
+        tour_consultant: formData.tour_consultant,
+        client_name: formData.client_name,
+        client_email: formData.client_email,
+        client_mobile: formData.client_mobile,
+        destination: formData.destination,
+        package_name: formData.package_name,
+        custom_package: formData.custom_package,
+        custom_destination: formData.custom_destination,
+        description: formData.description,
+        check_in_date: formData.check_in_date,
+        check_out_date: formData.check_out_date,
+        adults: formData.adults,
+        children: formData.children,
+        infants: formData.infants,
+        num_rooms: formData.num_rooms,
+        priority: formData.priority,
+        assigned_to: isAgent ? currentUser?.id : formData.assigned_agent,
+        assigned_agent_name: isAgent ? currentUser?.name : 
+          formData.assigned_agent ? availableAgents.find(a => a.id === formData.assigned_agent)?.name : null,
+        created_by: currentUser?.id,
+        status: "Draft"
+      };
+      
+      console.log("Saving draft inquiry data:", draftData);
+      await createInquiry(draftData);
+      
+      toast.success("Draft saved successfully!");
+      navigate("/inquiries");
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      toast.error("Failed to save draft. Please try again.");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields - removed destination from validation
-    if (!formData.client_name || !formData.client_mobile || 
-        !formData.check_in_date || !formData.check_out_date) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    if (new Date(formData.check_out_date) <= new Date(formData.check_in_date)) {
-      toast.error("Check-out date must be after check-in date");
+    if (!validateForm()) {
+      toast.error("Please fix the following errors before submitting");
       return;
     }
 
@@ -159,7 +223,6 @@ const CreateInquiry = () => {
         infants: formData.infants,
         num_rooms: formData.num_rooms,
         priority: formData.priority,
-        // Auto-assign to current agent if user is an agent
         assigned_to: isAgent ? currentUser?.id : formData.assigned_agent,
         assigned_agent_name: isAgent ? currentUser?.name : 
           formData.assigned_agent ? availableAgents.find(a => a.id === formData.assigned_agent)?.name : null,
@@ -186,6 +249,23 @@ const CreateInquiry = () => {
           <p className="text-gray-500 mt-2">Record a new client inquiry for domestic or international tours</p>
         </div>
       </div>
+
+      {/* Validation Errors */}
+      {validationErrors.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-red-800 mb-2">
+              <div className="h-4 w-4 rounded-full bg-red-600"></div>
+              <span className="font-medium">Please fix the following errors:</span>
+            </div>
+            <ul className="list-disc list-inside text-red-700 space-y-1">
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -285,8 +365,11 @@ const CreateInquiry = () => {
                       value={formData.client_name}
                       onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
                       placeholder="Enter client name"
-                      required
-                      className="bg-white text-black"
+                      className={`bg-white text-black ${
+                        validationErrors.some(error => error.includes('Client Name')) 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : ''
+                      }`}
                     />
                   </div>
                   
@@ -315,8 +398,11 @@ const CreateInquiry = () => {
                         value={formData.client_mobile}
                         onChange={(e) => setFormData({ ...formData, client_mobile: e.target.value })}
                         placeholder="Mobile phone number"
-                        required
-                        className="bg-white text-black"
+                        className={`bg-white text-black ${
+                          validationErrors.some(error => error.includes('Mobile Number')) 
+                            ? 'border-red-500 focus:border-red-500' 
+                            : ''
+                        }`}
                       />
                     </div>
                   </div>
@@ -433,8 +519,11 @@ const CreateInquiry = () => {
                       type="date"
                       value={formData.check_in_date}
                       onChange={(e) => setFormData({ ...formData, check_in_date: e.target.value })}
-                      required
-                      className="bg-white text-black"
+                      className={`bg-white text-black ${
+                        validationErrors.some(error => error.includes('Check-in Date')) 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : ''
+                      }`}
                     />
                   </div>
                   
@@ -447,8 +536,11 @@ const CreateInquiry = () => {
                       type="date"
                       value={formData.check_out_date}
                       onChange={(e) => setFormData({ ...formData, check_out_date: e.target.value })}
-                      required
-                      className="bg-white text-black"
+                      className={`bg-white text-black ${
+                        validationErrors.some(error => error.includes('Check-out Date') || error.includes('Check-out date must be after')) 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : ''
+                      }`}
                     />
                   </div>
 
@@ -499,7 +591,6 @@ const CreateInquiry = () => {
                       min="1"
                       value={formData.adults}
                       onChange={(e) => setFormData({ ...formData, adults: parseInt(e.target.value) })}
-                      required
                       className="bg-white text-black"
                     />
                   </div>
@@ -583,6 +674,10 @@ const CreateInquiry = () => {
             <div className="flex justify-end space-x-4 pt-4">
               <Button type="button" variant="outline" onClick={() => navigate("/inquiries")}>
                 Cancel
+              </Button>
+              <Button type="button" variant="outline" onClick={saveDraft}>
+                <FileText className="mr-2 h-4 w-4" />
+                Save Draft
               </Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
                 <Save className="mr-2 h-4 w-4" />
