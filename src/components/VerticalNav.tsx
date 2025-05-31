@@ -1,7 +1,7 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList, BarChart3, UserCog } from "lucide-react";
 import { useRole } from "../contexts/role/useRole";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -23,18 +23,20 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
   return (
     <nav
       className={cn(
-        "fixed h-full bg-primary text-white shadow-lg transition-all duration-300 z-10",
+        "fixed h-full bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-xl transition-all duration-300 z-10 border-r border-slate-700",
         collapsed ? "w-20" : "w-64"
       )}
     >
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
+      <div className="flex items-center justify-between p-4 border-b border-slate-700">
         {!collapsed && (
-          <h1 className="text-xl font-bold tracking-tight">TravelFlow360</h1>
+          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            TravelFlow360
+          </h1>
         )}
         <button
           onClick={toggleSidebar}
           className={cn(
-            "p-2 rounded-full hover:bg-white/10 transition-all",
+            "p-2 rounded-full hover:bg-slate-700 transition-all duration-200",
             collapsed ? "mx-auto" : ""
           )}
         >
@@ -42,7 +44,7 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         </button>
       </div>
 
-      <div className="py-4">
+      <div className="py-4 space-y-1">
         {/* Dashboard - available to all */}
         <NavItem to="/dashboard" collapsed={collapsed} icon={<Home size={20} />} label="Dashboard" />
         
@@ -75,6 +77,16 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator']) && (
           <NavItem to="/hotels" collapsed={collapsed} icon={<Hotel size={20} />} label="Hotels" />
         )}
+
+        {/* Agent Management - for org_owner and tour_operator */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator']) && (
+          <NavItem to="/agent-management" collapsed={collapsed} icon={<UserCog size={20} />} label="Agent Management" />
+        )}
+
+        {/* Reports - available to all except clients */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
+          <NavItem to="/reports" collapsed={collapsed} icon={<BarChart3 size={20} />} label="Reports" />
+        )}
         
         {/* Calendar - available to all */}
         <NavItem to="/calendar" collapsed={collapsed} icon={<Calendar size={20} />} label="Calendar" />
@@ -90,9 +102,9 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
       
       {!collapsed && userProfile && (
         <div className="absolute bottom-4 left-0 right-0 px-4">
-          <div className="bg-white/10 rounded-md p-2 text-center text-xs">
-            <div className="font-medium">Current Role:</div>
-            <div className="uppercase mt-1">
+          <div className="bg-slate-800/50 rounded-lg p-3 text-center text-xs border border-slate-600">
+            <div className="font-medium text-slate-300">Current Role:</div>
+            <div className="uppercase mt-1 text-blue-400 font-semibold">
               {userProfile.role === 'agent' && 'Travel Agent'}
               {userProfile.role === 'tour_operator' && 'Tour Operator'}
               {userProfile.role === 'org_owner' && 'Organization Owner'}
@@ -119,14 +131,14 @@ const NavItem = ({ to, icon, label, collapsed }: NavItemProps) => {
       to={to}
       className={({ isActive }) =>
         cn(
-          "flex items-center gap-4 py-3 px-4 transition-colors hover:bg-primary-hover",
+          "flex items-center gap-4 py-3 px-4 mx-2 rounded-lg transition-all duration-200 hover:bg-slate-700/50",
           collapsed ? "justify-center px-2" : "",
-          isActive ? "bg-white/10" : ""
+          isActive ? "bg-blue-600/20 text-blue-400 border-r-2 border-blue-400" : "text-slate-300 hover:text-white"
         )
       }
     >
       <div>{icon}</div>
-      {!collapsed && <span>{label}</span>}
+      {!collapsed && <span className="font-medium">{label}</span>}
     </NavLink>
   );
 };

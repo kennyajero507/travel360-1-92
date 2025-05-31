@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -17,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { getAllQuotes } from "../services/quoteService";
+import { getAllQuotes, deleteQuote, emailQuote, printQuote, downloadQuotePDF } from "../services/quoteService";
 import { Badge } from "../components/ui/badge";
 import { format } from "date-fns";
 import {
@@ -146,36 +145,39 @@ const Quotes = () => {
   }, []);
 
   // Function to handle quote actions
-  const handleQuoteAction = (action, quoteId) => {
-    switch (action) {
-      case "view":
-        navigate(`/quotes/${quoteId}`);
-        break;
-      case "edit":
-        navigate(`/quotes/edit/${quoteId}`);
-        break;
-      case "create-booking":
-        navigate(`/quotes/${quoteId}/create-booking`);
-        break;
-      case "print":
-        toast.info(`Printing quote ${quoteId}...`);
-        // Implement print functionality
-        window.open(`/quote-preview?id=${quoteId}`, '_blank');
-        break;
-      case "email":
-        toast.success(`Quote ${quoteId} sent to client via email`);
-        // Implement email functionality
-        break;
-      case "download":
-        toast.success(`Quote ${quoteId} downloaded`);
-        // Implement download functionality
-        break;
-      case "delete":
-        toast.error(`Quote ${quoteId} deleted`);
-        // Implement delete functionality
-        break;
-      default:
-        break;
+  const handleQuoteAction = async (action: string, quoteId: string) => {
+    try {
+      switch (action) {
+        case "view":
+          navigate(`/quotes/${quoteId}`);
+          break;
+        case "edit":
+          navigate(`/quotes/edit/${quoteId}`);
+          break;
+        case "create-booking":
+          navigate(`/quotes/${quoteId}/create-booking`);
+          break;
+        case "print":
+          await printQuote(quoteId);
+          break;
+        case "email":
+          await emailQuote(quoteId);
+          break;
+        case "download":
+          await downloadQuotePDF(quoteId);
+          break;
+        case "delete":
+          await deleteQuote(quoteId);
+          // Refresh quotes after deletion
+          const updatedQuotes = await getAllQuotes();
+          setQuotes(updatedQuotes);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error("Error handling quote action:", error);
+      toast.error("Failed to perform action");
     }
   };
 
@@ -298,7 +300,7 @@ const Quotes = () => {
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="bg-white">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => handleQuoteAction("view", quote.id)}>
                               <Eye className="mr-2 h-4 w-4" />

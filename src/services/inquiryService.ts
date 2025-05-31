@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { InquiryData, InquiryInsertData } from "../types/inquiry.types";
@@ -51,44 +50,23 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
   try {
     console.log("Creating inquiry with data:", inquiryData);
     
-    // Prepare data for insert - provide temporary enquiry_number that will be overwritten by trigger
-    const insertData = {
-      id: inquiryData.id,
-      enquiry_number: 'TEMP', // Temporary value, will be overwritten by database trigger
-      tour_type: inquiryData.tour_type,
-      lead_source: inquiryData.lead_source || null,
-      tour_consultant: inquiryData.tour_consultant || null,
-      client_name: inquiryData.client_name,
-      client_email: inquiryData.client_email || null,
-      client_mobile: inquiryData.client_mobile,
-      destination: inquiryData.destination,
-      package_name: inquiryData.package_name || null,
-      custom_package: inquiryData.custom_package || null,
-      custom_destination: inquiryData.custom_destination || null,
-      description: inquiryData.description || null,
-      check_in_date: inquiryData.check_in_date,
-      check_out_date: inquiryData.check_out_date,
-      adults: inquiryData.adults,
-      children: inquiryData.children,
-      infants: inquiryData.infants,
-      num_rooms: inquiryData.num_rooms || null,
-      priority: inquiryData.priority || null,
-      assigned_to: inquiryData.assigned_to || null,
-      assigned_agent_name: inquiryData.assigned_agent_name || null,
-      created_by: inquiryData.created_by || null,
-      status: inquiryData.status
+    // Prepare data for insert - remove id and enquiry_number for auto-generation
+    const { id, ...insertData } = inquiryData;
+    
+    const dataToInsert = {
+      ...insertData,
+      enquiry_number: 'TEMP', // Will be overwritten by trigger
     };
     
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(insertData)
+      .insert(dataToInsert)
       .select()
       .single();
     
     if (error) {
       console.error('Error creating inquiry:', error);
       
-      // More specific error messages
       if (error.code === '23505') {
         toast.error('An inquiry with this reference already exists');
       } else if (error.code === '23502') {

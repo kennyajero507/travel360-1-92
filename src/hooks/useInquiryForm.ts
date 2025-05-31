@@ -88,12 +88,10 @@ export const useInquiryForm = () => {
       }
     }
 
-    // Validate destination or custom destination
     if (!formData.destination && !formData.custom_destination?.trim()) {
       errors.push("Please select a destination or enter a custom destination");
     }
 
-    // Validate numeric fields
     if (formData.adults < 1) {
       errors.push("At least 1 adult is required");
     }
@@ -108,7 +106,7 @@ export const useInquiryForm = () => {
 
   const prepareInquiryData = (status: 'Draft' | 'New'): InquiryInsertData => {
     const inquiryData: InquiryInsertData = {
-      id: crypto.randomUUID(), // Generate UUID here
+      id: crypto.randomUUID(),
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,
       tour_consultant: formData.tour_consultant || null,
@@ -147,9 +145,11 @@ export const useInquiryForm = () => {
       console.log("Saving draft inquiry data:", draftData);
       await createInquiry(draftData);
       
+      toast.success("Draft saved successfully!");
       navigate("/inquiries");
     } catch (error) {
       console.error("Error saving draft:", error);
+      toast.error("Failed to save draft");
     } finally {
       setIsSubmitting(false);
     }
@@ -172,13 +172,12 @@ export const useInquiryForm = () => {
       console.log("Submitting inquiry data:", submittedFormData);
       await createInquiry(submittedFormData);
       
-      // Enhanced post-submission flow
-      setTimeout(() => {
-        navigate("/inquiries");
-      }, 1500);
+      toast.success("Inquiry submitted successfully!");
+      navigate("/inquiries");
       
     } catch (error) {
       console.error("Error creating inquiry:", error);
+      toast.error("Failed to create inquiry");
     } finally {
       setIsSubmitting(false);
     }
