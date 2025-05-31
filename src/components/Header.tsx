@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { useAuth } from "../contexts/AuthContext";
-import { ProfileDropdown } from "./ProfileDropdown";
+import ProfileDropdown from "./ProfileDropdown";
 import { Link } from "react-router-dom";
 import { getRoleDisplayName } from "../utils/authHelpers";
 

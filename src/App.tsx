@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -59,7 +59,7 @@ function App() {
               <CurrencyProvider>
                 <Routes>
                   {/* Public routes */}
-                  <Route path="/" element={<PublicLayout />}>
+                  <Route path="/" element={<PublicLayout><Outlet /></PublicLayout>}>
                     <Route index element={<Landing />} />
                     <Route path="features" element={<Features />} />
                     <Route path="pricing" element={<Pricing />} />

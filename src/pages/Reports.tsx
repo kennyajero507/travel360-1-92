@@ -22,8 +22,28 @@ import { getAllInquiries } from "../services/inquiryService";
 import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns";
 import { toast } from "sonner";
 
+interface Inquiry {
+  id: string;
+  created_at: string;
+  status: string;
+  destination: string;
+  tour_type: string;
+  assigned_agent_name?: string;
+}
+
+interface AgentPerformance {
+  total: number;
+  quoted: number;
+  closed: number;
+}
+
+interface AgentStats extends AgentPerformance {
+  agent: string;
+  conversionRate: string;
+}
+
 const Reports = () => {
-  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
     from: startOfMonth(subMonths(new Date(), 2)),
@@ -36,7 +56,7 @@ const Reports = () => {
       try {
         setLoading(true);
         const data = await getAllInquiries();
-        setInquiries(data);
+        setInquiries(data || []);
       } catch (error) {
         console.error("Error loading reports data:", error);
         toast.error("Failed to load reports data");
@@ -102,21 +122,21 @@ const Reports = () => {
   ];
 
   // Top destinations
-  const destinationCounts = filteredInquiries.reduce((acc, inq) => {
+  const destinationCounts: Record<string, number> = filteredInquiries.reduce((acc, inq) => {
     acc[inq.destination] = (acc[inq.destination] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
   
   const topDestinations = Object.entries(destinationCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5)
-    .map(([destination, count]) => ({ destination, count }));
+    .map(([destination, count]) => ({ destination, count: count as number }));
 
   // Agent performance
   const agentPerformance = filteredInquiries
     .filter(inq => inq.assigned_agent_name)
     .reduce((acc, inq) => {
-      const agent = inq.assigned_agent_name;
+      const agent = inq.assigned_agent_name!;
       if (!acc[agent]) {
         acc[agent] = { total: 0, quoted: 0, closed: 0 };
       }
@@ -124,9 +144,9 @@ const Reports = () => {
       if (inq.status === 'Quoted') acc[agent].quoted++;
       if (inq.status === 'Closed') acc[agent].closed++;
       return acc;
-    }, {});
+    }, {} as Record<string, AgentPerformance>);
 
-  const agentStats = Object.entries(agentPerformance).map(([agent, stats]) => ({
+  const agentStats: AgentStats[] = Object.entries(agentPerformance).map(([agent, stats]) => ({
     agent,
     ...stats,
     conversionRate: stats.total > 0 ? ((stats.quoted + stats.closed) / stats.total * 100).toFixed(1) : '0'
@@ -305,7 +325,7 @@ const Reports = () => {
                       <div className="w-20 bg-gray-200 rounded-full h-2">
                         <div 
                           className="bg-teal-600 h-2 rounded-full" 
-                          style={{ width: `${(dest.count / totalInquiries) * 100}%` }}
+                          style={{ width: `${totalInquiries > 0 ? (dest.count / totalInquiries) * 100 : 0}%` }}
                         />
                       </div>
                     </div>
