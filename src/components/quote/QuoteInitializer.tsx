@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -29,12 +28,19 @@ interface QuoteInitializerProps {
   inquiries: Inquiry[];
   onInitializeQuote: (quote: QuoteData) => void;
   onCancel: () => void;
+  preselectedInquiry?: Inquiry | null;
 }
 
-const QuoteInitializer = ({ inquiries, onInitializeQuote, onCancel }: QuoteInitializerProps) => {
-  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
+const QuoteInitializer = ({ inquiries, onInitializeQuote, onCancel, preselectedInquiry }: QuoteInitializerProps) => {
+  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(preselectedInquiry || null);
   const { currency, currencies } = useCurrency();
   const [selectedCurrency, setSelectedCurrency] = useState(currency.code);
+
+  useEffect(() => {
+    if (preselectedInquiry) {
+      setSelectedInquiry(preselectedInquiry);
+    }
+  }, [preselectedInquiry]);
 
   const calculateDuration = (startDate: string, endDate: string) => {
     const start = new Date(startDate);

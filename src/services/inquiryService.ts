@@ -13,8 +13,8 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
       throw new Error("User not authenticated");
     }
 
-    // Prepare the data for insertion
-    const insertData = {
+    // Prepare the data for insertion - exclude enquiry_number as it's auto-generated
+    const { ...insertData } = {
       ...inquiryData,
       created_by: user.id,
       created_at: new Date().toISOString(),
