@@ -22,6 +22,8 @@ export interface InquiryFormData {
 }
 
 export interface InquiryData {
+  id?: string;
+  enquiry_number?: string;
   tour_type: string;
   lead_source?: string | null;
   tour_consultant?: string | null;
@@ -46,6 +48,8 @@ export interface InquiryData {
   assigned_agent_name?: string | null;
   created_by?: string | null;
   status: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface InquiryFormProps {
