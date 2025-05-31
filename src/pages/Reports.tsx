@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -21,15 +20,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getAllInquiries } from "../services/inquiryService";
 import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns";
 import { toast } from "sonner";
-
-interface Inquiry {
-  id: string;
-  created_at: string;
-  status: string;
-  destination: string;
-  tour_type: string;
-  assigned_agent_name?: string;
-}
+import { InquiryData } from "../types/inquiry.types";
 
 interface AgentPerformance {
   total: number;
@@ -43,7 +34,7 @@ interface AgentStats extends AgentPerformance {
 }
 
 const Reports = () => {
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [inquiries, setInquiries] = useState<InquiryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
     from: startOfMonth(subMonths(new Date(), 2)),
@@ -70,6 +61,7 @@ const Reports = () => {
 
   // Filter inquiries by date range
   const filteredInquiries = inquiries.filter(inquiry => {
+    if (!inquiry.created_at) return false;
     const inquiryDate = parseISO(inquiry.created_at);
     return inquiryDate >= dateRange.from && inquiryDate <= dateRange.to;
   });
@@ -87,6 +79,7 @@ const Reports = () => {
     const monthStart = startOfMonth(subMonths(new Date(), i));
     const monthEnd = endOfMonth(subMonths(new Date(), i));
     const monthInquiries = inquiries.filter(inq => {
+      if (!inq.created_at) return false;
       const inquiryDate = parseISO(inq.created_at);
       return inquiryDate >= monthStart && inquiryDate <= monthEnd;
     });
