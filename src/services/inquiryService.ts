@@ -1,82 +1,40 @@
 
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
-import { InquiryData, InquiryInsertData } from "../types/inquiry.types";
 
-// Get all inquiries
-export const getAllInquiries = async () => {
+export const createInquiry = async (inquiryData: any) => {
+  console.log("Creating inquiry:", inquiryData);
+  
   try {
-    const { data, error } = await supabase
-      .from('inquiries')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Generate a unique ID for the inquiry
+    const inquiryId = crypto.randomUUID();
     
-    if (error) {
-      console.error('Error fetching inquiries:', error);
-      toast.error('Failed to fetch inquiries');
-      throw error;
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error in getAllInquiries:', error);
-    throw error;
-  }
-};
-
-// Get inquiries by tour type
-export const getInquiriesByTourType = async (tourType: 'domestic' | 'international') => {
-  try {
-    const { data, error } = await supabase
-      .from('inquiries')
-      .select('*')
-      .eq('tour_type', tourType)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching inquiries by tour type:', error);
-      toast.error('Failed to fetch inquiries');
-      throw error;
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error in getInquiriesByTourType:', error);
-    throw error;
-  }
-};
-
-// Create a new inquiry
-export const createInquiry = async (inquiryData: InquiryInsertData): Promise<InquiryData> => {
-  try {
-    console.log("Creating inquiry with data:", inquiryData);
-    
-    // Prepare data for insert with id included
+    // Prepare the data for insertion with the ID
     const dataToInsert = {
-      id: inquiryData.id,
-      enquiry_number: 'TEMP', // Will be overwritten by trigger
-      tour_type: inquiryData.tour_type,
-      lead_source: inquiryData.lead_source,
-      tour_consultant: inquiryData.tour_consultant,
-      client_name: inquiryData.client_name,
-      client_email: inquiryData.client_email,
-      client_mobile: inquiryData.client_mobile,
+      id: inquiryId, // Add the required ID field
+      enquiry_number: `ENQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      tour_type: inquiryData.tourType || 'domestic',
+      lead_source: inquiryData.leadSource || null,
+      tour_consultant: inquiryData.tourConsultant || null,
+      client_name: inquiryData.clientName,
+      client_email: inquiryData.clientEmail || null,
+      client_mobile: inquiryData.clientMobile,
       destination: inquiryData.destination,
-      package_name: inquiryData.package_name,
-      custom_package: inquiryData.custom_package,
-      custom_destination: inquiryData.custom_destination,
-      description: inquiryData.description,
-      check_in_date: inquiryData.check_in_date,
-      check_out_date: inquiryData.check_out_date,
-      adults: inquiryData.adults,
-      children: inquiryData.children,
-      infants: inquiryData.infants,
-      num_rooms: inquiryData.num_rooms,
-      priority: inquiryData.priority,
-      assigned_to: inquiryData.assigned_to,
-      assigned_agent_name: inquiryData.assigned_agent_name,
-      created_by: inquiryData.created_by,
-      status: inquiryData.status
+      package_name: inquiryData.packageName || null,
+      custom_destination: inquiryData.customDestination || null,
+      custom_package: inquiryData.customPackage || null,
+      check_in_date: inquiryData.checkInDate,
+      check_out_date: inquiryData.checkOutDate,
+      adults: inquiryData.adults || 1,
+      children: inquiryData.children || 0,
+      infants: inquiryData.infants || 0,
+      num_rooms: inquiryData.numRooms || null,
+      description: inquiryData.description || null,
+      priority: inquiryData.priority || 'Normal',
+      assigned_to: inquiryData.assignedTo || null,
+      assigned_agent_name: inquiryData.assignedAgentName || null,
+      created_by: inquiryData.createdBy || null,
+      status: inquiryData.status || 'New'
     };
     
     const { data, error } = await supabase
@@ -84,91 +42,145 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
       .insert(dataToInsert)
       .select()
       .single();
-    
+
     if (error) {
-      console.error('Error creating inquiry:', error);
-      
-      if (error.code === '23505') {
-        toast.error('An inquiry with this reference already exists');
-      } else if (error.code === '23502') {
-        toast.error('Required fields are missing');
-      } else if (error.code === '42501') {
-        toast.error('You do not have permission to create inquiries');
-      } else {
-        toast.error('Failed to create inquiry. Please check all required fields.');
-      }
+      console.error("Error creating inquiry:", error);
+      toast.error("Failed to create inquiry");
       throw error;
     }
-    
-    console.log("Inquiry created successfully:", data);
-    toast.success(`Inquiry created successfully! Reference: ${data.enquiry_number || 'Generated'}`);
-    return data as InquiryData;
+
+    toast.success("Inquiry created successfully");
+    return data;
   } catch (error) {
-    console.error('Error in createInquiry:', error);
+    console.error("Error in createInquiry:", error);
     throw error;
   }
 };
 
-// Update an inquiry
-export const updateInquiry = async (id: string, updateData: Partial<InquiryInsertData>): Promise<InquiryData> => {
+export const updateInquiry = async (id: string, inquiryData: any) => {
+  console.log("Updating inquiry:", id, inquiryData);
+  
   try {
     const { data, error } = await supabase
       .from('inquiries')
-      .update({ 
-        ...updateData, 
-        updated_at: new Date().toISOString() 
+      .update({
+        tour_type: inquiryData.tourType,
+        lead_source: inquiryData.leadSource,
+        tour_consultant: inquiryData.tourConsultant,
+        client_name: inquiryData.clientName,
+        client_email: inquiryData.clientEmail,
+        client_mobile: inquiryData.clientMobile,
+        destination: inquiryData.destination,
+        package_name: inquiryData.packageName,
+        custom_destination: inquiryData.customDestination,
+        custom_package: inquiryData.customPackage,
+        check_in_date: inquiryData.checkInDate,
+        check_out_date: inquiryData.checkOutDate,
+        adults: inquiryData.adults,
+        children: inquiryData.children,
+        infants: inquiryData.infants,
+        num_rooms: inquiryData.numRooms,
+        description: inquiryData.description,
+        priority: inquiryData.priority,
+        assigned_to: inquiryData.assignedTo,
+        assigned_agent_name: inquiryData.assignedAgentName,
+        status: inquiryData.status,
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
-      console.error('Error updating inquiry:', error);
-      toast.error('Failed to update inquiry');
+      console.error("Error updating inquiry:", error);
+      toast.error("Failed to update inquiry");
       throw error;
     }
-    
-    toast.success('Inquiry updated successfully');
-    return data as InquiryData;
+
+    toast.success("Inquiry updated successfully");
+    return data;
   } catch (error) {
-    console.error('Error in updateInquiry:', error);
+    console.error("Error in updateInquiry:", error);
     throw error;
   }
 };
 
-// Get inquiry by ID
+export const getAllInquiries = async () => {
+  console.log("Fetching all inquiries...");
+  
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching inquiries:", error);
+      toast.error("Failed to fetch inquiries");
+      throw error;
+    }
+
+    console.log("Fetched inquiries:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getAllInquiries:", error);
+    return [];
+  }
+};
+
 export const getInquiryById = async (id: string) => {
+  console.log("Fetching inquiry by ID:", id);
+  
   try {
     const { data, error } = await supabase
       .from('inquiries')
       .select('*')
       .eq('id', id)
-      .maybeSingle();
-    
+      .single();
+
     if (error) {
-      console.error('Error fetching inquiry:', error);
-      toast.error('Failed to fetch inquiry details');
+      console.error("Error fetching inquiry:", error);
+      toast.error("Failed to fetch inquiry");
       throw error;
     }
-    
-    if (!data) {
-      toast.error('Inquiry not found');
-      throw new Error('Inquiry not found');
-    }
-    
+
     return data;
   } catch (error) {
-    console.error('Error in getInquiryById:', error);
+    console.error("Error in getInquiryById:", error);
     throw error;
   }
 };
 
-// Assign inquiry to agent
-export const assignInquiryToAgent = async (inquiryId: string, agentId: string, agentName: string) => {
+export const deleteInquiry = async (id: string) => {
+  console.log("Deleting inquiry:", id);
+  
+  try {
+    const { error } = await supabase
+      .from('inquiries')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error deleting inquiry:", error);
+      toast.error("Failed to delete inquiry");
+      throw error;
+    }
+
+    toast.success("Inquiry deleted successfully");
+    return true;
+  } catch (error) {
+    console.error("Error in deleteInquiry:", error);
+    throw error;
+  }
+};
+
+export const assignInquiry = async (inquiryId: string, agentId: string, agentName: string) => {
+  console.log("Assigning inquiry:", inquiryId, "to agent:", agentId);
+  
   try {
     const { data, error } = await supabase
       .from('inquiries')
-      .update({ 
+      .update({
         assigned_to: agentId,
         assigned_agent_name: agentName,
         status: 'Assigned',
@@ -177,39 +189,17 @@ export const assignInquiryToAgent = async (inquiryId: string, agentId: string, a
       .eq('id', inquiryId)
       .select()
       .single();
-    
+
     if (error) {
-      console.error('Error assigning inquiry:', error);
-      toast.error('Failed to assign inquiry');
+      console.error("Error assigning inquiry:", error);
+      toast.error("Failed to assign inquiry");
       throw error;
     }
-    
-    toast.success(`Inquiry assigned to ${agentName} successfully`);
+
+    toast.success("Inquiry assigned successfully");
     return data;
   } catch (error) {
-    console.error('Error in assignInquiryToAgent:', error);
-    throw error;
-  }
-};
-
-// Delete inquiry
-export const deleteInquiry = async (id: string) => {
-  try {
-    const { error } = await supabase
-      .from('inquiries')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting inquiry:', error);
-      toast.error('Failed to delete inquiry');
-      throw error;
-    }
-    
-    toast.success('Inquiry deleted successfully');
-    return true;
-  } catch (error) {
-    console.error('Error in deleteInquiry:', error);
+    console.error("Error in assignInquiry:", error);
     throw error;
   }
 };

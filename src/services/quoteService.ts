@@ -1,6 +1,7 @@
 
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
+import { QuoteData } from "../types/quote.types";
 
 // Mock service functions for quotes
 export const getAllQuotes = async () => {
@@ -10,14 +11,15 @@ export const getAllQuotes = async () => {
   return [];
 };
 
-export const getQuoteById = async (id: string) => {
+export const getQuoteById = async (id: string): Promise<QuoteData> => {
   console.log("Fetching quote by ID:", id);
-  // Return mock quote data for now
+  // Return complete mock quote data
   return {
     id,
     client: "John Doe",
     mobile: "+1234567890",
     destination: "Zanzibar",
+    packageName: "Zanzibar Beach Package",
     startDate: "2024-08-20",
     endDate: "2024-08-27",
     duration: { days: 8, nights: 7 },
@@ -28,13 +30,19 @@ export const getQuoteById = async (id: string) => {
     activities: [],
     transfers: [],
     transports: [],
-    markupType: "percentage",
-    markupValue: 15,
+    markup: {
+      type: "percentage",
+      value: 15
+    },
     notes: "",
     createdBy: "agent-1",
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     hotelId: "hotel-1",
     approvedHotelId: "hotel-1",
+    assignedAgent: "John Agent",
+    inquiryId: "inquiry-1",
+    inquiryNumber: "ENQ-2024-001",
     roomArrangements: [
       { 
         id: "room-1",
@@ -58,7 +66,7 @@ export const getQuoteById = async (id: string) => {
   };
 };
 
-export const saveQuote = async (quote: any) => {
+export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
   console.log("Saving quote:", quote);
   toast.success("Quote saved successfully");
   return { ...quote, id: quote.id || crypto.randomUUID() };
@@ -74,12 +82,15 @@ export const getAvailableInquiries = async () => {
       client_name: "John Doe",
       client_mobile: "+1234567890",
       destination: "Zanzibar",
+      package_name: "Zanzibar Beach Package",
       check_in_date: "2024-08-20",
       check_out_date: "2024-08-27",
       adults: 2,
       children: 1,
       infants: 0,
-      status: "Assigned"
+      tour_type: "international",
+      status: "Assigned",
+      assigned_agent_name: "John Agent"
     }
   ];
 };
@@ -89,12 +100,16 @@ export const generateClientPreview = async (quoteId: string) => {
   // Return mock client preview data
   return {
     id: quoteId,
+    inquiryNumber: "ENQ-2024-001",
     client: "John Doe",
     destination: "Zanzibar",
+    packageName: "Zanzibar Beach Package",
     startDate: "2024-08-20",
     endDate: "2024-08-27",
     duration: { days: 8, nights: 7 },
     travelers: { adults: 2, childrenWithBed: 1, childrenNoBed: 0, infants: 0 },
+    tourType: "international",
+    createdAt: new Date().toISOString(),
     hotels: [
       {
         id: "hotel-1",
@@ -111,6 +126,26 @@ export const generateClientPreview = async (quoteId: string) => {
           }
         ],
         totalCost: 1400
+      }
+    ],
+    hotelOptions: [
+      {
+        id: "hotel-1",
+        name: "Zanzibar Beach Resort",
+        category: "5 Star",
+        location: "Stone Town, Zanzibar",
+        roomArrangements: [
+          {
+            roomType: "Deluxe Ocean View",
+            numRooms: 1,
+            guests: 3,
+            nights: 7,
+            total: 1400
+          }
+        ],
+        totalCost: 1400,
+        totalPrice: 1610,
+        currencyCode: "USD"
       }
     ],
     totalCost: 1400,
