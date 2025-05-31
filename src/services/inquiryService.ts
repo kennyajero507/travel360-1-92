@@ -48,31 +48,34 @@ export const getInquiriesByTourType = async (tourType: 'domestic' | 'internation
 // Create a new inquiry
 export const createInquiry = async (inquiryData: any) => {
   try {
-    // Generate an ID if not provided
-    if (!inquiryData.id) {
-      inquiryData.id = `I-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-    }
+    // Clean the data - remove any undefined values
+    const cleanedData = Object.fromEntries(
+      Object.entries(inquiryData).filter(([_, value]) => value !== undefined)
+    );
     
-    // Get current user ID
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Set created_by if user is authenticated
-    if (user) {
-      inquiryData.created_by = user.id;
-    }
+    console.log("Creating inquiry with cleaned data:", cleanedData);
     
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(inquiryData)
+      .insert(cleanedData)
       .select()
       .single();
     
     if (error) {
       console.error('Error creating inquiry:', error);
-      toast.error('Failed to create inquiry');
+      
+      // More specific error messages
+      if (error.code === '23505') {
+        toast.error('An inquiry with this reference already exists');
+      } else if (error.code === '23502') {
+        toast.error('Required fields are missing');
+      } else {
+        toast.error('Failed to create inquiry. Please check all required fields.');
+      }
       throw error;
     }
     
+    console.log("Inquiry created successfully:", data);
     return data;
   } catch (error) {
     console.error('Error in createInquiry:', error);

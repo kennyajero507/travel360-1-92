@@ -62,11 +62,11 @@ export const useInquiryForm = () => {
   const validateForm = () => {
     const errors: string[] = [];
     
-    if (!formData.client_name.trim()) {
+    if (!formData.client_name?.trim()) {
       errors.push("Client Name is required");
     }
     
-    if (!formData.client_mobile.trim()) {
+    if (!formData.client_mobile?.trim()) {
       errors.push("Mobile Number is required");
     }
     
@@ -79,25 +79,70 @@ export const useInquiryForm = () => {
     }
     
     if (formData.check_in_date && formData.check_out_date) {
-      if (new Date(formData.check_out_date) <= new Date(formData.check_in_date)) {
+      const checkInDate = new Date(formData.check_in_date);
+      const checkOutDate = new Date(formData.check_out_date);
+      
+      if (checkOutDate <= checkInDate) {
         errors.push("Check-out date must be after check-in date");
       }
+    }
+
+    // Validate destination or custom destination
+    if (!formData.destination && !formData.custom_destination?.trim()) {
+      errors.push("Please select a destination or enter a custom destination");
     }
     
     setValidationErrors(errors);
     return errors.length === 0;
   };
 
+  const calculateDaysAndNights = () => {
+    if (formData.check_in_date && formData.check_out_date) {
+      const checkIn = new Date(formData.check_in_date);
+      const checkOut = new Date(formData.check_out_date);
+      const diffTime = checkOut.getTime() - checkIn.getTime();
+      const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const days = nights + 1;
+      return { days: Math.max(days, 0), nights: Math.max(nights, 0) };
+    }
+    return { days: 0, nights: 0 };
+  };
+
+  const prepareInquiryData = (status: 'Draft' | 'New') => {
+    const { days, nights } = calculateDaysAndNights();
+    
+    return {
+      tour_type: formData.tour_type,
+      lead_source: formData.lead_source || null,
+      tour_consultant: formData.tour_consultant || null,
+      client_name: formData.client_name.trim(),
+      client_email: formData.client_email?.trim() || null,
+      client_mobile: formData.client_mobile.trim(),
+      destination: formData.destination || formData.custom_destination || '',
+      package_name: formData.package_name || formData.custom_package || null,
+      custom_package: formData.custom_package || null,
+      custom_destination: formData.custom_destination || null,
+      description: formData.description || null,
+      check_in_date: formData.check_in_date,
+      check_out_date: formData.check_out_date,
+      days_count: days,
+      nights_count: nights,
+      adults: formData.adults,
+      children: formData.children,
+      infants: formData.infants,
+      num_rooms: formData.num_rooms,
+      priority: formData.priority,
+      assigned_to: isAgent ? currentUser?.id : formData.assigned_agent || null,
+      assigned_agent_name: isAgent ? currentUser?.name : 
+        formData.assigned_agent ? availableAgents.find(a => a.id === formData.assigned_agent)?.name : null,
+      created_by: currentUser?.id || null,
+      status: status
+    };
+  };
+
   const saveDraft = async () => {
     try {
-      const draftData = { 
-        ...formData,
-        assigned_to: isAgent ? currentUser?.id : formData.assigned_agent,
-        assigned_agent_name: isAgent ? currentUser?.name : 
-          formData.assigned_agent ? availableAgents.find(a => a.id === formData.assigned_agent)?.name : null,
-        created_by: currentUser?.id,
-        status: "Draft"
-      };
+      const draftData = prepareInquiryData('Draft');
       
       console.log("Saving draft inquiry data:", draftData);
       await createInquiry(draftData);
@@ -119,14 +164,7 @@ export const useInquiryForm = () => {
     }
 
     try {
-      const submittedFormData = { 
-        ...formData,
-        assigned_to: isAgent ? currentUser?.id : formData.assigned_agent,
-        assigned_agent_name: isAgent ? currentUser?.name : 
-          formData.assigned_agent ? availableAgents.find(a => a.id === formData.assigned_agent)?.name : null,
-        created_by: currentUser?.id,
-        status: "New"
-      };
+      const submittedFormData = prepareInquiryData('New');
       
       console.log("Submitting inquiry data:", submittedFormData);
       await createInquiry(submittedFormData);
