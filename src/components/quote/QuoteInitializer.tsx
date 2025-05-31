@@ -59,7 +59,6 @@ const QuoteInitializer = ({ inquiries, onInitializeQuote, onCancel }: QuoteIniti
     const newQuote: QuoteData = {
       id: `Q-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       inquiryId: selectedInquiry.id,
-      inquiryNumber: selectedInquiry.enquiry_number,
       client: selectedInquiry.client_name,
       mobile: selectedInquiry.client_mobile,
       destination: selectedInquiry.destination,

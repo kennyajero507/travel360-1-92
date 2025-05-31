@@ -52,11 +52,13 @@ export const useQuoteCalculations = (quote: QuoteData) => {
   // Calculate markup
   const calculateMarkup = () => {
     const subtotal = calculateSubtotal();
-    if (quote.markup.type === "percentage") {
-      return (subtotal * quote.markup.value) / 100;
+    const markupInfo = quote.markup || { type: quote.markupType || "percentage", value: quote.markupValue || 25 };
+    
+    if (markupInfo.type === "percentage") {
+      return (subtotal * markupInfo.value) / 100;
     } else {
       // Fixed markup amount
-      return quote.markup.value;
+      return markupInfo.value;
     }
   };
 

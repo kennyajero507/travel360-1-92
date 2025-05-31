@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { QuoteData, Hotel } from "../../types/quote.types";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table";
@@ -80,13 +81,15 @@ const QuoteSummary = ({
       
       // Apply markup based on the quote's markup type
       let finalPrice = subtotal;
-      if (quote.markup.type === "percentage") {
+      const markupInfo = quote.markup || { type: quote.markupType || "percentage", value: quote.markupValue || 25 };
+      
+      if (markupInfo.type === "percentage") {
         // Calculate the price with markup included
         // formula: finalPrice = subtotal / (1 - (markup / 100))
-        finalPrice = subtotal / (1 - (quote.markup.value / 100));
+        finalPrice = subtotal / (1 - (markupInfo.value / 100));
       } else {
         // Fixed markup
-        finalPrice = subtotal + quote.markup.value;
+        finalPrice = subtotal + markupInfo.value;
       }
       
       const totalTravelers = quote.travelers.adults + quote.travelers.childrenWithBed + 
@@ -107,7 +110,7 @@ const QuoteSummary = ({
     });
     
     return summaries;
-  }, [quote.roomArrangements, quote.travelers, quote.markup, hotels, calculations, clientPreviewMode]);
+  }, [quote.roomArrangements, quote.travelers, quote.markup, quote.markupType, quote.markupValue, hotels, calculations, clientPreviewMode]);
   
   // Handler for quote approval
   const handleApproveQuote = async (hotelId: string) => {
@@ -323,8 +326,8 @@ const QuoteSummary = ({
                 </div>
                 <div className="flex justify-between">
                   <span>
-                    {quote.markup.type === "percentage" 
-                      ? `Markup (${quote.markup.value}%)` 
+                    {(quote.markup?.type || quote.markupType) === "percentage" 
+                      ? `Markup (${quote.markup?.value || quote.markupValue}%)` 
                       : "Markup"}
                   </span>
                   <span>${(summary.finalPrice - summary.subtotal).toFixed(2)}</span>
