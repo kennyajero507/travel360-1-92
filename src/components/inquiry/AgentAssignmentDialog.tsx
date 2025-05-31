@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -15,15 +15,14 @@ import {
   SelectValue 
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
+import { useAuth } from "../../contexts/AuthContext";
+import { agentService } from "../../services/agentService";
+import { Loader2 } from "lucide-react";
 
-// Mock agents data
-const mockAgents = [
-  { id: "agent-1", name: "James Smith" },
-  { id: "agent-2", name: "Sarah Johnson" },
-  { id: "agent-3", name: "Robert Lee" },
-  { id: "agent-4", name: "Emma Wilson" },
-  { id: "agent-5", name: "Brooklyn Simmons" },
-];
+interface Agent {
+  id: string;
+  name: string;
+}
 
 interface AgentAssignmentDialogProps {
   dialogOpen: boolean;
@@ -42,6 +41,31 @@ export const AgentAssignmentDialog = ({
   selectedAgent,
   setSelectedAgent
 }: AgentAssignmentDialogProps) => {
+  const { userProfile } = useAuth();
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadAgents = async () => {
+      if (!dialogOpen || !userProfile?.org_id) return;
+
+      try {
+        setLoading(true);
+        const agentData = await agentService.getAgents(userProfile.org_id);
+        setAgents(agentData.map(agent => ({
+          id: agent.id,
+          name: agent.name
+        })));
+      } catch (error) {
+        console.error('Error loading agents:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAgents();
+  }, [dialogOpen, userProfile?.org_id]);
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="sm:max-w-[425px] bg-white">
@@ -52,22 +76,33 @@ export const AgentAssignmentDialog = ({
           <label className="text-sm font-medium mb-2 block">
             Select Agent
           </label>
-          <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-            <SelectTrigger className="w-full bg-white text-black">
-              <SelectValue placeholder="Select an agent" />
-            </SelectTrigger>
-            <SelectContent>
-              {mockAgents.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {loading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Loading agents...
+            </div>
+          ) : (
+            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <SelectTrigger className="w-full bg-white text-black">
+                <SelectValue placeholder="Select an agent" />
+              </SelectTrigger>
+              <SelectContent>
+                {agents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setDialogOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleAssignInquiry} className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            onClick={handleAssignInquiry} 
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={!selectedAgent || loading}
+          >
             Assign
           </Button>
         </DialogFooter>

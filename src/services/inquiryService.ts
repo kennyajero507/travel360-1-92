@@ -3,17 +3,72 @@ import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { InquiryInsertData, InquiryData } from "../types/inquiry.types";
 
+class InquiryValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InquiryValidationError';
+  }
+}
+
+const validateInquiryData = (inquiryData: InquiryInsertData): void => {
+  const errors: string[] = [];
+
+  if (!inquiryData.client_name?.trim()) {
+    errors.push('Client name is required');
+  }
+
+  if (!inquiryData.client_mobile?.trim()) {
+    errors.push('Client mobile is required');
+  }
+
+  if (!inquiryData.destination?.trim()) {
+    errors.push('Destination is required');
+  }
+
+  if (!inquiryData.check_in_date) {
+    errors.push('Check-in date is required');
+  }
+
+  if (!inquiryData.check_out_date) {
+    errors.push('Check-out date is required');
+  }
+
+  if (inquiryData.check_in_date && inquiryData.check_out_date) {
+    const checkIn = new Date(inquiryData.check_in_date);
+    const checkOut = new Date(inquiryData.check_out_date);
+    
+    if (checkOut <= checkIn) {
+      errors.push('Check-out date must be after check-in date');
+    }
+  }
+
+  if (inquiryData.adults < 1) {
+    errors.push('At least 1 adult is required');
+  }
+
+  if ((inquiryData.num_rooms || 1) < 1) {
+    errors.push('At least 1 room is required');
+  }
+
+  if (errors.length > 0) {
+    throw new InquiryValidationError(errors.join(', '));
+  }
+};
+
 export const createInquiry = async (inquiryData: InquiryInsertData): Promise<InquiryData> => {
   console.log("Creating inquiry with data:", inquiryData);
   
   try {
+    // Validate inquiry data
+    validateInquiryData(inquiryData);
+
     // Ensure the user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error("User not authenticated");
     }
 
-    // Prepare the data for insertion - explicitly structure the data for Supabase
+    // Prepare the data for insertion
     const insertData = {
       id: inquiryData.id,
       tour_type: inquiryData.tour_type,
@@ -46,13 +101,18 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
 
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(insertData as any) // Cast to any to bypass TypeScript checking for auto-generated fields
+      .insert(insertData as any)
       .select()
       .single();
 
     if (error) {
       console.error("Database error creating inquiry:", error);
-      toast.error(`Failed to create inquiry: ${error.message}`);
+      
+      // Handle specific RLS errors
+      if (error.message.includes('row-level security')) {
+        throw new Error("You don't have permission to create inquiries. Please ensure you belong to an organization.");
+      }
+      
       throw error;
     }
 
@@ -61,7 +121,10 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
     return data;
   } catch (error) {
     console.error("Error in createInquiry:", error);
-    if (error instanceof Error) {
+    
+    if (error instanceof InquiryValidationError) {
+      toast.error(`Validation Error: ${error.message}`);
+    } else if (error instanceof Error) {
       toast.error(`Error: ${error.message}`);
     } else {
       toast.error("Failed to create inquiry");
@@ -249,7 +312,11 @@ export const assignInquiry = async (inquiryId: string, agentId: string, agentNam
 
     if (error) {
       console.error("Error assigning inquiry:", error);
-      toast.error(`Failed to assign inquiry: ${error.message}`);
+      
+      if (error.message.includes('row-level security')) {
+        throw new Error("You don't have permission to assign this inquiry.");
+      }
+      
       throw error;
     }
 
@@ -257,6 +324,11 @@ export const assignInquiry = async (inquiryId: string, agentId: string, agentNam
     return data;
   } catch (error) {
     console.error("Error in assignInquiry:", error);
+    if (error instanceof Error) {
+      toast.error(`Error: ${error.message}`);
+    } else {
+      toast.error("Failed to assign inquiry");
+    }
     throw error;
   }
 };
@@ -264,3 +336,5 @@ export const assignInquiry = async (inquiryId: string, agentId: string, agentNam
 export const assignInquiryToAgent = async (inquiryId: string, agentId: string, agentName: string): Promise<InquiryData> => {
   return assignInquiry(inquiryId, agentId, agentName);
 };
+
+export { InquiryValidationError };

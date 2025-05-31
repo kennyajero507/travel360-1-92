@@ -13,11 +13,14 @@ export interface TeamMember {
 export const teamService = {
   async getTeamMembers(orgId: string): Promise<TeamMember[]> {
     try {
+      console.log('Fetching team members for org:', orgId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           id,
           full_name,
+          email,
           role,
           org_id,
           created_at
@@ -30,20 +33,8 @@ export const teamService = {
         throw error;
       }
 
-      // Get email addresses from auth.users through a separate query
-      const memberIds = data?.map(member => member.id) || [];
-      const membersWithEmails: TeamMember[] = [];
-
-      for (const member of data || []) {
-        // For now, we'll use a placeholder email since we can't directly query auth.users
-        // In a real implementation, this would be handled by an edge function
-        membersWithEmails.push({
-          ...member,
-          email: 'user@example.com' // Placeholder - would need edge function to get real email
-        });
-      }
-
-      return membersWithEmails;
+      console.log('Fetched team members:', data?.length || 0);
+      return data || [];
     } catch (error) {
       console.error('Error in getTeamMembers:', error);
       throw error;
@@ -52,6 +43,8 @@ export const teamService = {
 
   async updateMemberRole(memberId: string, newRole: string): Promise<void> {
     try {
+      console.log('Updating member role:', memberId, 'to', newRole);
+      
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
@@ -61,6 +54,8 @@ export const teamService = {
         console.error('Error updating member role:', error);
         throw error;
       }
+      
+      console.log('Successfully updated member role');
     } catch (error) {
       console.error('Error in updateMemberRole:', error);
       throw error;
@@ -69,15 +64,19 @@ export const teamService = {
 
   async removeMember(memberId: string): Promise<void> {
     try {
+      console.log('Removing member from org:', memberId);
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ org_id: null })
+        .update({ org_id: null, role: 'agent' })
         .eq('id', memberId);
 
       if (error) {
         console.error('Error removing member:', error);
         throw error;
       }
+      
+      console.log('Successfully removed member from organization');
     } catch (error) {
       console.error('Error in removeMember:', error);
       throw error;

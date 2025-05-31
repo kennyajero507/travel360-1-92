@@ -283,6 +283,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          email: string | null
           full_name: string | null
           id: string
           org_id: string | null
@@ -291,6 +292,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          email?: string | null
           full_name?: string | null
           id: string
           org_id?: string | null
@@ -299,6 +301,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          email?: string | null
           full_name?: string | null
           id?: string
           org_id?: string | null
@@ -709,8 +712,24 @@ export type Database = {
         Args: { start_date: string; end_date: string }
         Returns: number
       }
+      can_access_inquiry: {
+        Args: {
+          inquiry_record: Database["public"]["Tables"]["inquiries"]["Row"]
+        }
+        Returns: boolean
+      }
       can_access_profile: {
         Args: { profile_user_id: string }
+        Returns: boolean
+      }
+      can_create_inquiry: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      can_modify_inquiry: {
+        Args: {
+          inquiry_record: Database["public"]["Tables"]["inquiries"]["Row"]
+        }
         Returns: boolean
       }
       create_organization: {
@@ -723,6 +742,10 @@ export type Database = {
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_email: {
+        Args: { user_id: string }
         Returns: string
       }
       is_trial_expired: {

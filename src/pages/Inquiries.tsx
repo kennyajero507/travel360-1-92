@@ -1,32 +1,24 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useRole } from "../contexts/RoleContext";
+import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Plus, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { getInquiriesByTourType, assignInquiryToAgent } from "../services/inquiryService";
+import { agentService } from "../services/agentService";
 import { InquiryFilters } from "../components/inquiry/InquiryFilters";
 import { InquiryTable } from "../components/inquiry/InquiryTable";
 import { AgentAssignmentDialog } from "../components/inquiry/AgentAssignmentDialog";
 
-// Mock agents data for the agent assignment dialog
-const mockAgents = [
-  { id: "agent-1", name: "James Smith" },
-  { id: "agent-2", name: "Sarah Johnson" },
-  { id: "agent-3", name: "Robert Lee" },
-  { id: "agent-4", name: "Emma Wilson" },
-  { id: "agent-5", name: "Brooklyn Simmons" },
-];
-
 const Inquiries = () => {
   const navigate = useNavigate();
-  const { role, permissions, currentUser } = useRole();
+  const { userProfile, checkRoleAccess } = useAuth();
   
   // Allow agents to access inquiries as well
-  const canAccessInquiries = role === 'org_owner' || role === 'tour_operator' || role === 'system_admin' || role === 'agent';
+  const canAccessInquiries = checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']);
   
   // Redirect if user doesn't have permission
   useEffect(() => {
@@ -46,6 +38,25 @@ const Inquiries = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("domestic");
+  const [agents, setAgents] = useState<any[]>([]);
+
+  // Load agents for assignment
+  useEffect(() => {
+    const loadAgents = async () => {
+      if (!userProfile?.org_id || userProfile.role === 'agent') {
+        return; // Agents can't assign to others
+      }
+
+      try {
+        const agentData = await agentService.getAgents(userProfile.org_id);
+        setAgents(agentData);
+      } catch (error) {
+        console.error('Error loading agents:', error);
+      }
+    };
+
+    loadAgents();
+  }, [userProfile?.org_id, userProfile?.role]);
 
   const fetchInquiries = async (showRefreshToast = false) => {
     try {
@@ -55,7 +66,7 @@ const Inquiries = () => {
         setLoading(true);
       }
       
-      console.log("Fetching inquiries for user role:", role);
+      console.log("Fetching inquiries for user role:", userProfile?.role);
       
       const [domesticData, internationalData] = await Promise.all([
         getInquiriesByTourType('domestic'),
@@ -73,7 +84,14 @@ const Inquiries = () => {
       }
     } catch (error) {
       console.error("Error fetching inquiries:", error);
-      toast.error("Failed to load inquiries");
+      
+      // Handle specific RLS errors
+      if (error instanceof Error && error.message.includes('row-level security')) {
+        toast.error("You don't have permission to view inquiries. Please ensure you belong to an organization.");
+      } else {
+        toast.error("Failed to load inquiries");
+      }
+      
       setDomesticInquiries([]);
       setInternationalInquiries([]);
     } finally {
@@ -83,27 +101,18 @@ const Inquiries = () => {
   };
 
   useEffect(() => {
-    if (canAccessInquiries) {
+    if (canAccessInquiries && userProfile?.org_id) {
       fetchInquiries();
     }
-  }, [canAccessInquiries]);
+  }, [canAccessInquiries, userProfile?.org_id]);
 
-  // Filter inquiries based on user role
-  const filterUserInquiries = (inquiries: any[]) => {
+  // Filter inquiries based on current filter and search
+  const filterInquiries = (inquiries: any[]) => {
     if (!Array.isArray(inquiries)) {
       return [];
     }
 
-    const userInquiries = inquiries.filter(inquiry => {
-      // For agents, only show inquiries that are assigned to them
-      if (role === 'agent') {
-        return inquiry.assigned_to === currentUser?.id;
-      }
-      // Otherwise show all inquiries if admin/owner/tour operator
-      return true;
-    });
-    
-    return userInquiries.filter(inquiry => {
+    return inquiries.filter(inquiry => {
       const matchesFilter = filter === "all" || inquiry.status?.toLowerCase() === filter.toLowerCase();
       const matchesSearch = inquiry.client_name?.toLowerCase().includes(search.toLowerCase()) ||
                            inquiry.destination?.toLowerCase().includes(search.toLowerCase()) ||
@@ -113,8 +122,8 @@ const Inquiries = () => {
     });
   };
 
-  const filteredDomesticInquiries = filterUserInquiries(domesticInquiries);
-  const filteredInternationalInquiries = filterUserInquiries(internationalInquiries);
+  const filteredDomesticInquiries = filterInquiries(domesticInquiries);
+  const filteredInternationalInquiries = filterInquiries(internationalInquiries);
 
   const openAssignDialog = (inquiryId: string) => {
     setSelectedInquiry(inquiryId);
@@ -130,7 +139,7 @@ const Inquiries = () => {
 
     try {
       // Find the selected agent
-      const agent = mockAgents.find(a => a.id === selectedAgent);
+      const agent = agents.find(a => a.id === selectedAgent);
       if (!agent) {
         toast.error("Selected agent not found");
         return;
@@ -145,6 +154,7 @@ const Inquiries = () => {
       setDialogOpen(false);
     } catch (error) {
       console.error("Error assigning inquiry:", error);
+      // Error is already handled by the service
     }
   };
 
@@ -154,7 +164,7 @@ const Inquiries = () => {
   
   // Get title based on role
   const getPageTitle = () => {
-    switch(role) {
+    switch(userProfile?.role) {
       case 'system_admin': return 'All System Inquiries';
       case 'org_owner': return 'Organization Inquiries';
       case 'tour_operator': return 'Tour Assignment';
@@ -228,9 +238,9 @@ const Inquiries = () => {
               <InquiryTable 
                 filteredInquiries={filteredDomesticInquiries}
                 openAssignDialog={openAssignDialog}
-                permissions={permissions}
-                role={role}
-                currentUser={currentUser}
+                permissions={{ canAssign: userProfile?.role !== 'agent' }}
+                role={userProfile?.role || ''}
+                currentUser={userProfile}
               />
             </CardContent>
           </Card>
@@ -252,9 +262,9 @@ const Inquiries = () => {
               <InquiryTable 
                 filteredInquiries={filteredInternationalInquiries}
                 openAssignDialog={openAssignDialog}
-                permissions={permissions}
-                role={role}
-                currentUser={currentUser}
+                permissions={{ canAssign: userProfile?.role !== 'agent' }}
+                role={userProfile?.role || ''}
+                currentUser={userProfile}
               />
             </CardContent>
           </Card>

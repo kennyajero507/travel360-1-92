@@ -1,20 +1,21 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useRole } from "../contexts/RoleContext";
-import { createInquiry } from "../services/inquiryService";
+import { useAuth } from "../contexts/AuthContext";
+import { createInquiry, InquiryValidationError } from "../services/inquiryService";
+import { agentService } from "../services/agentService";
 import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inquiry.types";
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
-  const { role, currentUser } = useRole();
+  const { userProfile } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'domestic' | 'international'>('domestic');
   const [formData, setFormData] = useState<InquiryFormData>({
     tour_type: 'domestic',
     lead_source: '',
-    tour_consultant: currentUser?.name || '',
+    tour_consultant: userProfile?.full_name || '',
     client_name: '',
     client_email: '',
     client_mobile: '',
@@ -35,15 +36,35 @@ export const useInquiryForm = () => {
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableAgents, setAvailableAgents] = useState<AvailableAgent[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(false);
 
-  const availableAgents: AvailableAgent[] = [
-    { id: "agent-1", name: "James Smith" },
-    { id: "agent-2", name: "Sarah Johnson" },
-    { id: "agent-3", name: "Robert Lee" },
-    { id: "agent-4", name: "Emma Wilson" }
-  ];
+  const isAgent = userProfile?.role === 'agent';
 
-  const isAgent = role === 'agent';
+  // Load available agents for assignment
+  useEffect(() => {
+    const loadAgents = async () => {
+      if (!userProfile?.org_id || isAgent) {
+        return; // Agents can't assign to others
+      }
+
+      try {
+        setLoadingAgents(true);
+        const agents = await agentService.getAgents(userProfile.org_id);
+        setAvailableAgents(agents.map(agent => ({
+          id: agent.id,
+          name: agent.name
+        })));
+      } catch (error) {
+        console.error('Error loading agents:', error);
+        // Continue without agents
+      } finally {
+        setLoadingAgents(false);
+      }
+    };
+
+    loadAgents();
+  }, [userProfile?.org_id, isAgent]);
 
   const handleTabChange = (value: string) => {
     const tourType = value as 'domestic' | 'international';
@@ -105,6 +126,8 @@ export const useInquiryForm = () => {
   };
 
   const prepareInquiryData = (status: 'Draft' | 'New'): InquiryInsertData => {
+    const selectedAgent = availableAgents.find(a => a.id === formData.assigned_agent);
+    
     const inquiryData: InquiryInsertData = {
       id: crypto.randomUUID(),
       tour_type: formData.tour_type,
@@ -125,10 +148,9 @@ export const useInquiryForm = () => {
       infants: formData.infants,
       num_rooms: formData.num_rooms,
       priority: formData.priority,
-      assigned_to: isAgent ? currentUser?.id : formData.assigned_agent || null,
-      assigned_agent_name: isAgent ? currentUser?.name : 
-        formData.assigned_agent ? availableAgents.find(a => a.id === formData.assigned_agent)?.name : null,
-      created_by: currentUser?.id || null,
+      assigned_to: isAgent ? userProfile?.id : formData.assigned_agent || null,
+      assigned_agent_name: isAgent ? userProfile?.full_name : selectedAgent?.name || null,
+      created_by: userProfile?.id || null,
       status: status
     };
 
@@ -149,6 +171,12 @@ export const useInquiryForm = () => {
       navigate("/inquiries");
     } catch (error) {
       console.error("Error saving draft:", error);
+      
+      if (error instanceof InquiryValidationError) {
+        // Validation errors are already shown by the service
+        return;
+      }
+      
       toast.error("Failed to save draft");
     } finally {
       setIsSubmitting(false);
@@ -177,6 +205,12 @@ export const useInquiryForm = () => {
       
     } catch (error) {
       console.error("Error creating inquiry:", error);
+      
+      if (error instanceof InquiryValidationError) {
+        // Validation errors are already shown by the service
+        return;
+      }
+      
       toast.error("Failed to create inquiry");
     } finally {
       setIsSubmitting(false);
@@ -191,6 +225,7 @@ export const useInquiryForm = () => {
     availableAgents,
     isAgent,
     isSubmitting,
+    loadingAgents,
     handleTabChange,
     saveDraft,
     handleSubmit,
