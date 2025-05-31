@@ -38,7 +38,6 @@ const ProfileDropdown = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2 h-auto p-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={userProfile?.avatar_url} />
             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
               {getInitials(userProfile?.full_name || currentUser?.email || "U")}
             </AvatarFallback>
