@@ -2,6 +2,10 @@
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { InquiryData, InquiryInsertData } from "../types/inquiry.types";
+import type { Database } from "../integrations/supabase/types";
+
+// Type for database insert that excludes auto-generated fields
+type DatabaseInsert = Omit<Database['public']['Tables']['inquiries']['Insert'], 'id' | 'enquiry_number'>;
 
 // Get all inquiries
 export const getAllInquiries = async () => {
@@ -54,9 +58,12 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
     // Remove id and enquiry_number from the data to let database auto-generate them
     const { id, enquiry_number, ...dataToInsert } = inquiryData;
     
+    // Type assertion to match Supabase expectations
+    const insertData: DatabaseInsert = dataToInsert;
+    
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(dataToInsert)
+      .insert(insertData)
       .select()
       .single();
     
