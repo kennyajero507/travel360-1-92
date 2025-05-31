@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { InquiryData, InquiryInsertData } from "../types/inquiry.types";
@@ -50,12 +51,32 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
   try {
     console.log("Creating inquiry with data:", inquiryData);
     
-    // Prepare data for insert - remove id and enquiry_number for auto-generation
-    const { id, ...insertData } = inquiryData;
-    
+    // Prepare data for insert with id included
     const dataToInsert = {
-      ...insertData,
+      id: inquiryData.id,
       enquiry_number: 'TEMP', // Will be overwritten by trigger
+      tour_type: inquiryData.tour_type,
+      lead_source: inquiryData.lead_source,
+      tour_consultant: inquiryData.tour_consultant,
+      client_name: inquiryData.client_name,
+      client_email: inquiryData.client_email,
+      client_mobile: inquiryData.client_mobile,
+      destination: inquiryData.destination,
+      package_name: inquiryData.package_name,
+      custom_package: inquiryData.custom_package,
+      custom_destination: inquiryData.custom_destination,
+      description: inquiryData.description,
+      check_in_date: inquiryData.check_in_date,
+      check_out_date: inquiryData.check_out_date,
+      adults: inquiryData.adults,
+      children: inquiryData.children,
+      infants: inquiryData.infants,
+      num_rooms: inquiryData.num_rooms,
+      priority: inquiryData.priority,
+      assigned_to: inquiryData.assigned_to,
+      assigned_agent_name: inquiryData.assigned_agent_name,
+      created_by: inquiryData.created_by,
+      status: inquiryData.status
     };
     
     const { data, error } = await supabase
