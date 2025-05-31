@@ -1,48 +1,62 @@
 
-import { Calendar } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Bell, Calendar, Search, User } from "lucide-react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
 import { useAuth } from "../contexts/AuthContext";
-import ProfileDropdown from "./ProfileDropdown";
+import { ProfileDropdown } from "./ProfileDropdown";
+import { Link } from "react-router-dom";
+import { getRoleDisplayName } from "../utils/authHelpers";
 
 const Header = () => {
-  const navigate = useNavigate();
   const { userProfile } = useAuth();
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'agent': return 'Travel Agent';
-      case 'tour_operator': return 'Tour Operator';
-      case 'org_owner': return 'Organization Owner';
-      case 'system_admin': return 'System Admin';
-      case 'client': return 'Client';
-      default: return role;
-    }
-  };
-
   return (
-    <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 bg-white">
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate("/calendar")}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          title="Calendar"
-        >
-          <Calendar className="h-5 w-5 text-gray-600" />
-        </button>
-      </div>
-      
-      <div className="flex items-center gap-4">
-        {userProfile && (
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">Role: </span>
-            <span className="text-blue-600 font-semibold">
-              {getRoleDisplayName(userProfile.role)}
-            </span>
+    <header className="border-b border-gray-200 bg-white">
+      <div className="flex h-16 items-center gap-4 px-6">
+        {/* Search */}
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search inquiries, quotes, bookings..."
+              className="pl-10"
+            />
           </div>
-        )}
-        <ProfileDropdown />
+        </div>
+
+        {/* Right side actions */}
+        <div className="flex items-center gap-4">
+          {/* Calendar Button */}
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/calendar">
+              <Calendar className="h-4 w-4" />
+            </Link>
+          </Button>
+
+          {/* Notifications */}
+          <Button variant="ghost" size="sm" className="relative">
+            <Bell className="h-4 w-4" />
+            <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-red-500">
+              3
+            </Badge>
+          </Button>
+
+          {/* User Role Display */}
+          {userProfile && (
+            <div className="hidden sm:flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-600">
+                {getRoleDisplayName(userProfile.role)}
+              </span>
+            </div>
+          )}
+
+          {/* Profile Dropdown */}
+          <ProfileDropdown />
+        </div>
       </div>
-    </div>
+    </header>
   );
 };
 

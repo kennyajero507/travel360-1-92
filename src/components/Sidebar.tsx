@@ -1,221 +1,156 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import {
-  Calendar,
-  ClipboardList,
-  FileText,
-  Grid3X3,
-  Landmark,
-  List,
-  MessageSquare,
-  Receipt,
-  Settings,
-  User,
-  UserCog,
-  Users,
-  UserPlus,
-} from "lucide-react";
-
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { 
+  LayoutDashboard, 
+  MessageSquare, 
+  FileText, 
+  Building, 
+  Calendar,
+  Users,
+  Settings,
+  BarChart3,
+  BookOpen,
+  Plane,
+  ChevronDown,
+  ChevronRight
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-interface SidebarProps {
-  mobile?: boolean;
-}
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-const Sidebar = ({ mobile = false }: SidebarProps) => {
+export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
-  const { currentUser, logout, userProfile } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { userProfile, checkRoleAccess } = useAuth();
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = (menu: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(menu) 
+        ? prev.filter(m => m !== menu)
+        : [...prev, menu]
+    );
   };
 
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const canAccess = (roles: string[]) => {
+    return checkRoleAccess(roles);
+  };
+
+  const navigationItems = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: LayoutDashboard,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    },
+    {
+      title: "Inquiries",
+      href: "/inquiries",
+      icon: MessageSquare,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    },
+    {
+      title: "Quotes",
+      href: "/quotes",
+      icon: FileText,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    },
+    {
+      title: "Bookings",
+      href: "/bookings",
+      icon: BookOpen,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    },
+    {
+      title: "Hotels",
+      href: "/hotels",
+      icon: Building,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    },
+    {
+      title: "Vouchers",
+      href: "/vouchers",
+      icon: Plane,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    },
+    {
+      title: "Clients",
+      href: "/clients",
+      icon: Users,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    },
+    {
+      title: "Reports",
+      href: "/reports",
+      icon: BarChart3,
+      roles: ['system_admin', 'org_owner', 'tour_operator']
+    },
+    {
+      title: "Agents",
+      href: "/agents",
+      icon: Users,
+      roles: ['system_admin', 'org_owner']
+    },
+    {
+      title: "Team",
+      href: "/team",
+      icon: Users,
+      roles: ['system_admin', 'org_owner', 'tour_operator']
+    },
+    {
+      title: "Settings",
+      href: "/settings",
+      icon: Settings,
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+    }
+  ];
+
+  if (!userProfile) {
+    return null;
+  }
+
   return (
-    <div className={cn("h-full px-4 bg-white border-r shadow-sm", mobile && "bg-blue-50")}>
-      <div className="flex items-center justify-between py-4">
-        <Link to="/" className="flex items-center text-xl font-bold">
-          <img src="/logo.png" alt="Logo" className="h-8 w-auto mr-2" />
-          <span>Tourify</span>
-        </Link>
-        {mobile && (
-          <button onClick={toggleMenu} className="focus:outline-none">
-            {isMenuOpen ? "Close" : "Menu"}
-          </button>
-        )}
-      </div>
-      
-      <div className="space-y-1 mt-6">
-        {/* Dashboard */}
-        <Link
-          to="/dashboard"
-          className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-            location.pathname === "/dashboard" ? "bg-accent" : "transparent"
-          )}
-        >
-          <Grid3X3 size={16} className="text-blue-600" />
-          <span>Dashboard</span>
-        </Link>
-        
-        {/* Calendar */}
-        <Link
-          to="/calendar"
-          className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-            location.pathname === "/calendar" ? "bg-accent" : "transparent"
-          )}
-        >
-          <Calendar size={16} className="text-blue-600" />
-          <span>Calendar</span>
-        </Link>
-        
-        {/* Hotels */}
-        <Link
-          to="/hotels"
-          className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-            location.pathname.includes("/hotels") ? "bg-accent" : "transparent"
-          )}
-        >
-          <Landmark size={16} className="text-blue-600" />
-          <span>Hotels</span>
-        </Link>
-        
-        {/* Clients */}
-        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
-          <Link
-            to="/clients"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname.includes("/clients") ? "bg-accent" : "transparent"
-            )}
-          >
-            <Users size={16} className="text-blue-600" />
-            <span>Clients</span>
-          </Link>
-        )}
-        
-        {/* Inquiries */}
-        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
-          <Link
-            to="/inquiries"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname.includes("/inquiries") ? "bg-accent" : "transparent"
-            )}
-          >
-            <MessageSquare size={16} className="text-blue-600" />
-            <span>Inquiries</span>
-          </Link>
-        )}
-        
-        {/* Quotes */}
-        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
-          <Link
-            to="/quotes"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname.includes("/quotes") ? "bg-accent" : "transparent"
-            )}
-          >
-            <Receipt size={16} className="text-blue-600" />
-            <span>Quotes</span>
-          </Link>
-        )}
-        
-        {/* Bookings */}
-        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
-          <Link
-            to="/bookings"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname.includes("/bookings") ? "bg-accent" : "transparent"
-            )}
-          >
-            <ClipboardList size={16} className="text-blue-600" />
-            <span>Bookings</span>
-          </Link>
-        )}
-        
-        {/* Vouchers */}
-        {userProfile && (userProfile.role === "agent" || userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
-          <Link
-            to="/vouchers"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname.includes("/vouchers") ? "bg-accent" : "transparent"
-            )}
-          >
-            <FileText size={16} className="text-blue-600" />
-            <span>Vouchers</span>
-          </Link>
-        )}
-        
-        {/* Agent Management - NEW */}
-        {userProfile && (userProfile.role === "tour_operator" || userProfile.role === "org_owner") && (
-          <Link
-            to="/agent-management"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname === "/agent-management" ? "bg-accent" : "transparent"
-            )}
-          >
-            <UserPlus size={16} className="text-blue-600" />
-            <span>Agent Management</span>
-          </Link>
-        )}
-        
-        {/* Team Management (for org_owner and tour_operator) */}
-        {userProfile && (userProfile.role === "org_owner" || userProfile.role === "tour_operator") && (
-          <Link
-            to="/team"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              location.pathname === "/team" ? "bg-accent" : "transparent"
-            )}
-          >
-            <UserCog size={16} className="text-blue-600" />
-            <span>Team Management</span>
-          </Link>
-        )}
-        
-        {/* Settings */}
-        <Link
-          to="/settings"
-          className={cn(
-            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-            location.pathname === "/settings" ? "bg-accent" : "transparent"
-          )}
-        >
-          <Settings size={16} className="text-blue-600" />
-          <span>Settings</span>
-        </Link>
-      </div>
-      
-      <div className="mt-auto py-4">
-        <div className="border-t pt-4">
-          <div className="flex items-center gap-2">
-            <User size={16} className="text-gray-500" />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">{userProfile?.full_name || currentUser?.email}</span>
-              <span className="text-xs text-gray-500 capitalize">
-                {userProfile?.role?.replace('_', ' ') || 'Organization Owner'}
-              </span>
-            </div>
+    <div className={cn("pb-12", className)}>
+      <div className="space-y-4 py-4">
+        <div className="px-3 py-2">
+          <div className="space-y-1">
+            <ScrollArea className="h-[calc(100vh-8rem)]">
+              <div className="space-y-2 p-2">
+                {navigationItems.map((item) => {
+                  if (!canAccess(item.roles)) return null;
+                  
+                  return (
+                    <Button
+                      key={item.href}
+                      variant={isActive(item.href) ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start gap-2",
+                        isActive(item.href) && "bg-muted font-medium"
+                      )}
+                      asChild
+                    >
+                      <Link to={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        {item.title}
+                      </Link>
+                    </Button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
           </div>
-          <button
-            onClick={logout}
-            className="mt-2 block w-full rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-          >
-            Logout
-          </button>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Sidebar;
