@@ -127,8 +127,8 @@ const CreateInquiry = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
-    if (!formData.client_name || !formData.client_mobile || !formData.destination || 
+    // Validate required fields - removed destination from validation
+    if (!formData.client_name || !formData.client_mobile || 
         !formData.check_in_date || !formData.check_out_date) {
       toast.error("Please fill in all required fields");
       return;
@@ -160,13 +160,14 @@ const CreateInquiry = () => {
         num_rooms: formData.num_rooms,
         priority: formData.priority,
         // Auto-assign to current agent if user is an agent
-        assigned_to: isAgent ? currentUser.id : formData.assigned_agent,
-        assigned_agent_name: isAgent ? currentUser.name : 
+        assigned_to: isAgent ? currentUser?.id : formData.assigned_agent,
+        assigned_agent_name: isAgent ? currentUser?.name : 
           formData.assigned_agent ? availableAgents.find(a => a.id === formData.assigned_agent)?.name : null,
-        created_by: currentUser.id,
+        created_by: currentUser?.id,
         status: "New"
       };
       
+      console.log("Submitting inquiry data:", submittedFormData);
       await createInquiry(submittedFormData);
       
       toast.success("Inquiry created successfully!");
@@ -335,7 +336,7 @@ const CreateInquiry = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="destination" className="block text-sm font-medium mb-2">
-                      Destination *
+                      Destination
                     </label>
                     <Select
                       value={formData.destination}
@@ -549,7 +550,7 @@ const CreateInquiry = () => {
             </Card>
 
             {/* Agent Assignment (only for non-agents) */}
-            {!isAgent && (role === 'org_owner' || role === 'tour_operator' || role === 'system_admin') && permissions.canAssignInquiries && (
+            {!isAgent && (role === 'org_owner' || role === 'tour_operator' || role === 'system_admin') && permissions?.canAssignInquiries && (
               <Card>
                 <CardHeader>
                   <CardTitle>Agent Assignment</CardTitle>
