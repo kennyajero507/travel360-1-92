@@ -6,40 +6,9 @@ export const createInquiry = async (inquiryData: any) => {
   console.log("Creating inquiry:", inquiryData);
   
   try {
-    // Generate a unique ID for the inquiry
-    const inquiryId = crypto.randomUUID();
-    
-    // Prepare the data for insertion with the ID
-    const dataToInsert = {
-      id: inquiryId, // Add the required ID field
-      enquiry_number: `ENQ-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-      tour_type: inquiryData.tourType || 'domestic',
-      lead_source: inquiryData.leadSource || null,
-      tour_consultant: inquiryData.tourConsultant || null,
-      client_name: inquiryData.clientName,
-      client_email: inquiryData.clientEmail || null,
-      client_mobile: inquiryData.clientMobile,
-      destination: inquiryData.destination,
-      package_name: inquiryData.packageName || null,
-      custom_destination: inquiryData.customDestination || null,
-      custom_package: inquiryData.customPackage || null,
-      check_in_date: inquiryData.checkInDate,
-      check_out_date: inquiryData.checkOutDate,
-      adults: inquiryData.adults || 1,
-      children: inquiryData.children || 0,
-      infants: inquiryData.infants || 0,
-      num_rooms: inquiryData.numRooms || null,
-      description: inquiryData.description || null,
-      priority: inquiryData.priority || 'Normal',
-      assigned_to: inquiryData.assignedTo || null,
-      assigned_agent_name: inquiryData.assignedAgentName || null,
-      created_by: inquiryData.createdBy || null,
-      status: inquiryData.status || 'New'
-    };
-    
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(dataToInsert)
+      .insert(inquiryData)
       .select()
       .single();
 
@@ -128,6 +97,30 @@ export const getAllInquiries = async () => {
   }
 };
 
+export const getInquiriesByTourType = async (tourType: string) => {
+  console.log("Fetching inquiries by tour type:", tourType);
+  
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .eq('tour_type', tourType)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching inquiries by tour type:", error);
+      toast.error("Failed to fetch inquiries");
+      throw error;
+    }
+
+    console.log("Fetched inquiries by tour type:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getInquiriesByTourType:", error);
+    return [];
+  }
+};
+
 export const getInquiryById = async (id: string) => {
   console.log("Fetching inquiry by ID:", id);
   
@@ -202,4 +195,8 @@ export const assignInquiry = async (inquiryId: string, agentId: string, agentNam
     console.error("Error in assignInquiry:", error);
     throw error;
   }
+};
+
+export const assignInquiryToAgent = async (inquiryId: string, agentId: string, agentName: string) => {
+  return assignInquiry(inquiryId, agentId, agentName);
 };

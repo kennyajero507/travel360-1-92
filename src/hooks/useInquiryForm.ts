@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useRole } from "../contexts/RoleContext";
 import { createInquiry } from "../services/inquiryService";
-import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inquiry.types";
+import { InquiryFormData, AvailableAgent } from "../types/inquiry.types";
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
@@ -104,8 +103,8 @@ export const useInquiryForm = () => {
     return errors.length === 0;
   };
 
-  const prepareInquiryData = (status: 'Draft' | 'New'): InquiryInsertData => {
-    const inquiryData: InquiryInsertData = {
+  const prepareInquiryData = (status: 'Draft' | 'New') => {
+    const inquiryData = {
       id: crypto.randomUUID(),
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,

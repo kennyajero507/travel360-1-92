@@ -1,7 +1,6 @@
-
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { Calendar, ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList, BarChart3, UserCog } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList, BarChart3, UserCog } from "lucide-react";
 import { useRole } from "../contexts/role/useRole";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -78,8 +77,8 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
           <NavItem to="/hotels" collapsed={collapsed} icon={<Hotel size={20} />} label="Hotels" />
         )}
 
-        {/* Agent Management - for org_owner and tour_operator */}
-        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator']) && (
+        {/* Agent Management - only for org_owner */}
+        {checkRoleAccess(['org_owner']) && (
           <NavItem to="/agent-management" collapsed={collapsed} icon={<UserCog size={20} />} label="Agent Management" />
         )}
 
@@ -87,9 +86,6 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
           <NavItem to="/reports" collapsed={collapsed} icon={<BarChart3 size={20} />} label="Reports" />
         )}
-        
-        {/* Calendar - available to all */}
-        <NavItem to="/calendar" collapsed={collapsed} icon={<Calendar size={20} />} label="Calendar" />
         
         {/* Settings - available to all */}
         <NavItem to="/settings" collapsed={collapsed} icon={<Settings size={20} />} label="Settings" />

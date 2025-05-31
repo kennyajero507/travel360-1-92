@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import QuoteInitializer from "../components/quote/QuoteInitializer";
-import { getAvailableInquiries, saveQuote } from "../services/quoteService";
+import { getAllInquiries } from "../services/inquiryService";
+import { saveQuote } from "../services/quoteService";
 import { QuoteData } from "../types/quote.types";
 import LoadingIndicator from "../components/quote/LoadingIndicator";
 
@@ -15,8 +16,12 @@ const CreateQuote = () => {
   useEffect(() => {
     const loadInquiries = async () => {
       try {
-        const data = await getAvailableInquiries();
-        setInquiries(data);
+        const data = await getAllInquiries();
+        // Filter for assigned inquiries that don't have quotes yet
+        const availableInquiries = data.filter((inquiry: any) => 
+          inquiry.status === 'Assigned' || inquiry.status === 'New'
+        );
+        setInquiries(availableInquiries);
       } catch (error) {
         console.error("Error loading inquiries:", error);
         toast.error("Failed to load inquiries");
@@ -30,8 +35,10 @@ const CreateQuote = () => {
 
   const handleInitializeQuote = async (quote: QuoteData) => {
     try {
+      console.log("Initializing quote with data:", quote);
       const savedQuote = await saveQuote(quote);
       toast.success("Quote initialized successfully");
+      // Navigate to quote editor with the quote ID
       navigate(`/quotes/edit/${savedQuote.id}`);
     } catch (error) {
       console.error("Error initializing quote:", error);
