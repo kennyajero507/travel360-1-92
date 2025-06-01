@@ -3,11 +3,12 @@ import { Session, User } from '@supabase/supabase-js';
 
 export interface UserProfile {
   id: string;
-  email: string;
+  full_name: string | null;
+  email: string | null;
   role: string;
-  full_name?: string;
-  org_id?: string;
-  trial_ends_at?: string;
+  org_id: string | null;
+  trial_ends_at: string | null;
+  created_at: string;
 }
 
 export interface AuthContextType {

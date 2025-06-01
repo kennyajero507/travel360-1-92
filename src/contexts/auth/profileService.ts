@@ -35,20 +35,24 @@ export const profileService = {
         const { data: user } = await supabase.auth.getUser();
         return {
           id: userId,
-          email: user.user?.email || '',
-          role: 'org_owner', // Default to org_owner instead of agent
           full_name: user.user?.user_metadata?.full_name || null,
+          email: user.user?.email || null,
+          role: 'org_owner', // Default to org_owner instead of agent
+          org_id: null,
+          trial_ends_at: null,
+          created_at: new Date().toISOString()
         };
       }
       
       const { data: user } = await supabase.auth.getUser();
       const profile: UserProfile = {
         id: data.id,
-        email: user.user?.email || '',
-        role: data.role || 'org_owner', // Default to org_owner
         full_name: data.full_name,
+        email: user.user?.email || data.email || null,
+        role: data.role || 'org_owner', // Default to org_owner
         org_id: data.org_id,
-        trial_ends_at: data.trial_ends_at
+        trial_ends_at: data.trial_ends_at,
+        created_at: data.created_at || new Date().toISOString()
       };
       
       console.log("User profile fetched successfully:", {
@@ -73,9 +77,12 @@ export const profileService = {
       const { data: user } = await supabase.auth.getUser();
       return {
         id: userId,
-        email: user.user?.email || '',
-        role: 'org_owner', // Default to org_owner instead of agent
         full_name: user.user?.user_metadata?.full_name || null,
+        email: user.user?.email || null,
+        role: 'org_owner', // Default to org_owner instead of agent
+        org_id: null,
+        trial_ends_at: null,
+        created_at: new Date().toISOString()
       };
     }
   },

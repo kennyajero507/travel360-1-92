@@ -6,38 +6,7 @@ import { toast } from 'sonner';
 import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
-
-interface UserProfile {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-  role: string;
-  org_id: string | null;
-  trial_ends_at: string | null;
-  created_at: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  currentUser: User | null; // Alias for user
-  session: Session | null;
-  userProfile: UserProfile | null;
-  loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
-  signup: (email: string, password: string, fullName: string, companyName: string) => Promise<boolean>; // Enhanced signup
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  login: (email: string, password: string) => Promise<boolean>; // Alias for signIn
-  signOut: () => Promise<void>;
-  logout: () => Promise<void>; // Alias for signOut
-  checkRoleAccess: (allowedRoles: string[]) => boolean;
-  createOrganization: (name: string) => Promise<boolean>;
-  sendInvitation: (email: string, role: string) => Promise<boolean>;
-  acceptInvitation: (token: string) => Promise<boolean>;
-  getInvitations: () => Promise<any[]>;
-  resetPassword: (email: string) => Promise<boolean>;
-  updatePassword: (password: string) => Promise<boolean>;
-  refreshProfile: () => Promise<void>;
-}
+import { UserProfile, AuthContextType } from './auth/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -326,17 +295,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = {
-    user,
-    currentUser: user, // Alias
+  const value: AuthContextType = {
+    currentUser: user,
     session,
     userProfile,
     loading,
-    signUp,
     signup,
-    signIn,
     login,
-    signOut,
     logout,
     checkRoleAccess,
     createOrganization,
