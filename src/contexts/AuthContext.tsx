@@ -1,12 +1,28 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
-import { AuthContextType, UserProfile } from './auth/types';
-import { authService } from './auth/authService';
-import { profileService } from './auth/profileService';
-import { organizationService } from './auth/organizationService';
-import { invitationService } from './auth/invitationService';
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string;
+  org_id: string | null;
+  trial_ends_at: string | null;
+  created_at: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  checkRoleAccess: (allowedRoles: string[]) => boolean;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -18,139 +34,178 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const navigate = useNavigate();
+// Separate function to fetch profile with retry logic
+const fetchUserProfile = async (userId: string, attempt = 1): Promise<UserProfile | null> => {
+  const maxRetries = 4;
+  
+  try {
+    console.log(`Fetching user profile for ID: ${userId} (attempt ${attempt})`);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
 
-  const refreshProfile = async () => {
-    if (currentUser) {
-      const profile = await profileService.fetchUserProfile(currentUser.id);
-      setUserProfile(profile);
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      throw error;
     }
-  };
+
+    if (data) {
+      console.log('Successfully fetched user profile:', data);
+      return data;
+    }
+
+    console.log('No profile found, creating fallback profile');
+    return null;
+  } catch (error) {
+    console.error(`Error in fetchUserProfile (attempt ${attempt}):`, error);
+    
+    if (attempt < maxRetries) {
+      const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff
+      console.log(`Retrying profile fetch in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchUserProfile(userId, attempt + 1);
+    }
+    
+    console.log('All retries failed, creating fallback profile');
+    return null;
+  }
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-    let profileFetchTimeout: NodeJS.Timeout;
-
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        console.log("Auth state changed:", event);
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+        setSession(session);
+        setUser(session?.user ?? null);
         
-        if (!isMounted) return;
-
-        setSession(newSession);
-        setCurrentUser(newSession?.user ?? null);
-        
-        // Clear any existing timeout
-        if (profileFetchTimeout) {
-          clearTimeout(profileFetchTimeout);
-        }
-        
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          // Don't block the auth state change with profile fetching
-          profileFetchTimeout = setTimeout(async () => {
-            if (isMounted) {
-              const profile = await profileService.fetchUserProfile(newSession.user.id);
-              if (isMounted) {
+        if (session?.user) {
+          // Defer profile fetching to avoid blocking auth state
+          setTimeout(async () => {
+            try {
+              const profile = await fetchUserProfile(session.user.id);
+              if (profile) {
                 setUserProfile(profile);
+              } else {
+                // Create fallback profile if none exists
+                console.log('Creating fallback profile');
+                const fallbackProfile: UserProfile = {
+                  id: session.user.id,
+                  full_name: session.user.email?.split('@')[0] || 'User',
+                  email: session.user.email || '',
+                  role: 'org_owner', // Default role for new users
+                  org_id: null,
+                  trial_ends_at: null,
+                  created_at: new Date().toISOString()
+                };
+                setUserProfile(fallbackProfile);
               }
+            } catch (error) {
+              console.error('Failed to fetch profile, using fallback');
+              const fallbackProfile: UserProfile = {
+                id: session.user.id,
+                full_name: session.user.email?.split('@')[0] || 'User',
+                email: session.user.email || '',
+                role: 'org_owner',
+                org_id: null,
+                trial_ends_at: null,
+                created_at: new Date().toISOString()
+              };
+              setUserProfile(fallbackProfile);
+            } finally {
+              setLoading(false);
             }
           }, 100);
-        } else if (event === 'SIGNED_OUT') {
+        } else {
           setUserProfile(null);
-        }
-        
-        // Always set loading to false after auth state change
-        if (isMounted) {
           setLoading(false);
         }
       }
     );
 
     // Check for existing session
-    const getInitialSession = async () => {
-      try {
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
-        
-        if (!isMounted) return;
-
-        setSession(existingSession);
-        setCurrentUser(existingSession?.user ?? null);
-        
-        if (existingSession?.user) {
-          const profile = await profileService.fetchUserProfile(existingSession.user.id);
-          if (isMounted) {
-            setUserProfile(profile);
-          }
-        }
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session ? 'SIGNED_IN' : 'SIGNED_OUT');
+      if (!session) {
+        setLoading(false);
       }
-    };
+    });
 
-    getInitialSession();
-
-    return () => {
-      isMounted = false;
-      if (profileFetchTimeout) {
-        clearTimeout(profileFetchTimeout);
-      }
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
-    return authService.signup(email, password, fullName, companyName);
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName
+          }
+        }
+      });
+      
+      return { error };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { error };
+    }
   };
 
-  const createOrganization = async (name: string): Promise<boolean> => {
-    if (!currentUser) return false;
-    return organizationService.createOrganization(name, currentUser.id);
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      return { error };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { error };
+    }
   };
 
-  const sendInvitation = async (email: string, role: string): Promise<boolean> => {
-    return invitationService.sendInvitation(email, role, userProfile, currentUser?.id);
-  };
-
-  const acceptInvitation = async (token: string): Promise<boolean> => {
-    return invitationService.acceptInvitation(token);
-  };
-
-  const getInvitations = async (): Promise<any[]> => {
-    return invitationService.getInvitations(userProfile);
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const checkRoleAccess = (allowedRoles: string[]): boolean => {
-    return profileService.checkRoleAccess(userProfile, allowedRoles);
+    if (!userProfile?.role) return false;
+    return allowedRoles.includes(userProfile.role);
   };
 
-  const value: AuthContextType = {
-    currentUser,
+  const value = {
+    user,
     session,
-    loading,
     userProfile,
-    login: authService.login,
-    signup,
-    logout: authService.logout,
-    createOrganization,
-    sendInvitation,
-    acceptInvitation,
-    getInvitations,
-    resetPassword: authService.resetPassword,
-    updatePassword: authService.updatePassword,
-    checkRoleAccess,
-    refreshProfile,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    checkRoleAccess
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
-
-export default AuthContext;

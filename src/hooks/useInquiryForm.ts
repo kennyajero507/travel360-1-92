@@ -41,30 +41,46 @@ export const useInquiryForm = () => {
 
   const isAgent = userProfile?.role === 'agent';
 
+  // Update tour consultant when userProfile changes
+  useEffect(() => {
+    if (userProfile?.full_name && !formData.tour_consultant) {
+      setFormData(prev => ({
+        ...prev,
+        tour_consultant: userProfile.full_name
+      }));
+    }
+  }, [userProfile?.full_name, formData.tour_consultant]);
+
   // Load available agents for assignment
   useEffect(() => {
     const loadAgents = async () => {
       if (!userProfile?.org_id || isAgent) {
-        return; // Agents can't assign to others
+        console.log('Skipping agent load - no org or user is agent');
+        return;
       }
 
       try {
         setLoadingAgents(true);
+        console.log('Loading agents for org:', userProfile.org_id);
         const agents = await agentService.getAgents(userProfile.org_id);
         setAvailableAgents(agents.map(agent => ({
           id: agent.id,
           name: agent.name
         })));
+        console.log('Loaded agents:', agents.length);
       } catch (error) {
         console.error('Error loading agents:', error);
-        // Continue without agents
+        toast.error('Failed to load available agents');
       } finally {
         setLoadingAgents(false);
       }
     };
 
-    loadAgents();
-  }, [userProfile?.org_id, isAgent]);
+    // Only load agents if user profile is ready
+    if (userProfile?.id) {
+      loadAgents();
+    }
+  }, [userProfile?.org_id, userProfile?.id, isAgent]);
 
   const handleTabChange = (value: string) => {
     const tourType = value as 'domestic' | 'international';
@@ -120,6 +136,11 @@ export const useInquiryForm = () => {
     if (formData.num_rooms < 1) {
       errors.push("At least 1 room is required");
     }
+
+    // Validation for organization membership
+    if (!userProfile?.org_id && userProfile?.role !== 'system_admin') {
+      errors.push("You must belong to an organization to create inquiries");
+    }
     
     setValidationErrors(errors);
     return errors.length === 0;
@@ -127,6 +148,10 @@ export const useInquiryForm = () => {
 
   const prepareInquiryData = (status: 'Draft' | 'New'): InquiryInsertData => {
     const selectedAgent = availableAgents.find(a => a.id === formData.assigned_agent);
+    
+    // For agents, auto-assign to themselves
+    const assignedTo = isAgent ? userProfile?.id : formData.assigned_agent || null;
+    const assignedAgentName = isAgent ? userProfile?.full_name : selectedAgent?.name || null;
     
     const inquiryData: InquiryInsertData = {
       id: crypto.randomUUID(),
@@ -148,17 +173,29 @@ export const useInquiryForm = () => {
       infants: formData.infants,
       num_rooms: formData.num_rooms,
       priority: formData.priority,
-      assigned_to: isAgent ? userProfile?.id : formData.assigned_agent || null,
-      assigned_agent_name: isAgent ? userProfile?.full_name : selectedAgent?.name || null,
+      assigned_to: assignedTo,
+      assigned_agent_name: assignedAgentName,
       created_by: userProfile?.id || null,
       status: status
     };
 
+    console.log('Prepared inquiry data:', inquiryData);
     return inquiryData;
   };
 
   const saveDraft = async () => {
     if (isSubmitting) return;
+    
+    // Don't validate for drafts, just check basic requirements
+    if (!userProfile?.id) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    if (!formData.client_name?.trim()) {
+      toast.error("Client name is required even for drafts");
+      return;
+    }
     
     try {
       setIsSubmitting(true);
@@ -173,7 +210,6 @@ export const useInquiryForm = () => {
       console.error("Error saving draft:", error);
       
       if (error instanceof InquiryValidationError) {
-        // Validation errors are already shown by the service
         return;
       }
       
@@ -187,6 +223,11 @@ export const useInquiryForm = () => {
     e.preventDefault();
     
     if (isSubmitting) return;
+
+    if (!userProfile?.id) {
+      toast.error("You must be logged in to create inquiries");
+      return;
+    }
     
     if (!validateForm()) {
       toast.error("Please fix the validation errors before submitting");
@@ -207,7 +248,6 @@ export const useInquiryForm = () => {
       console.error("Error creating inquiry:", error);
       
       if (error instanceof InquiryValidationError) {
-        // Validation errors are already shown by the service
         return;
       }
       
