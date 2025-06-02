@@ -128,7 +128,7 @@ export type Database = {
           days_count?: number | null
           description?: string | null
           destination: string
-          enquiry_number: string
+          enquiry_number?: string
           id: string
           infants?: number
           lead_source?: string | null
