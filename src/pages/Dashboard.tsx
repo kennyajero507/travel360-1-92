@@ -1,4 +1,6 @@
-
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import OrganizationSetup from "../components/OrganizationSetup";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { FileText, Users, Calendar, ArrowUp, MessageSquare, Receipt, ClipboardList, TrendingUp } from "lucide-react";
 import { Progress } from "../components/ui/progress";
@@ -7,6 +9,25 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 
 const Dashboard = () => {
+  const { userProfile, loading } = useAuth();
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show organization setup if user doesn't have one
+  if (userProfile && !userProfile.org_id && userProfile.role === 'org_owner') {
+    return <OrganizationSetup />;
+  }
+
   const { role } = useRole();
   const isAgent = role === 'agent';
   

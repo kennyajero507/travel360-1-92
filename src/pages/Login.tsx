@@ -38,25 +38,9 @@ const Login = () => {
       
       setTimeout(() => {
         navigate(redirectPath);
-      }, 100);
+      }, 500);
     }
   }, [session, userProfile, invitationToken, authLoading, navigate, redirecting]);
-
-  // Handle redirect when session exists but profile is still loading
-  useEffect(() => {
-    if (!authLoading && session && !userProfile && !redirecting) {
-      // Give profile time to load, then redirect with fallback
-      const fallbackTimer = setTimeout(() => {
-        if (session && !userProfile && !redirecting) {
-          console.log("Profile loading timeout, redirecting to dashboard");
-          setRedirecting(true);
-          navigate('/dashboard');
-        }
-      }, 3000); // 3 second fallback
-
-      return () => clearTimeout(fallbackTimer);
-    }
-  }, [session, userProfile, authLoading, navigate, redirecting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

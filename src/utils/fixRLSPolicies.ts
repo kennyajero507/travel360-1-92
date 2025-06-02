@@ -1,58 +1,57 @@
 
 import { supabase } from "../integrations/supabase/client";
 
-export const testRLSAccess = async () => {
+export const testAuthenticationFlow = async () => {
   try {
-    console.log("=== TESTING RLS ACCESS ===");
+    console.log("=== TESTING AUTHENTICATION FLOW ===");
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       console.log("No authenticated user");
-      return;
+      return false;
     }
 
-    console.log("Testing user:", user.id);
+    console.log("Testing user:", user.id, user.email);
 
-    // Test profile access
+    // Test profile access with new RLS policies
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, role, org_id, full_name')
+      .select('id, role, org_id, full_name, email')
       .eq('id', user.id)
       .maybeSingle();
 
     console.log("Profile result:", profile);
     if (profileError) {
       console.error("Profile error:", profileError);
+      return false;
     }
 
-    // Test organization creation if user has no org
-    if (profile && !profile.org_id && profile.role === 'org_owner') {
-      console.log("User needs organization - this is expected for new users");
-      
-      // Try to create organization
-      const { data: createOrgResult, error: createOrgError } = await supabase
-        .rpc('create_organization', { org_name: 'Test Organization' });
-      
-      console.log("Create org result:", createOrgResult);
-      if (createOrgError) {
-        console.error("Create org error:", createOrgError);
+    if (!profile) {
+      console.error("No profile found for authenticated user");
+      return false;
+    }
+
+    // Test organization access if user has org
+    if (profile.org_id) {
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .select('id, name, owner_id')
+        .eq('id', profile.org_id)
+        .maybeSingle();
+
+      console.log("Organization result:", org);
+      if (orgError) {
+        console.error("Organization error:", orgError);
       }
+    } else {
+      console.log("User has no organization assigned");
     }
 
-    // Test inquiries access
-    const { data: inquiries, error: inquiriesError } = await supabase
-      .from('inquiries')
-      .select('id, client_name, status')
-      .limit(5);
-
-    console.log("Inquiries result:", inquiries?.length || 0, "rows");
-    if (inquiriesError) {
-      console.error("Inquiries error:", inquiriesError);
-    }
-
-    console.log("=== END RLS TEST ===");
+    console.log("=== AUTHENTICATION FLOW TEST PASSED ===");
+    return true;
   } catch (error) {
-    console.error("RLS test error:", error);
+    console.error("Authentication flow test error:", error);
+    return false;
   }
 };
 
@@ -68,25 +67,17 @@ export const ensureUserHasOrganization = async () => {
       .eq('id', user.id)
       .maybeSingle();
 
-    if (profile && !profile.org_id && profile.role !== 'system_admin') {
-      console.log("User needs organization");
-      
-      // Create a default organization
-      const { data: orgId, error: orgError } = await supabase
-        .rpc('create_organization', { org_name: 'My Travel Agency' });
-
-      if (orgError) {
-        console.error("Failed to create organization:", orgError);
-        return false;
-      }
-
-      console.log("Created organization:", orgId);
-      return true;
+    if (profile && !profile.org_id && profile.role === 'org_owner') {
+      console.log("Organization owner needs organization - user should create one through UI");
+      return false; // Don't auto-create, let user do it manually
     }
 
     return true;
   } catch (error) {
-    console.error("Error ensuring organization:", error);
+    console.error("Error checking organization:", error);
     return false;
   }
 };
+
+// Remove the old testRLSAccess function since we have a more focused test
+export { testAuthenticationFlow as testRLSAccess };

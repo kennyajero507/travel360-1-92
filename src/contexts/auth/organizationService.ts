@@ -5,13 +5,14 @@ import { toast } from 'sonner';
 export const organizationService = {
   async createOrganization(name: string, currentUserId: string): Promise<boolean> {
     try {
-      console.log("Creating organization:", name);
+      console.log("Creating organization:", name, "for user:", currentUserId);
       
       if (!currentUserId) {
         toast.error("You must be logged in to create an organization");
         return false;
       }
       
+      // Use the fixed create_organization function
       const { data, error } = await supabase
         .rpc('create_organization', { org_name: name });
 
@@ -22,13 +23,6 @@ export const organizationService = {
       }
 
       console.log("Organization created with ID:", data);
-
-      // Update organization with owner_id
-      await supabase
-        .from('organizations')
-        .update({ owner_id: currentUserId })
-        .eq('id', data);
-      
       return true;
     } catch (error) {
       console.error('Error creating organization:', error);

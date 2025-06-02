@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -6,7 +7,6 @@ import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
 import { UserProfile, AuthContextType } from './auth/types';
-import { ensureUserHasOrganization } from '../utils/fixRLSPolicies';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -33,57 +33,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('User signed in, setting up profile...');
+          console.log('User signed in, fetching profile...');
           
-          // Use setTimeout to avoid blocking auth state and prevent infinite recursion
+          // Use setTimeout to prevent blocking and avoid potential recursion
           setTimeout(async () => {
             try {
-              // Try to get profile with direct query to avoid RLS issues
-              const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
-
+              const profile = await profileService.fetchUserProfile(session.user.id);
               if (profile) {
                 setUserProfile(profile);
-                console.log('Profile loaded successfully:', profile.role);
+                console.log('Profile loaded:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
                 
-                // Ensure user has organization if needed
-                if (!profile.org_id && profile.role !== 'system_admin') {
-                  console.log('User needs organization, attempting to create...');
-                  await ensureUserHasOrganization();
-                  
-                  // Refresh profile after org creation
-                  setTimeout(async () => {
-                    const { data: updatedProfile } = await supabase
-                      .from('profiles')
-                      .select('*')
-                      .eq('id', session.user.id)
-                      .maybeSingle();
-                    
-                    if (updatedProfile) {
-                      setUserProfile(updatedProfile);
-                    }
-                  }, 1000);
+                // If user doesn't have an organization and is org_owner, create one
+                if (!profile.org_id && profile.role === 'org_owner') {
+                  console.log('Organization owner needs an organization');
+                  // Don't auto-create here, let the user do it through the UI
                 }
-              } else {
-                console.error('No profile found, creating fallback');
-                // Create fallback profile for immediate access
-                const fallbackProfile: UserProfile = {
-                  id: session.user.id,
-                  full_name: session.user.email?.split('@')[0] || 'User',
-                  email: session.user.email || '',
-                  role: 'org_owner',
-                  org_id: null,
-                  trial_ends_at: null,
-                  created_at: new Date().toISOString()
-                };
-                setUserProfile(fallbackProfile);
               }
             } catch (error) {
-              console.error('Error in profile setup:', error);
-              // Create fallback profile on any error
+              console.error('Error fetching profile:', error);
+              // Create minimal fallback profile to prevent auth blocking
               const fallbackProfile: UserProfile = {
                 id: session.user.id,
                 full_name: session.user.email?.split('@')[0] || 'User',
@@ -94,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 created_at: new Date().toISOString()
               };
               setUserProfile(fallbackProfile);
+              console.log('Using fallback profile');
             } finally {
               setLoading(false);
             }
@@ -121,13 +90,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const redirectUrl = `${window.location.origin}/`;
       
+      console.log('Starting signup for:', email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: fullName
+            full_name: fullName,
+            company_name: companyName
           }
         }
       });
@@ -139,25 +111,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user && !data.session) {
-        toast.success('Please check your email to verify your account');
+        console.log('Signup successful - email verification required');
+        toast.success('Please check your email to verify your account before signing in');
         return true;
       }
 
       if (data.user && data.session) {
-        // Create organization for the new user
-        try {
-          const orgCreated = await organizationService.createOrganization(companyName, data.user.id);
-          if (!orgCreated) {
-            console.error('Failed to create organization');
-            toast.error('Account created but failed to setup organization');
-            return false;
-          }
-          toast.success('Account created successfully!');
-        } catch (orgError) {
-          console.error('Organization creation error:', orgError);
-          toast.error('Account created but failed to setup organization');
-          return false;
-        }
+        console.log('Signup successful with immediate session');
+        // Profile should be created automatically by trigger
+        // Organization will be created when user first logs in or manually
+        toast.success('Account created successfully!');
+        return true;
       }
 
       return true;
@@ -173,7 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login for:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -184,7 +150,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      return true;
+      if (data.user) {
+        console.log('Login successful for user:', data.user.id);
+        toast.success('Logged in successfully');
+        return true;
+      }
+
+      return false;
     } catch (error) {
       console.error('Login error:', error);
       toast.error('An error occurred during login');
@@ -196,12 +168,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      console.log('Logging out user');
       await supabase.auth.signOut();
       setUserProfile(null);
       setUser(null);
       setSession(null);
+      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
+      toast.error('Error during logout');
     }
   };
 
@@ -216,14 +191,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
+      console.log('Creating organization:', name);
       const success = await organizationService.createOrganization(name, user.id);
       if (success) {
         // Refresh profile to get updated org_id
         await refreshProfile();
+        toast.success('Organization created successfully!');
       }
       return success;
     } catch (error) {
       console.error('Error creating organization:', error);
+      toast.error('Failed to create organization');
       return false;
     }
   };
@@ -291,9 +269,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user?.id) return;
     
     try {
+      console.log('Refreshing profile for user:', user.id);
       const profile = await profileService.fetchUserProfile(user.id);
       if (profile) {
         setUserProfile(profile);
+        console.log('Profile refreshed:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
       }
     } catch (error) {
       console.error('Error refreshing profile:', error);

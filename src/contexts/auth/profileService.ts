@@ -5,10 +5,10 @@ import { UserProfile } from './types';
 export const profileService = {
   async fetchUserProfile(userId: string, retryCount = 0): Promise<UserProfile | null> {
     const maxRetries = 3;
-    const timeout = 10000; // Increased to 10 seconds
+    const timeout = 5000; // 5 seconds timeout
     
     try {
-      console.log(`Fetching user profile for ID: ${userId} (attempt ${retryCount + 1})`);
+      console.log(`Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
       
       // Create a timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -26,61 +26,25 @@ export const profileService = {
       
       if (error) {
         console.error('Error fetching user profile:', error);
+        
+        // If it's an RLS or permission error, don't retry
+        if (error.message.includes('row-level security') || 
+            error.message.includes('permission denied') ||
+            error.message.includes('infinite recursion')) {
+          throw new Error('Permission denied: ' + error.message);
+        }
+        
         throw error;
       }
       
       if (!data) {
-        console.log("No profile found for user, creating one automatically");
-        
-        // Get user info for creating profile
-        const { data: user } = await supabase.auth.getUser();
-        const userEmail = user.user?.email;
-        const fullName = user.user?.user_metadata?.full_name || userEmail?.split('@')[0] || 'User';
-        
-        // Create a new profile automatically
-        const newProfile = {
-          id: userId,
-          full_name: fullName,
-          email: userEmail,
-          role: 'org_owner', // Default role for new users
-          org_id: null,
-          trial_ends_at: null
-        };
-        
-        console.log("Creating new profile:", newProfile);
-        
-        const { data: createdProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert(newProfile)
-          .select()
-          .single();
-        
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          // Return fallback profile if creation fails
-          return {
-            id: userId,
-            full_name: fullName,
-            email: userEmail || null,
-            role: 'org_owner',
-            org_id: null,
-            trial_ends_at: null,
-            created_at: new Date().toISOString()
-          };
-        }
-        
-        return {
-          id: createdProfile.id,
-          full_name: createdProfile.full_name,
-          email: createdProfile.email,
-          role: createdProfile.role,
-          org_id: createdProfile.org_id,
-          trial_ends_at: createdProfile.trial_ends_at,
-          created_at: createdProfile.created_at || new Date().toISOString()
-        };
+        console.log("No profile found for user");
+        return null;
       }
       
+      // Get user email from auth if not in profile
       const { data: user } = await supabase.auth.getUser();
+      
       const profile: UserProfile = {
         id: data.id,
         full_name: data.full_name,
@@ -91,35 +55,27 @@ export const profileService = {
         created_at: data.created_at || new Date().toISOString()
       };
       
-      console.log("User profile fetched successfully:", {
+      console.log("Profile fetched successfully:", {
         id: profile.id,
         role: profile.role,
-        org_id: profile.org_id
+        org_id: profile.org_id,
+        has_email: !!profile.email
       });
       
       return profile;
     } catch (error) {
       console.error(`Error in fetchUserProfile (attempt ${retryCount + 1}):`, error);
       
-      // Retry logic
-      if (retryCount < maxRetries) {
+      // Retry logic for non-permission errors
+      if (retryCount < maxRetries && !error.message.includes('Permission denied')) {
         console.log(`Retrying profile fetch in ${(retryCount + 1) * 1000}ms...`);
         await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
         return profileService.fetchUserProfile(userId, retryCount + 1);
       }
       
-      // If all retries failed, create a fallback profile
-      console.log("All retries failed, creating fallback profile");
-      const { data: user } = await supabase.auth.getUser();
-      return {
-        id: userId,
-        full_name: user.user?.user_metadata?.full_name || user.user?.email?.split('@')[0] || 'User',
-        email: user.user?.email || null,
-        role: 'org_owner',
-        org_id: null,
-        trial_ends_at: null,
-        created_at: new Date().toISOString()
-      };
+      // After all retries failed or permission denied
+      console.error('Failed to fetch profile after all retries');
+      return null;
     }
   },
 
