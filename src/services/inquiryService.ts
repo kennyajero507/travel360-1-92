@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { InquiryInsertData, InquiryData } from "../types/inquiry.types";
@@ -59,8 +58,10 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
   console.log("Creating inquiry with data:", inquiryData);
   
   try {
-    // Validate inquiry data
-    validateInquiryData(inquiryData);
+    // Validate inquiry data for non-draft status
+    if (inquiryData.status !== 'Draft') {
+      validateInquiryData(inquiryData);
+    }
 
     // Ensure the user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
@@ -68,7 +69,7 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
       throw new Error("User not authenticated");
     }
 
-    // Prepare the data for insertion
+    // Prepare the data for insertion with proper UUID handling
     const insertData = {
       id: inquiryData.id,
       tour_type: inquiryData.tour_type,
@@ -91,7 +92,7 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
       priority: inquiryData.priority,
       assigned_to: inquiryData.assigned_to,
       assigned_agent_name: inquiryData.assigned_agent_name,
-      created_by: user.id,
+      created_by: user.id, // Use UUID directly
       status: inquiryData.status,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -101,7 +102,7 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
 
     const { data, error } = await supabase
       .from('inquiries')
-      .insert(insertData as any)
+      .insert(insertData)
       .select()
       .single();
 
@@ -109,7 +110,7 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
       console.error("Database error creating inquiry:", error);
       
       // Handle specific RLS errors
-      if (error.message.includes('row-level security')) {
+      if (error.message.includes('row-level security') || error.message.includes('violates row-level security')) {
         throw new Error("You don't have permission to create inquiries. Please ensure you belong to an organization.");
       }
       
@@ -117,7 +118,7 @@ export const createInquiry = async (inquiryData: InquiryInsertData): Promise<Inq
     }
 
     console.log("Successfully created inquiry:", data);
-    toast.success("Inquiry created successfully");
+    toast.success(`${inquiryData.status === 'Draft' ? 'Draft saved' : 'Inquiry created'} successfully`);
     return data;
   } catch (error) {
     console.error("Error in createInquiry:", error);
@@ -185,7 +186,11 @@ export const getAllInquiries = async (): Promise<InquiryData[]> => {
 
     if (error) {
       console.error("Error fetching inquiries:", error);
-      toast.error(`Failed to fetch inquiries: ${error.message}`);
+      if (error.message.includes('row-level security')) {
+        toast.error("You don't have permission to view inquiries. Please ensure you belong to an organization.");
+      } else {
+        toast.error(`Failed to fetch inquiries: ${error.message}`);
+      }
       return [];
     }
 
@@ -215,7 +220,11 @@ export const getInquiriesByTourType = async (tourType: string): Promise<InquiryD
 
     if (error) {
       console.error("Error fetching inquiries by tour type:", error);
-      toast.error(`Failed to fetch inquiries: ${error.message}`);
+      if (error.message.includes('row-level security')) {
+        toast.error("You don't have permission to view inquiries. Please ensure you belong to an organization.");
+      } else {
+        toast.error(`Failed to fetch inquiries: ${error.message}`);
+      }
       return [];
     }
 

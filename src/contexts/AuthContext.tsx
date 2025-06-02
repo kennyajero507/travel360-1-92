@@ -18,26 +18,6 @@ export const useAuth = () => {
   return context;
 };
 
-// Separate function to fetch profile with retry logic
-const fetchUserProfile = async (userId: string, attempt = 1): Promise<UserProfile | null> => {
-  try {
-    const profile = await profileService.fetchUserProfile(userId, attempt - 1);
-    return profile;
-  } catch (error) {
-    console.error(`Error in fetchUserProfile (attempt ${attempt}):`, error);
-    
-    if (attempt < 3) {
-      const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff
-      console.log(`Retrying profile fetch in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return fetchUserProfile(userId, attempt + 1);
-    }
-    
-    console.log('All retries failed, creating fallback profile');
-    return null;
-  }
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -53,15 +33,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('User signed in, fetching profile...');
           // Defer profile fetching to avoid blocking auth state
           setTimeout(async () => {
             try {
-              const profile = await fetchUserProfile(session.user.id);
+              const profile = await profileService.fetchUserProfile(session.user.id);
               if (profile) {
                 setUserProfile(profile);
+                console.log('Profile loaded successfully:', profile.role);
               } else {
+                console.error('Failed to load profile, using fallback');
                 // Create fallback profile if none exists
-                console.log('Creating fallback profile');
                 const fallbackProfile: UserProfile = {
                   id: session.user.id,
                   full_name: session.user.email?.split('@')[0] || 'User',
@@ -107,30 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName
-          }
-        }
-      });
-      
-      return { error };
-    } catch (error) {
-      console.error('Sign up error:', error);
-      return { error };
-    }
-  };
-
   const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
     try {
+      setLoading(true);
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
@@ -150,11 +111,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      if (data.user) {
+      if (data.user && !data.session) {
+        toast.success('Please check your email to verify your account');
+        return true;
+      }
+
+      if (data.user && data.session) {
         // Create organization for the new user
-        const orgCreated = await organizationService.createOrganization(companyName, data.user.id);
-        if (!orgCreated) {
-          console.error('Failed to create organization');
+        try {
+          const orgCreated = await organizationService.createOrganization(companyName, data.user.id);
+          if (!orgCreated) {
+            console.error('Failed to create organization');
+            toast.error('Account created but failed to setup organization');
+            return false;
+          }
+          toast.success('Account created successfully!');
+        } catch (orgError) {
+          console.error('Organization creation error:', orgError);
+          toast.error('Account created but failed to setup organization');
           return false;
         }
       }
@@ -164,25 +138,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Signup error:', error);
       toast.error('An error occurred during signup');
       return false;
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      return { error };
-    } catch (error) {
-      console.error('Sign in error:', error);
-      return { error };
+    } finally {
+      setLoading(false);
     }
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -190,27 +153,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Login error:', error);
+        toast.error('Login failed: ' + error.message);
         return false;
       }
 
       return true;
     } catch (error) {
       console.error('Login error:', error);
+      toast.error('An error occurred during login');
       return false;
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Sign out error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
       await supabase.auth.signOut();
+      setUserProfile(null);
+      setUser(null);
+      setSession(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -225,7 +187,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error("You must be logged in to create an organization");
       return false;
     }
-    return organizationService.createOrganization(name, user.id);
+    
+    try {
+      const success = await organizationService.createOrganization(name, user.id);
+      if (success) {
+        // Refresh profile to get updated org_id
+        await refreshProfile();
+      }
+      return success;
+    } catch (error) {
+      console.error('Error creating organization:', error);
+      return false;
+    }
   };
 
   const sendInvitation = async (email: string, role: string): Promise<boolean> => {
@@ -233,7 +206,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const acceptInvitation = async (token: string): Promise<boolean> => {
-    return invitationService.acceptInvitation(token);
+    const success = await invitationService.acceptInvitation(token);
+    if (success) {
+      // Refresh profile to get updated org_id and role
+      await refreshProfile();
+    }
+    return success;
   };
 
   const getInvitations = async (): Promise<any[]> => {
@@ -286,7 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user?.id) return;
     
     try {
-      const profile = await fetchUserProfile(user.id);
+      const profile = await profileService.fetchUserProfile(user.id);
       if (profile) {
         setUserProfile(profile);
       }

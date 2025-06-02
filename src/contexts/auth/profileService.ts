@@ -5,7 +5,7 @@ import { UserProfile } from './types';
 export const profileService = {
   async fetchUserProfile(userId: string, retryCount = 0): Promise<UserProfile | null> {
     const maxRetries = 3;
-    const timeout = 5000; // 5 seconds
+    const timeout = 10000; // Increased to 10 seconds
     
     try {
       console.log(`Fetching user profile for ID: ${userId} (attempt ${retryCount + 1})`);
@@ -30,17 +30,53 @@ export const profileService = {
       }
       
       if (!data) {
-        console.log("No profile found for user, creating fallback profile");
-        // Get user info for fallback
+        console.log("No profile found for user, creating one automatically");
+        
+        // Get user info for creating profile
         const { data: user } = await supabase.auth.getUser();
-        return {
+        const userEmail = user.user?.email;
+        const fullName = user.user?.user_metadata?.full_name || userEmail?.split('@')[0] || 'User';
+        
+        // Create a new profile automatically
+        const newProfile = {
           id: userId,
-          full_name: user.user?.user_metadata?.full_name || null,
-          email: user.user?.email || null,
-          role: 'org_owner', // Default to org_owner instead of agent
+          full_name: fullName,
+          email: userEmail,
+          role: 'org_owner', // Default role for new users
           org_id: null,
-          trial_ends_at: null,
-          created_at: new Date().toISOString()
+          trial_ends_at: null
+        };
+        
+        console.log("Creating new profile:", newProfile);
+        
+        const { data: createdProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert(newProfile)
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          // Return fallback profile if creation fails
+          return {
+            id: userId,
+            full_name: fullName,
+            email: userEmail || null,
+            role: 'org_owner',
+            org_id: null,
+            trial_ends_at: null,
+            created_at: new Date().toISOString()
+          };
+        }
+        
+        return {
+          id: createdProfile.id,
+          full_name: createdProfile.full_name,
+          email: createdProfile.email,
+          role: createdProfile.role,
+          org_id: createdProfile.org_id,
+          trial_ends_at: createdProfile.trial_ends_at,
+          created_at: createdProfile.created_at || new Date().toISOString()
         };
       }
       
@@ -49,7 +85,7 @@ export const profileService = {
         id: data.id,
         full_name: data.full_name,
         email: user.user?.email || data.email || null,
-        role: data.role || 'org_owner', // Default to org_owner
+        role: data.role || 'org_owner',
         org_id: data.org_id,
         trial_ends_at: data.trial_ends_at,
         created_at: data.created_at || new Date().toISOString()
@@ -77,9 +113,9 @@ export const profileService = {
       const { data: user } = await supabase.auth.getUser();
       return {
         id: userId,
-        full_name: user.user?.user_metadata?.full_name || null,
+        full_name: user.user?.user_metadata?.full_name || user.user?.email?.split('@')[0] || 'User',
         email: user.user?.email || null,
-        role: 'org_owner', // Default to org_owner instead of agent
+        role: 'org_owner',
         org_id: null,
         trial_ends_at: null,
         created_at: new Date().toISOString()

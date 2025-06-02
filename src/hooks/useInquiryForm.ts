@@ -9,13 +9,13 @@ import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inq
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, loading } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'domestic' | 'international'>('domestic');
   const [formData, setFormData] = useState<InquiryFormData>({
     tour_type: 'domestic',
     lead_source: '',
-    tour_consultant: userProfile?.full_name || '',
+    tour_consultant: '',
     client_name: '',
     client_email: '',
     client_mobile: '',
@@ -46,7 +46,7 @@ export const useInquiryForm = () => {
     if (userProfile?.full_name && !formData.tour_consultant) {
       setFormData(prev => ({
         ...prev,
-        tour_consultant: userProfile.full_name
+        tour_consultant: userProfile.full_name || ''
       }));
     }
   }, [userProfile?.full_name, formData.tour_consultant]);
@@ -54,8 +54,8 @@ export const useInquiryForm = () => {
   // Load available agents for assignment
   useEffect(() => {
     const loadAgents = async () => {
-      if (!userProfile?.org_id || isAgent) {
-        console.log('Skipping agent load - no org or user is agent');
+      if (!userProfile?.org_id || isAgent || loading) {
+        console.log('Skipping agent load - no org, user is agent, or still loading');
         return;
       }
 
@@ -76,11 +76,11 @@ export const useInquiryForm = () => {
       }
     };
 
-    // Only load agents if user profile is ready
-    if (userProfile?.id) {
+    // Only load agents if user profile is ready and user has an org
+    if (userProfile?.id && userProfile?.org_id && !loading) {
       loadAgents();
     }
-  }, [userProfile?.org_id, userProfile?.id, isAgent]);
+  }, [userProfile?.org_id, userProfile?.id, isAgent, loading]);
 
   const handleTabChange = (value: string) => {
     const tourType = value as 'domestic' | 'international';
@@ -196,6 +196,12 @@ export const useInquiryForm = () => {
       toast.error("Client name is required even for drafts");
       return;
     }
+
+    // Check if user belongs to an organization (unless system admin)
+    if (!userProfile.org_id && userProfile.role !== 'system_admin') {
+      toast.error("You must belong to an organization to create inquiries");
+      return;
+    }
     
     try {
       setIsSubmitting(true);
@@ -204,7 +210,6 @@ export const useInquiryForm = () => {
       console.log("Saving draft inquiry data:", draftData);
       await createInquiry(draftData);
       
-      toast.success("Draft saved successfully!");
       navigate("/inquiries");
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -213,7 +218,7 @@ export const useInquiryForm = () => {
         return;
       }
       
-      toast.error("Failed to save draft");
+      // Error toast is handled by createInquiry
     } finally {
       setIsSubmitting(false);
     }
@@ -226,6 +231,12 @@ export const useInquiryForm = () => {
 
     if (!userProfile?.id) {
       toast.error("You must be logged in to create inquiries");
+      return;
+    }
+
+    // Check if user belongs to an organization (unless system admin)
+    if (!userProfile.org_id && userProfile.role !== 'system_admin') {
+      toast.error("You must belong to an organization to create inquiries");
       return;
     }
     
@@ -241,7 +252,6 @@ export const useInquiryForm = () => {
       console.log("Submitting inquiry data:", submittedFormData);
       await createInquiry(submittedFormData);
       
-      toast.success("Inquiry submitted successfully!");
       navigate("/inquiries");
       
     } catch (error) {
@@ -251,7 +261,7 @@ export const useInquiryForm = () => {
         return;
       }
       
-      toast.error("Failed to create inquiry");
+      // Error toast is handled by createInquiry
     } finally {
       setIsSubmitting(false);
     }
