@@ -18,23 +18,35 @@ export const debugRLSStatus = async () => {
       console.log("User profile:", profile);
       console.log("Profile error:", profileError);
       
-      // Test inquiries access
+      // Test inquiries access with simpler query
       const { data: inquiries, error: inquiriesError } = await supabase
         .from('inquiries')
-        .select('count(*)')
-        .single();
+        .select('id')
+        .limit(1);
       
-      console.log("Inquiries access:", inquiries);
+      console.log("Inquiries access test:", inquiries?.length || 0, "rows");
       console.log("Inquiries error:", inquiriesError);
       
-      // Test quotes access
+      // Test quotes access with simpler query
       const { data: quotes, error: quotesError } = await supabase
         .from('quotes')
-        .select('count(*)')
-        .single();
+        .select('id')
+        .limit(1);
       
-      console.log("Quotes access:", quotes);
+      console.log("Quotes access test:", quotes?.length || 0, "rows");
       console.log("Quotes error:", quotesError);
+
+      // Test organization access
+      if (profile?.org_id) {
+        const { data: org, error: orgError } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .eq('id', profile.org_id)
+          .single();
+        
+        console.log("Organization access:", org);
+        console.log("Organization error:", orgError);
+      }
     }
     console.log("=== END RLS DEBUG ===");
   } catch (error) {

@@ -12,6 +12,7 @@ import { InquiryFilters } from "../components/inquiry/InquiryFilters";
 import { InquiryTable } from "../components/inquiry/InquiryTable";
 import { AgentAssignmentDialog } from "../components/inquiry/AgentAssignmentDialog";
 import { debugRLSStatus } from "../utils/debugRLS";
+import { testRLSAccess, ensureUserHasOrganization } from "../utils/fixRLSPolicies";
 
 const Inquiries = () => {
   const navigate = useNavigate();
@@ -43,7 +44,14 @@ const Inquiries = () => {
   // Debug RLS on component mount
   useEffect(() => {
     if (userProfile?.id) {
+      console.log("Running RLS debug and tests...");
       debugRLSStatus();
+      testRLSAccess();
+      
+      // Ensure user has organization
+      if (!userProfile.org_id && userProfile.role !== 'system_admin') {
+        ensureUserHasOrganization();
+      }
     }
   }, [userProfile?.id]);
 
@@ -76,6 +84,14 @@ const Inquiries = () => {
       console.log("Fetching inquiries for user role:", userProfile?.role);
       console.log("User org_id:", userProfile?.org_id);
       
+      // Check if user has organization before fetching
+      if (!userProfile?.org_id && userProfile?.role !== 'system_admin') {
+        console.log("User has no organization, creating one...");
+        await ensureUserHasOrganization();
+        toast.info("Setting up your organization...");
+        return;
+      }
+
       const [domesticData, internationalData] = await Promise.all([
         getInquiriesByTourType('domestic'),
         getInquiriesByTourType('international')
@@ -96,6 +112,8 @@ const Inquiries = () => {
       // Handle specific RLS errors
       if (error instanceof Error && error.message.includes('row-level security')) {
         toast.error("You don't have permission to view inquiries. Please ensure you belong to an organization.");
+      } else if (error instanceof Error && error.message.includes('infinite recursion')) {
+        toast.error("Database configuration issue detected. Please contact support.");
       } else {
         toast.error("Failed to load inquiries");
       }
@@ -202,6 +220,9 @@ const Inquiries = () => {
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
           {userProfile?.org_id && (
             <p className="text-sm text-gray-400">Organization: {userProfile.org_id}</p>
+          )}
+          {!userProfile?.org_id && userProfile?.role !== 'system_admin' && (
+            <p className="text-sm text-amber-600">⚠️ No organization assigned - some features may be limited</p>
           )}
         </div>
         <div className="flex gap-2">

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -7,6 +6,7 @@ import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
 import { UserProfile, AuthContextType } from './auth/types';
+import { ensureUserHasOrganization } from '../utils/fixRLSPolicies';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -33,22 +33,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('User signed in, fetching profile...');
-          // Defer profile fetching to avoid blocking auth state
+          console.log('User signed in, setting up profile...');
+          
+          // Use setTimeout to avoid blocking auth state and prevent infinite recursion
           setTimeout(async () => {
             try {
-              const profile = await profileService.fetchUserProfile(session.user.id);
+              // Try to get profile with direct query to avoid RLS issues
+              const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
               if (profile) {
                 setUserProfile(profile);
                 console.log('Profile loaded successfully:', profile.role);
+                
+                // Ensure user has organization if needed
+                if (!profile.org_id && profile.role !== 'system_admin') {
+                  console.log('User needs organization, attempting to create...');
+                  await ensureUserHasOrganization();
+                  
+                  // Refresh profile after org creation
+                  setTimeout(async () => {
+                    const { data: updatedProfile } = await supabase
+                      .from('profiles')
+                      .select('*')
+                      .eq('id', session.user.id)
+                      .maybeSingle();
+                    
+                    if (updatedProfile) {
+                      setUserProfile(updatedProfile);
+                    }
+                  }, 1000);
+                }
               } else {
-                console.error('Failed to load profile, using fallback');
-                // Create fallback profile if none exists
+                console.error('No profile found, creating fallback');
+                // Create fallback profile for immediate access
                 const fallbackProfile: UserProfile = {
                   id: session.user.id,
                   full_name: session.user.email?.split('@')[0] || 'User',
                   email: session.user.email || '',
-                  role: 'org_owner', // Default role for new users
+                  role: 'org_owner',
                   org_id: null,
                   trial_ends_at: null,
                   created_at: new Date().toISOString()
@@ -56,7 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUserProfile(fallbackProfile);
               }
             } catch (error) {
-              console.error('Failed to fetch profile, using fallback');
+              console.error('Error in profile setup:', error);
+              // Create fallback profile on any error
               const fallbackProfile: UserProfile = {
                 id: session.user.id,
                 full_name: session.user.email?.split('@')[0] || 'User',
