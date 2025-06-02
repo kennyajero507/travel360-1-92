@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -12,6 +11,7 @@ import { agentService } from "../services/agentService";
 import { InquiryFilters } from "../components/inquiry/InquiryFilters";
 import { InquiryTable } from "../components/inquiry/InquiryTable";
 import { AgentAssignmentDialog } from "../components/inquiry/AgentAssignmentDialog";
+import { debugRLSStatus } from "../utils/debugRLS";
 
 const Inquiries = () => {
   const navigate = useNavigate();
@@ -40,6 +40,13 @@ const Inquiries = () => {
   const [activeTab, setActiveTab] = useState("domestic");
   const [agents, setAgents] = useState<any[]>([]);
 
+  // Debug RLS on component mount
+  useEffect(() => {
+    if (userProfile?.id) {
+      debugRLSStatus();
+    }
+  }, [userProfile?.id]);
+
   // Load agents for assignment
   useEffect(() => {
     const loadAgents = async () => {
@@ -67,6 +74,7 @@ const Inquiries = () => {
       }
       
       console.log("Fetching inquiries for user role:", userProfile?.role);
+      console.log("User org_id:", userProfile?.org_id);
       
       const [domesticData, internationalData] = await Promise.all([
         getInquiriesByTourType('domestic'),
@@ -101,10 +109,10 @@ const Inquiries = () => {
   };
 
   useEffect(() => {
-    if (canAccessInquiries && userProfile?.org_id) {
+    if (canAccessInquiries && userProfile?.id) {
       fetchInquiries();
     }
-  }, [canAccessInquiries, userProfile?.org_id]);
+  }, [canAccessInquiries, userProfile?.id]);
 
   // Filter inquiries based on current filter and search
   const filterInquiries = (inquiries: any[]) => {
@@ -192,6 +200,9 @@ const Inquiries = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getPageTitle()}</h1>
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
+          {userProfile?.org_id && (
+            <p className="text-sm text-gray-400">Organization: {userProfile.org_id}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button 
