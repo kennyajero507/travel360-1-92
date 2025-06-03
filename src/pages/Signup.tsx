@@ -8,21 +8,47 @@ import SignupForm from "../components/auth/SignupForm";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, session, userProfile } = useAuth();
+  const { signup, session, userProfile, loading: authLoading } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (session && userProfile) {
+    if (!authLoading && session && userProfile) {
+      console.log('[Signup] User already authenticated, redirecting...');
+      
       if (userProfile.role === 'system_admin') {
         navigate("/admin/dashboard");
       } else {
         navigate("/dashboard");
       }
     }
-  }, [session, userProfile, navigate]);
+  }, [session, userProfile, navigate, authLoading]);
+
+  // Show loading state during auth check
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show redirecting state
+  if (session && userProfile) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
   
   const handleSignup = async (formData: {
     fullName: string;
@@ -65,30 +91,36 @@ const Signup = () => {
     setLoading(true);
     
     try {
-      console.log("Starting organization owner signup process for:", formData.email);
+      console.log("[Signup] Starting organization owner signup process for:", formData.email);
       
-      const signupSuccess = await signup(formData.email, formData.password, formData.fullName, formData.companyName);
+      const signupSuccess = await signup(
+        formData.email, 
+        formData.password, 
+        formData.fullName, 
+        formData.companyName
+      );
       
       if (!signupSuccess) {
         setError("Registration failed. The email might already be in use or there was an error creating the account.");
         return;
       }
       
-      console.log("Organization owner account created successfully");
+      console.log("[Signup] Organization owner account created successfully");
       
-      toast.success("Organization created successfully! You are now set up as the organization owner and can start building your team.");
+      // Show success message and redirect to login
+      toast.success("Account created successfully! Please check your email to verify your account before signing in.");
       
       setTimeout(() => {
         navigate("/login", { 
           state: { 
-            message: "Organization created! Please sign in to access your organization dashboard and start managing your team.",
+            message: "Account created! Please check your email to verify your account, then sign in to access your dashboard.",
             email: formData.email 
           }
         });
       }, 2000);
       
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("[Signup] Signup error:", error);
       setError("An unexpected error occurred during registration. Please try again.");
     } finally {
       setLoading(false);

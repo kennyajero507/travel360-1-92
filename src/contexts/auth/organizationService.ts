@@ -5,28 +5,67 @@ import { toast } from 'sonner';
 export const organizationService = {
   async createOrganization(name: string, currentUserId: string): Promise<boolean> {
     try {
-      console.log("Creating organization:", name, "for user:", currentUserId);
+      console.log("[OrgService] Creating organization:", name, "for user:", currentUserId);
       
       if (!currentUserId) {
         toast.error("You must be logged in to create an organization");
         return false;
       }
       
-      // Use the fixed create_organization function
+      if (!name || name.trim().length === 0) {
+        toast.error("Organization name is required");
+        return false;
+      }
+      
+      // Check if user already has an organization
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', currentUserId)
+        .single();
+      
+      if (existingProfile?.org_id) {
+        toast.error("You already belong to an organization");
+        return false;
+      }
+      
+      // Use the create_organization function
       const { data, error } = await supabase
-        .rpc('create_organization', { org_name: name });
+        .rpc('create_organization', { org_name: name.trim() });
 
       if (error) {
-        console.error("Organization creation error:", error);
-        toast.error('Failed to create organization: ' + error.message);
+        console.error("[OrgService] Organization creation error:", error);
+        
+        if (error.message.includes('already belongs to an organization')) {
+          toast.error('You already belong to an organization');
+        } else {
+          toast.error('Failed to create organization: ' + error.message);
+        }
         return false;
       }
 
-      console.log("Organization created with ID:", data);
+      console.log("[OrgService] Organization created successfully with ID:", data);
+      toast.success('Organization created successfully!');
       return true;
     } catch (error) {
-      console.error('Error creating organization:', error);
+      console.error('[OrgService] Error creating organization:', error);
       toast.error('An error occurred while creating the organization');
+      return false;
+    }
+  },
+
+  async checkUserNeedsOrganization(userId: string): Promise<boolean> {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('org_id, role')
+        .eq('id', userId)
+        .single();
+      
+      // User needs organization if they're an org_owner without one
+      return profile?.role === 'org_owner' && !profile?.org_id;
+    } catch (error) {
+      console.error('[OrgService] Error checking if user needs organization:', error);
       return false;
     }
   }

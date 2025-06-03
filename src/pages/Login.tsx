@@ -4,7 +4,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, RefreshCw, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import AuthLayout from "../components/auth/AuthLayout";
@@ -16,9 +16,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [redirecting, setRedirecting] = useState(false);
   
-  const { login, session, userProfile, loading: authLoading } = useAuth();
+  const { login, session, userProfile, loading: authLoading, authError } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -26,21 +25,29 @@ const Login = () => {
 
   // Handle redirect when user is authenticated and profile is loaded
   useEffect(() => {
-    if (!authLoading && session && userProfile && !redirecting) {
+    console.log('[Login] Auth state:', { 
+      authLoading, 
+      session: !!session, 
+      userProfile: !!userProfile,
+      invitationToken 
+    });
+
+    if (!authLoading && session && userProfile) {
       // Don't redirect if there's an invitation to process
-      if (invitationToken) return;
-      
-      setRedirecting(true);
+      if (invitationToken) {
+        console.log('[Login] Has invitation token, staying on login page');
+        return;
+      }
       
       // Role-based redirect with fallback
       const redirectPath = getDefaultRedirectPath(userProfile.role);
-      console.log(`Redirecting ${userProfile.role} to ${redirectPath}`);
+      console.log(`[Login] Redirecting ${userProfile.role} to ${redirectPath}`);
       
       setTimeout(() => {
         navigate(redirectPath);
       }, 500);
     }
-  }, [session, userProfile, invitationToken, authLoading, navigate, redirecting]);
+  }, [session, userProfile, invitationToken, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +70,7 @@ const Login = () => {
       const success = await login(email, password);
       
       if (!success) {
-        setError("Invalid email or password. Please check your credentials and try again.");
+        setError("Login failed. Please check your credentials and try again.");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -76,7 +83,6 @@ const Login = () => {
   const handleRetry = () => {
     setError(null);
     setLoading(false);
-    setRedirecting(false);
   };
 
   // Show loading state during auth check
@@ -85,14 +91,14 @@ const Login = () => {
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
+          <p className="text-slate-600">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
   // Show redirecting state
-  if (redirecting || (session && userProfile)) {
+  if (session && userProfile && !invitationToken) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
@@ -110,10 +116,16 @@ const Login = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-slate-600 mb-4">Loading your profile...</p>
+          {authError && (
+            <Alert variant="destructive" className="mt-4 max-w-md mx-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
           <Button 
             variant="outline" 
             onClick={() => navigate('/dashboard')}
-            className="text-sm"
+            className="text-sm mt-4"
           >
             Continue to Dashboard
           </Button>
@@ -121,6 +133,8 @@ const Login = () => {
       </div>
     );
   }
+
+  const displayError = error || authError;
 
   return (
     <AuthLayout
@@ -139,10 +153,11 @@ const Login = () => {
           </Alert>
         )}
         
-        {error && (
+        {displayError && (
           <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
-              <span>{error}</span>
+              <span>{displayError}</span>
               <Button
                 type="button"
                 variant="ghost"

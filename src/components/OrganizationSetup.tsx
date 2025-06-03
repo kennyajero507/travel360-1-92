@@ -5,23 +5,44 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Building, Loader2 } from 'lucide-react';
+import { Building, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from './ui/alert';
 
 const OrganizationSetup = () => {
-  const { createOrganization, userProfile } = useAuth();
+  const { createOrganization, userProfile, refreshProfile } = useAuth();
   const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!organizationName.trim()) return;
+    
+    if (!organizationName.trim()) {
+      setError("Organization name is required");
+      return;
+    }
 
     setLoading(true);
+    setError(null);
+    
     try {
-      await createOrganization(organizationName.trim());
-      // Organization creation success is handled in the context
+      console.log('[OrgSetup] Creating organization:', organizationName.trim());
+      
+      const success = await createOrganization(organizationName.trim());
+      
+      if (success) {
+        console.log('[OrgSetup] Organization created successfully');
+        
+        // Refresh profile to get updated organization info
+        setTimeout(async () => {
+          await refreshProfile();
+        }, 1000);
+      } else {
+        setError("Failed to create organization. Please try again.");
+      }
     } catch (error) {
-      console.error('Error creating organization:', error);
+      console.error('[OrgSetup] Error creating organization:', error);
+      setError("An error occurred while creating the organization. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -29,6 +50,13 @@ const OrganizationSetup = () => {
 
   // Don't show if user already has an organization
   if (userProfile?.org_id) {
+    console.log('[OrgSetup] User already has organization, not showing setup');
+    return null;
+  }
+
+  // Only show for org_owner role
+  if (userProfile?.role !== 'org_owner') {
+    console.log('[OrgSetup] User is not org_owner, not showing setup');
     return null;
   }
 
@@ -45,6 +73,13 @@ const OrganizationSetup = () => {
           </p>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="organizationName">Organization Name</Label>
@@ -57,6 +92,19 @@ const OrganizationSetup = () => {
                 required
                 disabled={loading}
               />
+              <p className="text-xs text-gray-500">
+                This will be the name of your travel business in TravelFlow360
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-200 text-sm">
+              <p className="font-semibold text-blue-700">What happens next:</p>
+              <ul className="list-disc ml-5 mt-2 text-blue-700">
+                <li>2-week free trial automatically included</li>
+                <li>Access to your organization dashboard</li>
+                <li>Ability to invite team members</li>
+                <li>Manage hotels and create quotes</li>
+              </ul>
             </div>
             
             <Button

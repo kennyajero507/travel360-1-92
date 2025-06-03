@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -23,46 +22,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('[AuthContext] Setting up auth state listener');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        console.log('[AuthContext] Auth state changed:', event, session ? 'HAS_SESSION' : 'NO_SESSION');
+        
         setSession(session);
         setUser(session?.user ?? null);
+        setAuthError(null);
         
         if (session?.user) {
-          console.log('User signed in, fetching profile...');
+          console.log('[AuthContext] User signed in, fetching profile...');
           
-          // Use setTimeout to prevent blocking and avoid potential recursion
+          // Use setTimeout to prevent potential recursion and allow state to settle
           setTimeout(async () => {
             try {
-              const profile = await profileService.fetchUserProfile(session.user.id);
+              setLoading(true);
+              const profile = await profileService.ensureProfileExists(session.user.id);
+              
               if (profile) {
                 setUserProfile(profile);
-                console.log('Profile loaded:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
-                
-                // If user doesn't have an organization and is org_owner, create one
-                if (!profile.org_id && profile.role === 'org_owner') {
-                  console.log('Organization owner needs an organization');
-                  // Don't auto-create here, let the user do it through the UI
-                }
+                console.log('[AuthContext] Profile loaded:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
+              } else {
+                console.error('[AuthContext] Failed to create/fetch profile');
+                setAuthError('Failed to load user profile');
               }
             } catch (error) {
-              console.error('Error fetching profile:', error);
-              // Create minimal fallback profile to prevent auth blocking
-              const fallbackProfile: UserProfile = {
-                id: session.user.id,
-                full_name: session.user.email?.split('@')[0] || 'User',
-                email: session.user.email || '',
-                role: 'org_owner',
-                org_id: null,
-                trial_ends_at: null,
-                created_at: new Date().toISOString()
-              };
-              setUserProfile(fallbackProfile);
-              console.log('Using fallback profile');
+              console.error('[AuthContext] Error handling auth state change:', error);
+              setAuthError('Authentication error occurred');
             } finally {
               setLoading(false);
             }
@@ -76,21 +68,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session ? 'SIGNED_IN' : 'SIGNED_OUT');
+      console.log('[AuthContext] Initial session check:', session ? 'SIGNED_IN' : 'SIGNED_OUT');
       if (!session) {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('[AuthContext] Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
     try {
       setLoading(true);
-      const redirectUrl = `${window.location.origin}/`;
+      setAuthError(null);
       
-      console.log('Starting signup for:', email);
+      console.log('[AuthContext] Starting signup for:', email);
+      
+      const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -99,34 +96,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
-            company_name: companyName
+            company_name: companyName,
+            role: 'org_owner'
           }
         }
       });
 
       if (error) {
-        console.error('Signup error:', error);
-        toast.error('Failed to create account: ' + error.message);
+        console.error('[AuthContext] Signup error:', error);
+        
+        if (error.message.includes('already registered') || 
+            error.message.includes('User already registered')) {
+          toast.error("This email is already registered. Please use a different email or try signing in.");
+        } else {
+          toast.error('Failed to create account: ' + error.message);
+        }
         return false;
       }
 
-      if (data.user && !data.session) {
-        console.log('Signup successful - email verification required');
-        toast.success('Please check your email to verify your account before signing in');
-        return true;
-      }
-
-      if (data.user && data.session) {
-        console.log('Signup successful with immediate session');
-        // Profile should be created automatically by trigger
-        // Organization will be created when user first logs in or manually
-        toast.success('Account created successfully!');
+      if (data.user) {
+        if (data.user.email_confirmed_at) {
+          console.log('[AuthContext] Signup successful with immediate session');
+          toast.success('Account created successfully!');
+        } else {
+          console.log('[AuthContext] Signup successful - email verification required');
+          toast.success('Please check your email to verify your account before signing in');
+        }
         return true;
       }
 
       return true;
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('[AuthContext] Signup error:', error);
       toast.error('An error occurred during signup');
       return false;
     } finally {
@@ -137,7 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      console.log('Attempting login for:', email);
+      setAuthError(null);
+      
+      console.log('[AuthContext] Attempting login for:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -145,20 +148,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('Login error:', error);
-        toast.error('Login failed: ' + error.message);
+        console.error('[AuthContext] Login error:', error);
+        
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password. Please check your credentials and try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Please check your email and confirm your account before signing in.');
+        } else {
+          toast.error('Login failed: ' + error.message);
+        }
         return false;
       }
 
       if (data.user) {
-        console.log('Login successful for user:', data.user.id);
+        console.log('[AuthContext] Login successful for user:', data.user.id);
         toast.success('Logged in successfully');
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[AuthContext] Login error:', error);
       toast.error('An error occurred during login');
       return false;
     } finally {
@@ -168,15 +178,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      console.log('Logging out user');
+      console.log('[AuthContext] Logging out user');
+      setLoading(true);
+      
       await supabase.auth.signOut();
+      
       setUserProfile(null);
       setUser(null);
       setSession(null);
+      setAuthError(null);
+      
       toast.success('Logged out successfully');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('[AuthContext] Logout error:', error);
       toast.error('Error during logout');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -191,18 +208,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      console.log('Creating organization:', name);
+      console.log('[AuthContext] Creating organization:', name);
       const success = await organizationService.createOrganization(name, user.id);
+      
       if (success) {
         // Refresh profile to get updated org_id
-        await refreshProfile();
-        toast.success('Organization created successfully!');
+        setTimeout(async () => {
+          try {
+            const updatedProfile = await profileService.fetchUserProfile(user.id);
+            if (updatedProfile) {
+              setUserProfile(updatedProfile);
+              console.log('[AuthContext] Profile refreshed after org creation');
+            }
+          } catch (error) {
+            console.error('[AuthContext] Error refreshing profile:', error);
+          }
+        }, 1000);
       }
+      
       return success;
     } catch (error) {
-      console.error('Error creating organization:', error);
+      console.error('[AuthContext] Error creating organization:', error);
       toast.error('Failed to create organization');
       return false;
+    }
+  };
+
+  const refreshProfile = async (): Promise<void> => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('[AuthContext] Refreshing profile for user:', user.id);
+      const profile = await profileService.fetchUserProfile(user.id);
+      if (profile) {
+        setUserProfile(profile);
+        console.log('[AuthContext] Profile refreshed:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
+      }
+    } catch (error) {
+      console.error('[AuthContext] Error refreshing profile:', error);
     }
   };
 
@@ -213,7 +256,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const acceptInvitation = async (token: string): Promise<boolean> => {
     const success = await invitationService.acceptInvitation(token);
     if (success) {
-      // Refresh profile to get updated org_id and role
       await refreshProfile();
     }
     return success;
@@ -230,7 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('Reset password error:', error);
+        console.error('[AuthContext] Reset password error:', error);
         toast.error('Failed to send reset email');
         return false;
       }
@@ -238,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Password reset email sent');
       return true;
     } catch (error) {
-      console.error('Reset password error:', error);
+      console.error('[AuthContext] Reset password error:', error);
       toast.error('An error occurred while sending reset email');
       return false;
     }
@@ -251,7 +293,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('Update password error:', error);
+        console.error('[AuthContext] Update password error:', error);
         toast.error('Failed to update password');
         return false;
       }
@@ -259,24 +301,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Password updated successfully');
       return true;
     } catch (error) {
-      console.error('Update password error:', error);
+      console.error('[AuthContext] Update password error:', error);
       toast.error('An error occurred while updating password');
       return false;
-    }
-  };
-
-  const refreshProfile = async (): Promise<void> => {
-    if (!user?.id) return;
-    
-    try {
-      console.log('Refreshing profile for user:', user.id);
-      const profile = await profileService.fetchUserProfile(user.id);
-      if (profile) {
-        setUserProfile(profile);
-        console.log('Profile refreshed:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
-      }
-    } catch (error) {
-      console.error('Error refreshing profile:', error);
     }
   };
 
@@ -285,6 +312,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     userProfile,
     loading,
+    authError,
     signup,
     login,
     logout,
