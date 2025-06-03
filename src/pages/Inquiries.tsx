@@ -12,11 +12,11 @@ import { InquiryFilters } from "../components/inquiry/InquiryFilters";
 import { InquiryTable } from "../components/inquiry/InquiryTable";
 import { AgentAssignmentDialog } from "../components/inquiry/AgentAssignmentDialog";
 import { debugRLSStatus } from "../utils/debugRLS";
-import { testRLSAccess, ensureUserHasOrganization } from "../utils/fixRLSPolicies";
+import { testRLSAccess } from "../utils/fixRLSPolicies";
 
 const Inquiries = () => {
   const navigate = useNavigate();
-  const { userProfile, checkRoleAccess } = useAuth();
+  const { userProfile, checkRoleAccess, createOrganization } = useAuth();
   
   // Allow agents to access inquiries as well
   const canAccessInquiries = checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']);
@@ -47,11 +47,6 @@ const Inquiries = () => {
       console.log("Running RLS debug and tests...");
       debugRLSStatus();
       testRLSAccess();
-      
-      // Ensure user has organization
-      if (!userProfile.org_id && userProfile.role !== 'system_admin') {
-        ensureUserHasOrganization();
-      }
     }
   }, [userProfile?.id]);
 
@@ -73,6 +68,16 @@ const Inquiries = () => {
     loadAgents();
   }, [userProfile?.org_id, userProfile?.role]);
 
+  // Function to ensure user has organization
+  const ensureUserHasOrganization = async () => {
+    if (!userProfile?.org_id && userProfile?.role === 'org_owner') {
+      console.log("User needs organization setup");
+      toast.info("Please complete your organization setup to continue.");
+      return false;
+    }
+    return true;
+  };
+
   const fetchInquiries = async (showRefreshToast = false) => {
     try {
       if (showRefreshToast) {
@@ -86,10 +91,11 @@ const Inquiries = () => {
       
       // Check if user has organization before fetching
       if (!userProfile?.org_id && userProfile?.role !== 'system_admin') {
-        console.log("User has no organization, creating one...");
-        await ensureUserHasOrganization();
-        toast.info("Setting up your organization...");
-        return;
+        console.log("User has no organization");
+        const hasOrg = await ensureUserHasOrganization();
+        if (!hasOrg) {
+          return;
+        }
       }
 
       const [domesticData, internationalData] = await Promise.all([
