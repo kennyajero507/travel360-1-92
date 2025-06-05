@@ -33,10 +33,10 @@ const OrganizationSetup = () => {
       if (success) {
         console.log('[OrgSetup] Organization created successfully');
         
-        // Refresh profile to get updated organization info
         setTimeout(async () => {
           await refreshProfile();
-        }, 1000);
+          window.location.reload(); // Force a complete refresh to update the UI
+        }, 1500);
       } else {
         setError("Failed to create organization. Please try again.");
       }

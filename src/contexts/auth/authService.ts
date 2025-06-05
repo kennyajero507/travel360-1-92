@@ -46,10 +46,11 @@ export const authService = {
         email, 
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: fullName,
             company_name: companyName,
-            role: 'org_owner' // Explicitly set role as org_owner
+            role: 'org_owner'
           }
         }
       });
@@ -68,19 +69,6 @@ export const authService = {
       }
       
       if (data.user) {
-        // Create organization after user is created
-        if (data.user.email_confirmed_at || !data.user.email_confirmed_at) {
-          // Wait a moment for the user profile to be created by the trigger
-          setTimeout(async () => {
-            try {
-              await this.createOrganizationForNewUser(companyName, data.user!.id);
-            } catch (orgError) {
-              console.error('Error creating organization:', orgError);
-              // Don't fail the signup if organization creation fails
-            }
-          }, 1000);
-        }
-        
         if (data.user.email_confirmed_at) {
           toast.success("Organization account created successfully! You can now sign in as the organization owner.");
         } else {
@@ -94,41 +82,6 @@ export const authService = {
       console.error('Signup error:', error);
       toast.error('An error occurred during signup');
       return false;
-    }
-  },
-
-  async createOrganizationForNewUser(companyName: string, userId: string): Promise<void> {
-    try {
-      console.log("Creating organization for new organization owner:", companyName);
-      
-      const { data, error } = await supabase
-        .rpc('create_organization', { org_name: companyName });
-
-      if (error) {
-        console.error("Organization creation error:", error);
-        throw error;
-      }
-
-      console.log("Organization created with ID:", data);
-
-      // Update organization with owner_id
-      await supabase
-        .from('organizations')
-        .update({ owner_id: userId })
-        .eq('id', data);
-      
-      // Update user profile to link to organization (role should already be org_owner from trigger)
-      await supabase
-        .from('profiles')
-        .update({ 
-          org_id: data 
-        })
-        .eq('id', userId);
-        
-      console.log("User profile updated and linked to organization");
-    } catch (error) {
-      console.error('Error in createOrganizationForNewUser:', error);
-      throw error;
     }
   },
 

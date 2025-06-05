@@ -29,22 +29,41 @@ export const organizationService = {
         return false;
       }
       
-      // Use the create_organization function
-      const { data, error } = await supabase
-        .rpc('create_organization', { org_name: name.trim() });
+      // Create organization directly
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .insert({
+          name: name.trim(),
+          owner_id: currentUserId,
+          created_at: new Date().toISOString(),
+          trial_start: new Date().toISOString(),
+          trial_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+        })
+        .select()
+        .single();
 
-      if (error) {
-        console.error("[OrgService] Organization creation error:", error);
-        
-        if (error.message.includes('already belongs to an organization')) {
-          toast.error('You already belong to an organization');
-        } else {
-          toast.error('Failed to create organization: ' + error.message);
-        }
+      if (orgError) {
+        console.error("[OrgService] Organization creation error:", orgError);
+        toast.error('Failed to create organization: ' + orgError.message);
         return false;
       }
 
-      console.log("[OrgService] Organization created successfully with ID:", data);
+      // Update user profile to link to organization
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          org_id: orgData.id,
+          role: 'org_owner'
+        })
+        .eq('id', currentUserId);
+
+      if (profileError) {
+        console.error("[OrgService] Profile update error:", profileError);
+        toast.error('Failed to link user to organization');
+        return false;
+      }
+
+      console.log("[OrgService] Organization created successfully with ID:", orgData.id);
       toast.success('Organization created successfully!');
       return true;
     } catch (error) {
@@ -62,7 +81,6 @@ export const organizationService = {
         .eq('id', userId)
         .single();
       
-      // User needs organization if they're an org_owner without one
       return profile?.role === 'org_owner' && !profile?.org_id;
     } catch (error) {
       console.error('[OrgService] Error checking if user needs organization:', error);

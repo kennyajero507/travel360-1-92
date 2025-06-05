@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -5,6 +6,7 @@ import { toast } from 'sonner';
 import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
+import { authService } from './auth/authService';
 import { UserProfile, AuthContextType } from './auth/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +29,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('[AuthContext] Setting up auth state listener');
     
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('[AuthContext] Auth state changed:', event, session ? 'HAS_SESSION' : 'NO_SESSION');
@@ -39,7 +40,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           console.log('[AuthContext] User signed in, fetching profile...');
           
-          // Use setTimeout to prevent potential recursion and allow state to settle
           setTimeout(async () => {
             try {
               setLoading(true);
@@ -66,7 +66,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('[AuthContext] Initial session check:', session ? 'SIGNED_IN' : 'SIGNED_OUT');
       if (!session) {
@@ -87,45 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('[AuthContext] Starting signup for:', email);
       
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-            company_name: companyName,
-            role: 'org_owner'
-          }
-        }
-      });
-
-      if (error) {
-        console.error('[AuthContext] Signup error:', error);
-        
-        if (error.message.includes('already registered') || 
-            error.message.includes('User already registered')) {
-          toast.error("This email is already registered. Please use a different email or try signing in.");
-        } else {
-          toast.error('Failed to create account: ' + error.message);
-        }
-        return false;
-      }
-
-      if (data.user) {
-        if (data.user.email_confirmed_at) {
-          console.log('[AuthContext] Signup successful with immediate session');
-          toast.success('Account created successfully!');
-        } else {
-          console.log('[AuthContext] Signup successful - email verification required');
-          toast.success('Please check your email to verify your account before signing in');
-        }
-        return true;
-      }
-
-      return true;
+      return await authService.signup(email, password, fullName, companyName);
     } catch (error) {
       console.error('[AuthContext] Signup error:', error);
       toast.error('An error occurred during signup');
@@ -142,31 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('[AuthContext] Attempting login for:', email);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error('[AuthContext] Login error:', error);
-        
-        if (error.message.includes('Invalid login credentials')) {
-          toast.error('Invalid email or password. Please check your credentials and try again.');
-        } else if (error.message.includes('Email not confirmed')) {
-          toast.error('Please check your email and confirm your account before signing in.');
-        } else {
-          toast.error('Login failed: ' + error.message);
-        }
-        return false;
-      }
-
-      if (data.user) {
-        console.log('[AuthContext] Login successful for user:', data.user.id);
-        toast.success('Logged in successfully');
-        return true;
-      }
-
-      return false;
+      return await authService.login(email, password);
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       toast.error('An error occurred during login');
@@ -181,14 +118,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AuthContext] Logging out user');
       setLoading(true);
       
-      await supabase.auth.signOut();
+      await authService.logout();
       
       setUserProfile(null);
       setUser(null);
       setSession(null);
       setAuthError(null);
-      
-      toast.success('Logged out successfully');
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       toast.error('Error during logout');
@@ -212,7 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const success = await organizationService.createOrganization(name, user.id);
       
       if (success) {
-        // Refresh profile to get updated org_id
         setTimeout(async () => {
           try {
             const updatedProfile = await profileService.fetchUserProfile(user.id);
@@ -266,45 +200,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPassword = async (email: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (error) {
-        console.error('[AuthContext] Reset password error:', error);
-        toast.error('Failed to send reset email');
-        return false;
-      }
-
-      toast.success('Password reset email sent');
-      return true;
-    } catch (error) {
-      console.error('[AuthContext] Reset password error:', error);
-      toast.error('An error occurred while sending reset email');
-      return false;
-    }
+    return authService.resetPassword(email);
   };
 
   const updatePassword = async (password: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password
-      });
-
-      if (error) {
-        console.error('[AuthContext] Update password error:', error);
-        toast.error('Failed to update password');
-        return false;
-      }
-
-      toast.success('Password updated successfully');
-      return true;
-    } catch (error) {
-      console.error('[AuthContext] Update password error:', error);
-      toast.error('An error occurred while updating password');
-      return false;
-    }
+    return authService.updatePassword(password);
   };
 
   const value: AuthContextType = {

@@ -6,17 +6,15 @@ import { toast } from 'sonner';
 export const profileService = {
   async fetchUserProfile(userId: string, retryCount = 0): Promise<UserProfile | null> {
     const maxRetries = 3;
-    const timeout = 10000; // 10 seconds timeout
+    const timeout = 10000;
     
     try {
       console.log(`[ProfileService] Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
       
-      // Create a timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Profile fetch timeout')), timeout);
       });
       
-      // Race between the actual query and timeout
       const profilePromise = supabase
         .from('profiles')
         .select('*')
@@ -28,7 +26,6 @@ export const profileService = {
       if (error) {
         console.error('[ProfileService] Error fetching user profile:', error);
         
-        // Handle specific error types
         if (error.message.includes('row-level security') || 
             error.message.includes('permission denied') ||
             error.message.includes('infinite recursion')) {
@@ -36,9 +33,8 @@ export const profileService = {
           return await this.createFallbackProfile(userId);
         }
         
-        // For other errors, retry if we haven't exceeded max retries
         if (retryCount < maxRetries) {
-          const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff, max 5s
+          const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
           console.log(`[ProfileService] Retrying in ${delayMs}ms...`);
           await new Promise(resolve => setTimeout(resolve, delayMs));
           return this.fetchUserProfile(userId, retryCount + 1);
@@ -52,7 +48,6 @@ export const profileService = {
         return await this.createFallbackProfile(userId);
       }
       
-      // Get user email from auth if not in profile
       const { data: user } = await supabase.auth.getUser();
       
       const profile: UserProfile = {
@@ -76,7 +71,6 @@ export const profileService = {
     } catch (error) {
       console.error(`[ProfileService] Error in fetchUserProfile (attempt ${retryCount + 1}):`, error);
       
-      // Retry logic for non-permission errors
       if (retryCount < maxRetries && !error.message.includes('Permission denied')) {
         const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
         console.log(`[ProfileService] Retrying in ${delayMs}ms...`);
@@ -84,7 +78,6 @@ export const profileService = {
         return this.fetchUserProfile(userId, retryCount + 1);
       }
       
-      // Final fallback - create minimal profile
       console.error('[ProfileService] All retries failed - creating final fallback profile');
       return await this.createFallbackProfile(userId);
     }
@@ -109,7 +102,6 @@ export const profileService = {
     } catch (error) {
       console.error('[ProfileService] Error creating fallback profile:', error);
       
-      // Absolute minimal fallback
       return {
         id: userId,
         full_name: 'User',
@@ -126,30 +118,36 @@ export const profileService = {
     try {
       console.log(`[ProfileService] Ensuring profile exists for user: ${userId}`);
       
-      // First try to fetch existing profile
       let profile = await this.fetchUserProfile(userId);
       
-      if (profile) {
+      if (profile && profile.email) {
         return profile;
       }
       
-      // If no profile exists, try to create one
       const { data: user } = await supabase.auth.getUser();
       
+      if (!user.user?.email) {
+        console.error('[ProfileService] No email found for user');
+        return this.createFallbackProfile(userId);
+      }
+      
+      // Try to create or update profile with email
       const { data, error } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           id: userId,
-          full_name: user.user?.email?.split('@')[0] || 'User',
-          email: user.user?.email || '',
+          full_name: user.user.email.split('@')[0] || 'User',
+          email: user.user.email,
           role: 'org_owner',
           created_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
         })
         .select()
         .single();
       
       if (error) {
-        console.error('[ProfileService] Error creating profile:', error);
+        console.error('[ProfileService] Error creating/updating profile:', error);
         return this.createFallbackProfile(userId);
       }
       
@@ -171,7 +169,6 @@ export const profileService = {
   checkRoleAccess(userProfile: UserProfile | null, allowedRoles: string[]): boolean {
     if (!userProfile) return false;
     
-    // Always grant access to system admins
     if (userProfile.role === 'system_admin') return true;
     
     return allowedRoles.includes(userProfile.role);

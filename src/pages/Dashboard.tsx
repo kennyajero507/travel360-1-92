@@ -23,7 +23,7 @@ const Dashboard = () => {
     );
   }
 
-  // Show organization setup if user doesn't have one
+  // Show organization setup if user doesn't have one and is org_owner
   if (userProfile && !userProfile.org_id && userProfile.role === 'org_owner') {
     return <OrganizationSetup />;
   }
@@ -40,6 +40,14 @@ const Dashboard = () => {
             Welcome to TravelFlow360
           </h1>
           <p className="text-lg text-gray-600 font-medium">Your comprehensive travel management dashboard</p>
+          {userProfile && (
+            <div className="mt-2 text-sm text-gray-500">
+              <p>Role: <span className="font-medium">{userProfile.role}</span></p>
+              {userProfile.org_id && (
+                <p>Organization: <span className="font-medium">{userProfile.org_id}</span></p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Metrics Cards */}
