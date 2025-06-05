@@ -26,13 +26,6 @@ export const profileService = {
       if (error) {
         console.error('[ProfileService] Error fetching user profile:', error);
         
-        if (error.message.includes('row-level security') || 
-            error.message.includes('permission denied') ||
-            error.message.includes('infinite recursion')) {
-          console.error('[ProfileService] RLS/Permission error - creating fallback profile');
-          return await this.createFallbackProfile(userId);
-        }
-        
         if (retryCount < maxRetries) {
           const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
           console.log(`[ProfileService] Retrying in ${delayMs}ms...`);
@@ -40,7 +33,7 @@ export const profileService = {
           return this.fetchUserProfile(userId, retryCount + 1);
         }
         
-        throw error;
+        return await this.createFallbackProfile(userId);
       }
       
       if (!data) {
@@ -71,7 +64,7 @@ export const profileService = {
     } catch (error) {
       console.error(`[ProfileService] Error in fetchUserProfile (attempt ${retryCount + 1}):`, error);
       
-      if (retryCount < maxRetries && !error.message.includes('Permission denied')) {
+      if (retryCount < maxRetries) {
         const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
         console.log(`[ProfileService] Retrying in ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -118,6 +111,7 @@ export const profileService = {
     try {
       console.log(`[ProfileService] Ensuring profile exists for user: ${userId}`);
       
+      // First try to fetch existing profile
       let profile = await this.fetchUserProfile(userId);
       
       if (profile && profile.email) {
@@ -131,35 +125,40 @@ export const profileService = {
         return this.createFallbackProfile(userId);
       }
       
-      // Try to create or update profile with email
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: userId,
-          full_name: user.user.email.split('@')[0] || 'User',
-          email: user.user.email,
-          role: 'org_owner',
-          created_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('[ProfileService] Error creating/updating profile:', error);
+      // Try to create or update profile
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            full_name: user.user.email.split('@')[0] || 'User',
+            email: user.user.email,
+            role: 'org_owner',
+            created_at: new Date().toISOString()
+          }, {
+            onConflict: 'id'
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('[ProfileService] Error creating/updating profile:', error);
+          return this.createFallbackProfile(userId);
+        }
+        
+        return {
+          id: data.id,
+          full_name: data.full_name,
+          email: data.email,
+          role: data.role,
+          org_id: data.org_id,
+          trial_ends_at: data.trial_ends_at,
+          created_at: data.created_at
+        };
+      } catch (profileError) {
+        console.error('[ProfileService] Profile creation failed, using fallback:', profileError);
         return this.createFallbackProfile(userId);
       }
-      
-      return {
-        id: data.id,
-        full_name: data.full_name,
-        email: data.email,
-        role: data.role,
-        org_id: data.org_id,
-        trial_ends_at: data.trial_ends_at,
-        created_at: data.created_at
-      };
     } catch (error) {
       console.error('[ProfileService] Error in ensureProfileExists:', error);
       return this.createFallbackProfile(userId);

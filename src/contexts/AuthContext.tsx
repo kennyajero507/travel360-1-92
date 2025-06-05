@@ -8,6 +8,7 @@ import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
 import { authService } from './auth/authService';
 import { UserProfile, AuthContextType } from './auth/types';
+import OrganizationSetup from '../components/OrganizationSetup';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -25,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showOrgSetup, setShowOrgSetup] = useState(false);
 
   useEffect(() => {
     console.log('[AuthContext] Setting up auth state listener');
@@ -48,6 +50,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (profile) {
                 setUserProfile(profile);
                 console.log('[AuthContext] Profile loaded:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
+                
+                // Check if user needs organization setup
+                if (profile.role === 'org_owner' && !profile.org_id) {
+                  setShowOrgSetup(true);
+                } else {
+                  setShowOrgSetup(false);
+                }
               } else {
                 console.error('[AuthContext] Failed to create/fetch profile');
                 setAuthError('Failed to load user profile');
@@ -61,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 100);
         } else {
           setUserProfile(null);
+          setShowOrgSetup(false);
           setLoading(false);
         }
       }
@@ -124,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setAuthError(null);
+      setShowOrgSetup(false);
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       toast.error('Error during logout');
@@ -152,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const updatedProfile = await profileService.fetchUserProfile(user.id);
             if (updatedProfile) {
               setUserProfile(updatedProfile);
+              setShowOrgSetup(false);
               console.log('[AuthContext] Profile refreshed after org creation');
             }
           } catch (error) {
@@ -177,6 +189,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profile) {
         setUserProfile(profile);
         console.log('[AuthContext] Profile refreshed:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
+        
+        // Update org setup visibility
+        if (profile.role === 'org_owner' && !profile.org_id) {
+          setShowOrgSetup(true);
+        } else {
+          setShowOrgSetup(false);
+        }
       }
     } catch (error) {
       console.error('[AuthContext] Error refreshing profile:', error);
@@ -225,6 +244,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updatePassword,
     refreshProfile
   };
+
+  // Show organization setup if needed
+  if (showOrgSetup && userProfile && session) {
+    return (
+      <AuthContext.Provider value={value}>
+        <OrganizationSetup />
+      </AuthContext.Provider>
+    );
+  }
 
   return (
     <AuthContext.Provider value={value}>

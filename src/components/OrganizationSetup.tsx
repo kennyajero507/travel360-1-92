@@ -33,9 +33,11 @@ const OrganizationSetup = () => {
       if (success) {
         console.log('[OrgSetup] Organization created successfully');
         
+        // Wait a moment and refresh the profile
         setTimeout(async () => {
           await refreshProfile();
-          window.location.reload(); // Force a complete refresh to update the UI
+          // Force a page reload to ensure the new org is reflected throughout the app
+          window.location.href = '/dashboard';
         }, 1500);
       } else {
         setError("Failed to create organization. Please try again.");
@@ -50,13 +52,15 @@ const OrganizationSetup = () => {
 
   // Don't show if user already has an organization
   if (userProfile?.org_id) {
-    console.log('[OrgSetup] User already has organization, not showing setup');
+    console.log('[OrgSetup] User already has organization, redirecting to dashboard');
+    window.location.href = '/dashboard';
     return null;
   }
 
   // Only show for org_owner role
   if (userProfile?.role !== 'org_owner') {
-    console.log('[OrgSetup] User is not org_owner, not showing setup');
+    console.log('[OrgSetup] User is not org_owner, redirecting to dashboard');
+    window.location.href = '/dashboard';
     return null;
   }
 

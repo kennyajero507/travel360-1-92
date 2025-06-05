@@ -29,18 +29,9 @@ export const organizationService = {
         return false;
       }
       
-      // Create organization directly
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          name: name.trim(),
-          owner_id: currentUserId,
-          created_at: new Date().toISOString(),
-          trial_start: new Date().toISOString(),
-          trial_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-        })
-        .select()
-        .single();
+      // Use the database function to create organization (avoids RLS issues)
+      const { data: orgId, error: orgError } = await supabase
+        .rpc('create_organization', { org_name: name.trim() });
 
       if (orgError) {
         console.error("[OrgService] Organization creation error:", orgError);
@@ -48,22 +39,7 @@ export const organizationService = {
         return false;
       }
 
-      // Update user profile to link to organization
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          org_id: orgData.id,
-          role: 'org_owner'
-        })
-        .eq('id', currentUserId);
-
-      if (profileError) {
-        console.error("[OrgService] Profile update error:", profileError);
-        toast.error('Failed to link user to organization');
-        return false;
-      }
-
-      console.log("[OrgService] Organization created successfully with ID:", orgData.id);
+      console.log("[OrgService] Organization created successfully with ID:", orgId);
       toast.success('Organization created successfully!');
       return true;
     } catch (error) {
