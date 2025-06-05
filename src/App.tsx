@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleProvider } from "./contexts/RoleContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
-import AuthGuard from "./components/AuthGuard";
+import AuthGuard from "./components/auth/AuthGuard";
 import Layout from "./components/Layout";
 import PublicLayout from "./components/PublicLayout";
 import Index from "./pages/Index";
