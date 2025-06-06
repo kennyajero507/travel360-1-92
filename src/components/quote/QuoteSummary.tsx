@@ -13,7 +13,6 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
   quote, 
   selectedHotels = [] 
 }) => {
-  // Calculate traveler totals from quote data
   const travelers = {
     adults: quote.adults,
     childrenWithBed: quote.children_with_bed,
@@ -21,7 +20,6 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
     infants: quote.infants
   };
 
-  // Calculate total cost from room arrangements
   const calculateTotalCost = () => {
     const roomTotal = quote.room_arrangements.reduce((sum, room) => sum + room.total, 0);
     const activitiesTotal = quote.activities.reduce((sum, activity) => sum + activity.cost, 0);
@@ -30,7 +28,6 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
     
     const subtotal = roomTotal + activitiesTotal + transfersTotal + transportsTotal;
     
-    // Apply markup
     let markup = 0;
     if (quote.markup_type === 'percentage') {
       markup = subtotal * (quote.markup_value / 100);
@@ -42,18 +39,15 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
   };
 
   const totalCost = calculateTotalCost();
-  
-  // Calculate per person cost
   const totalTravelers = travelers.adults + travelers.childrenWithBed + travelers.childrenNoBed;
   const costPerPerson = totalTravelers > 0 ? totalCost / totalTravelers : 0;
 
-  // Calculate accommodation summary
   const accommodationSummary = () => {
     const summary = quote.room_arrangements.reduce((acc, room) => {
       const roomCost = room.total;
-      const totalGuests = room.adults + room.children + room.infants;
+      const totalGuests = room.adults + room.children_with_bed + room.children_no_bed + room.infants;
       
-      acc.totalRooms += room.numRooms;
+      acc.totalRooms += room.num_rooms;
       acc.totalNights += room.nights;
       acc.totalCost += roomCost;
       acc.totalGuests += totalGuests;
@@ -154,7 +148,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                 {quote.room_arrangements.map((room, index) => (
                   <div key={room.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm">
-                      {room.numRooms}× {room.roomType} ({room.adults}A, {room.children}C, {room.infants}I) × {room.nights}N
+                      {room.num_rooms}× {room.room_type} ({room.adults}A, {room.children_with_bed}CWB, {room.children_no_bed}CNB, {room.infants}I) × {room.nights}N
                     </span>
                     <span className="font-medium">${room.total.toFixed(2)}</span>
                   </div>

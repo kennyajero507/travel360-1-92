@@ -25,8 +25,8 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ arrangement, onUpdate }) => {
         <Input
           type="number"
           min="0"
-          value={arrangement.childrenWithBed}
-          onChange={(e) => onUpdate(arrangement.id, "childrenWithBed", parseInt(e.target.value) || 0)}
+          value={arrangement.children_with_bed}
+          onChange={(e) => onUpdate(arrangement.id, "children_with_bed", parseInt(e.target.value) || 0)}
           className="bg-white text-black"
         />
       </div>
@@ -35,8 +35,8 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ arrangement, onUpdate }) => {
         <Input
           type="number"
           min="0"
-          value={arrangement.childrenNoBed}
-          onChange={(e) => onUpdate(arrangement.id, "childrenNoBed", parseInt(e.target.value) || 0)}
+          value={arrangement.children_no_bed}
+          onChange={(e) => onUpdate(arrangement.id, "children_no_bed", parseInt(e.target.value) || 0)}
           className="bg-white text-black"
         />
       </div>

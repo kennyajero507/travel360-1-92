@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { QuoteData } from "../../types/quote.types";
 
@@ -46,16 +47,13 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
         updated_at: now.toISOString(),
       };
 
-      // If we have an inquiry ID, we could fetch inquiry details here
-      // and pre-populate the quote with inquiry information
-
       onQuoteInitialized(initialQuote);
     };
 
     initializeQuote();
   }, [inquiryId, onQuoteInitialized]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 export default QuoteInitializer;

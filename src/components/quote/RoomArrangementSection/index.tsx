@@ -12,7 +12,7 @@ interface RoomArrangementSectionProps {
   duration: number;
   onRoomArrangementsChange: (arrangements: RoomArrangement[]) => void;
   availableRoomTypes: string[];
-  hotelId?: string; // Added hotelId as an optional prop
+  hotelId?: string;
 }
 
 // Define default rates for new room arrangements
@@ -43,12 +43,10 @@ const RoomArrangementSection = ({
   const [arrangements, setArrangements] = useState<RoomArrangement[]>(roomArrangements);
 
   useEffect(() => {
-    // Update local state when props change
     setArrangements(roomArrangements);
   }, [roomArrangements]);
 
   useEffect(() => {
-    // Update totals when duration changes
     const updatedArrangements = arrangements.map(arrangement => ({
       ...arrangement,
       nights: duration,
@@ -59,13 +57,13 @@ const RoomArrangementSection = ({
   }, [duration]);
 
   const calculateRoomTotal = (arrangement: RoomArrangement, nights: number): number => {
-    const { adults, childrenWithBed, childrenNoBed, infants, ratePerNight, numRooms } = arrangement;
+    const { adults, children_with_bed, children_no_bed, infants, rate_per_night, num_rooms } = arrangement;
     
     return (
-      (adults * ratePerNight.adult + 
-       childrenWithBed * ratePerNight.childWithBed + 
-       childrenNoBed * ratePerNight.childNoBed + 
-       infants * ratePerNight.infant) * nights * numRooms
+      (adults * rate_per_night.adult + 
+       children_with_bed * rate_per_night.childWithBed + 
+       children_no_bed * rate_per_night.childNoBed + 
+       infants * rate_per_night.infant) * nights * num_rooms
     );
   };
 
@@ -73,19 +71,18 @@ const RoomArrangementSection = ({
     const newId = `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const newArrangement: RoomArrangement = {
       id: newId,
-      hotelId: hotelId || "", // Set the hotel ID if provided
-      roomType: availableRoomTypes[0] || "Double Room",
-      numRooms: 1,
+      hotel_id: hotelId || "",
+      room_type: availableRoomTypes[0] || "Double Room",
+      num_rooms: 1,
       adults: 2,
-      childrenWithBed: 0,
-      childrenNoBed: 0,
+      children_with_bed: 0,
+      children_no_bed: 0,
       infants: 0,
-      ratePerNight: { ...defaultRates },
+      rate_per_night: { ...defaultRates },
       nights: duration,
       total: 0
     };
     
-    // Calculate the initial total
     newArrangement.total = calculateRoomTotal(newArrangement, duration);
     
     const updatedArrangements = [...arrangements, newArrangement];
@@ -113,15 +110,15 @@ const RoomArrangementSection = ({
       if (arr.id === id) {
         let updatedArr = { ...arr, [field]: value };
         
-        // Special handling for roomType to reset occupancy if needed
-        if (field === "roomType") {
+        // Special handling for room_type to reset occupancy if needed
+        if (field === "room_type") {
           const maxOccupancy = roomTypeMaxOccupancy[value] || 2;
-          const currentOccupants = updatedArr.adults + updatedArr.childrenWithBed + updatedArr.childrenNoBed;
+          const currentOccupants = updatedArr.adults + updatedArr.children_with_bed + updatedArr.children_no_bed;
           
           if (currentOccupants > maxOccupancy) {
             updatedArr.adults = Math.min(updatedArr.adults, maxOccupancy);
-            updatedArr.childrenWithBed = 0;
-            updatedArr.childrenNoBed = 0;
+            updatedArr.children_with_bed = 0;
+            updatedArr.children_no_bed = 0;
             toast({
               title: "Occupancy Adjusted",
               description: `Adjusted occupancy to match ${value} capacity`
@@ -130,20 +127,20 @@ const RoomArrangementSection = ({
         }
         
         // Check occupancy after any changes to people counts
-        if (["adults", "childrenWithBed", "childrenNoBed"].includes(field)) {
-          const maxOccupancy = roomTypeMaxOccupancy[updatedArr.roomType] || 2;
+        if (["adults", "children_with_bed", "children_no_bed"].includes(field)) {
+          const maxOccupancy = roomTypeMaxOccupancy[updatedArr.room_type] || 2;
           const currentOccupants = 
             (field === "adults" ? value : updatedArr.adults) + 
-            (field === "childrenWithBed" ? value : updatedArr.childrenWithBed) + 
-            (field === "childrenNoBed" ? value : updatedArr.childrenNoBed);
+            (field === "children_with_bed" ? value : updatedArr.children_with_bed) + 
+            (field === "children_no_bed" ? value : updatedArr.children_no_bed);
           
           if (currentOccupants > maxOccupancy) {
             toast({
               variant: "destructive",
               title: "Error",
-              description: `Maximum occupancy for ${updatedArr.roomType} is ${maxOccupancy}`
+              description: `Maximum occupancy for ${updatedArr.room_type} is ${maxOccupancy}`
             });
-            return arr; // Return original unchanged
+            return arr;
           }
         }
         
@@ -152,8 +149,8 @@ const RoomArrangementSection = ({
           const rateField = field.split("_")[1] as keyof PersonTypeRates;
           updatedArr = {
             ...updatedArr,
-            ratePerNight: {
-              ...updatedArr.ratePerNight,
+            rate_per_night: {
+              ...updatedArr.rate_per_night,
               [rateField]: value
             }
           };
@@ -173,10 +170,10 @@ const RoomArrangementSection = ({
   const calculateTotalGuests = () => {
     return arrangements.reduce(
       (total, arr) => ({
-        adults: total.adults + arr.adults * arr.numRooms,
-        childrenWithBed: total.childrenWithBed + arr.childrenWithBed * arr.numRooms,
-        childrenNoBed: total.childrenNoBed + arr.childrenNoBed * arr.numRooms,
-        infants: total.infants + arr.infants * arr.numRooms
+        adults: total.adults + arr.adults * arr.num_rooms,
+        childrenWithBed: total.childrenWithBed + arr.children_with_bed * arr.num_rooms,
+        childrenNoBed: total.childrenNoBed + arr.children_no_bed * arr.num_rooms,
+        infants: total.infants + arr.infants * arr.num_rooms
       }),
       { adults: 0, childrenWithBed: 0, childrenNoBed: 0, infants: 0 }
     );

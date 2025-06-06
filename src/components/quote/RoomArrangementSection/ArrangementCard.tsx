@@ -25,7 +25,6 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
   onRemove,
   onUpdate
 }) => {
-  // Make sure we have at least one valid room type
   const validRoomTypes = availableRoomTypes.filter(type => type && type.trim() !== "");
   
   if (validRoomTypes.length === 0) {
@@ -54,8 +53,8 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
         <div>
           <label className="text-sm font-medium mb-2 block">Room Type</label>
           <Select
-            value={arrangement.roomType || validRoomTypes[0]}
-            onValueChange={(value) => onUpdate(arrangement.id, "roomType", value)}
+            value={arrangement.room_type || validRoomTypes[0]}
+            onValueChange={(value) => onUpdate(arrangement.id, "room_type", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select room type" />
@@ -74,8 +73,8 @@ const ArrangementCard: React.FC<ArrangementCardProps> = ({
           <Input
             type="number"
             min="1"
-            value={arrangement.numRooms}
-            onChange={(e) => onUpdate(arrangement.id, "numRooms", parseInt(e.target.value) || 1)}
+            value={arrangement.num_rooms}
+            onChange={(e) => onUpdate(arrangement.id, "num_rooms", parseInt(e.target.value) || 1)}
           />
         </div>
       </div>

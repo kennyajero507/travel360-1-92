@@ -18,7 +18,7 @@ const RateInputs: React.FC<RateInputsProps> = ({ arrangement, onUpdate }) => {
             type="number"
             min="0"
             step="0.01"
-            value={arrangement.ratePerNight.adult}
+            value={arrangement.rate_per_night.adult}
             onChange={(e) => onUpdate(arrangement.id, "rate_adult", parseFloat(e.target.value) || 0)}
             className="bg-white text-black"
           />
@@ -29,7 +29,7 @@ const RateInputs: React.FC<RateInputsProps> = ({ arrangement, onUpdate }) => {
             type="number"
             min="0"
             step="0.01"
-            value={arrangement.ratePerNight.childWithBed}
+            value={arrangement.rate_per_night.childWithBed}
             onChange={(e) => onUpdate(arrangement.id, "rate_childWithBed", parseFloat(e.target.value) || 0)}
             className="bg-white text-black"
           />
@@ -40,7 +40,7 @@ const RateInputs: React.FC<RateInputsProps> = ({ arrangement, onUpdate }) => {
             type="number"
             min="0"
             step="0.01"
-            value={arrangement.ratePerNight.childNoBed}
+            value={arrangement.rate_per_night.childNoBed}
             onChange={(e) => onUpdate(arrangement.id, "rate_childNoBed", parseFloat(e.target.value) || 0)}
             className="bg-white text-black"
           />
@@ -51,7 +51,7 @@ const RateInputs: React.FC<RateInputsProps> = ({ arrangement, onUpdate }) => {
             type="number"
             min="0"
             step="0.01"
-            value={arrangement.ratePerNight.infant}
+            value={arrangement.rate_per_night.infant}
             onChange={(e) => onUpdate(arrangement.id, "rate_infant", parseFloat(e.target.value) || 0)}
             className="bg-white text-black"
           />

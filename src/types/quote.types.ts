@@ -3,16 +3,25 @@ import { Hotel } from "./hotel.types";
 
 export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
 
+// Person type rates interface for room pricing
+export interface PersonTypeRates {
+  adult: number;
+  childWithBed: number;
+  childNoBed: number;
+  infant: number;
+}
+
+// Updated RoomArrangement interface to match database schema
 export interface RoomArrangement {
   id: string;
-  roomType: string;
+  hotel_id?: string; // Match database field name
+  room_type: string; // Match database field name
+  num_rooms: number; // Match database field name
   adults: number;
-  children: number;
+  children_with_bed: number; // Match database field name
+  children_no_bed: number; // Match database field name
   infants: number;
-  numRooms: number;
-  costPerAdult: number;
-  costPerChild: number;
-  costPerInfant: number;
+  rate_per_night: PersonTypeRates; // Match database structure
   nights: number;
   total: number;
 }
@@ -33,7 +42,7 @@ export interface QuoteActivity {
   description?: string;
   date: string;
   cost: number;
-  numPeople: number;
+  num_people: number;
 }
 
 export interface QuoteTransfer {
@@ -41,7 +50,7 @@ export interface QuoteTransfer {
   type: string;
   from: string;
   to: string;
-  vehicleType?: string;
+  vehicle_type?: string;
   cost: number;
   description?: string;
 }
@@ -124,6 +133,7 @@ export interface HotelOption {
   category: string;
   pricePerNight: number;
   totalPrice: number;
+  currencyCode: string; // Added missing property
   selected?: boolean;
 }
 
