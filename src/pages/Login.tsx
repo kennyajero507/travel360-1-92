@@ -8,7 +8,7 @@ import { Eye, EyeOff, RefreshCw, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import AuthLayout from "../components/auth/AuthLayout";
-import { getDefaultRedirectPath } from "../utils/authHelpers";
+import { getRedirectPath } from "../utils/authValidation";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -39,8 +39,8 @@ const Login = () => {
         return;
       }
       
-      // Role-based redirect with fallback
-      const redirectPath = getDefaultRedirectPath(userProfile.role);
+      // Use the new redirect utility
+      const redirectPath = getRedirectPath(userProfile);
       console.log(`[Login] Redirecting ${userProfile.role} to ${redirectPath}`);
       
       setTimeout(() => {

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -8,6 +7,7 @@ import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
 import { authService } from './auth/authService';
 import { UserProfile, AuthContextType } from './auth/types';
+import { needsOrganizationSetup } from '../utils/authValidation';
 import OrganizationSetup from '../components/OrganizationSetup';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,11 +51,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUserProfile(profile);
                 console.log('[AuthContext] Profile loaded:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
                 
-                // Check if user needs organization setup
-                if (profile.role === 'org_owner' && !profile.org_id) {
-                  setShowOrgSetup(true);
-                } else {
-                  setShowOrgSetup(false);
+                // Use the validation utility to check if org setup is needed
+                const needsSetup = needsOrganizationSetup(profile);
+                setShowOrgSetup(needsSetup);
+                
+                if (needsSetup) {
+                  console.log('[AuthContext] User needs organization setup');
                 }
               } else {
                 console.error('[AuthContext] Failed to create/fetch profile');
@@ -190,12 +191,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserProfile(profile);
         console.log('[AuthContext] Profile refreshed:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
         
-        // Update org setup visibility
-        if (profile.role === 'org_owner' && !profile.org_id) {
-          setShowOrgSetup(true);
-        } else {
-          setShowOrgSetup(false);
-        }
+        // Update org setup visibility using validation utility
+        const needsSetup = needsOrganizationSetup(profile);
+        setShowOrgSetup(needsSetup);
       }
     } catch (error) {
       console.error('[AuthContext] Error refreshing profile:', error);
