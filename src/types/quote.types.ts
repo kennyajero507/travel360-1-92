@@ -46,15 +46,15 @@ export interface QuoteTransfer {
   description?: string;
 }
 
-// Updated to match database structure - using snake_case for database fields
+// Main QuoteData interface matching database structure
 export interface QuoteData {
   id: string;
   inquiry_id?: string;
   client: string;
   mobile: string;
   destination: string;
-  start_date: string; // Database uses snake_case
-  end_date: string;   // Database uses snake_case
+  start_date: string;
+  end_date: string;
   duration_days: number;
   duration_nights: number;
   adults: number;
@@ -76,10 +76,6 @@ export interface QuoteData {
   activities: QuoteActivity[];
   transports: QuoteTransport[];
   transfers: QuoteTransfer[];
-  
-  // Legacy properties for backward compatibility
-  startDate?: string;
-  endDate?: string;
 }
 
 export interface QuoteFormData {
@@ -118,6 +114,41 @@ export interface QuotePreview {
   createdAt: string;
   hotels: Hotel[];
   hotelOptions: Hotel[];
+  totalCost: number;
+  currency: string;
+}
+
+export interface HotelOption {
+  id: string;
+  name: string;
+  category: string;
+  pricePerNight: number;
+  totalPrice: number;
+  selected?: boolean;
+}
+
+export interface ClientQuotePreview {
+  id: string;
+  inquiryNumber: string;
+  client: string;
+  destination: string;
+  packageName: string;
+  startDate: string;
+  endDate: string;
+  duration: {
+    days: number;
+    nights: number;
+  };
+  travelers: {
+    adults: number;
+    childrenWithBed: number;
+    childrenNoBed: number;
+    infants: number;
+  };
+  tourType: string;
+  createdAt: string;
+  hotels: Hotel[];
+  hotelOptions: HotelOption[];
   totalCost: number;
   currency: string;
 }

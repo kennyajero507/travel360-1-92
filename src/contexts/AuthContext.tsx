@@ -159,18 +159,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const success = await organizationService.createOrganization(name, user.id);
       
       if (success) {
+        // Wait a bit longer and retry profile refresh multiple times if needed
         setTimeout(async () => {
           try {
-            const updatedProfile = await profileService.fetchUserProfile(user.id);
-            if (updatedProfile) {
-              setUserProfile(updatedProfile);
-              setShowOrgSetup(false);
-              console.log('[AuthContext] Profile refreshed after org creation');
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            while (retryCount < maxRetries) {
+              console.log(`[AuthContext] Refreshing profile attempt ${retryCount + 1}`);
+              const updatedProfile = await profileService.fetchUserProfile(user.id);
+              
+              if (updatedProfile && updatedProfile.org_id) {
+                setUserProfile(updatedProfile);
+                setShowOrgSetup(false);
+                console.log('[AuthContext] Profile refreshed successfully after org creation');
+                break;
+              }
+              
+              retryCount++;
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+            
+            if (retryCount === maxRetries) {
+              console.warn('[AuthContext] Failed to refresh profile after org creation');
+              // Force a page reload as fallback
+              window.location.reload();
             }
           } catch (error) {
             console.error('[AuthContext] Error refreshing profile:', error);
+            // Force a page reload as fallback
+            window.location.reload();
           }
-        }, 1000);
+        }, 2000);
       }
       
       return success;
