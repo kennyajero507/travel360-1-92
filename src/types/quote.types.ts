@@ -1,73 +1,19 @@
 
-export interface QuoteData {
-  id?: string;
-  inquiryId?: string;
-  inquiryNumber?: string;
-  client: string;
-  mobile: string;
-  destination: string;
-  packageName?: string;
-  startDate: string;
-  endDate: string;
-  duration: {
-    days: number;
-    nights: number;
-  };
-  travelers: {
-    adults: number;
-    childrenWithBed: number;
-    childrenNoBed: number;
-    infants: number;
-  };
-  status: string;
-  tourType: string;
-  currencyCode: string;
-  activities: QuoteActivity[];
-  transfers: QuoteTransfer[];
-  transports: QuoteTransport[];
-  roomArrangements: RoomArrangement[];
-  markup: {
-    type: string;
-    value: number;
-  };
-  markupType?: string;
-  markupValue?: number;
-  notes?: string;
-  createdBy?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  hotelId?: string;
-  approvedHotelId?: string;
-  assignedAgent?: string;
-}
+import { Hotel } from "./hotel.types";
+
+export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
 
 export interface RoomArrangement {
   id: string;
-  hotelId?: string;
   roomType: string;
-  numRooms: number;
   adults: number;
-  childrenWithBed: number;
-  childrenNoBed: number;
+  children: number;
   infants: number;
-  ratePerNight: PersonTypeRates;
+  numRooms: number;
+  costPerAdult: number;
+  costPerChild: number;
+  costPerInfant: number;
   nights: number;
-  total: number;
-}
-
-export interface PersonTypeRates {
-  adult: number;
-  childWithBed: number;
-  childNoBed: number;
-  infant: number;
-}
-
-export interface QuoteActivity {
-  id: string;
-  title: string;
-  description?: string;
-  numPeople: number;
-  costPerPerson: number;
   total: number;
 }
 
@@ -76,64 +22,86 @@ export interface QuoteTransport {
   type: string;
   from: string;
   to: string;
-  vehicleType?: string;
-  numVehicles: number;
-  costPerVehicle: number;
-  total: number;
+  date: string;
+  cost: number;
+  description?: string;
+}
+
+export interface QuoteActivity {
+  id: string;
+  name: string;
+  description?: string;
+  date: string;
+  cost: number;
+  numPeople: number;
 }
 
 export interface QuoteTransfer {
   id: string;
-  transferType: string;
-  fromLocation?: string;
-  toLocation?: string;
+  type: string;
+  from: string;
+  to: string;
   vehicleType?: string;
-  numVehicles: number;
-  costPerVehicle: number;
-  total: number;
-  details?: string;
+  cost: number;
+  description?: string;
 }
 
-export interface Hotel {
+// Updated to match database structure - using snake_case for database fields
+export interface QuoteData {
   id: string;
-  name: string;
-  category?: string;
-  location?: string;
-  destination?: string;
-  roomTypes?: HotelRoomType[];
+  inquiry_id?: string;
+  client: string;
+  mobile: string;
+  destination: string;
+  start_date: string; // Database uses snake_case
+  end_date: string;   // Database uses snake_case
+  duration_days: number;
+  duration_nights: number;
+  adults: number;
+  children_with_bed: number;
+  children_no_bed: number;
+  infants: number;
+  tour_type: string;
+  status: QuoteStatus;
+  notes?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  approved_hotel_id?: string;
+  hotel_id?: string;
+  currency_code: string;
+  markup_type: string;
+  markup_value: number;
+  room_arrangements: RoomArrangement[];
+  activities: QuoteActivity[];
+  transports: QuoteTransport[];
+  transfers: QuoteTransfer[];
+  
+  // Legacy properties for backward compatibility
+  startDate?: string;
+  endDate?: string;
 }
 
-export interface HotelOption {
-  id: string;
-  name: string;
-  category: string;
-  location: string;
-  roomArrangements: Array<{
-    roomType: string;
-    numRooms: number;
-    guests: number;
-    nights: number;
-    total: number;
-  }>;
-  totalCost: number;
-  totalPrice: number;
-  currencyCode: string;
+export interface QuoteFormData {
+  client: string;
+  mobile: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  adults: number;
+  childrenWithBed: number;
+  childrenNoBed: number;
+  infants: number;
+  tourType: string;
+  notes?: string;
 }
 
-export interface HotelRoomType {
+export interface QuotePreview {
   id: string;
-  name: string;
-  rate?: number;
-  childRate?: number;
-  childNoBedrRate?: number;
-}
-
-export interface ClientQuotePreview {
-  id: string;
-  inquiryNumber?: string;
+  inquiryNumber: string;
   client: string;
   destination: string;
-  packageName?: string;
+  packageName: string;
   startDate: string;
   endDate: string;
   duration: {
@@ -146,23 +114,10 @@ export interface ClientQuotePreview {
     childrenNoBed: number;
     infants: number;
   };
-  tourType?: string;
-  createdAt?: string;
-  hotels: Array<{
-    id: string;
-    name: string;
-    category: string;
-    location: string;
-    roomArrangements: Array<{
-      roomType: string;
-      numRooms: number;
-      guests: number;
-      nights: number;
-      total: number;
-    }>;
-    totalCost: number;
-  }>;
-  hotelOptions?: HotelOption[];
+  tourType: string;
+  createdAt: string;
+  hotels: Hotel[];
+  hotelOptions: Hotel[];
   totalCost: number;
   currency: string;
 }

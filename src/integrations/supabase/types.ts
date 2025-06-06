@@ -80,6 +80,80 @@ export type Database = {
           },
         ]
       }
+      hotels: {
+        Row: {
+          additional_details: Json | null
+          address: string | null
+          amenities: Json | null
+          category: string
+          contact_info: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          destination: string
+          id: string
+          images: Json | null
+          location: string | null
+          name: string
+          org_id: string | null
+          policies: Json | null
+          pricing: Json | null
+          room_types: Json | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          additional_details?: Json | null
+          address?: string | null
+          amenities?: Json | null
+          category: string
+          contact_info?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          destination: string
+          id?: string
+          images?: Json | null
+          location?: string | null
+          name: string
+          org_id?: string | null
+          policies?: Json | null
+          pricing?: Json | null
+          room_types?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          additional_details?: Json | null
+          address?: string | null
+          amenities?: Json | null
+          category?: string
+          contact_info?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          destination?: string
+          id?: string
+          images?: Json | null
+          location?: string | null
+          name?: string
+          org_id?: string | null
+          policies?: Json | null
+          pricing?: Json | null
+          room_types?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotels_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inquiries: {
         Row: {
           adults: number

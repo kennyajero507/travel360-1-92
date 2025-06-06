@@ -19,14 +19,29 @@ export interface HotelAdditionalDetails {
   website?: string;
 }
 
+// Updated to match database structure
 export interface Hotel {
   id: string;
   name: string;
-  address: string;
   destination: string;
   category: string;
-  contactDetails: Record<string, any>;
-  roomTypes: RoomType[];
-  additionalDetails?: HotelAdditionalDetails;
-  status?: string; // Adding status field
+  status: 'Active' | 'Inactive';
+  location?: string;
+  address?: string;
+  description?: string;
+  amenities?: string[];
+  room_types?: RoomType[];
+  images?: string[];
+  contact_info?: any;
+  pricing?: any;
+  policies?: any;
+  additional_details?: HotelAdditionalDetails;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  org_id?: string;
+  
+  // Legacy properties for backward compatibility
+  contactDetails?: any;
+  roomTypes?: RoomType[];
 }

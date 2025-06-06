@@ -4,6 +4,7 @@ import { QuoteActivity, QuoteTransport, QuoteTransfer, RoomArrangement } from ".
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 export type PaymentStatus = 'paid' | 'partially_paid' | 'pending';
 
+// Updated to match database structure with proper JSON field handling
 export interface Booking {
   id: string;
   booking_reference: string;
@@ -14,10 +15,10 @@ export interface Booking {
   hotel_name: string;
   travel_start: string;
   travel_end: string;
-  room_arrangement: RoomArrangement[];
-  transport: QuoteTransport[];
-  activities: QuoteActivity[];
-  transfers: QuoteTransfer[];
+  room_arrangement: RoomArrangement[]; // This will be JSON in DB
+  transport: QuoteTransport[];         // This will be JSON in DB
+  activities: QuoteActivity[];         // This will be JSON in DB
+  transfers: QuoteTransfer[];          // This will be JSON in DB
   status: BookingStatus;
   payment_status?: PaymentStatus;
   total_price: number;

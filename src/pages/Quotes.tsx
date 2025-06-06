@@ -1,328 +1,316 @@
 
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../components/ui/table";
-import { getAllQuotes, deleteQuote, emailQuote, printQuote, downloadQuotePDF } from "../services/quoteService";
-import { Badge } from "../components/ui/badge";
-import { format } from "date-fns";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "../components/ui/select";
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "../components/ui/table";
 import { 
-  AlertCircle, 
-  Check, 
-  Download, 
-  Eye, 
-  Filter, 
-  Mail, 
-  MoreHorizontal, 
-  PenLine, 
-  Plus, 
-  Printer, 
-  Search,
-  X,
-  ClipboardList,
-  Loader2
-} from "lucide-react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import { Badge } from "../components/ui/badge";
+import { Plus, MoreHorizontal, Eye, Edit, Trash2, Send, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "../contexts/AuthContext";
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-
-// Status badge color mapping
-const statusColorMap = {
-  draft: "bg-gray-200 text-gray-700",
-  sent: "bg-blue-100 text-blue-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-};
-
-// Status icons
-const statusIconMap = {
-  draft: <PenLine className="mr-1 h-3 w-3 text-gray-600" />,
-  sent: <Mail className="mr-1 h-3 w-3 text-blue-600" />,
-  approved: <Check className="mr-1 h-3 w-3 text-green-600" />,
-  rejected: <X className="mr-1 h-3 w-3 text-red-600" />,
-};
+import { useQuoteData } from "../hooks/useQuoteData";
+import { useRole } from "../contexts/RoleContext";
 
 const Quotes = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const { role, permissions } = useRole();
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
-  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  
+  const {
+    quotes,
+    isLoading,
+    error,
+    deleteQuote,
+    emailQuote,
+    printQuote,
+    downloadQuotePDF
+  } = useQuoteData();
 
-  // Fetch quotes using React Query
-  const { data: quotes = [], isLoading, error } = useQuery({
-    queryKey: ['quotes'],
-    queryFn: getAllQuotes,
+  // Filter quotes based on search and filter
+  const filteredQuotes = quotes.filter(quote => {
+    const matchesFilter = filter === "all" || quote.status === filter;
+    const matchesSearch = quote.client?.toLowerCase().includes(search.toLowerCase()) ||
+                         quote.destination?.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
   });
 
-  // Function to handle quote actions
-  const handleQuoteAction = async (action: string, quoteId: string) => {
-    try {
-      switch (action) {
-        case "view":
-          navigate(`/quotes/${quoteId}`);
-          break;
-        case "edit":
-          navigate(`/quotes/edit/${quoteId}`);
-          break;
-        case "create-booking":
-          navigate(`/quotes/${quoteId}/create-booking`);
-          break;
-        case "print":
-          await printQuote(quoteId);
-          break;
-        case "email":
-          await emailQuote(quoteId);
-          break;
-        case "download":
-          await downloadQuotePDF(quoteId);
-          break;
-        case "delete":
-          await deleteQuote(quoteId);
-          // Refresh quotes after deletion
-          queryClient.invalidateQueries({ queryKey: ['quotes'] });
-          break;
-        default:
-          break;
+  const handleDeleteQuote = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this quote?')) {
+      try {
+        await deleteQuote(id);
+        toast.success('Quote deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete quote');
       }
-    } catch (error) {
-      console.error("Error handling quote action:", error);
-      toast.error("Failed to perform action");
     }
   };
 
-  // Filter quotes based on search term and status filter
-  const filteredQuotes = quotes.filter((quote) => {
-    const matchesSearch = quote.client?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       quote.destination?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       quote.id?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || quote.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const handleEmailQuote = async (id: string) => {
+    try {
+      await emailQuote(id);
+    } catch (error) {
+      toast.error('Failed to send quote');
+    }
+  };
 
-  const canCreateBooking = userProfile && 
-    ['agent', 'tour_operator', 'org_owner'].includes(userProfile.role);
+  const handlePrintQuote = async (id: string) => {
+    try {
+      await printQuote(id);
+    } catch (error) {
+      toast.error('Failed to print quote');
+    }
+  };
+
+  const handleDownloadPDF = async (id: string) => {
+    try {
+      await downloadQuotePDF(id);
+    } catch (error) {
+      toast.error('Failed to download PDF');
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'sent': return 'bg-blue-100 text-blue-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'expired': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDateRange = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return 'No dates';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const startFormatted = start.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    const endFormatted = end.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+    
+    return `${startFormatted} - ${endFormatted}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading quotes...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-blue-600">Quotes</h1>
-            <p className="text-gray-500 mt-2">
-              Manage and track all your tour package quotes
-            </p>
-          </div>
-        </div>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Failed to Load Quotes</h2>
-            <p className="text-gray-600 mb-4">There was an error loading your quotes. Please try again.</p>
-            <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['quotes'] })}>
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="text-center py-8">
+        <p className="text-red-600">Failed to load quotes. Please try again.</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">
+          Retry
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-blue-600">Quotes</h1>
-          <p className="text-gray-500 mt-2">
-            Manage and track all your tour package quotes
+          <h1 className="text-3xl font-bold tracking-tight text-teal-600">Quotes</h1>
+          <p className="text-gray-500">
+            {role === 'agent' 
+              ? 'View and manage your quotes' 
+              : 'Manage all quotes for your organization'
+            }
           </p>
         </div>
-        <Link to="/quotes/create">
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
+        
+        {permissions.canCreateQuotes && (
+          <Button 
+            onClick={() => navigate('/quotes/create')}
+            className="bg-teal-600 hover:bg-teal-700"
+          >
+            <Plus className="mr-2 h-4 w-4" />
             Create Quote
           </Button>
-        </Link>
+        )}
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader>
           <CardTitle>Quote Management</CardTitle>
-          <CardDescription>
-            View, filter and manage all your tour quotes
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            <div className="flex-1">
+              <Label htmlFor="search">Search</Label>
               <Input
-                placeholder="Search quotes..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                id="search"
+                placeholder="Search by client name or destination..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <Label htmlFor="status-filter" className="sr-only">
-                Filter by status
-              </Label>
-              <Select 
-                value={statusFilter} 
-                onValueChange={setStatusFilter}
+            <div className="w-48">
+              <Label htmlFor="filter">Filter by Status</Label>
+              <select
+                id="filter"
+                className="w-full p-2 border rounded-md"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
               >
-                <SelectTrigger id="status-filter" className="w-[180px]">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    <SelectValue placeholder="Filter by status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="sent">Sent</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="all">All Quotes</option>
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="expired">Expired</option>
+              </select>
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="ml-2">Loading quotes...</span>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Quote ID</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead className="hidden md:table-cell">Destination</TableHead>
-                    <TableHead className="hidden md:table-cell">Date Range</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredQuotes.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        {quotes.length === 0 ? "No quotes found. Create your first quote!" : "No quotes match your search criteria."}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredQuotes.map((quote) => (
-                      <TableRow key={quote.id}>
-                        <TableCell className="font-medium">{quote.id}</TableCell>
-                        <TableCell>{quote.client}</TableCell>
-                        <TableCell className="hidden md:table-cell">{quote.destination}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {quote.start_date && quote.end_date 
-                            ? `${format(new Date(quote.start_date), 'MMM dd, yyyy')} - ${format(new Date(quote.end_date), 'MMM dd, yyyy')}`
-                            : 'Not set'
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant="outline"
-                            className={statusColorMap[quote.status] || statusColorMap.draft}
+          {/* Quotes Table */}
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Quote ID</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Destination</TableHead>
+                  <TableHead>Travel Dates</TableHead>
+                  <TableHead>Travelers</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredQuotes.map((quote) => (
+                  <TableRow key={quote.id}>
+                    <TableCell className="font-medium">{quote.id}</TableCell>
+                    <TableCell>{quote.client}</TableCell>
+                    <TableCell>{quote.destination}</TableCell>
+                    <TableCell>{formatDateRange(quote.start_date, quote.end_date)}</TableCell>
+                    <TableCell>
+                      {quote.adults} Adults
+                      {quote.children_with_bed > 0 && `, ${quote.children_with_bed} Children`}
+                      {quote.infants > 0 && `, ${quote.infants} Infants`}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusBadgeColor(quote.status)}>
+                        {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'Unknown'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => navigate(`/quotes/${quote.id}`)}
                           >
-                            {statusIconMap[quote.status] || statusIconMap.draft}
-                            {quote.status?.charAt(0).toUpperCase() + quote.status?.slice(1) || 'Draft'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => handleQuoteAction("view", quote.id)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                <span>View</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleQuoteAction("edit", quote.id)}>
-                                <PenLine className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
-                              </DropdownMenuItem>
-                              {quote.status === "approved" && canCreateBooking && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => handleQuoteAction("create-booking", quote.id)}>
-                                    <ClipboardList className="mr-2 h-4 w-4" />
-                                    <span>Create Booking</span>
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleQuoteAction("print", quote.id)}>
-                                <Printer className="mr-2 h-4 w-4" />
-                                <span>Print</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleQuoteAction("email", quote.id)}>
-                                <Mail className="mr-2 h-4 w-4" />
-                                <span>Email to Client</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleQuoteAction("download", quote.id)}>
-                                <Download className="mr-2 h-4 w-4" />
-                                <span>Download PDF</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => handleQuoteAction("delete", quote.id)}
-                              >
-                                <AlertCircle className="mr-2 h-4 w-4" />
-                                <span>Delete</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem
+                            onClick={() => navigate(`/quotes/${quote.id}/preview`)}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Preview
+                          </DropdownMenuItem>
+                          
+                          {permissions.canEditQuotes && (
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/quotes/edit/${quote.id}`)}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Quote
+                            </DropdownMenuItem>
+                          )}
+                          
+                          <DropdownMenuItem
+                            onClick={() => handleEmailQuote(quote.id)}
+                          >
+                            <Send className="mr-2 h-4 w-4" />
+                            Send to Client
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem
+                            onClick={() => handleDownloadPDF(quote.id)}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Download PDF
+                          </DropdownMenuItem>
+                          
+                          {permissions.canDeleteQuotes && (
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteQuote(quote.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Quote
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {filteredQuotes.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                {search || filter !== "all" 
+                  ? "No quotes match your search criteria." 
+                  : "No quotes created yet."
+                }
+              </p>
+              {permissions.canCreateQuotes && (
+                <Button 
+                  onClick={() => navigate('/quotes/create')}
+                  className="mt-4 bg-teal-600 hover:bg-teal-700"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create First Quote
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

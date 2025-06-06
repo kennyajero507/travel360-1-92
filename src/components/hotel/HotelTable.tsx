@@ -17,9 +17,19 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Hotel } from "../../types/hotel.types";
 import { MoreHorizontal, Star, StarOff, Eye, Edit } from "lucide-react";
-import { toast } from "sonner";
+
+interface Hotel {
+  id: string;
+  name: string;
+  destination: string;
+  category: string;
+  status?: 'Active' | 'Inactive';
+  room_types?: any[];
+  additional_details?: {
+    hasNegotiatedRate?: boolean;
+  };
+}
 
 interface HotelTableProps {
   hotels: Hotel[];
@@ -30,6 +40,16 @@ interface HotelTableProps {
 }
 
 const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleStatus }) => {
+  const getMinRatePerNight = (roomTypes: any[]) => {
+    if (!roomTypes || roomTypes.length === 0) return 0;
+    
+    const rates = roomTypes
+      .map(rt => rt.ratePerNight || 0)
+      .filter(rate => rate > 0);
+    
+    return rates.length > 0 ? Math.min(...rates) : 0;
+  };
+
   return (
     <div className="border rounded-md">
       <Table>
@@ -58,21 +78,19 @@ const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleSt
                 </div>
               </TableCell>
               <TableCell>
-                ${hotel.roomTypes && hotel.roomTypes.length > 0 
-                  ? Math.min(...hotel.roomTypes.map(rt => rt.ratePerNight)).toFixed(2) 
-                  : "0.00"}
+                ${getMinRatePerNight(hotel.room_types || []).toFixed(2)}
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className={hotel.additionalDetails?.hasNegotiatedRate ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                  {hotel.additionalDetails?.hasNegotiatedRate ? "Negotiated" : "Standard"}
+                <Badge variant="outline" className={hotel.additional_details?.hasNegotiatedRate ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                  {hotel.additional_details?.hasNegotiatedRate ? "Negotiated" : "Standard"}
                 </Badge>
               </TableCell>
               <TableCell>
                 <Badge 
                   variant="outline" 
-                  className={(hotel as any).status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                  className={hotel.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
                 >
-                  {(hotel as any).status || "Active"}
+                  {hotel.status || "Active"}
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
@@ -109,7 +127,7 @@ const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleSt
                       >
                         <div className="flex items-center w-full">
                           <StarOff className="mr-2 h-4 w-4" />
-                          {(hotel as any).status === "Active" ? "Mark as Inactive" : "Mark as Active"}
+                          {hotel.status === "Active" ? "Mark as Inactive" : "Mark as Active"}
                         </div>
                       </DropdownMenuItem>
                     )}

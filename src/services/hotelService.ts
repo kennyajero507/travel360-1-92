@@ -9,6 +9,7 @@ export interface Hotel {
   category: string;
   status: 'Active' | 'Inactive';
   location?: string;
+  address?: string;
   description?: string;
   amenities?: string[];
   room_types?: any[];

@@ -1,7 +1,43 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
-import { Booking, TravelVoucher } from "../types/booking.types";
+import { Booking, TravelVoucher, BookingStatus } from "../types/booking.types";
+
+// Helper function to safely parse JSON data from database
+const parseJsonField = (field: any) => {
+  if (typeof field === 'string') {
+    try {
+      return JSON.parse(field);
+    } catch {
+      return [];
+    }
+  }
+  return field || [];
+};
+
+// Helper function to convert database row to Booking interface
+const mapDbRowToBooking = (row: any): Booking => {
+  return {
+    id: row.id,
+    booking_reference: row.booking_reference,
+    quote_id: row.quote_id,
+    client: row.client,
+    agent_id: row.agent_id,
+    hotel_id: row.hotel_id,
+    hotel_name: row.hotel_name,
+    travel_start: row.travel_start,
+    travel_end: row.travel_end,
+    room_arrangement: parseJsonField(row.room_arrangement),
+    transport: parseJsonField(row.transport),
+    activities: parseJsonField(row.activities),
+    transfers: parseJsonField(row.transfers),
+    status: row.status as BookingStatus,
+    payment_status: row.payment_status,
+    total_price: row.total_price,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    notes: row.notes
+  };
+};
 
 export const getAllBookings = async (): Promise<Booking[]> => {
   try {
@@ -18,7 +54,7 @@ export const getAllBookings = async (): Promise<Booking[]> => {
     }
 
     console.log('[BookingService] Fetched bookings:', data?.length || 0);
-    return data || [];
+    return (data || []).map(mapDbRowToBooking);
   } catch (error) {
     console.error('[BookingService] Error in getAllBookings:', error);
     toast.error('Failed to load bookings');
@@ -41,7 +77,7 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
       throw error;
     }
 
-    return data;
+    return data ? mapDbRowToBooking(data) : null;
   } catch (error) {
     console.error('[BookingService] Error in getBookingById:', error);
     toast.error('Failed to load booking details');
@@ -56,7 +92,7 @@ export const updateBookingStatus = async (id: string, status: string) => {
     const { error } = await supabase
       .from('bookings')
       .update({ 
-        status,
+        status: status as BookingStatus,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -104,11 +140,11 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
       hotel_name: 'Selected Hotel', // This should be fetched from hotels table
       travel_start: quote.start_date,
       travel_end: quote.end_date,
-      room_arrangement: quote.room_arrangements,
-      transport: quote.transports || [],
-      activities: quote.activities || [],
-      transfers: quote.transfers || [],
-      status: 'pending',
+      room_arrangement: JSON.stringify(quote.room_arrangements),
+      transport: JSON.stringify(quote.transports || []),
+      activities: JSON.stringify(quote.activities || []),
+      transfers: JSON.stringify(quote.transfers || []),
+      status: 'pending' as BookingStatus,
       payment_status: 'pending',
       total_price: 0, // This should be calculated
       notes: quote.notes || ''
@@ -127,7 +163,7 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
     }
 
     toast.success('Booking created successfully');
-    return data;
+    return mapDbRowToBooking(data);
   } catch (error) {
     console.error('[BookingService] Error in createBookingFromQuote:', error);
     throw error;
