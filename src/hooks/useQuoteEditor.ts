@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -24,10 +25,10 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
           
           // Collect selected hotels from room arrangements
           const hotels = new Set<string>();
-          if (quoteData?.roomArrangements && quoteData.roomArrangements.length > 0) {
-            quoteData.roomArrangements.forEach(arr => {
-              if (arr.hotelId) {
-                hotels.add(arr.hotelId);
+          if (quoteData?.room_arrangements && quoteData.room_arrangements.length > 0) {
+            quoteData.room_arrangements.forEach(arr => {
+              if (arr.hotel_id) {
+                hotels.add(arr.hotel_id);
               }
             });
             setSelectedHotels(Array.from(hotels));
@@ -39,8 +40,8 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
           }
           
           // Set selected hotel if present in the quote
-          if (quoteData?.hotelId) {
-            setSelectedHotelId(quoteData.hotelId);
+          if (quoteData?.hotel_id) {
+            setSelectedHotelId(quoteData.hotel_id);
           }
         } catch (error) {
           console.error("Error loading quote:", error);
@@ -66,7 +67,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     if (quote) {
       setQuote({
         ...quote,
-        hotelId: hotelId
+        hotel_id: hotelId
       });
     }
   };
@@ -84,7 +85,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     if (quote) {
       setQuote({
         ...quote,
-        roomArrangements: quote.roomArrangements.filter(arr => arr.hotelId !== hotelId)
+        room_arrangements: quote.room_arrangements.filter(arr => arr.hotel_id !== hotelId)
       });
     }
   };
@@ -96,7 +97,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     if (!targetHotelId) return;
     
     // Don't modify existing arrangements for this hotel
-    if (quote.roomArrangements.some(arr => arr.hotelId === targetHotelId)) return;
+    if (quote.room_arrangements.some(arr => arr.hotel_id === targetHotelId)) return;
     
     // Create a new room arrangement based on the first room type
     if (roomTypes.length > 0) {
@@ -104,14 +105,14 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
       
       const newArrangement: RoomArrangement = {
         id: `room-${Date.now()}`,
-        hotelId: targetHotelId,
-        roomType: firstRoomType.name,
-        numRooms: 1,
-        adults: quote.travelers.adults,
-        childrenWithBed: quote.travelers.childrenWithBed,
-        childrenNoBed: quote.travelers.childrenNoBed,
-        infants: quote.travelers.infants,
-        ratePerNight: {
+        hotel_id: targetHotelId,
+        room_type: firstRoomType.name,
+        num_rooms: 1,
+        adults: quote.adults,
+        children_with_bed: quote.children_with_bed,
+        children_no_bed: quote.children_no_bed,
+        infants: quote.infants,
+        rate_per_night: {
           adult: firstRoomType.rate || 100,
           childWithBed: firstRoomType.childRate || 70,
           childNoBed: firstRoomType.childNoBedrRate || 40,
@@ -119,24 +120,24 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
         },
         nights: nights,
         total: calculateRoomTotal({
-          adults: quote.travelers.adults,
-          childrenWithBed: quote.travelers.childrenWithBed,
-          childrenNoBed: quote.travelers.childrenNoBed,
-          infants: quote.travelers.infants,
-          ratePerNight: {
+          adults: quote.adults,
+          children_with_bed: quote.children_with_bed,
+          children_no_bed: quote.children_no_bed,
+          infants: quote.infants,
+          rate_per_night: {
             adult: firstRoomType.rate || 100,
             childWithBed: firstRoomType.childRate || 70,
             childNoBed: firstRoomType.childNoBedrRate || 40,
             infant: 0
           },
-          numRooms: 1,
+          num_rooms: 1,
           nights: nights
         })
       };
       
       setQuote({
         ...quote,
-        roomArrangements: [...quote.roomArrangements, newArrangement]
+        room_arrangements: [...quote.room_arrangements, newArrangement]
       });
     }
   };
@@ -149,14 +150,14 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     
     const newArrangement: RoomArrangement = {
       id: `room-${Date.now()}`,
-      hotelId: targetHotelId,
-      roomType: roomType.name,
-      numRooms: 1,
+      hotel_id: targetHotelId,
+      room_type: roomType.name,
+      num_rooms: 1,
       adults: 2,
-      childrenWithBed: 0,
-      childrenNoBed: 0,
+      children_with_bed: 0,
+      children_no_bed: 0,
       infants: 0,
-      ratePerNight: {
+      rate_per_night: {
         adult: roomType.rate || 100,
         childWithBed: roomType.childRate || 70,
         childNoBed: roomType.childNoBedrRate || 40,
@@ -165,35 +166,35 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
       nights: nights,
       total: calculateRoomTotal({
         adults: 2,
-        childrenWithBed: 0,
-        childrenNoBed: 0,
+        children_with_bed: 0,
+        children_no_bed: 0,
         infants: 0,
-        ratePerNight: {
+        rate_per_night: {
           adult: roomType.rate || 100,
           childWithBed: roomType.childRate || 70,
           childNoBed: roomType.childNoBedrRate || 40,
           infant: 0
         },
-        numRooms: 1,
+        num_rooms: 1,
         nights: nights
       })
     };
     
     setQuote({
       ...quote,
-      roomArrangements: [...quote.roomArrangements, newArrangement]
+      room_arrangements: [...quote.room_arrangements, newArrangement]
     });
   };
 
   // Calculate total cost for a room arrangement
   const calculateRoomTotal = (room: Partial<RoomArrangement>) => {
-    if (!room.ratePerNight || !room.nights) return 0;
+    if (!room.rate_per_night || !room.nights) return 0;
     
-    return room.numRooms! * (
-      (room.adults! * room.ratePerNight.adult * room.nights) +
-      (room.childrenWithBed! * room.ratePerNight.childWithBed * room.nights) +
-      (room.childrenNoBed! * room.ratePerNight.childNoBed * room.nights) +
-      (room.infants! * room.ratePerNight.infant * room.nights)
+    return room.num_rooms! * (
+      (room.adults! * room.rate_per_night.adult * room.nights) +
+      (room.children_with_bed! * room.rate_per_night.childWithBed * room.nights) +
+      (room.children_no_bed! * room.rate_per_night.childNoBed * room.nights) +
+      (room.infants! * room.rate_per_night.infant * room.nights)
     );
   };
 
@@ -208,7 +209,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     
     setQuote({
       ...quote,
-      roomArrangements: updatedArrangements
+      room_arrangements: updatedArrangements
     });
   };
 
@@ -329,7 +330,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     return (
       selectedHotels.length > 0 && 
       selectedHotels.every(hotelId => 
-        quote.roomArrangements.some(arr => arr.hotelId === hotelId)
+        quote.room_arrangements.some(arr => arr.hotel_id === hotelId)
       )
     );
   };

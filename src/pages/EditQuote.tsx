@@ -82,14 +82,14 @@ const EditQuote = () => {
     
     // Populate room arrangements based on hotel room types
     if (quote && roomTypes.length > 0) {
-      populateRoomArrangementsFromHotel(roomTypes, quote.duration.nights);
+      populateRoomArrangementsFromHotel(roomTypes, quote.duration_nights);
     }
   };
   
   // Handle adding a new room type to the quote
   const handleAddRoom = (roomType: any) => {
     if (quote) {
-      addRoomArrangement(roomType, quote.duration.nights);
+      addRoomArrangement(roomType, quote.duration_nights);
     }
   };
   
@@ -116,7 +116,7 @@ const EditQuote = () => {
       <QuoteHeader 
         quoteId={quote.id || ""} 
         client={quote.client} 
-        createdAt={quote.createdAt}
+        createdAt={quote.created_at}
         saving={saving}
         handleSave={handleSave}
         previewQuote={previewQuote}
@@ -133,9 +133,12 @@ const EditQuote = () => {
         client={quote.client}
         mobile={quote.mobile}
         destination={quote.destination}
-        startDate={quote.startDate}
-        endDate={quote.endDate}
-        duration={quote.duration}
+        startDate={quote.start_date}
+        endDate={quote.end_date}
+        duration={{
+          days: quote.duration_days,
+          nights: quote.duration_nights
+        }}
         status={quote.status}
       />
       
@@ -195,20 +198,20 @@ const EditQuote = () => {
                         <HotelRoomList 
                           roomTypes={hotel.roomTypes || []}
                           selectedHotel={hotel}
-                          onAddRoom={(roomType) => addRoomArrangement(roomType, quote.duration.nights, hotel.id)}
+                          onAddRoom={(roomType) => addRoomArrangement(roomType, quote.duration_nights, hotel.id)}
                         />
                       </div>
                       
                       {/* Room Arrangements Section for this hotel */}
-                      {quote.roomArrangements.filter(arr => arr.hotelId === hotel.id).length > 0 ? (
+                      {quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id).length > 0 ? (
                         <div>
                           <h3 className="text-md font-medium mb-4">Room Arrangements</h3>
                           <RoomArrangementSection 
-                            roomArrangements={quote.roomArrangements.filter(arr => arr.hotelId === hotel.id)}
-                            duration={quote.duration.nights}
+                            roomArrangements={quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id)}
+                            duration={quote.duration_nights}
                             onRoomArrangementsChange={(arrangements) => {
                               // Preserve arrangements for other hotels
-                              const otherHotelsArrangements = quote.roomArrangements.filter(arr => arr.hotelId !== hotel.id);
+                              const otherHotelsArrangements = quote.room_arrangements.filter(arr => arr.hotel_id !== hotel.id);
                               handleRoomArrangementsChange([...otherHotelsArrangements, ...arrangements]);
                             }}
                             availableRoomTypes={hotel.roomTypes?.map((rt: any) => rt.name) || ["Standard Room", "Deluxe Room", "Suite"]}
@@ -271,11 +274,11 @@ const EditQuote = () => {
                     <div>
                       <h3 className="text-md font-medium mb-4">Room Arrangements</h3>
                       <RoomArrangementSection 
-                        roomArrangements={quote.roomArrangements.filter(arr => arr.hotelId === hotel.id)}
-                        duration={quote.duration.nights}
+                        roomArrangements={quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id)}
+                        duration={quote.duration_nights}
                         onRoomArrangementsChange={(arrangements) => {
                           // Preserve arrangements for other hotels
-                          const otherHotelsArrangements = quote.roomArrangements.filter(arr => arr.hotelId !== hotel.id);
+                          const otherHotelsArrangements = quote.room_arrangements.filter(arr => arr.hotel_id !== hotel.id);
                           handleRoomArrangementsChange([...otherHotelsArrangements, ...arrangements]);
                         }}
                         availableRoomTypes={hotel.roomTypes?.map((rt: any) => rt.name) || ["Standard Room", "Deluxe Room", "Suite"]}

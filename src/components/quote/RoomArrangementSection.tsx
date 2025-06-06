@@ -13,7 +13,7 @@ interface RoomArrangementSectionProps {
   duration: number;
   onRoomArrangementsChange: (arrangements: RoomArrangement[]) => void;
   availableRoomTypes: string[];
-  hotelId?: string; // Added hotelId as an optional prop
+  hotelId?: string;
 }
 
 const defaultRates: PersonTypeRates = {
@@ -54,13 +54,13 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
   }, [duration]);
 
   const calculateRoomTotal = (arrangement: RoomArrangement, nights: number): number => {
-    const { adults, childrenWithBed, childrenNoBed, infants, ratePerNight, numRooms } = arrangement;
+    const { adults, children_with_bed, children_no_bed, infants, rate_per_night, num_rooms } = arrangement;
     
     return (
-      (adults * ratePerNight.adult + 
-       childrenWithBed * ratePerNight.childWithBed + 
-       childrenNoBed * ratePerNight.childNoBed + 
-       infants * ratePerNight.infant) * nights * numRooms
+      (adults * rate_per_night.adult + 
+       children_with_bed * rate_per_night.childWithBed + 
+       children_no_bed * rate_per_night.childNoBed + 
+       infants * rate_per_night.infant) * nights * num_rooms
     );
   };
 
@@ -72,14 +72,14 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
       
     const newArrangement: RoomArrangement = {
       id: newId,
-      hotelId: hotelId || "", // Use the hotelId prop if provided
-      roomType: defaultRoomType,
-      numRooms: 1,
+      hotel_id: hotelId || "",
+      room_type: defaultRoomType,
+      num_rooms: 1,
       adults: 2,
-      childrenWithBed: 0,
-      childrenNoBed: 0,
+      children_with_bed: 0,
+      children_no_bed: 0,
       infants: 0,
-      ratePerNight: { ...defaultRates },
+      rate_per_night: { ...defaultRates },
       nights: duration,
       total: 0
     };
@@ -108,29 +108,29 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
       if (arr.id === id) {
         let updatedArr = { ...arr, [field]: value };
         
-        // Special handling for roomType to reset occupancy if needed
-        if (field === "roomType") {
+        // Special handling for room_type to reset occupancy if needed
+        if (field === "room_type") {
           const maxOccupancy = roomTypeMaxOccupancy[value] || 2;
-          const currentOccupants = updatedArr.adults + updatedArr.childrenWithBed + updatedArr.childrenNoBed;
+          const currentOccupants = updatedArr.adults + updatedArr.children_with_bed + updatedArr.children_no_bed;
           
           if (currentOccupants > maxOccupancy) {
             updatedArr.adults = Math.min(updatedArr.adults, maxOccupancy);
-            updatedArr.childrenWithBed = 0;
-            updatedArr.childrenNoBed = 0;
+            updatedArr.children_with_bed = 0;
+            updatedArr.children_no_bed = 0;
             toast.info(`Adjusted occupancy to match ${value} capacity`);
           }
         }
         
         // Check occupancy after any changes to people counts
-        if (["adults", "childrenWithBed", "childrenNoBed"].includes(field)) {
-          const maxOccupancy = roomTypeMaxOccupancy[updatedArr.roomType] || 2;
+        if (["adults", "children_with_bed", "children_no_bed"].includes(field)) {
+          const maxOccupancy = roomTypeMaxOccupancy[updatedArr.room_type] || 2;
           const currentOccupants = 
             (field === "adults" ? value : updatedArr.adults) + 
-            (field === "childrenWithBed" ? value : updatedArr.childrenWithBed) + 
-            (field === "childrenNoBed" ? value : updatedArr.childrenNoBed);
+            (field === "children_with_bed" ? value : updatedArr.children_with_bed) + 
+            (field === "children_no_bed" ? value : updatedArr.children_no_bed);
           
           if (currentOccupants > maxOccupancy) {
-            toast.error(`Maximum occupancy for ${updatedArr.roomType} is ${maxOccupancy}`);
+            toast.error(`Maximum occupancy for ${updatedArr.room_type} is ${maxOccupancy}`);
             return arr; // Return original unchanged
           }
         }
@@ -140,8 +140,8 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
           const rateField = field.split("_")[1] as keyof PersonTypeRates;
           updatedArr = {
             ...updatedArr,
-            ratePerNight: {
-              ...updatedArr.ratePerNight,
+            rate_per_night: {
+              ...updatedArr.rate_per_night,
               [rateField]: value
             }
           };
@@ -161,12 +161,12 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
   const calculateTotalGuests = () => {
     return arrangements.reduce(
       (total, arr) => ({
-        adults: total.adults + arr.adults * arr.numRooms,
-        childrenWithBed: total.childrenWithBed + arr.childrenWithBed * arr.numRooms,
-        childrenNoBed: total.childrenNoBed + arr.childrenNoBed * arr.numRooms,
-        infants: total.infants + arr.infants * arr.numRooms
+        adults: total.adults + arr.adults * arr.num_rooms,
+        children_with_bed: total.children_with_bed + arr.children_with_bed * arr.num_rooms,
+        children_no_bed: total.children_no_bed + arr.children_no_bed * arr.num_rooms,
+        infants: total.infants + arr.infants * arr.num_rooms
       }),
-      { adults: 0, childrenWithBed: 0, childrenNoBed: 0, infants: 0 }
+      { adults: 0, children_with_bed: 0, children_no_bed: 0, infants: 0 }
     );
   };
 
@@ -205,8 +205,8 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
               <div>
                 <label className="text-sm font-medium mb-2 block">Room Type</label>
                 <Select
-                  value={arrangement.roomType}
-                  onValueChange={(value) => updateArrangement(arrangement.id, "roomType", value)}
+                  value={arrangement.room_type}
+                  onValueChange={(value) => updateArrangement(arrangement.id, "room_type", value)}
                 >
                   <SelectTrigger className="bg-white text-black">
                     <SelectValue placeholder="Select room type" />
@@ -227,8 +227,8 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                 <Input
                   type="number"
                   min="1"
-                  value={arrangement.numRooms}
-                  onChange={(e) => updateArrangement(arrangement.id, "numRooms", parseInt(e.target.value) || 1)}
+                  value={arrangement.num_rooms}
+                  onChange={(e) => updateArrangement(arrangement.id, "num_rooms", parseInt(e.target.value) || 1)}
                   className="bg-white text-black"
                 />
               </div>
@@ -250,8 +250,8 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                 <Input
                   type="number"
                   min="0"
-                  value={arrangement.childrenWithBed}
-                  onChange={(e) => updateArrangement(arrangement.id, "childrenWithBed", parseInt(e.target.value) || 0)}
+                  value={arrangement.children_with_bed}
+                  onChange={(e) => updateArrangement(arrangement.id, "children_with_bed", parseInt(e.target.value) || 0)}
                   className="bg-white text-black"
                 />
               </div>
@@ -260,8 +260,8 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                 <Input
                   type="number"
                   min="0"
-                  value={arrangement.childrenNoBed}
-                  onChange={(e) => updateArrangement(arrangement.id, "childrenNoBed", parseInt(e.target.value) || 0)}
+                  value={arrangement.children_no_bed}
+                  onChange={(e) => updateArrangement(arrangement.id, "children_no_bed", parseInt(e.target.value) || 0)}
                   className="bg-white text-black"
                 />
               </div>
@@ -286,7 +286,7 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                     type="number"
                     min="0"
                     step="0.01"
-                    value={arrangement.ratePerNight.adult}
+                    value={arrangement.rate_per_night.adult}
                     onChange={(e) => updateArrangement(arrangement.id, "rate_adult", parseFloat(e.target.value) || 0)}
                     className="bg-white text-black"
                   />
@@ -297,7 +297,7 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                     type="number"
                     min="0"
                     step="0.01"
-                    value={arrangement.ratePerNight.childWithBed}
+                    value={arrangement.rate_per_night.childWithBed}
                     onChange={(e) => updateArrangement(arrangement.id, "rate_childWithBed", parseFloat(e.target.value) || 0)}
                     className="bg-white text-black"
                   />
@@ -308,7 +308,7 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                     type="number"
                     min="0"
                     step="0.01"
-                    value={arrangement.ratePerNight.childNoBed}
+                    value={arrangement.rate_per_night.childNoBed}
                     onChange={(e) => updateArrangement(arrangement.id, "rate_childNoBed", parseFloat(e.target.value) || 0)}
                     className="bg-white text-black"
                   />
@@ -319,7 +319,7 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
                     type="number"
                     min="0"
                     step="0.01"
-                    value={arrangement.ratePerNight.infant}
+                    value={arrangement.rate_per_night.infant}
                     onChange={(e) => updateArrangement(arrangement.id, "rate_infant", parseFloat(e.target.value) || 0)}
                     className="bg-white text-black"
                   />
@@ -329,10 +329,10 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
             
             <div className="mt-2 p-2 bg-gray-50 rounded-md flex justify-between items-center">
               <span className="text-sm">
-                {arrangement.numRooms} × {arrangement.roomType} × {arrangement.nights} nights 
+                {arrangement.num_rooms} × {arrangement.room_type} × {arrangement.nights} nights 
                 ({arrangement.adults} adults
-                {arrangement.childrenWithBed > 0 ? `, ${arrangement.childrenWithBed} CWB` : ""}
-                {arrangement.childrenNoBed > 0 ? `, ${arrangement.childrenNoBed} CNB` : ""}
+                {arrangement.children_with_bed > 0 ? `, ${arrangement.children_with_bed} CWB` : ""}
+                {arrangement.children_no_bed > 0 ? `, ${arrangement.children_no_bed} CNB` : ""}
                 {arrangement.infants > 0 ? `, ${arrangement.infants} infants` : ""})
               </span>
               <span className="font-medium">${arrangement.total.toFixed(2)}</span>
@@ -346,8 +346,8 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
               <p className="font-medium">Total Guests:</p>
               <p className="text-sm">
                 {totalGuests.adults} Adults
-                {totalGuests.childrenWithBed > 0 ? `, ${totalGuests.childrenWithBed} Child with Bed` : ""}
-                {totalGuests.childrenNoBed > 0 ? `, ${totalGuests.childrenNoBed} Child No Bed` : ""}
+                {totalGuests.children_with_bed > 0 ? `, ${totalGuests.children_with_bed} Child with Bed` : ""}
+                {totalGuests.children_no_bed > 0 ? `, ${totalGuests.children_no_bed} Child No Bed` : ""}
                 {totalGuests.infants > 0 ? `, ${totalGuests.infants} Infants` : ""}
               </p>
             </div>
@@ -363,4 +363,3 @@ const RoomArrangementSection: React.FC<RoomArrangementSectionProps> = ({
 };
 
 export default RoomArrangementSection;
-
