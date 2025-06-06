@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { useRole } from "../contexts/RoleContext";
 import { toast } from "sonner";
-import { Hotel as HotelIcon } from "lucide-react";
 import { useHotelsData } from "../hooks/useHotelsData";
 import HotelsHeader from "../components/hotel/HotelsHeader";
 import HotelFilters from "../components/hotel/HotelFilters";
 import HotelTable from "../components/hotel/HotelTable";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Button } from "../components/ui/button";
 
 const Hotels = () => {
   const { role, tier, permissions } = useRole();
@@ -19,7 +20,9 @@ const Hotels = () => {
     search, 
     setSearch, 
     filteredHotels,
-    toggleHotelStatus 
+    toggleHotelStatus,
+    isLoading,
+    error
   } = useHotelsData();
 
   useEffect(() => {
@@ -60,6 +63,29 @@ const Hotels = () => {
   // Show add button based on permissions
   const showAddButton = permissions.canAddHotels;
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <HotelsHeader 
+          title={getRoleTitle()} 
+          subtitle={getSubtitle()} 
+          showAddButton={showAddButton} 
+          role={role} 
+        />
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Failed to Load Hotels</h2>
+            <p className="text-gray-600 mb-4">There was an error loading your hotels. Please try again.</p>
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <HotelsHeader 
@@ -85,11 +111,18 @@ const Hotels = () => {
             setSearch={setSearch}
           />
 
-          <HotelTable 
-            hotels={filteredHotels}
-            permissions={permissions}
-            onToggleStatus={toggleHotelStatus}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <span className="ml-2">Loading hotels...</span>
+            </div>
+          ) : (
+            <HotelTable 
+              hotels={filteredHotels}
+              permissions={permissions}
+              onToggleStatus={toggleHotelStatus}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

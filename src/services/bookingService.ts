@@ -4,199 +4,260 @@ import { toast } from "sonner";
 import { Booking, TravelVoucher } from "../types/booking.types";
 
 export const getAllBookings = async (): Promise<Booking[]> => {
-  console.log("Fetching all bookings...");
-  // Return mock booking data
-  return [
-    {
-      id: "booking-1",
-      booking_reference: "BK-2024-0001",
-      quote_id: "quote-1",
-      client: "John Doe",
-      agent_id: "agent-1",
-      hotel_id: "hotel-1",
-      hotel_name: "Zanzibar Beach Resort",
-      travel_start: "2024-08-20",
-      travel_end: "2024-08-27",
-      room_arrangement: [
-        {
-          id: "room-1",
-          hotelId: "hotel-1",
-          roomType: "Deluxe Ocean View",
-          numRooms: 1,
-          adults: 2,
-          childrenWithBed: 1,
-          childrenNoBed: 0,
-          infants: 0,
-          ratePerNight: {
-            adult: 150,
-            childWithBed: 100,
-            childNoBed: 50,
-            infant: 0
-          },
-          nights: 7,
-          total: 1400
-        }
-      ],
-      transport: [],
-      activities: [],
-      transfers: [],
-      status: "pending",
-      payment_status: "pending",
-      total_price: 1610,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      notes: ""
+  try {
+    console.log('[BookingService] Fetching bookings from database');
+    
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[BookingService] Error fetching bookings:', error);
+      throw error;
     }
-  ];
+
+    console.log('[BookingService] Fetched bookings:', data?.length || 0);
+    return data || [];
+  } catch (error) {
+    console.error('[BookingService] Error in getAllBookings:', error);
+    toast.error('Failed to load bookings');
+    return [];
+  }
 };
 
 export const getBookingById = async (id: string): Promise<Booking | null> => {
-  console.log("Fetching booking by ID:", id);
-  // Return mock booking data
-  return {
-    id,
-    booking_reference: "BK-2024-0001",
-    quote_id: "quote-1",
-    client: "John Doe",
-    agent_id: "agent-1",
-    hotel_id: "hotel-1",
-    hotel_name: "Zanzibar Beach Resort",
-    travel_start: "2024-08-20",
-    travel_end: "2024-08-27",
-    room_arrangement: [
-      {
-        id: "room-1",
-        hotelId: "hotel-1",
-        roomType: "Deluxe Ocean View",
-        numRooms: 1,
-        adults: 2,
-        childrenWithBed: 1,
-        childrenNoBed: 0,
-        infants: 0,
-        ratePerNight: {
-          adult: 150,
-          childWithBed: 100,
-          childNoBed: 50,
-          infant: 0
-        },
-        nights: 7,
-        total: 1400
-      }
-    ],
-    transport: [],
-    activities: [],
-    transfers: [],
-    status: "pending",
-    payment_status: "pending",
-    total_price: 1610,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    notes: ""
-  };
+  try {
+    console.log('[BookingService] Fetching booking by ID:', id);
+    
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[BookingService] Error fetching booking:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('[BookingService] Error in getBookingById:', error);
+    toast.error('Failed to load booking details');
+    return null;
+  }
 };
 
 export const updateBookingStatus = async (id: string, status: string) => {
-  console.log("Updating booking status:", id, status);
-  toast.success(`Booking ${id} status updated to ${status}`);
-  return true;
+  try {
+    console.log('[BookingService] Updating booking status:', id, status);
+    
+    const { error } = await supabase
+      .from('bookings')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('[BookingService] Error updating booking status:', error);
+      toast.error('Failed to update booking status');
+      throw error;
+    }
+
+    toast.success(`Booking status updated to ${status}`);
+    return true;
+  } catch (error) {
+    console.error('[BookingService] Error in updateBookingStatus:', error);
+    throw error;
+  }
 };
 
 export const createBookingFromQuote = async (quoteId: string, hotelId: string): Promise<Booking> => {
-  console.log("Creating booking from quote:", quoteId, hotelId);
-  
-  const booking: Booking = {
-    id: crypto.randomUUID(),
-    booking_reference: `BK-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}`,
-    quote_id: quoteId,
-    client: "John Doe",
-    agent_id: "agent-1",
-    hotel_id: hotelId,
-    hotel_name: "Selected Hotel",
-    travel_start: "2024-08-20",
-    travel_end: "2024-08-27",
-    room_arrangement: [
-      {
-        id: "room-1",
-        hotelId: hotelId,
-        roomType: "Standard Room",
-        numRooms: 1,
-        adults: 2,
-        childrenWithBed: 0,
-        childrenNoBed: 0,
-        infants: 0,
-        ratePerNight: {
-          adult: 100,
-          childWithBed: 70,
-          childNoBed: 40,
-          infant: 0
-        },
-        nights: 7,
-        total: 1400
-      }
-    ],
-    transport: [],
-    activities: [],
-    transfers: [],
-    status: "pending",
-    payment_status: "pending",
-    total_price: 1610,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-  
-  toast.success("Booking created successfully");
-  return booking;
+  try {
+    console.log('[BookingService] Creating booking from quote:', quoteId, hotelId);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // First get the quote details
+    const { data: quote, error: quoteError } = await supabase
+      .from('quotes')
+      .select('*')
+      .eq('id', quoteId)
+      .maybeSingle();
+
+    if (quoteError || !quote) {
+      throw new Error('Quote not found');
+    }
+
+    // Create booking data
+    const bookingData = {
+      quote_id: quoteId,
+      client: quote.client,
+      agent_id: user.id,
+      hotel_id: hotelId,
+      hotel_name: 'Selected Hotel', // This should be fetched from hotels table
+      travel_start: quote.start_date,
+      travel_end: quote.end_date,
+      room_arrangement: quote.room_arrangements,
+      transport: quote.transports || [],
+      activities: quote.activities || [],
+      transfers: quote.transfers || [],
+      status: 'pending',
+      payment_status: 'pending',
+      total_price: 0, // This should be calculated
+      notes: quote.notes || ''
+    };
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert([bookingData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[BookingService] Error creating booking:', error);
+      toast.error('Failed to create booking');
+      throw error;
+    }
+
+    toast.success('Booking created successfully');
+    return data;
+  } catch (error) {
+    console.error('[BookingService] Error in createBookingFromQuote:', error);
+    throw error;
+  }
 };
 
 export const createVoucherForBooking = async (bookingId: string): Promise<TravelVoucher> => {
-  console.log("Creating voucher for booking:", bookingId);
-  
-  const voucher: TravelVoucher = {
-    id: crypto.randomUUID(),
-    booking_id: bookingId,
-    voucher_reference: `VC-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}`,
-    voucher_pdf_url: null,
-    issued_date: new Date().toISOString(),
-    issued_by: "system",
-    notes: "",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    email_sent: false
-  };
-  
-  toast.success("Travel voucher created successfully");
-  return voucher;
+  try {
+    console.log('[BookingService] Creating voucher for booking:', bookingId);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    const voucherData = {
+      booking_id: bookingId,
+      issued_by: user.id,
+      issued_date: new Date().toISOString(),
+      email_sent: false,
+      notes: ''
+    };
+
+    const { data, error } = await supabase
+      .from('travel_vouchers')
+      .insert([voucherData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[BookingService] Error creating voucher:', error);
+      toast.error('Failed to create voucher');
+      throw error;
+    }
+
+    toast.success('Travel voucher created successfully');
+    return data;
+  } catch (error) {
+    console.error('[BookingService] Error in createVoucherForBooking:', error);
+    throw error;
+  }
 };
 
 export const getVoucherByBookingId = async (bookingId: string): Promise<TravelVoucher | null> => {
-  console.log("Fetching voucher for booking:", bookingId);
-  // Return null for now (no voucher exists)
-  return null;
+  try {
+    console.log('[BookingService] Fetching voucher for booking:', bookingId);
+    
+    const { data, error } = await supabase
+      .from('travel_vouchers')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[BookingService] Error fetching voucher:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('[BookingService] Error in getVoucherByBookingId:', error);
+    return null;
+  }
 };
 
 export const getAllVouchers = async (): Promise<TravelVoucher[]> => {
-  console.log("Fetching all vouchers...");
-  return [];
+  try {
+    console.log('[BookingService] Fetching all vouchers');
+    
+    const { data, error } = await supabase
+      .from('travel_vouchers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[BookingService] Error fetching vouchers:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('[BookingService] Error in getAllVouchers:', error);
+    return [];
+  }
 };
 
 export const getVoucherById = async (id: string): Promise<TravelVoucher | null> => {
-  console.log("Fetching voucher by ID:", id);
-  return {
-    id,
-    booking_id: "booking-1",
-    voucher_reference: "VC-2024-0001",
-    voucher_pdf_url: null,
-    issued_date: new Date().toISOString(),
-    issued_by: "system",
-    notes: "",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    email_sent: false
-  };
+  try {
+    console.log('[BookingService] Fetching voucher by ID:', id);
+    
+    const { data, error } = await supabase
+      .from('travel_vouchers')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[BookingService] Error fetching voucher:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('[BookingService] Error in getVoucherById:', error);
+    return null;
+  }
 };
 
 export const updateVoucherEmailStatus = async (id: string, emailSent: boolean) => {
-  console.log("Updating voucher email status:", id, emailSent);
-  toast.success("Voucher email status updated");
-  return true;
+  try {
+    console.log('[BookingService] Updating voucher email status:', id, emailSent);
+    
+    const { error } = await supabase
+      .from('travel_vouchers')
+      .update({ 
+        email_sent: emailSent,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('[BookingService] Error updating voucher email status:', error);
+      toast.error('Failed to update voucher email status');
+      throw error;
+    }
+
+    toast.success('Voucher email status updated');
+    return true;
+  } catch (error) {
+    console.error('[BookingService] Error in updateVoucherEmailStatus:', error);
+    throw error;
+  }
 };
