@@ -1,59 +1,293 @@
-
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Textarea } from "../ui/textarea";
+import { Calendar } from "../ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { CalendarIcon, Users, MapPin, FileText } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { cn } from "../../lib/utils";
 import { QuoteData } from "../../types/quote.types";
 
 interface QuoteInitializerProps {
-  inquiryId?: string;
-  onQuoteInitialized: (quote: QuoteData) => void;
+  onInitializeQuote: (quote: QuoteData) => Promise<void>;
+  onCancel: () => void;
+  preselectedInquiry?: any;
 }
 
 const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
-  inquiryId,
-  onQuoteInitialized,
+  onInitializeQuote,
+  onCancel,
+  preselectedInquiry
 }) => {
+  const [formData, setFormData] = useState({
+    client: "",
+    mobile: "",
+    destination: "",
+    startDate: undefined as Date | undefined,
+    endDate: undefined as Date | undefined,
+    adults: 1,
+    childrenWithBed: 0,
+    childrenNoBed: 0,
+    infants: 0,
+    tourType: "domestic",
+    notes: ""
+  });
+
   useEffect(() => {
-    const initializeQuote = () => {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const nextWeek = new Date(now);
-      nextWeek.setDate(nextWeek.getDate() + 7);
+    if (preselectedInquiry) {
+      setFormData({
+        client: preselectedInquiry.client || "",
+        mobile: preselectedInquiry.mobile || "",
+        destination: preselectedInquiry.destination || "",
+        startDate: preselectedInquiry.start_date ? new Date(preselectedInquiry.start_date) : undefined,
+        endDate: preselectedInquiry.end_date ? new Date(preselectedInquiry.end_date) : undefined,
+        adults: preselectedInquiry.adults || 1,
+        childrenWithBed: preselectedInquiry.children_with_bed || 0,
+        childrenNoBed: preselectedInquiry.children_no_bed || 0,
+        infants: preselectedInquiry.infants || 0,
+        tourType: preselectedInquiry.tour_type || "domestic",
+        notes: preselectedInquiry.notes || ""
+      });
+    }
+  }, [preselectedInquiry]);
 
-      const initialQuote: QuoteData = {
-        id: crypto.randomUUID(),
-        inquiry_id: inquiryId,
-        client: "",
-        mobile: "",
-        destination: "",
-        start_date: tomorrow.toISOString().split('T')[0],
-        end_date: nextWeek.toISOString().split('T')[0],
-        duration_days: 7,
-        duration_nights: 6,
-        adults: 2,
-        children_with_bed: 0,
-        children_no_bed: 0,
-        infants: 0,
-        tour_type: "domestic",
-        status: "draft",
-        currency_code: "USD",
-        markup_type: "percentage",
-        markup_value: 15,
-        room_arrangements: [],
-        activities: [],
-        transports: [],
-        transfers: [],
-        notes: "",
-        created_at: now.toISOString(),
-        updated_at: now.toISOString(),
-      };
+  const calculateDuration = () => {
+    if (!formData.startDate || !formData.endDate) return { days: 0, nights: 0 };
+    
+    const nights = differenceInDays(formData.endDate, formData.startDate);
+    const days = nights + 1;
+    
+    return { days: Math.max(0, days), nights: Math.max(0, nights) };
+  };
 
-      onQuoteInitialized(initialQuote);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.startDate || !formData.endDate) {
+      return;
+    }
+
+    const duration = calculateDuration();
+    
+    const quoteData: QuoteData = {
+      id: crypto.randomUUID(),
+      client: formData.client,
+      mobile: formData.mobile,
+      destination: formData.destination,
+      start_date: format(formData.startDate, 'yyyy-MM-dd'),
+      end_date: format(formData.endDate, 'yyyy-MM-dd'),
+      duration_days: duration.days,
+      duration_nights: duration.nights,
+      adults: formData.adults,
+      children_with_bed: formData.childrenWithBed,
+      children_no_bed: formData.childrenNoBed,
+      infants: formData.infants,
+      tour_type: formData.tourType,
+      status: 'draft',
+      notes: formData.notes,
+      currency_code: 'USD',
+      markup_type: 'percentage',
+      markup_value: 25,
+      room_arrangements: [],
+      activities: [],
+      transports: [],
+      transfers: []
     };
 
-    initializeQuote();
-  }, [inquiryId, onQuoteInitialized]);
+    await onInitializeQuote(quoteData);
+  };
 
-  return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Initialize New Quote
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Client Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Client Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="client">Client Name *</Label>
+                <Input
+                  id="client"
+                  value={formData.client}
+                  onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="mobile">Mobile Number *</Label>
+                <Input
+                  id="mobile"
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Travel Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Travel Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="destination">Destination *</Label>
+                <Input
+                  id="destination"
+                  value={formData.destination}
+                  onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Start Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.startDate ? format(formData.startDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.startDate}
+                      onSelect={(date) => setFormData({ ...formData, startDate: date })}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label>End Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.endDate ? format(formData.endDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.endDate}
+                      onSelect={(date) => setFormData({ ...formData, endDate: date })}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+
+          {/* Group Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Group Information</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="adults">Adults</Label>
+                <Input
+                  id="adults"
+                  type="number"
+                  min="1"
+                  value={formData.adults}
+                  onChange={(e) => setFormData({ ...formData, adults: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="childrenWithBed">Children with Bed</Label>
+                <Input
+                  id="childrenWithBed"
+                  type="number"
+                  min="0"
+                  value={formData.childrenWithBed}
+                  onChange={(e) => setFormData({ ...formData, childrenWithBed: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="childrenNoBed">Children no Bed</Label>
+                <Input
+                  id="childrenNoBed"
+                  type="number"
+                  min="0"
+                  value={formData.childrenNoBed}
+                  onChange={(e) => setFormData({ ...formData, childrenNoBed: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="infants">Infants</Label>
+                <Input
+                  id="infants"
+                  type="number"
+                  min="0"
+                  value={formData.infants}
+                  onChange={(e) => setFormData({ ...formData, infants: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Tour Type */}
+          <div>
+            <Label htmlFor="tourType">Tour Type</Label>
+            <Select value={formData.tourType} onValueChange={(value) => setFormData({ ...formData, tourType: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="domestic">Domestic</SelectItem>
+                <SelectItem value="international">International</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Additional notes or special requirements..."
+              rows={3}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              Initialize Quote
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
 };
 
 export default QuoteInitializer;

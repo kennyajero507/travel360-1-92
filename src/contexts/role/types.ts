@@ -1,77 +1,51 @@
 
-// User roles in the system
-export type UserRole = 'system_admin' | 'org_owner' | 'tour_operator' | 'agent' | 'client';
-
-// Types of subscription tiers available
-export type SubscriptionTier = 'starter' | 'pro' | 'enterprise' | 'free_trial';
-
-// User with basic information
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  organizationId?: string;
-  phone?: string;
-}
-
-// Organization information
-export interface Organization {
-  id: string;
-  name: string;
-  ownerId: string;
-  tier: SubscriptionTier;
-  memberCount: number;
-  createdAt: string;
-}
-
-// All possible permissions in the system
 export interface Permissions {
-  // System management
-  canManageAllOrganizations: boolean;
-  canConfigureGlobalIntegrations: boolean;
-  canSetSecurityPolicies: boolean;
-  canViewSystemWideAnalytics: boolean;
-  canAccessSystemSettings: boolean;
+  // Core permissions
+  canViewDashboard: boolean;
+  canManageTeam: boolean;
+  canViewSettings: boolean;
+  canManageSettings: boolean;
   
-  // Organization management
-  canManageTeamMembers: boolean;
-  canControlBilling: boolean;
-  
-  // Hotel management
-  canAddHotels: boolean;
-  canEditHotels: boolean;
-  canApproveHotels: boolean;
-  canSubmitHotels: boolean;
-  canSetPreferredVendors: boolean;
-  canImportExportHotels: boolean;
-  
-  // Quote management
-  canAccessAllCompanyQuotes: boolean;
+  // Inquiry permissions
+  canCreateInquiries: boolean;
+  canViewInquiries: boolean;
+  canEditInquiries: boolean;
+  canDeleteInquiries: boolean;
   canAssignInquiries: boolean;
+  
+  // Quote permissions
+  canCreateQuotes: boolean;
+  canViewQuotes: boolean;
+  canEditQuotes: boolean;
+  canDeleteQuotes: boolean;
   canGenerateQuotes: boolean;
-  canModifyQuotes: boolean;
   
-  // Agent management
-  canManageAgents: boolean;
+  // Hotel permissions
+  canCreateHotels: boolean;
+  canViewHotels: boolean;
+  canEditHotels: boolean;
+  canDeleteHotels: boolean;
   
-  // Analytics
-  canViewTeamMetrics: boolean;
-  canViewCompanyReports: boolean;
+  // Booking permissions
+  canCreateBookings: boolean;
+  canViewBookings: boolean;
+  canEditBookings: boolean;
+  canDeleteBookings: boolean;
   
-  // Client communication
-  canCommunicateWithClients: boolean;
+  // Client permissions
+  canViewClients: boolean;
+  canEditClients: boolean;
+  
+  // Report permissions
+  canViewReports: boolean;
+  canExportReports: boolean;
 }
 
-// The type of the context value returned by useRole
+export type UserRole = 'system_admin' | 'org_owner' | 'tour_operator' | 'agent';
+
 export interface RoleContextType {
-  role: UserRole;
-  setRole: (role: UserRole) => void;
-  tier: SubscriptionTier;
-  setTier: (tier: SubscriptionTier) => void;
-  hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
-  currentUser: User;
-  setCurrentUser: (user: User) => void;
+  role: UserRole | null;
   permissions: Permissions;
-  organization?: Organization;
-  setOrganization: (org: Organization | undefined) => void;
+  loading: boolean;
+  setRole: (role: UserRole) => void;
 }

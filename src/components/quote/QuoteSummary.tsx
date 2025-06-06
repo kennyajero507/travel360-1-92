@@ -1,179 +1,117 @@
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Hotel } from "../../types/hotel.types";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
+import { Calendar, Users, MapPin, Hotel, DollarSign } from "lucide-react";
 import { QuoteData } from "../../types/quote.types";
 
 interface QuoteSummaryProps {
   quote: QuoteData;
-  selectedHotels?: Hotel[];
 }
 
-const QuoteSummary: React.FC<QuoteSummaryProps> = ({ 
-  quote, 
-  selectedHotels = [] 
-}) => {
-  const travelers = {
-    adults: quote.adults,
-    childrenWithBed: quote.children_with_bed,
-    childrenNoBed: quote.children_no_bed,
-    infants: quote.infants
+const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote }) => {
+  const calculateSubtotal = () => {
+    const roomTotal = quote.room_arrangements?.reduce((sum, room) => sum + (room.total || 0), 0) || 0;
+    const activitiesTotal = quote.activities?.reduce((sum, activity) => sum + (activity.cost * activity.num_people || 0), 0) || 0;
+    const transportTotal = quote.transports?.reduce((sum, transport) => sum + (transport.cost || 0), 0) || 0;
+    const transfersTotal = quote.transfers?.reduce((sum, transfer) => sum + (transfer.cost || 0), 0) || 0;
+    
+    return roomTotal + activitiesTotal + transportTotal + transfersTotal;
   };
 
-  const calculateTotalCost = () => {
-    const roomTotal = quote.room_arrangements.reduce((sum, room) => sum + room.total, 0);
-    const activitiesTotal = quote.activities.reduce((sum, activity) => sum + activity.cost, 0);
-    const transfersTotal = quote.transfers.reduce((sum, transfer) => sum + transfer.cost, 0);
-    const transportsTotal = quote.transports.reduce((sum, transport) => sum + transport.cost, 0);
+  const calculateMarkup = () => {
+    const subtotal = calculateSubtotal();
+    const markupType = quote.markup_type || "percentage";
+    const markupValue = quote.markup_value || 0;
     
-    const subtotal = roomTotal + activitiesTotal + transfersTotal + transportsTotal;
-    
-    let markup = 0;
-    if (quote.markup_type === 'percentage') {
-      markup = subtotal * (quote.markup_value / 100);
-    } else if (quote.markup_type === 'fixed') {
-      markup = quote.markup_value;
+    if (markupType === "percentage") {
+      return (subtotal * markupValue) / 100;
+    } else {
+      return markupValue;
     }
-    
-    return subtotal + markup;
   };
 
-  const totalCost = calculateTotalCost();
-  const totalTravelers = travelers.adults + travelers.childrenWithBed + travelers.childrenNoBed;
-  const costPerPerson = totalTravelers > 0 ? totalCost / totalTravelers : 0;
-
-  const accommodationSummary = () => {
-    const summary = quote.room_arrangements.reduce((acc, room) => {
-      const roomCost = room.total;
-      const totalGuests = room.adults + room.children_with_bed + room.children_no_bed + room.infants;
-      
-      acc.totalRooms += room.num_rooms;
-      acc.totalNights += room.nights;
-      acc.totalCost += roomCost;
-      acc.totalGuests += totalGuests;
-      
-      return acc;
-    }, {
-      totalRooms: 0,
-      totalNights: 0,
-      totalCost: 0,
-      totalGuests: 0
-    });
-
-    return summary;
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateMarkup();
   };
-
-  const accommodation = accommodationSummary();
 
   return (
     <div className="space-y-6">
       {/* Quote Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>Quote Summary</CardTitle>
-          <CardDescription>
-            {quote.destination} • {quote.duration_days} days, {quote.duration_nights} nights
-          </CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Quote Overview
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Client</p>
+              <h4 className="font-medium text-gray-700">Client</h4>
               <p className="text-lg">{quote.client}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Mobile</p>
-              <p className="text-lg">{quote.mobile}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Tour Type</p>
-              <p className="text-lg capitalize">{quote.tour_type}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <p className="text-lg capitalize">{quote.status}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Travelers Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Travelers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-blue-600">{travelers.adults}</p>
-              <p className="text-sm text-gray-500">Adults</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-green-600">{travelers.childrenWithBed}</p>
-              <p className="text-sm text-gray-500">Children with Bed</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-yellow-600">{travelers.childrenNoBed}</p>
-              <p className="text-sm text-gray-500">Children no Bed</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-purple-600">{travelers.infants}</p>
-              <p className="text-sm text-gray-500">Infants</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Accommodation Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Accommodation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Rooms</p>
-              <p className="text-lg">{accommodation.totalRooms}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Nights</p>
-              <p className="text-lg">{accommodation.totalNights}</p>
+              <h4 className="font-medium text-gray-700">Status</h4>
+              <Badge variant={quote.status === 'approved' ? 'default' : 'secondary'}>
+                {quote.status}
+              </Badge>
             </div>
           </div>
           
-          {quote.room_arrangements.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-500 mb-2">Room Arrangements</p>
-              <div className="space-y-2">
-                {quote.room_arrangements.map((room, index) => (
-                  <div key={room.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span className="text-sm">
-                      {room.num_rooms}× {room.room_type} ({room.adults}A, {room.children_with_bed}CWB, {room.children_no_bed}CNB, {room.infants}I) × {room.nights}N
-                    </span>
-                    <span className="font-medium">${room.total.toFixed(2)}</span>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-400" />
+              <div>
+                <h4 className="font-medium text-gray-700">Destination</h4>
+                <p>{quote.destination}</p>
               </div>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <div>
+                <h4 className="font-medium text-gray-700">Travel Dates</h4>
+                <p>{new Date(quote.start_date).toLocaleDateString()} - {new Date(quote.end_date).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-gray-400" />
+              <div>
+                <h4 className="font-medium text-gray-700">Travelers</h4>
+                <p>{quote.adults + quote.children_with_bed + quote.children_no_bed} people</p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Activities Summary */}
-      {quote.activities.length > 0 && (
+      {/* Room Arrangements */}
+      {quote.room_arrangements && quote.room_arrangements.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Activities</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Hotel className="h-5 w-5" />
+              Accommodation
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {quote.activities.map((activity, index) => (
-                <div key={activity.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+            <div className="space-y-3">
+              {quote.room_arrangements.map((room, index) => (
+                <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
                   <div>
-                    <p className="font-medium">{activity.name}</p>
-                    <p className="text-sm text-gray-500">{activity.description}</p>
+                    <h4 className="font-medium">{room.room_type}</h4>
+                    <p className="text-sm text-gray-600">
+                      {room.num_rooms} room(s) × {room.nights} nights
+                      ({room.adults} adults
+                      {room.children_with_bed > 0 && `, ${room.children_with_bed} CWB`}
+                      {room.children_no_bed > 0 && `, ${room.children_no_bed} CNB`}
+                      {room.infants > 0 && `, ${room.infants} infants`})
+                    </p>
                   </div>
-                  <span className="font-medium">${activity.cost.toFixed(2)}</span>
+                  <div className="text-right">
+                    <p className="font-medium">${room.total?.toFixed(2)}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -181,74 +119,60 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
         </Card>
       )}
 
-      {/* Cost Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cost Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Accommodation</span>
-              <span>${accommodation.totalCost.toFixed(2)}</span>
-            </div>
-            {quote.activities.length > 0 && (
-              <div className="flex justify-between">
-                <span>Activities</span>
-                <span>${quote.activities.reduce((sum, a) => sum + a.cost, 0).toFixed(2)}</span>
-              </div>
-            )}
-            {quote.transfers.length > 0 && (
-              <div className="flex justify-between">
-                <span>Transfers</span>
-                <span>${quote.transfers.reduce((sum, t) => sum + t.cost, 0).toFixed(2)}</span>
-              </div>
-            )}
-            {quote.transports.length > 0 && (
-              <div className="flex justify-between">
-                <span>Transport</span>
-                <span>${quote.transports.reduce((sum, t) => sum + t.cost, 0).toFixed(2)}</span>
-              </div>
-            )}
-            
-            <hr className="my-2" />
-            
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>${(totalCost - (quote.markup_type === 'percentage' ? totalCost * (quote.markup_value / 100) : quote.markup_value)).toFixed(2)}</span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span>Markup ({quote.markup_type === 'percentage' ? `${quote.markup_value}%` : 'Fixed'})</span>
-              <span>${(quote.markup_type === 'percentage' ? totalCost * (quote.markup_value / 100) : quote.markup_value).toFixed(2)}</span>
-            </div>
-            
-            <hr className="my-2" />
-            
-            <div className="flex justify-between text-lg font-bold">
-              <span>Total Cost</span>
-              <span>${totalCost.toFixed(2)}</span>
-            </div>
-            
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>Cost per Person</span>
-              <span>${costPerPerson.toFixed(2)}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      {quote.notes && (
+      {/* Activities */}
+      {quote.activities && quote.activities.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>Activities</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700">{quote.notes}</p>
+            <div className="space-y-3">
+              {quote.activities.map((activity, index) => (
+                <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">{activity.name}</h4>
+                    <p className="text-sm text-gray-600">{activity.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">${(activity.cost * activity.num_people).toFixed(2)}</p>
+                    <p className="text-sm text-gray-600">{activity.num_people} people</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Price Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Price Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span>${calculateSubtotal().toFixed(2)}</span>
+          </div>
+          
+          <div className="flex justify-between">
+            <span>Markup ({quote.markup_type === 'percentage' ? `${quote.markup_value}%` : 'Fixed'})</span>
+            <span>${calculateMarkup().toFixed(2)}</span>
+          </div>
+          
+          <Separator />
+          
+          <div className="flex justify-between items-center text-lg font-bold">
+            <span>Total</span>
+            <span className="text-teal-600">${calculateTotal().toFixed(2)}</span>
+          </div>
+          
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>Per Person</span>
+            <span>${(calculateTotal() / Math.max(1, quote.adults + quote.children_with_bed + quote.children_no_bed)).toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,122 +1,117 @@
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  getAllQuotes, 
+  saveQuote, 
+  deleteQuote, 
+  emailQuote, 
+  printQuote, 
+  downloadQuotePDF 
+} from "../services/quoteService";
+import { QuoteData } from "../types/quote.types";
+import { toast } from "sonner";
 
 export const useQuoteData = () => {
   const queryClient = useQueryClient();
 
-  const { data: quotes, isLoading, error } = useQuery({
+  // Fetch quotes
+  const { 
+    data: quotes = [], 
+    isLoading: loading, 
+    error 
+  } = useQuery({
     queryKey: ['quotes'],
-    queryFn: async () => {
-      console.log('[useQuoteData] Fetching quotes from database');
-      
-      const { data, error } = await supabase
-        .from('quotes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[useQuoteData] Error fetching quotes:', error);
-        throw error;
-      }
-
-      console.log('[useQuoteData] Fetched quotes:', data?.length || 0);
-      return data || [];
-    },
+    queryFn: getAllQuotes,
   });
 
-  const createQuote = async (quoteData: any) => {
-    try {
-      console.log('[useQuoteData] Creating quote:', quoteData);
-      
-      const { data, error } = await supabase
-        .from('quotes')
-        .insert([quoteData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('[useQuoteData] Error creating quote:', error);
-        toast.error('Failed to create quote');
-        throw error;
-      }
-
-      console.log('[useQuoteData] Quote created successfully:', data);
-      toast.success('Quote created successfully');
-      
-      // Invalidate and refetch quotes
+  // Create quote mutation
+  const createQuoteMutation = useMutation({
+    mutationFn: saveQuote,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
-      
-      return data;
-    } catch (error) {
-      console.error('[useQuoteData] Error in createQuote:', error);
-      throw error;
+      toast.success("Quote created successfully");
+    },
+    onError: (error) => {
+      console.error("Error creating quote:", error);
+      toast.error("Failed to create quote");
     }
-  };
+  });
 
-  const updateQuote = async (quoteId: string, updates: any) => {
-    try {
-      console.log('[useQuoteData] Updating quote:', quoteId, updates);
-      
-      const { data, error } = await supabase
-        .from('quotes')
-        .update(updates)
-        .eq('id', quoteId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('[useQuoteData] Error updating quote:', error);
-        toast.error('Failed to update quote');
-        throw error;
-      }
-
-      console.log('[useQuoteData] Quote updated successfully:', data);
-      toast.success('Quote updated successfully');
-      
-      // Invalidate and refetch quotes
+  // Update quote mutation
+  const updateQuoteMutation = useMutation({
+    mutationFn: saveQuote,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
-      
-      return data;
-    } catch (error) {
-      console.error('[useQuoteData] Error in updateQuote:', error);
-      throw error;
+      toast.success("Quote updated successfully");
+    },
+    onError: (error) => {
+      console.error("Error updating quote:", error);
+      toast.error("Failed to update quote");
     }
-  };
+  });
 
-  const deleteQuote = async (quoteId: string) => {
-    try {
-      console.log('[useQuoteData] Deleting quote:', quoteId);
-      
-      const { error } = await supabase
-        .from('quotes')
-        .delete()
-        .eq('id', quoteId);
-
-      if (error) {
-        console.error('[useQuoteData] Error deleting quote:', error);
-        toast.error('Failed to delete quote');
-        throw error;
-      }
-
-      console.log('[useQuoteData] Quote deleted successfully');
-      toast.success('Quote deleted successfully');
-      
-      // Invalidate and refetch quotes
+  // Delete quote mutation
+  const deleteQuoteMutation = useMutation({
+    mutationFn: deleteQuote,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
-    } catch (error) {
-      console.error('[useQuoteData] Error in deleteQuote:', error);
-      throw error;
+      toast.success("Quote deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Error deleting quote:", error);
+      toast.error("Failed to delete quote");
     }
-  };
+  });
+
+  // Email quote mutation
+  const emailQuoteMutation = useMutation({
+    mutationFn: emailQuote,
+    onSuccess: () => {
+      toast.success("Quote sent via email");
+    },
+    onError: (error) => {
+      console.error("Error emailing quote:", error);
+      toast.error("Failed to send quote via email");
+    }
+  });
+
+  // Print quote mutation
+  const printQuoteMutation = useMutation({
+    mutationFn: printQuote,
+    onSuccess: () => {
+      toast.success("Quote sent to printer");
+    },
+    onError: (error) => {
+      console.error("Error printing quote:", error);
+      toast.error("Failed to print quote");
+    }
+  });
+
+  // Download PDF mutation
+  const downloadPDFMutation = useMutation({
+    mutationFn: downloadQuotePDF,
+    onSuccess: () => {
+      toast.success("Quote PDF downloaded");
+    },
+    onError: (error) => {
+      console.error("Error downloading PDF:", error);
+      toast.error("Failed to download PDF");
+    }
+  });
 
   return {
-    quotes: quotes || [],
-    isLoading,
+    quotes,
+    loading,
     error,
-    createQuote,
-    updateQuote,
-    deleteQuote
+    createQuote: createQuoteMutation.mutateAsync,
+    updateQuote: updateQuoteMutation.mutateAsync,
+    deleteQuote: deleteQuoteMutation.mutateAsync,
+    emailQuote: emailQuoteMutation.mutateAsync,
+    printQuote: printQuoteMutation.mutateAsync,
+    downloadQuotePDF: downloadPDFMutation.mutateAsync,
+    isCreating: createQuoteMutation.isPending,
+    isUpdating: updateQuoteMutation.isPending,
+    isDeleting: deleteQuoteMutation.isPending
   };
 };

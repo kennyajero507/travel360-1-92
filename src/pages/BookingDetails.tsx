@@ -1,361 +1,375 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../components/ui/table";
-import { 
-  CalendarDays, 
-  CheckCircle, 
-  Download, 
-  FileText, 
-  Hotel, 
-  Mail, 
-  MapPin, 
-  Phone, 
-  UserRound, 
-  XCircle,
-  ArrowLeft
-} from "lucide-react";
+import { Calendar, MapPin, Users, Hotel, Phone, Mail, FileText, Download, Plane, Car } from "lucide-react";
+import { useBookingData } from "../hooks/useBookingData";
 import { toast } from "sonner";
-import { Booking, BookingStatus } from "../types/booking.types";
-import { getBookingById, updateBookingStatus, createVoucherForBooking, getVoucherByBookingId } from "../services/bookingService";
-import { getQuoteById } from "../services/quoteService";
-import { QuoteData } from "../types/quote.types";
 
 const BookingDetails = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
+  const { bookings } = useBookingData();
+  const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [quote, setQuote] = useState<QuoteData | null>(null);
-  const [hasVoucher, setHasVoucher] = useState(false);
-  
-  // Load booking data
+
   useEffect(() => {
-    const loadBookingData = async () => {
-      if (!bookingId) return;
-      
-      try {
-        // Get booking details
-        const bookingData = await getBookingById(bookingId);
-        setBooking(bookingData);
-        
-        if (bookingData) {
-          // Get original quote
-          const quoteData = await getQuoteById(bookingData.quote_id);
-          setQuote(quoteData);
-          
-          // Check if voucher exists
-          const voucher = await getVoucherByBookingId(bookingId);
-          setHasVoucher(voucher !== null);
-        }
-      } catch (error) {
-        console.error("Error loading booking data:", error);
-        toast.error("Failed to load booking details");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadBookingData();
-  }, [bookingId]);
-  
-  // Handle status update
-  const handleStatusUpdate = async (newStatus: BookingStatus) => {
-    if (!booking) return;
-    
-    try {
-      await updateBookingStatus(booking.id, newStatus);
-      
-      // Update local state
-      setBooking(prev => prev ? { ...prev, status: newStatus } : null);
-      
-      toast.success(`Booking status updated to ${newStatus}`);
-      
-      // If confirmed, check if voucher needs to be created
-      if (newStatus === 'confirmed' && !hasVoucher) {
-        const voucher = await createVoucherForBooking(booking.id);
-        if (voucher) {
-          setHasVoucher(true);
-          toast.success("Travel voucher has been generated", {
-            action: {
-              label: "View",
-              onClick: () => navigate(`/vouchers/${voucher.id}`)
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error updating booking status:", error);
-      toast.error("Failed to update booking status");
+    if (bookingId && bookings.length > 0) {
+      const foundBooking = bookings.find(b => b.id === bookingId);
+      setBooking(foundBooking);
+      setLoading(false);
     }
+  }, [bookingId, bookings]);
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
-  
-  // View voucher
-  const viewVoucher = () => {
-    if (booking) {
-      navigate(`/vouchers?bookingId=${booking.id}`);
+
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const renderActivities = () => {
+    if (!Array.isArray(booking.activities) || booking.activities.length === 0) {
+      return <p className="text-gray-500">No activities booked for this trip.</p>;
     }
+
+    return booking.activities.map((activity: any, index: number) => (
+      <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+        <div>
+          <h4 className="font-medium">{activity.name}</h4>
+          <p className="text-sm text-gray-600">{activity.description}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-medium">${activity.cost?.toFixed(2)}</p>
+          <p className="text-sm text-gray-600">{activity.num_people} people</p>
+        </div>
+      </div>
+    ));
   };
-  
-  // Generate voucher
-  const generateVoucher = async () => {
-    if (!booking) return;
-    
-    try {
-      const voucher = await createVoucherForBooking(booking.id);
-      if (voucher) {
-        setHasVoucher(true);
-        toast.success("Travel voucher has been generated");
-      }
-    } catch (error) {
-      console.error("Error generating voucher:", error);
-      toast.error("Failed to generate travel voucher");
+
+  const renderTransportsAndTransfers = () => {
+    const hasTransport = Array.isArray(booking.transport) && booking.transport.length > 0;
+    const hasTransfers = Array.isArray(booking.transfers) && booking.transfers.length > 0;
+
+    if (!hasTransport && !hasTransfers) {
+      return <p className="text-gray-500">No transport or transfers booked for this trip.</p>;
     }
+
+    return (
+      <>
+        {hasTransport && (
+          <div>
+            <h4 className="font-medium mb-2">Transportation</h4>
+            <div className="space-y-2">
+              {booking.transport.map((item: any, index: number) => (
+                <div key={index} className="flex justify-between items-center p-2 border rounded">
+                  <span>{item.type}: {item.from} → {item.to}</span>
+                  <span className="font-medium">${item.cost?.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasTransfers && (
+          <div>
+            <h4 className="font-medium mb-2">Transfers</h4>
+            <div className="space-y-2">
+              {booking.transfers.map((item: any, index: number) => (
+                <div key={index} className="flex justify-between items-center p-2 border rounded">
+                  <span>{item.type}: {item.from} → {item.to}</span>
+                  <span className="font-medium">${item.cost?.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
   };
-  
-  // Render status badge with appropriate color
-  const renderStatusBadge = (status: BookingStatus) => {
-    switch(status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">Pending</Badge>;
-      case 'confirmed':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">Confirmed</Badge>;
-      case 'cancelled':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">Cancelled</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">Completed</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-  
+
   if (loading) {
-    return <div className="text-center py-8">Loading booking details...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading booking details...</p>
+        </div>
+      </div>
+    );
   }
-  
+
   if (!booking) {
     return (
-      <div className="text-center py-8">
-        <p>Booking not found or unable to load booking data.</p>
-        <Button className="mt-4" onClick={() => navigate("/bookings")}>
-          Return to Bookings
+      <div className="text-center py-12">
+        <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Booking Not Found</h2>
+        <p className="text-gray-600 mb-6">The booking you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate("/bookings")}>
+          Back to Bookings
         </Button>
       </div>
     );
   }
-  
+
+  const quote = booking.quote;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-start">
         <div>
-          <Button 
-            variant="ghost" 
-            className="pl-0 mb-2" 
-            onClick={() => navigate("/bookings")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+          <h1 className="text-3xl font-bold text-gray-900">Booking Details</h1>
+          <p className="text-gray-600">Reference: {booking.booking_reference}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Download Voucher
+          </Button>
+          <Button onClick={() => navigate("/bookings")}>
             Back to Bookings
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight">Booking #{booking.booking_reference}</h1>
-          <p className="text-gray-500">Created on {new Date(booking.created_at || '').toLocaleString()}</p>
-        </div>
-        
-        <div className="flex gap-2">
-          {booking.status === 'pending' && (
-            <>
-              <Button 
-                variant="outline" 
-                className="border-red-300 hover:bg-red-50 hover:text-red-700" 
-                onClick={() => handleStatusUpdate('cancelled')}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Cancel Booking
-              </Button>
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => handleStatusUpdate('confirmed')}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Confirm Booking
-              </Button>
-            </>
-          )}
-          
-          {booking.status === 'confirmed' && !hasVoucher && (
-            <Button onClick={generateVoucher}>
-              <FileText className="h-4 w-4 mr-2" />
-              Generate Voucher
-            </Button>
-          )}
-          
-          {booking.status === 'confirmed' && hasVoucher && (
-            <>
-              <Button variant="outline" onClick={viewVoucher}>
-                <FileText className="h-4 w-4 mr-2" />
-                View Voucher
-              </Button>
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700" 
-                onClick={() => handleStatusUpdate('completed')}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Mark as Completed
-              </Button>
-            </>
-          )}
         </div>
       </div>
-      
-      {/* Booking Status */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle>Booking Status</CardTitle>
-            {renderStatusBadge(booking.status)}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Created</p>
-                <p>{new Date(booking.created_at || '').toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Last Updated</p>
-                <p>{new Date(booking.updated_at || '').toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Original Quote</p>
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto" 
-                  onClick={() => navigate(`/quotes/${booking.quote_id}`)}
-                >
-                  View Quote
-                </Button>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Total Price</p>
-                <p className="text-xl font-bold text-green-600">${booking.total_price.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Client Information */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <UserRound className="h-5 w-5 text-blue-600" />
-            <CardTitle>Client Information</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Client Name</p>
-              <p>{booking.client}</p>
-            </div>
-            {quote?.mobile && (
-              <div>
-                <p className="text-sm font-medium text-gray-500">Mobile</p>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-gray-400" />
-                  <p>{quote.mobile}</p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Client Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Client Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                  <p className="text-gray-900">{booking.client}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
+                  <p className="text-gray-900 flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    {quote?.mobile || 'N/A'}
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Hotel Information */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Hotel className="h-5 w-5 text-blue-600" />
-            <CardTitle>Hotel Information</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Hotel Name</p>
-              <p className="text-lg font-medium">{booking.hotel_name}</p>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-gray-500">Destination</p>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <p>{quote?.destination || 'N/A'}</p>
+            </CardContent>
+          </Card>
+
+          {/* Travel Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Travel Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                  <p className="text-gray-900 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    {quote?.destination}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
+                  <p className="text-gray-900">{new Date(booking.travel_start).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
+                  <p className="text-gray-900">{new Date(booking.travel_end).toLocaleDateString()}</p>
+                </div>
               </div>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-gray-500">Travel Period</p>
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-gray-400" />
-                <p>
-                  {new Date(booking.travel_start).toLocaleDateString()} - {new Date(booking.travel_end).toLocaleDateString()}
-                  {quote && ` (${quote.duration.nights} nights)`}
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                  <p className="text-gray-900">{quote?.duration_nights} nights, {quote?.duration_days} days</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tour Type</label>
+                  <p className="text-gray-900 capitalize">{quote?.tour_type}</p>
+                </div>
               </div>
-            </div>
-            
-            <Separator />
-            
-            <div>
-              <h3 className="font-medium mb-3">Room Arrangements</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Room Type</TableHead>
-                    <TableHead className="text-right">Rooms</TableHead>
-                    <TableHead className="text-right">Guests</TableHead>
-                    <TableHead className="text-right">Nights</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.isArray(booking.room_arrangement) && booking.room_arrangement.map((room, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{room.roomType || "Standard Room"}</TableCell>
-                      <TableCell className="text-right">{room.numRooms}</TableCell>
-                      <TableCell className="text-right">
-                        {room.adults + room.childrenWithBed + room.childrenNoBed}
-                        {room.infants > 0 && ` +${room.infants} infant(s)`}
-                      </TableCell>
-                      <TableCell className="text-right">{room.nights}</TableCell>
-                    </TableRow>
+            </CardContent>
+          </Card>
+
+          {/* Room Arrangements */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Hotel className="h-5 w-5" />
+                Room Arrangements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Array.isArray(booking.room_arrangement) ? booking.room_arrangement.map((arrangement: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium">{arrangement.room_type}</h4>
+                      <Badge variant="secondary">{arrangement.num_rooms} room(s)</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600">
+                      <span>{arrangement.adults} Adults</span>
+                      {arrangement.children_with_bed > 0 && <span>{arrangement.children_with_bed} CWB</span>}
+                      {arrangement.children_no_bed > 0 && <span>{arrangement.children_no_bed} CNB</span>}
+                      {arrangement.infants > 0 && <span>{arrangement.infants} Infants</span>}
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-gray-500">No room arrangements available</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Activities */}
+          {Array.isArray(booking.activities) && booking.activities.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Activities</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {booking.activities.map((activity: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium">{activity.name}</h4>
+                        <p className="text-sm text-gray-600">{activity.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">${activity.cost?.toFixed(2)}</p>
+                        <p className="text-sm text-gray-600">{activity.num_people} people</p>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Actions */}
-      <div className="flex justify-end space-x-4">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate("/bookings")}
-        >
-          Back to Bookings
-        </Button>
-        
-        {booking.status === 'confirmed' && hasVoucher && (
-          <Button onClick={viewVoucher}>
-            <FileText className="h-4 w-4 mr-2" />
-            View Voucher
-          </Button>
-        )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Transport & Transfers */}
+          {(Array.isArray(booking.transport) && booking.transport.length > 0) ||
+           (Array.isArray(booking.transfers) && booking.transfers.length > 0) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="h-5 w-5" />
+                  Transport & Transfers
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Array.isArray(booking.transport) && booking.transport.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Transportation</h4>
+                    <div className="space-y-2">
+                      {booking.transport.map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center p-2 border rounded">
+                          <span>{item.type}: {item.from} → {item.to}</span>
+                          <span className="font-medium">${item.cost?.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {Array.isArray(booking.transfers) && booking.transfers.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Transfers</h4>
+                    <div className="space-y-2">
+                      {booking.transfers.map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center p-2 border rounded">
+                          <span>{item.type}: {item.from} → {item.to}</span>
+                          <span className="font-medium">${item.cost?.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Status & Total */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Booking Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Status</span>
+                <Badge 
+                  variant={booking.status === 'confirmed' ? 'default' : 
+                          booking.status === 'cancelled' ? 'destructive' : 'secondary'}
+                >
+                  {booking.status}
+                </Badge>
+              </div>
+              
+              <Separator />
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Total Amount</span>
+                <span className="text-lg font-bold text-teal-600">
+                  ${booking.total_price?.toFixed(2)}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>Currency</span>
+                <span>{quote?.currency_code || 'USD'}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Hotel Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Hotel className="h-5 w-5" />
+                Hotel
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <h3 className="font-medium text-lg">{booking.hotel_name}</h3>
+              <p className="text-sm text-gray-600 mt-1">{quote?.destination}</p>
+            </CardContent>
+          </Card>
+
+          {/* Notes */}
+          {booking.notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{booking.notes}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

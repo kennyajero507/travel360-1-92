@@ -6,10 +6,10 @@ export const useQuoteCalculations = (quote: QuoteData) => {
 
   // Calculate total travelers from room arrangements
   const calculateTotalTravelers = (arrangements: RoomArrangement[]) => {
-    const totalAdults = arrangements.reduce((sum, arr) => sum + arr.adults * arr.numRooms, 0);
-    const totalCWB = arrangements.reduce((sum, arr) => sum + arr.childrenWithBed * arr.numRooms, 0);
-    const totalCNB = arrangements.reduce((sum, arr) => sum + arr.childrenNoBed * arr.numRooms, 0);
-    const totalInfants = arrangements.reduce((sum, arr) => sum + arr.infants * arr.numRooms, 0);
+    const totalAdults = arrangements.reduce((sum, arr) => sum + arr.adults * arr.num_rooms, 0);
+    const totalCWB = arrangements.reduce((sum, arr) => sum + arr.children_with_bed * arr.num_rooms, 0);
+    const totalCNB = arrangements.reduce((sum, arr) => sum + arr.children_no_bed * arr.num_rooms, 0);
+    const totalInfants = arrangements.reduce((sum, arr) => sum + arr.infants * arr.num_rooms, 0);
     
     return {
       adults: totalAdults,
@@ -21,22 +21,22 @@ export const useQuoteCalculations = (quote: QuoteData) => {
   
   // Calculate accommodation subtotal
   const calculateAccommodationSubtotal = () => {
-    return quote.roomArrangements.reduce((sum, item) => sum + item.total, 0);
+    return quote.room_arrangements.reduce((sum, item) => sum + item.total, 0);
   };
 
   // Calculate activities subtotal
   const calculateActivitiesSubtotal = () => {
-    return quote.activities?.reduce((sum, item) => sum + item.total, 0) || 0;
+    return quote.activities?.reduce((sum, item) => sum + (item.cost * item.num_people || 0), 0) || 0;
   };
 
   // Calculate transport subtotal
   const calculateTransportSubtotal = () => {
-    return quote.transports?.reduce((sum, item) => sum + item.total, 0) || 0;
+    return quote.transports?.reduce((sum, item) => sum + (item.cost || 0), 0) || 0;
   };
   
   // Calculate transfers subtotal
   const calculateTransfersSubtotal = () => {
-    return quote.transfers?.reduce((sum, item) => sum + item.total, 0) || 0;
+    return quote.transfers?.reduce((sum, item) => sum + (item.cost || 0), 0) || 0;
   };
 
   // Calculate overall subtotal
@@ -52,13 +52,14 @@ export const useQuoteCalculations = (quote: QuoteData) => {
   // Calculate markup
   const calculateMarkup = () => {
     const subtotal = calculateSubtotal();
-    const markupInfo = quote.markup || { type: quote.markupType || "percentage", value: quote.markupValue || 25 };
+    const markupType = quote.markup_type || "percentage";
+    const markupValue = quote.markup_value || 25;
     
-    if (markupInfo.type === "percentage") {
-      return (subtotal * markupInfo.value) / 100;
+    if (markupType === "percentage") {
+      return (subtotal * markupValue) / 100;
     } else {
       // Fixed markup amount
-      return markupInfo.value;
+      return markupValue;
     }
   };
 
@@ -69,9 +70,9 @@ export const useQuoteCalculations = (quote: QuoteData) => {
 
   // Calculate per person cost
   const calculatePerPersonCost = () => {
-    const totalTravelers = quote.travelers.adults + 
-      quote.travelers.childrenWithBed + 
-      quote.travelers.childrenNoBed;
+    const totalTravelers = quote.adults + 
+      quote.children_with_bed + 
+      quote.children_no_bed;
       
     return totalTravelers > 0 ? calculateGrandTotal() / totalTravelers : 0;
   };

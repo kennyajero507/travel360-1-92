@@ -2,207 +2,101 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
-import { useRole } from "../contexts/RoleContext";
-import { toast } from "sonner";
-import { Building, Home, ChevronLeft } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { useHotelsData } from "../hooks/useHotelsData";
+import HotelForm from "../components/HotelForm";
 import { Hotel } from "../types/hotel.types";
-import HotelDetailsTab from "../components/hotel/HotelDetailsTab";
-import RoomManagementTab from "../components/hotel/RoomManagementTab";
 
 const EditHotel = () => {
+  const { hotelId } = useParams<{ hotelId: string }>();
   const navigate = useNavigate();
-  const { hotelId } = useParams();
-  const { permissions } = useRole();
-  
-  // Redirect if user doesn't have permission to edit hotels
-  useEffect(() => {
-    if (!permissions.canEditHotels) {
-      toast.error("You don't have permission to edit hotels");
-      navigate("/hotels");
-    }
-  }, [permissions, navigate]);
+  const { hotels, updateHotel } = useHotelsData();
+  const [hotel, setHotel] = useState<Hotel | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [hotelData, setHotelData] = useState<Hotel>({
-    id: "",
-    name: "",
-    address: "",
-    destination: "",
-    category: "",
-    contactDetails: {},
-    roomTypes: []
-  });
-  
-  const [additionalDetails, setAdditionalDetails] = useState({
-    description: "",
-    contactPerson: "",
-    contactEmail: "",
-    contactPhone: "",
-    hasNegotiatedRate: false,
-    website: ""
-  });
-
-  // Load hotel data
   useEffect(() => {
-    try {
-      const hotels = JSON.parse(localStorage.getItem('hotels') || '[]');
-      const foundHotel = hotels.find((h: Hotel) => h.id === hotelId);
-      
+    if (hotelId && hotels.length > 0) {
+      const foundHotel = hotels.find(h => h.id === hotelId);
       if (foundHotel) {
-        console.log("Found hotel:", foundHotel);
-        setHotelData(foundHotel);
-        
-        if (foundHotel.additionalDetails) {
-          setAdditionalDetails({
-            description: foundHotel.additionalDetails.description || "",
-            contactPerson: foundHotel.additionalDetails.contactPerson || "",
-            contactEmail: foundHotel.additionalDetails.contactEmail || "",
-            contactPhone: foundHotel.additionalDetails.contactPhone || "",
-            hasNegotiatedRate: foundHotel.additionalDetails.hasNegotiatedRate || false,
-            website: foundHotel.additionalDetails.website || ""
-          });
-        }
-      } else {
-        toast.error("Hotel not found");
-        navigate("/hotels");
-      }
-    } catch (error) {
-      console.error("Error loading hotel data:", error);
-      toast.error("Failed to load hotel data");
-    }
-  }, [hotelId, navigate]);
-  
-  const handleHotelSubmit = (hotelFormData: any) => {
-    // Combine form data with additional details
-    const finalData = {
-      ...hotelData,
-      ...hotelFormData,
-      additionalDetails
-    };
-    
-    // Store the hotelData state for room management
-    setHotelData({
-      ...hotelData,
-      ...hotelFormData
-    });
-    
-    // Save to localStorage
-    try {
-      const hotels = JSON.parse(localStorage.getItem('hotels') || '[]');
-      const hotelIndex = hotels.findIndex((h: Hotel) => h.id === hotelId);
-      
-      if (hotelIndex >= 0) {
-        hotels[hotelIndex] = {
-          ...hotels[hotelIndex],
-          ...finalData,
-          roomTypes: hotels[hotelIndex].roomTypes || []
+        // Ensure all required properties are present
+        const completeHotel: Hotel = {
+          id: foundHotel.id,
+          name: foundHotel.name,
+          address: foundHotel.address || "",
+          destination: foundHotel.destination,
+          category: foundHotel.category,
+          status: foundHotel.status || "Active",
+          description: foundHotel.description,
+          contact_info: foundHotel.contact_info || {},
+          amenities: foundHotel.amenities || [],
+          room_types: foundHotel.room_types || [],
+          policies: foundHotel.policies,
+          pricing: foundHotel.pricing,
+          images: foundHotel.images,
+          additional_details: foundHotel.additional_details,
+          location: foundHotel.location,
+          created_at: foundHotel.created_at,
+          updated_at: foundHotel.updated_at,
+          org_id: foundHotel.org_id,
+          created_by: foundHotel.created_by
         };
-        
-        localStorage.setItem('hotels', JSON.stringify(hotels));
-        toast.success("Hotel details updated successfully!");
-        
-        // Switch to rooms tab after saving hotel details
-        const roomsTab = document.getElementById("edit-rooms-tab");
-        if (roomsTab) {
-          (roomsTab as HTMLButtonElement).click();
-        }
+        setHotel(completeHotel);
       }
-    } catch (error) {
-      console.error("Error updating hotel data:", error);
-      toast.error("Failed to update hotel data");
+      setLoading(false);
     }
-  };
-  
-  // Update hotelData with room types from the room management component
-  const handleRoomTypesUpdate = (roomTypes: any[]) => {
-    setHotelData({
-      ...hotelData,
-      roomTypes
-    });
+  }, [hotelId, hotels]);
+
+  const handleSubmit = async (hotelData: Partial<Hotel>) => {
+    if (!hotel) return;
     
-    // Save to localStorage
     try {
-      const hotels = JSON.parse(localStorage.getItem('hotels') || '[]');
-      const hotelIndex = hotels.findIndex((h: Hotel) => h.id === hotelId);
-      
-      if (hotelIndex >= 0) {
-        hotels[hotelIndex] = {
-          ...hotels[hotelIndex],
-          ...hotelData,
-          roomTypes,
-          additionalDetails
-        };
-        
-        localStorage.setItem('hotels', JSON.stringify(hotels));
-        toast.success("Hotel and room data updated successfully!");
-      }
+      await updateHotel(hotel.id, hotelData);
+      navigate(`/hotel-details/${hotel.id}`);
     } catch (error) {
-      console.error("Error updating hotel data:", error);
-      toast.error("Failed to update hotel data");
+      console.error("Error updating hotel:", error);
     }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This will trigger form submission in the HotelForm component
-    document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading hotel details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hotel) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Hotel Not Found</h2>
+        <p className="text-gray-600 mb-6">The hotel you're trying to edit doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate("/hotels")}>
+          Back to Hotels
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate(`/hotels/${hotelId}`)}>
-              <ChevronLeft className="h-4 w-4" />
-              <span className="ml-1">Back</span>
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight text-blue-600">Edit Hotel</h1>
-          </div>
-          <p className="text-gray-500 mt-2">
-            {hotelData.name || "Loading..."}
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">Edit Hotel</h1>
+          <p className="text-gray-600">Update hotel information and settings</p>
         </div>
+        <Button variant="outline" onClick={() => navigate("/hotels")}>
+          Cancel
+        </Button>
       </div>
-      
-      <Tabs defaultValue="hotel-details">
-        <TabsList>
-          <TabsTrigger value="hotel-details" id="hotel-details-tab" className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
-            Hotel Details
-          </TabsTrigger>
-          <TabsTrigger 
-            value="rooms" 
-            id="edit-rooms-tab" 
-            className="flex items-center gap-2"
-          >
-            <Home className="h-4 w-4" />
-            Room Management
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="hotel-details">
-          <HotelDetailsTab 
-            hotelData={hotelData}
-            additionalDetails={additionalDetails}
-            setAdditionalDetails={setAdditionalDetails}
-            onHotelSubmit={handleHotelSubmit}
-            onCancel={() => navigate(`/hotels/${hotelId}`)}
-            handleFormSubmit={handleFormSubmit}
-          />
-        </TabsContent>
-        
-        <TabsContent value="rooms" className="pt-4">
-          <RoomManagementTab 
-            hotelId={hotelData.id}
-            hotelName={hotelData.name}
-            roomTypes={hotelData.roomTypes || []}
-            onSaveRoomTypes={handleRoomTypesUpdate}
-            onCancel={() => navigate(`/hotels/${hotelId}`)}
-            onComplete={() => navigate(`/hotels/${hotelId}`)}
-          />
-        </TabsContent>
-      </Tabs>
+
+      <HotelForm 
+        initialData={hotel}
+        onSubmit={handleSubmit}
+        onCancel={() => navigate("/hotels")}
+        isEditing={true}
+      />
     </div>
   );
 };
