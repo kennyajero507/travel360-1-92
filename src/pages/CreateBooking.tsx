@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
 import { createBooking } from "../services/bookingService";
+import { BookingStatus } from "../types/booking.types";
 
 const CreateBooking = () => {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ const CreateBooking = () => {
   const [formData, setFormData] = useState({
     agentId: "",
     notes: "",
-    status: "pending"
+    status: "pending" as BookingStatus
   });
 
   useEffect(() => {
@@ -206,7 +206,7 @@ const CreateBooking = () => {
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <Select value={formData.status} onValueChange={(value: BookingStatus) => setFormData({ ...formData, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

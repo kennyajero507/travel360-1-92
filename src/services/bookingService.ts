@@ -20,6 +20,19 @@ export interface BookingData {
   transfers: any[];
 }
 
+// Helper function to safely parse JSON fields
+const parseJsonField = (field: any): any[] => {
+  if (Array.isArray(field)) return field;
+  if (typeof field === 'string') {
+    try {
+      return JSON.parse(field);
+    } catch {
+      return [];
+    }
+  }
+  return field || [];
+};
+
 export const getAllBookings = async () => {
   try {
     console.log('[BookingService] Fetching bookings from database');
@@ -39,18 +52,10 @@ export const getAllBookings = async () => {
     // Transform the data to match our Booking interface
     const transformedData = (data || []).map(booking => ({
       ...booking,
-      room_arrangement: typeof booking.room_arrangement === 'string' 
-        ? JSON.parse(booking.room_arrangement) 
-        : booking.room_arrangement || [],
-      activities: typeof booking.activities === 'string' 
-        ? JSON.parse(booking.activities) 
-        : booking.activities || [],
-      transport: typeof booking.transport === 'string' 
-        ? JSON.parse(booking.transport) 
-        : booking.transport || [],
-      transfers: typeof booking.transfers === 'string' 
-        ? JSON.parse(booking.transfers) 
-        : booking.transfers || []
+      room_arrangement: parseJsonField(booking.room_arrangement),
+      activities: parseJsonField(booking.activities),
+      transport: parseJsonField(booking.transport),
+      transfers: parseJsonField(booking.transfers)
     }));
     
     return transformedData;
@@ -79,18 +84,10 @@ export const getBookingById = async (id: string) => {
     // Transform the data
     const transformedData = {
       ...data,
-      room_arrangement: typeof data.room_arrangement === 'string' 
-        ? JSON.parse(data.room_arrangement) 
-        : data.room_arrangement || [],
-      activities: typeof data.activities === 'string' 
-        ? JSON.parse(data.activities) 
-        : data.activities || [],
-      transport: typeof data.transport === 'string' 
-        ? JSON.parse(data.transport) 
-        : data.transport || [],
-      transfers: typeof data.transfers === 'string' 
-        ? JSON.parse(data.transfers) 
-        : data.transfers || []
+      room_arrangement: parseJsonField(data.room_arrangement),
+      activities: parseJsonField(data.activities),
+      transport: parseJsonField(data.transport),
+      transfers: parseJsonField(data.transfers)
     };
 
     return transformedData;
@@ -125,7 +122,7 @@ export const createBooking = async (bookingData: BookingData) => {
       travel_start: bookingData.travelStart,
       travel_end: bookingData.travelEnd,
       total_price: bookingData.totalPrice,
-      status: bookingData.status as BookingStatus,
+      status: bookingData.status,
       notes: bookingData.notes || null,
       room_arrangement: JSON.stringify(bookingData.roomArrangement),
       activities: JSON.stringify(bookingData.activities),
@@ -180,11 +177,11 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string) =
       travelStart: quote.start_date,
       travelEnd: quote.end_date,
       totalPrice: 0, // Calculate from quote
-      status: 'pending',
-      roomArrangement: quote.room_arrangements || [],
-      activities: quote.activities || [],
-      transport: quote.transports || [],
-      transfers: quote.transfers || []
+      status: 'pending' as BookingStatus,
+      roomArrangement: parseJsonField(quote.room_arrangements),
+      activities: parseJsonField(quote.activities),
+      transport: parseJsonField(quote.transports),
+      transfers: parseJsonField(quote.transfers)
     };
 
     return await createBooking(bookingData);

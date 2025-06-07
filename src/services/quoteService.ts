@@ -1,7 +1,18 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
-import { QuoteData } from "../types/quote.types";
+import { QuoteData, QuoteStatus } from "../types/quote.types";
+
+// Helper function to transform database row to QuoteData interface
+const transformQuoteData = (dbRow: any): QuoteData => {
+  return {
+    ...dbRow,
+    status: dbRow.status as QuoteStatus,
+    room_arrangements: Array.isArray(dbRow.room_arrangements) ? dbRow.room_arrangements : [],
+    activities: Array.isArray(dbRow.activities) ? dbRow.activities : [],
+    transports: Array.isArray(dbRow.transports) ? dbRow.transports : [],
+    transfers: Array.isArray(dbRow.transfers) ? dbRow.transfers : []
+  };
+};
 
 export const getAllQuotes = async (): Promise<QuoteData[]> => {
   try {
@@ -18,7 +29,7 @@ export const getAllQuotes = async (): Promise<QuoteData[]> => {
     }
 
     console.log('[QuoteService] Fetched quotes:', data?.length || 0);
-    return data || [];
+    return (data || []).map(transformQuoteData);
   } catch (error) {
     console.error('[QuoteService] Error in getAllQuotes:', error);
     toast.error('Failed to load quotes');
@@ -41,7 +52,7 @@ export const getQuoteById = async (id: string): Promise<QuoteData | null> => {
       throw error;
     }
 
-    return data;
+    return data ? transformQuoteData(data) : null;
   } catch (error) {
     console.error('[QuoteService] Error in getQuoteById:', error);
     toast.error('Failed to load quote details');
@@ -58,10 +69,15 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
       throw new Error('User not authenticated');
     }
 
-    const quoteData = {
+    // Prepare data for database with JSON serialization
+    const dbQuoteData = {
       ...quote,
       created_by: user.id,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      room_arrangements: JSON.stringify(quote.room_arrangements || []),
+      activities: JSON.stringify(quote.activities || []),
+      transports: JSON.stringify(quote.transports || []),
+      transfers: JSON.stringify(quote.transfers || [])
     };
 
     let data, error;
@@ -70,14 +86,14 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
       // Update existing quote
       ({ data, error } = await supabase
         .from('quotes')
-        .update(quoteData)
+        .update(dbQuoteData)
         .eq('id', quote.id)
         .select()
         .single());
     } else {
       // Create new quote
       const newQuote = {
-        ...quoteData,
+        ...dbQuoteData,
         id: crypto.randomUUID(),
         created_at: new Date().toISOString()
       };
@@ -96,7 +112,7 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
     }
 
     toast.success('Quote saved successfully');
-    return data;
+    return transformQuoteData(data);
   } catch (error) {
     console.error('[QuoteService] Error in saveQuote:', error);
     throw error;

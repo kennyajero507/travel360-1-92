@@ -18,7 +18,7 @@ export const useQuoteData = () => {
   // Fetch quotes
   const { 
     data: quotes = [], 
-    isLoading: loading, 
+    isLoading, 
     error 
   } = useQuery({
     queryKey: ['quotes'],
@@ -102,7 +102,8 @@ export const useQuoteData = () => {
 
   return {
     quotes,
-    loading,
+    loading: isLoading,
+    isLoading,
     error,
     createQuote: createQuoteMutation.mutateAsync,
     updateQuote: updateQuoteMutation.mutateAsync,

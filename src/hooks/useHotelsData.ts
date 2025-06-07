@@ -1,53 +1,82 @@
 
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from "sonner";
-import { hotelService, Hotel } from "../services/hotelService";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { hotelService } from '../services/hotelService';
+import { Hotel } from '../types/hotel.types';
+import { useState } from 'react';
 
 export const useHotelsData = () => {
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
+  const [filter, setFilter] = useState('');
+  const [search, setSearch] = useState('');
 
-  const { data: hotels = [], isLoading, error } = useQuery({
+  const {
+    data: hotels = [],
+    isLoading,
+    error
+  } = useQuery({
     queryKey: ['hotels'],
     queryFn: hotelService.getAllHotels,
   });
 
-  // Filtered hotels logic
-  const filteredHotels = hotels.filter(hotel => {
-    const matchesFilter = filter === "all" || 
-      (filter === "negotiated" && hotel.additional_details?.hasNegotiatedRate) ||
-      (filter === "non-negotiated" && !hotel.additional_details?.hasNegotiatedRate) ||
-      (filter === "active" && hotel.status === "Active") ||
-      (filter === "inactive" && hotel.status === "Inactive");
-    
-    const matchesSearch = hotel.name?.toLowerCase().includes(search.toLowerCase()) ||
-                          hotel.destination?.toLowerCase().includes(search.toLowerCase());
-    
-    return matchesFilter && matchesSearch;
+  // Create hotel mutation
+  const createHotelMutation = useMutation({
+    mutationFn: hotelService.createHotel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+    }
   });
 
-  // Toggle hotel active status
-  const toggleHotelStatus = async (hotelId: string) => {
-    try {
-      await hotelService.toggleHotelStatus(hotelId);
-      // Invalidate and refetch hotels
+  // Update hotel mutation
+  const updateHotelMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Hotel> }) => 
+      hotelService.updateHotel(id, updates),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
-    } catch (error) {
-      console.error("Error updating hotel status:", error);
     }
-  };
+  });
+
+  // Delete hotel mutation
+  const deleteHotelMutation = useMutation({
+    mutationFn: hotelService.deleteHotel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+    }
+  });
+
+  // Toggle hotel status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: hotelService.toggleHotelStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+    }
+  });
+
+  // Filter hotels based on search and filter criteria
+  const filteredHotels = hotels.filter(hotel => {
+    const matchesSearch = search === '' || 
+      hotel.name.toLowerCase().includes(search.toLowerCase()) ||
+      hotel.destination.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesFilter = filter === '' || 
+      hotel.category === filter || 
+      hotel.status === filter;
+    
+    return matchesSearch && matchesFilter;
+  });
 
   return {
     hotels,
     isLoading,
-    error,
+    error: error as Error,
     filter,
     setFilter,
     search,
     setSearch,
     filteredHotels,
-    toggleHotelStatus
+    createHotel: createHotelMutation.mutateAsync,
+    updateHotel: (id: string, updates: Partial<Hotel>) => 
+      updateHotelMutation.mutateAsync({ id, updates }),
+    deleteHotel: deleteHotelMutation.mutateAsync,
+    toggleHotelStatus: toggleStatusMutation.mutateAsync
   };
 };

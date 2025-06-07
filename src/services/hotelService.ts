@@ -24,6 +24,21 @@ export interface Hotel {
   org_id?: string;
 }
 
+// Helper function to transform database row to Hotel interface
+const transformHotelData = (dbRow: any): Hotel => {
+  return {
+    ...dbRow,
+    status: dbRow.status as 'Active' | 'Inactive',
+    amenities: Array.isArray(dbRow.amenities) ? dbRow.amenities : [],
+    room_types: Array.isArray(dbRow.room_types) ? dbRow.room_types : [],
+    images: Array.isArray(dbRow.images) ? dbRow.images : [],
+    contact_info: dbRow.contact_info || {},
+    pricing: dbRow.pricing || {},
+    policies: dbRow.policies || {},
+    additional_details: dbRow.additional_details || {}
+  };
+};
+
 export const hotelService = {
   async getAllHotels(): Promise<Hotel[]> {
     try {
@@ -40,7 +55,7 @@ export const hotelService = {
       }
 
       console.log('[HotelService] Fetched hotels:', data?.length || 0);
-      return data || [];
+      return (data || []).map(transformHotelData);
     } catch (error) {
       console.error('[HotelService] Error in getAllHotels:', error);
       toast.error('Failed to load hotels');
@@ -63,7 +78,7 @@ export const hotelService = {
         throw error;
       }
 
-      return data;
+      return data ? transformHotelData(data) : null;
     } catch (error) {
       console.error('[HotelService] Error in getHotelById:', error);
       toast.error('Failed to load hotel details');
@@ -98,7 +113,7 @@ export const hotelService = {
       }
 
       toast.success('Hotel created successfully');
-      return data;
+      return transformHotelData(data);
     } catch (error) {
       console.error('[HotelService] Error in createHotel:', error);
       throw error;
@@ -126,7 +141,7 @@ export const hotelService = {
       }
 
       toast.success('Hotel updated successfully');
-      return data;
+      return transformHotelData(data);
     } catch (error) {
       console.error('[HotelService] Error in updateHotel:', error);
       throw error;
@@ -185,7 +200,7 @@ export const hotelService = {
       }
 
       toast.success(`Hotel ${newStatus.toLowerCase()} successfully`);
-      return data;
+      return transformHotelData(data);
     } catch (error) {
       console.error('[HotelService] Error in toggleHotelStatus:', error);
       throw error;
