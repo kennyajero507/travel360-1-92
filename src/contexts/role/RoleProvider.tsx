@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useEffect } from 'react';
 import { UserRole, SubscriptionTier, RoleContextType, User, Permissions, Organization } from './types';
-import defaultPermissions from './defaultPermissions';
+import { getPermissionsForRole } from './defaultPermissions';
 
 // Create the context with a default undefined value and proper type
 export const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -12,7 +12,7 @@ export const RoleContext = createContext<RoleContextType | undefined>(undefined)
 export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRole] = useState<UserRole>('agent');
   const [tier, setTier] = useState<SubscriptionTier>('starter');
-  const [permissions, setPermissions] = useState<Permissions>(defaultPermissions.agent);
+  const [permissions, setPermissions] = useState<Permissions>(getPermissionsForRole('agent'));
   const [currentUser, setCurrentUser] = useState<User>({
     id: 'usr-123',
     name: 'James Smith',
@@ -23,7 +23,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Update permissions when role or tier changes
   useEffect(() => {
     // Start with default permissions for the role
-    let updatedPermissions = {...defaultPermissions[role]};
+    let updatedPermissions = {...getPermissionsForRole(role)};
     
     // Apply tier-specific permissions for tour operators
     if (role === 'tour_operator') {
@@ -47,13 +47,11 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Organization owners have additional permissions
     if (role === 'org_owner') {
-      updatedPermissions.canManageTeamMembers = true;
-      updatedPermissions.canControlBilling = true;
+      updatedPermissions.canManageAgents = true;
       
       // Pro and enterprise tiers get additional permissions
       if (tier === 'pro' || tier === 'enterprise') {
-        updatedPermissions.canImportExportHotels = true;
-        updatedPermissions.canViewCompanyReports = true;
+        updatedPermissions.canViewReports = true;
       }
     }
     
@@ -87,7 +85,8 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentUser,
     setCurrentUser,
     organization,
-    setOrganization
+    setOrganization,
+    loading: false
   };
 
   return (

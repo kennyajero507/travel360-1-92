@@ -25,6 +25,8 @@ export interface Permissions {
   canViewHotels: boolean;
   canEditHotels: boolean;
   canDeleteHotels: boolean;
+  canAddHotels: boolean;
+  canSubmitHotels: boolean;
   
   // Booking permissions
   canCreateBookings: boolean;
@@ -39,13 +41,38 @@ export interface Permissions {
   // Report permissions
   canViewReports: boolean;
   canExportReports: boolean;
+  
+  // Agent management permissions
+  canManageAgents: boolean;
 }
 
-export type UserRole = 'system_admin' | 'org_owner' | 'tour_operator' | 'agent';
+export type UserRole = 'system_admin' | 'org_owner' | 'tour_operator' | 'agent' | 'client';
+
+export type SubscriptionTier = 'starter' | 'pro' | 'enterprise';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  ownerId: string;
+  subscriptionTier: SubscriptionTier;
+}
 
 export interface RoleContextType {
   role: UserRole | null;
   permissions: Permissions;
   loading: boolean;
   setRole: (role: UserRole) => void;
+  tier: SubscriptionTier;
+  setTier: (tier: SubscriptionTier) => void;
+  hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
+  currentUser: User;
+  setCurrentUser: (user: User) => void;
+  organization: Organization | undefined;
+  setOrganization: (org: Organization) => void;
 }

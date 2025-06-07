@@ -24,6 +24,8 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
     canViewHotels: false,
     canEditHotels: false,
     canDeleteHotels: false,
+    canAddHotels: false,
+    canSubmitHotels: false,
     
     canCreateBookings: false,
     canViewBookings: false,
@@ -35,6 +37,8 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
     
     canViewReports: false,
     canExportReports: false,
+    
+    canManageAgents: false,
   };
 
   switch (role) {
@@ -59,6 +63,8 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canViewHotels: true,
         canEditHotels: true,
         canDeleteHotels: true,
+        canAddHotels: true,
+        canSubmitHotels: true,
         canCreateBookings: true,
         canViewBookings: true,
         canEditBookings: true,
@@ -67,6 +73,7 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canEditClients: true,
         canViewReports: true,
         canExportReports: true,
+        canManageAgents: true,
       };
 
     case 'org_owner':
@@ -90,6 +97,8 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canViewHotels: true,
         canEditHotels: true,
         canDeleteHotels: true,
+        canAddHotels: true,
+        canSubmitHotels: true,
         canCreateBookings: true,
         canViewBookings: true,
         canEditBookings: true,
@@ -98,6 +107,7 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canEditClients: true,
         canViewReports: true,
         canExportReports: true,
+        canManageAgents: true,
       };
 
     case 'tour_operator':
@@ -119,6 +129,8 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canViewHotels: true,
         canEditHotels: true,
         canDeleteHotels: true,
+        canAddHotels: true,
+        canSubmitHotels: true,
         canCreateBookings: true,
         canViewBookings: true,
         canEditBookings: true,
@@ -127,6 +139,7 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canEditClients: true,
         canViewReports: true,
         canExportReports: true,
+        canManageAgents: false, // Will be enabled for pro/enterprise tiers
       };
 
     case 'agent':
@@ -141,6 +154,8 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canEditQuotes: true,
         canGenerateQuotes: true,
         canViewHotels: true,
+        canAddHotels: true,
+        canSubmitHotels: true,
         canCreateBookings: true,
         canViewBookings: true,
         canEditBookings: true,
@@ -148,7 +163,23 @@ export const getPermissionsForRole = (role: UserRole): Permissions => {
         canViewReports: true,
       };
 
+    case 'client':
+      return {
+        ...basePermissions,
+        canViewDashboard: true,
+      };
+
     default:
       return basePermissions;
   }
 };
+
+const defaultPermissions = {
+  system_admin: getPermissionsForRole('system_admin'),
+  org_owner: getPermissionsForRole('org_owner'),
+  tour_operator: getPermissionsForRole('tour_operator'),
+  agent: getPermissionsForRole('agent'),
+  client: getPermissionsForRole('client'),
+};
+
+export default defaultPermissions;
