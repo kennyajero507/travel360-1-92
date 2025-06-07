@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -101,45 +102,248 @@ function App() {
                   />
 
                   {/* Protected routes */}
-                  <Route element={<AuthGuard />}>
-                    <Route element={<Layout />}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/inquiries" element={<Inquiries />} />
-                      <Route path="/inquiries/create" element={<CreateInquiry />} />
-                      <Route path="/inquiries/:inquiryId" element={<EditInquiry />} />
-                      <Route path="/quotes" element={<Quotes />} />
-                      <Route path="/quotes/create" element={<CreateQuote />} />
-                      <Route path="/quotes/:quoteId" element={<EditQuote />} />
-                      <Route path="/bookings" element={<Bookings />} />
-                      <Route path="/bookings/create" element={<CreateBooking />} />
-                      <Route path="/bookings/:bookingId" element={<BookingDetails />} />
-                      <Route path="/hotels" element={<Hotels />} />
-                      <Route path="/hotels/create" element={<CreateHotel />} />
-                      <Route path="/hotels/:hotelId" element={<HotelDetails />} />
-                      <Route path="/hotels/:hotelId/edit" element={<EditHotel />} />
-                      <Route path="/clients" element={<Clients />} />
-                      <Route path="/invoices" element={<Invoices />} />
-                      <Route path="/invoices/create" element={<CreateInvoice />} />
-                      <Route path="/vouchers" element={<Vouchers />} />
-                      <Route path="/vouchers/:voucherId" element={<VoucherDetails />} />
-                      <Route path="/calendar" element={<Calendar />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/settings" element={<Settings />} />
-                      
-                      {/* Admin routes */}
-                      <Route element={<AuthGuard allowedRoles={['system_admin']} />}>
-                        <Route path="/admin/login" element={<AdminLogin />} />
-                        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                        <Route path="/admin/settings" element={<AdminSettings />} />
-                      </Route>
-                      
-                      {/* Management routes */}
-                      <Route element={<AuthGuard allowedRoles={['system_admin', 'org_owner', 'tour_operator']} />}>
-                        <Route path="/team" element={<TeamManagement />} />
-                        <Route path="/agents" element={<AgentManagement />} />
-                      </Route>
-                    </Route>
-                  </Route>
+                  <Route 
+                    path="/dashboard" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Dashboard />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/inquiries" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Inquiries />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/inquiries/create" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <CreateInquiry />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/inquiries/:inquiryId" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <EditInquiry />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/quotes" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Quotes />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/quotes/create" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <CreateQuote />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/quotes/:quoteId" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <EditQuote />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/bookings" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Bookings />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/bookings/create" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <CreateBooking />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/bookings/:bookingId" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <BookingDetails />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/hotels" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Hotels />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/hotels/create" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <CreateHotel />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/hotels/:hotelId" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <HotelDetails />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/hotels/:hotelId/edit" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <EditHotel />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/clients" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Clients />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/invoices" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Invoices />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/invoices/create" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <CreateInvoice />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/vouchers" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Vouchers />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/vouchers/:voucherId" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <VoucherDetails />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/calendar" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Calendar />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/analytics" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Analytics />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/settings" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Settings />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  
+                  {/* Management routes */}
+                  <Route 
+                    path="/team" 
+                    element={
+                      <AuthGuard allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+                        <Layout>
+                          <TeamManagement />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/agents" 
+                    element={
+                      <AuthGuard allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+                        <Layout>
+                          <AgentManagement />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
 
                   {/* 404 route */}
                   <Route path="*" element={<NotFound />} />

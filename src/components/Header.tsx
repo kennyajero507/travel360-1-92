@@ -17,11 +17,11 @@ import NotificationCenter from "./notifications/NotificationCenter";
 
 const Header = () => {
   const navigate = useNavigate();
-  const { signOut, userProfile } = useAuth();
+  const { logout, userProfile } = useAuth();
   const { role, permissions } = useRole();
 
   const handleSignOut = async () => {
-    await signOut();
+    await logout();
     navigate("/login");
   };
 
