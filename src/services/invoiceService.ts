@@ -105,13 +105,14 @@ export const invoiceService = {
 
   async updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | null> {
     try {
-      const updateData = {
+      const updateData: any = {
         ...updates,
         updated_at: new Date().toISOString()
       };
 
+      // Properly serialize line_items for database storage
       if (updates.line_items) {
-        updateData.line_items = JSON.stringify(updates.line_items) as any;
+        updateData.line_items = JSON.stringify(updates.line_items);
       }
 
       const { data, error } = await supabase

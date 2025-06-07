@@ -51,7 +51,9 @@ export const quoteHotelOptionsService = {
           name: option.hotels.name,
           category: option.hotels.category,
           destination: option.hotels.destination,
-          images: Array.isArray(option.hotels.images) ? option.hotels.images : []
+          images: Array.isArray(option.hotels.images) 
+            ? option.hotels.images.filter((img): img is string => typeof img === 'string')
+            : []
         } : undefined
       }));
     } catch (error) {
@@ -88,9 +90,9 @@ export const quoteHotelOptionsService = {
 
   async updateOption(id: string, updates: Partial<QuoteHotelOption>): Promise<QuoteHotelOption | null> {
     try {
-      const updateData = { ...updates };
+      const updateData: any = { ...updates };
       if (updates.room_arrangements) {
-        updateData.room_arrangements = JSON.stringify(updates.room_arrangements) as any;
+        updateData.room_arrangements = JSON.stringify(updates.room_arrangements);
       }
 
       const { data, error } = await supabase
