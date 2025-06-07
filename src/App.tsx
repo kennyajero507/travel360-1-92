@@ -45,6 +45,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
+import Invoices from "./pages/Invoices";
+import CreateInvoice from "./pages/CreateInvoice";
 
 const queryClient = new QueryClient();
 
@@ -187,6 +189,28 @@ function App() {
                       <AuthGuard>
                         <Layout>
                           <QuotePreview />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+
+                  {/* Invoice routes */}
+                  <Route 
+                    path="/invoices" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Invoices />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
+                    path="/invoices/create" 
+                    element={
+                      <AuthGuard allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+                        <Layout>
+                          <CreateInvoice />
                         </Layout>
                       </AuthGuard>
                     } 

@@ -9,9 +9,16 @@ import { QuoteData } from "../../types/quote.types";
 interface QuoteSummaryProps {
   quote: QuoteData;
   hotels?: any[];
+  hotelOptions?: any[];
+  showMultipleOptions?: boolean;
 }
 
-const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote, hotels = [] }) => {
+const QuoteSummary: React.FC<QuoteSummaryProps> = ({ 
+  quote, 
+  hotels = [], 
+  hotelOptions = [],
+  showMultipleOptions = false 
+}) => {
   const calculateSubtotal = () => {
     const roomTotal = quote.room_arrangements?.reduce((sum, room) => sum + (room.total || 0), 0) || 0;
     const activitiesTotal = quote.activities?.reduce((sum, activity) => sum + (activity.cost * activity.num_people || 0), 0) || 0;
@@ -87,8 +94,51 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote, hotels = [] }) => {
         </CardContent>
       </Card>
 
-      {/* Room Arrangements */}
-      {quote.room_arrangements && quote.room_arrangements.length > 0 && (
+      {/* Multiple Hotel Options */}
+      {showMultipleOptions && hotelOptions && hotelOptions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Hotel className="h-5 w-5" />
+              Hotel Options ({hotelOptions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {hotelOptions.map((option, index) => (
+                <div key={option.id} className={`p-4 border rounded-lg ${option.is_selected ? 'border-green-500 bg-green-50' : ''}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-medium">Option {index + 1}: {option.option_name}</h4>
+                      <p className="text-sm text-gray-600">{option.hotel?.destination}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-lg">${option.total_price?.toFixed(2)}</p>
+                      {option.is_selected && <Badge className="mt-1">Selected</Badge>}
+                    </div>
+                  </div>
+                  {option.room_arrangements && option.room_arrangements.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium">Rooms:</p>
+                      <div className="text-sm text-gray-600">
+                        {option.room_arrangements.map((room: any, idx: number) => (
+                          <span key={idx}>
+                            {room.num_rooms} × {room.room_type}
+                            {idx < option.room_arrangements.length - 1 && ', '}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Single Hotel Accommodation (legacy) */}
+      {!showMultipleOptions && quote.room_arrangements && quote.room_arrangements.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -138,25 +188,6 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote, hotels = [] }) => {
                     <p className="font-medium">${(activity.cost * activity.num_people).toFixed(2)}</p>
                     <p className="text-sm text-gray-600">{activity.num_people} people</p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Hotels Information (if provided) */}
-      {hotels && hotels.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Selected Hotels</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {hotels.map((hotel, index) => (
-                <div key={index} className="p-3 border rounded-lg">
-                  <h4 className="font-medium">{hotel.name}</h4>
-                  <p className="text-sm text-gray-600">{hotel.category} • {hotel.destination}</p>
                 </div>
               ))}
             </div>

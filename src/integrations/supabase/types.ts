@@ -298,6 +298,84 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          client_email: string | null
+          client_name: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          line_items: Json | null
+          notes: string | null
+          organization_id: string
+          paid_date: string | null
+          payment_method: string | null
+          quote_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          booking_id?: string | null
+          client_email?: string | null
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          line_items?: Json | null
+          notes?: string | null
+          organization_id: string
+          paid_date?: string | null
+          payment_method?: string | null
+          quote_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          client_email?: string | null
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          line_items?: Json | null
+          notes?: string | null
+          organization_id?: string
+          paid_date?: string | null
+          payment_method?: string | null
+          quote_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           company_name: string | null
@@ -306,9 +384,14 @@ export type Database = {
           default_markup_percentage: number | null
           id: string
           logo_url: string | null
+          monthly_booking_count: number | null
+          monthly_quote_count: number | null
           name: string
           owner_id: string | null
           settings: Json | null
+          subscription_end_date: string | null
+          subscription_plan_id: string | null
+          subscription_start_date: string | null
           subscription_status: string | null
           tagline: string | null
           trial_end: string | null
@@ -321,9 +404,14 @@ export type Database = {
           default_markup_percentage?: number | null
           id?: string
           logo_url?: string | null
+          monthly_booking_count?: number | null
+          monthly_quote_count?: number | null
           name: string
           owner_id?: string | null
           settings?: Json | null
+          subscription_end_date?: string | null
+          subscription_plan_id?: string | null
+          subscription_start_date?: string | null
           subscription_status?: string | null
           tagline?: string | null
           trial_end?: string | null
@@ -336,9 +424,14 @@ export type Database = {
           default_markup_percentage?: number | null
           id?: string
           logo_url?: string | null
+          monthly_booking_count?: number | null
+          monthly_quote_count?: number | null
           name?: string
           owner_id?: string | null
           settings?: Json | null
+          subscription_end_date?: string | null
+          subscription_plan_id?: string | null
+          subscription_start_date?: string | null
           subscription_status?: string | null
           tagline?: string | null
           trial_end?: string | null
@@ -350,6 +443,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -435,6 +535,57 @@ export type Database = {
             columns: ["quote_hotel_id"]
             isOneToOne: false
             referencedRelation: "quote_hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_hotel_options: {
+        Row: {
+          created_at: string
+          currency_code: string
+          hotel_id: string | null
+          id: string
+          is_selected: boolean | null
+          option_name: string
+          quote_id: string | null
+          room_arrangements: Json | null
+          total_price: number
+        }
+        Insert: {
+          created_at?: string
+          currency_code?: string
+          hotel_id?: string | null
+          id?: string
+          is_selected?: boolean | null
+          option_name?: string
+          quote_id?: string | null
+          room_arrangements?: Json | null
+          total_price: number
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string
+          hotel_id?: string | null
+          id?: string
+          is_selected?: boolean | null
+          option_name?: string
+          quote_id?: string | null
+          room_arrangements?: Json | null
+          total_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_hotel_options_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_hotel_options_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]
@@ -606,6 +757,8 @@ export type Database = {
           children_no_bed: number
           children_with_bed: number
           client: string
+          client_feedback: string | null
+          client_selection_date: string | null
           created_at: string | null
           created_by: string | null
           currency_code: string | null
@@ -622,6 +775,7 @@ export type Database = {
           mobile: string
           notes: string | null
           room_arrangements: Json
+          selected_hotel_option_id: string | null
           start_date: string
           status: string | null
           tour_type: string | null
@@ -636,6 +790,8 @@ export type Database = {
           children_no_bed?: number
           children_with_bed?: number
           client: string
+          client_feedback?: string | null
+          client_selection_date?: string | null
           created_at?: string | null
           created_by?: string | null
           currency_code?: string | null
@@ -652,6 +808,7 @@ export type Database = {
           mobile: string
           notes?: string | null
           room_arrangements?: Json
+          selected_hotel_option_id?: string | null
           start_date: string
           status?: string | null
           tour_type?: string | null
@@ -666,6 +823,8 @@ export type Database = {
           children_no_bed?: number
           children_with_bed?: number
           client?: string
+          client_feedback?: string | null
+          client_selection_date?: string | null
           created_at?: string | null
           created_by?: string | null
           currency_code?: string | null
@@ -682,12 +841,69 @@ export type Database = {
           mobile?: string
           notes?: string | null
           room_arrangements?: Json
+          selected_hotel_option_id?: string | null
           start_date?: string
           status?: string | null
           tour_type?: string | null
           transfers?: Json
           transports?: Json
           updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_selected_hotel_option_id_fkey"
+            columns: ["selected_hotel_option_id"]
+            isOneToOne: false
+            referencedRelation: "quote_hotel_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_bookings_per_month: number | null
+          max_quotes_per_month: number | null
+          max_users: number | null
+          name: string
+          price_monthly: number
+          price_yearly: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_bookings_per_month?: number | null
+          max_quotes_per_month?: number | null
+          max_users?: number | null
+          name: string
+          price_monthly: number
+          price_yearly?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_bookings_per_month?: number | null
+          max_quotes_per_month?: number | null
+          max_users?: number | null
+          name?: string
+          price_monthly?: number
+          price_yearly?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -829,6 +1045,10 @@ export type Database = {
       is_trial_expired: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      reset_monthly_counters: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       user_has_role: {
         Args: { check_role: string; check_org_id?: string }
