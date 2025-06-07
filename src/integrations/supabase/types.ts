@@ -1008,10 +1008,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      can_access_profile: {
-        Args: { profile_user_id: string }
-        Returns: boolean
-      }
       can_create_inquiry: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1022,6 +1018,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_system_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      check_user_role: {
+        Args: { check_role: string }
+        Returns: boolean
+      }
       create_organization: {
         Args: { org_name: string }
         Returns: string
@@ -1030,16 +1034,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_current_user_org: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_role: {
+      get_authenticated_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
       get_user_email: {
         Args: { user_id: string }
+        Returns: string
+      }
+      get_user_organization: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       is_trial_expired: {
@@ -1049,14 +1057,6 @@ export type Database = {
       reset_monthly_counters: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      user_has_role: {
-        Args: { check_role: string; check_org_id?: string }
-        Returns: boolean
-      }
-      user_in_same_org: {
-        Args: { target_user_id: string }
-        Returns: boolean
       }
     }
     Enums: {
