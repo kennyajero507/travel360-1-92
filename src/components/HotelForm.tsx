@@ -9,9 +9,11 @@ import { Button } from "./ui/button";
 interface HotelFormProps {
   onSubmit: (hotelData: any) => void;
   initialData?: any;
+  onCancel?: () => void;
+  isEditing?: boolean;
 }
 
-const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
+const HotelForm = ({ onSubmit, initialData = {}, onCancel, isEditing = false }: HotelFormProps) => {
   const [formData, setFormData] = useState({
     // Basic Hotel Info
     name: initialData.name || "",
@@ -111,7 +113,14 @@ const HotelForm = ({ onSubmit, initialData = {} }: HotelFormProps) => {
       </Card>
       
       <div className="flex justify-end space-x-4">
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Save Hotel</Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+        <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+          {isEditing ? 'Update Hotel' : 'Save Hotel'}
+        </Button>
       </div>
     </form>
   );

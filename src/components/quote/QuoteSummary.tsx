@@ -8,9 +8,10 @@ import { QuoteData } from "../../types/quote.types";
 
 interface QuoteSummaryProps {
   quote: QuoteData;
+  hotels?: any[];
 }
 
-const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote }) => {
+const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote, hotels = [] }) => {
   const calculateSubtotal = () => {
     const roomTotal = quote.room_arrangements?.reduce((sum, room) => sum + (room.total || 0), 0) || 0;
     const activitiesTotal = quote.activities?.reduce((sum, activity) => sum + (activity.cost * activity.num_people || 0), 0) || 0;
@@ -137,6 +138,25 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({ quote }) => {
                     <p className="font-medium">${(activity.cost * activity.num_people).toFixed(2)}</p>
                     <p className="text-sm text-gray-600">{activity.num_people} people</p>
                   </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Hotels Information (if provided) */}
+      {hotels && hotels.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Selected Hotels</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {hotels.map((hotel, index) => (
+                <div key={index} className="p-3 border rounded-lg">
+                  <h4 className="font-medium">{hotel.name}</h4>
+                  <p className="text-sm text-gray-600">{hotel.category} • {hotel.destination}</p>
                 </div>
               ))}
             </div>
