@@ -18,7 +18,15 @@ export const invoiceService = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Parse line_items from JSON and ensure proper typing
+      return (data || []).map(invoice => ({
+        ...invoice,
+        line_items: typeof invoice.line_items === 'string' 
+          ? JSON.parse(invoice.line_items) 
+          : invoice.line_items || [],
+        status: invoice.status as Invoice['status']
+      }));
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast.error('Failed to fetch invoices');
@@ -35,7 +43,14 @@ export const invoiceService = {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        line_items: typeof data.line_items === 'string' 
+          ? JSON.parse(data.line_items) 
+          : data.line_items || [],
+        status: data.status as Invoice['status']
+      };
     } catch (error) {
       console.error('Error fetching invoice:', error);
       toast.error('Failed to fetch invoice');
@@ -74,7 +89,13 @@ export const invoiceService = {
       if (error) throw error;
       
       toast.success('Invoice created successfully');
-      return data;
+      return {
+        ...data,
+        line_items: typeof data.line_items === 'string' 
+          ? JSON.parse(data.line_items) 
+          : data.line_items || [],
+        status: data.status as Invoice['status']
+      };
     } catch (error) {
       console.error('Error creating invoice:', error);
       toast.error('Failed to create invoice');
@@ -90,7 +111,7 @@ export const invoiceService = {
       };
 
       if (updates.line_items) {
-        updateData.line_items = JSON.stringify(updates.line_items);
+        updateData.line_items = JSON.stringify(updates.line_items) as any;
       }
 
       const { data, error } = await supabase
@@ -103,7 +124,13 @@ export const invoiceService = {
       if (error) throw error;
       
       toast.success('Invoice updated successfully');
-      return data;
+      return {
+        ...data,
+        line_items: typeof data.line_items === 'string' 
+          ? JSON.parse(data.line_items) 
+          : data.line_items || [],
+        status: data.status as Invoice['status']
+      };
     } catch (error) {
       console.error('Error updating invoice:', error);
       toast.error('Failed to update invoice');

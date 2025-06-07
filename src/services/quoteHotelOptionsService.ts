@@ -12,6 +12,13 @@ export interface QuoteHotelOption {
   is_selected: boolean;
   room_arrangements: any[];
   created_at: string;
+  hotel?: {
+    id: string;
+    name: string;
+    category: string;
+    destination: string;
+    images: string[];
+  };
 }
 
 export const quoteHotelOptionsService = {
@@ -33,7 +40,20 @@ export const quoteHotelOptionsService = {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      
+      return (data || []).map(option => ({
+        ...option,
+        room_arrangements: typeof option.room_arrangements === 'string' 
+          ? JSON.parse(option.room_arrangements) 
+          : option.room_arrangements || [],
+        hotel: option.hotels ? {
+          id: option.hotels.id,
+          name: option.hotels.name,
+          category: option.hotels.category,
+          destination: option.hotels.destination,
+          images: Array.isArray(option.hotels.images) ? option.hotels.images : []
+        } : undefined
+      }));
     } catch (error) {
       console.error('Error fetching quote hotel options:', error);
       return [];
@@ -52,7 +72,13 @@ export const quoteHotelOptionsService = {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        room_arrangements: typeof data.room_arrangements === 'string' 
+          ? JSON.parse(data.room_arrangements) 
+          : data.room_arrangements || []
+      };
     } catch (error) {
       console.error('Error creating quote hotel option:', error);
       toast.error('Failed to create hotel option');
@@ -64,7 +90,7 @@ export const quoteHotelOptionsService = {
     try {
       const updateData = { ...updates };
       if (updates.room_arrangements) {
-        updateData.room_arrangements = JSON.stringify(updates.room_arrangements);
+        updateData.room_arrangements = JSON.stringify(updates.room_arrangements) as any;
       }
 
       const { data, error } = await supabase
@@ -75,7 +101,13 @@ export const quoteHotelOptionsService = {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        room_arrangements: typeof data.room_arrangements === 'string' 
+          ? JSON.parse(data.room_arrangements) 
+          : data.room_arrangements || []
+      };
     } catch (error) {
       console.error('Error updating quote hotel option:', error);
       toast.error('Failed to update hotel option');
