@@ -22,6 +22,7 @@ interface AuthContextType {
   createOrganization: (name: string) => Promise<boolean>;
   sendInvitation: (email: string, role: string) => Promise<boolean>;
   acceptInvitation: (token: string) => Promise<boolean>;
+  getInvitations: () => Promise<any[]>;
   checkRoleAccess: (allowedRoles: string[]) => boolean;
   checkUserNeedsOrganization: () => Promise<boolean>;
   refreshProfile: () => Promise<void>;
@@ -167,6 +168,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return success;
   };
 
+  const getInvitations = async (): Promise<any[]> => {
+    setAuthError(null);
+    return await invitationService.getInvitations(userProfile);
+  };
+
   const checkRoleAccess = (allowedRoles: string[]): boolean => {
     return profileService.checkRoleAccess(userProfile, allowedRoles);
   };
@@ -190,6 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     createOrganization,
     sendInvitation,
     acceptInvitation,
+    getInvitations,
     checkRoleAccess,
     checkUserNeedsOrganization,
     refreshProfile
