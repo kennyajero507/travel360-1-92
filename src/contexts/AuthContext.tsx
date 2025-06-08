@@ -1,14 +1,31 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
-import { toast } from 'sonner';
+import { authService } from './auth/authService';
 import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
-import { authService } from './auth/authService';
-import { UserProfile, AuthContextType } from './auth/types';
-import { needsOrganizationSetup } from '../utils/authValidation';
-import OrganizationSetup from '../components/OrganizationSetup';
+import { UserProfile } from './auth/types';
+
+interface AuthContextType {
+  session: Session | null;
+  currentUser: User | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  authError: string | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, fullName: string, companyName: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updatePassword: (password: string) => Promise<boolean>;
+  createOrganization: (name: string) => Promise<boolean>;
+  sendInvitation: (email: string, role: string) => Promise<boolean>;
+  acceptInvitation: (token: string) => Promise<boolean>;
+  checkRoleAccess: (allowedRoles: string[]) => boolean;
+  checkUserNeedsOrganization: () => Promise<boolean>;
+  refreshProfile: () => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -21,262 +38,162 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [showOrgSetup, setShowOrgSetup] = useState(false);
+
+  const refreshProfile = useCallback(async () => {
+    if (!session?.user?.id) {
+      setUserProfile(null);
+      return;
+    }
+
+    try {
+      setAuthError(null);
+      const profile = await profileService.ensureProfileExists(session.user.id);
+      setUserProfile(profile);
+    } catch (error) {
+      console.error('[AuthContext] Error refreshing profile:', error);
+      setAuthError('Failed to load user profile');
+    }
+  }, [session?.user?.id]);
 
   useEffect(() => {
-    console.log('[AuthContext] Setting up auth state listener');
-    
+    const getInitialSession = async () => {
+      try {
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AuthContext] Error getting initial session:', error);
+          setAuthError(error.message);
+        } else {
+          setSession(initialSession);
+          setCurrentUser(initialSession?.user || null);
+        }
+      } catch (error) {
+        console.error('[AuthContext] Error in getInitialSession:', error);
+        setAuthError('Failed to initialize authentication');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[AuthContext] Auth state changed:', event, session ? 'HAS_SESSION' : 'NO_SESSION');
+        console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
         
         setSession(session);
-        setUser(session?.user ?? null);
-        setAuthError(null);
+        setCurrentUser(session?.user || null);
         
-        if (session?.user) {
-          console.log('[AuthContext] User signed in, fetching profile...');
-          
-          setTimeout(async () => {
-            try {
-              setLoading(true);
-              const profile = await profileService.ensureProfileExists(session.user.id);
-              
-              if (profile) {
-                setUserProfile(profile);
-                console.log('[AuthContext] Profile loaded:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
-                
-                // Use the validation utility to check if org setup is needed
-                const needsSetup = needsOrganizationSetup(profile);
-                setShowOrgSetup(needsSetup);
-                
-                if (needsSetup) {
-                  console.log('[AuthContext] User needs organization setup');
-                }
-              } else {
-                console.error('[AuthContext] Failed to create/fetch profile');
-                setAuthError('Failed to load user profile');
-              }
-            } catch (error) {
-              console.error('[AuthContext] Error handling auth state change:', error);
-              setAuthError('Authentication error occurred');
-            } finally {
-              setLoading(false);
-            }
-          }, 100);
-        } else {
+        if (event === 'SIGNED_OUT') {
           setUserProfile(null);
-          setShowOrgSetup(false);
-          setLoading(false);
+          setAuthError(null);
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[AuthContext] Initial session check:', session ? 'SIGNED_IN' : 'SIGNED_OUT');
-      if (!session) {
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      console.log('[AuthContext] Cleaning up auth listener');
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      setAuthError(null);
-      
-      console.log('[AuthContext] Starting signup for:', email);
-      
-      return await authService.signup(email, password, fullName, companyName);
-    } catch (error) {
-      console.error('[AuthContext] Signup error:', error);
-      toast.error('An error occurred during signup');
-      return false;
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (session?.user?.id && !userProfile) {
+      refreshProfile();
     }
-  };
+  }, [session?.user?.id, userProfile, refreshProfile]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-      setAuthError(null);
-      
-      console.log('[AuthContext] Attempting login for:', email);
-      
-      return await authService.login(email, password);
-    } catch (error) {
-      console.error('[AuthContext] Login error:', error);
-      toast.error('An error occurred during login');
-      return false;
-    } finally {
-      setLoading(false);
+    setAuthError(null);
+    const success = await authService.login(email, password);
+    
+    if (success) {
+      // Profile will be refreshed by the useEffect when session changes
+      return true;
     }
+    
+    return false;
   };
 
-  const logout = async () => {
-    try {
-      console.log('[AuthContext] Logging out user');
-      setLoading(true);
-      
-      await authService.logout();
-      
-      setUserProfile(null);
-      setUser(null);
-      setSession(null);
-      setAuthError(null);
-      setShowOrgSetup(false);
-    } catch (error) {
-      console.error('[AuthContext] Logout error:', error);
-      toast.error('Error during logout');
-    } finally {
-      setLoading(false);
+  const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
+    setAuthError(null);
+    return await authService.signup(email, password, fullName, companyName);
+  };
+
+  const logout = async (): Promise<void> => {
+    setAuthError(null);
+    await authService.logout();
+    setUserProfile(null);
+  };
+
+  const resetPassword = async (email: string): Promise<boolean> => {
+    setAuthError(null);
+    return await authService.resetPassword(email);
+  };
+
+  const updatePassword = async (password: string): Promise<boolean> => {
+    setAuthError(null);
+    return await authService.updatePassword(password);
+  };
+
+  const createOrganization = async (name: string): Promise<boolean> => {
+    if (!session?.user?.id) return false;
+    
+    setAuthError(null);
+    const success = await organizationService.createOrganization(name, session.user.id);
+    
+    if (success) {
+      await refreshProfile();
     }
+    
+    return success;
+  };
+
+  const sendInvitation = async (email: string, role: string): Promise<boolean> => {
+    setAuthError(null);
+    return await invitationService.sendInvitation(email, role, userProfile, session?.user?.id);
+  };
+
+  const acceptInvitation = async (token: string): Promise<boolean> => {
+    setAuthError(null);
+    const success = await invitationService.acceptInvitation(token);
+    
+    if (success) {
+      await refreshProfile();
+    }
+    
+    return success;
   };
 
   const checkRoleAccess = (allowedRoles: string[]): boolean => {
     return profileService.checkRoleAccess(userProfile, allowedRoles);
   };
 
-  const createOrganization = async (name: string): Promise<boolean> => {
-    if (!user?.id) {
-      toast.error("You must be logged in to create an organization");
-      return false;
-    }
-    
-    try {
-      console.log('[AuthContext] Creating organization:', name);
-      const success = await organizationService.createOrganization(name, user.id);
-      
-      if (success) {
-        // Wait a bit longer and retry profile refresh multiple times if needed
-        setTimeout(async () => {
-          try {
-            let retryCount = 0;
-            const maxRetries = 3;
-            
-            while (retryCount < maxRetries) {
-              console.log(`[AuthContext] Refreshing profile attempt ${retryCount + 1}`);
-              const updatedProfile = await profileService.fetchUserProfile(user.id);
-              
-              if (updatedProfile && updatedProfile.org_id) {
-                setUserProfile(updatedProfile);
-                setShowOrgSetup(false);
-                console.log('[AuthContext] Profile refreshed successfully after org creation');
-                break;
-              }
-              
-              retryCount++;
-              if (retryCount < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-            }
-            
-            if (retryCount === maxRetries) {
-              console.warn('[AuthContext] Failed to refresh profile after org creation');
-              // Force a page reload as fallback
-              window.location.reload();
-            }
-          } catch (error) {
-            console.error('[AuthContext] Error refreshing profile:', error);
-            // Force a page reload as fallback
-            window.location.reload();
-          }
-        }, 2000);
-      }
-      
-      return success;
-    } catch (error) {
-      console.error('[AuthContext] Error creating organization:', error);
-      toast.error('Failed to create organization');
-      return false;
-    }
-  };
-
-  const refreshProfile = async (): Promise<void> => {
-    if (!user?.id) return;
-    
-    try {
-      console.log('[AuthContext] Refreshing profile for user:', user.id);
-      const profile = await profileService.fetchUserProfile(user.id);
-      if (profile) {
-        setUserProfile(profile);
-        console.log('[AuthContext] Profile refreshed:', profile.role, profile.org_id ? `(org: ${profile.org_id})` : '(no org)');
-        
-        // Update org setup visibility using validation utility
-        const needsSetup = needsOrganizationSetup(profile);
-        setShowOrgSetup(needsSetup);
-      }
-    } catch (error) {
-      console.error('[AuthContext] Error refreshing profile:', error);
-    }
-  };
-
-  const sendInvitation = async (email: string, role: string): Promise<boolean> => {
-    return invitationService.sendInvitation(email, role, userProfile, user?.id);
-  };
-
-  const acceptInvitation = async (token: string): Promise<boolean> => {
-    const success = await invitationService.acceptInvitation(token);
-    if (success) {
-      await refreshProfile();
-    }
-    return success;
-  };
-
-  const getInvitations = async (): Promise<any[]> => {
-    return invitationService.getInvitations(userProfile);
-  };
-
-  const resetPassword = async (email: string): Promise<boolean> => {
-    return authService.resetPassword(email);
-  };
-
-  const updatePassword = async (password: string): Promise<boolean> => {
-    return authService.updatePassword(password);
+  const checkUserNeedsOrganization = async (): Promise<boolean> => {
+    if (!session?.user?.id) return false;
+    return await organizationService.checkUserNeedsOrganization(session.user.id);
   };
 
   const value: AuthContextType = {
-    currentUser: user,
     session,
+    currentUser,
     userProfile,
     loading,
     authError,
-    signup,
     login,
+    signup,
     logout,
-    checkRoleAccess,
+    resetPassword,
+    updatePassword,
     createOrganization,
     sendInvitation,
     acceptInvitation,
-    getInvitations,
-    resetPassword,
-    updatePassword,
+    checkRoleAccess,
+    checkUserNeedsOrganization,
     refreshProfile
   };
 
-  // Show organization setup if needed
-  if (showOrgSetup && userProfile && session) {
-    return (
-      <AuthContext.Provider value={value}>
-        <OrganizationSetup />
-      </AuthContext.Provider>
-    );
-  }
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

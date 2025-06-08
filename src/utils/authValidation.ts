@@ -1,39 +1,46 @@
 
 import { UserProfile } from '../contexts/auth/types';
 
-export const validateUserAccess = (userProfile: UserProfile | null): boolean => {
-  if (!userProfile) {
-    console.log('[AuthValidation] No user profile found');
-    return false;
-  }
-
-  if (!userProfile.org_id && userProfile.role === 'org_owner') {
-    console.log('[AuthValidation] Org owner without organization - needs setup');
-    return false;
-  }
-
-  if (!userProfile.org_id && userProfile.role !== 'system_admin') {
-    console.log('[AuthValidation] User without organization (non-admin)');
-    return false;
-  }
-
-  return true;
-};
-
-export const getRedirectPath = (userProfile: UserProfile | null): string => {
+export const getRedirectPath = (userProfile: UserProfile): string => {
   if (!userProfile) return '/login';
   
-  if (userProfile.role === 'system_admin') {
-    return '/admin/dashboard';
+  switch (userProfile.role) {
+    case 'system_admin':
+      return '/admin/dashboard';
+    case 'org_owner':
+    case 'tour_operator':
+    case 'agent':
+      return '/dashboard';
+    default:
+      return '/dashboard';
   }
-  
-  if (userProfile.role === 'org_owner' && !userProfile.org_id) {
-    return '/'; // Will show org setup
-  }
-  
-  return '/dashboard';
 };
 
-export const needsOrganizationSetup = (userProfile: UserProfile | null): boolean => {
-  return userProfile?.role === 'org_owner' && !userProfile.org_id;
+export const validateUserAccess = (userProfile: UserProfile | null, requiredRoles: string[]): boolean => {
+  if (!userProfile) return false;
+  
+  // System admins have access to everything
+  if (userProfile.role === 'system_admin') return true;
+  
+  // Check if user's role is in the required roles
+  return requiredRoles.includes(userProfile.role);
+};
+
+export const canAccessAdminArea = (userProfile: UserProfile | null): boolean => {
+  return userProfile?.role === 'system_admin';
+};
+
+export const canManageOrganization = (userProfile: UserProfile | null): boolean => {
+  if (!userProfile) return false;
+  return ['system_admin', 'org_owner'].includes(userProfile.role);
+};
+
+export const canManageTeam = (userProfile: UserProfile | null): boolean => {
+  if (!userProfile) return false;
+  return ['system_admin', 'org_owner', 'tour_operator'].includes(userProfile.role);
+};
+
+export const requiresOrganization = (userProfile: UserProfile | null): boolean => {
+  if (!userProfile) return false;
+  return userProfile.role === 'org_owner' && !userProfile.org_id;
 };
