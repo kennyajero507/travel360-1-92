@@ -5,21 +5,24 @@ import { Button } from "../components/ui/button";
 import { useRole } from "../contexts/RoleContext";
 import { useHotelsData } from "../hooks/useHotelsData";
 import { useQuoteEditor } from "../hooks/useQuoteEditor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Badge } from "../components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Progress } from "../components/ui/progress";
 
 // Components
 import LoadingIndicator from "../components/quote/LoadingIndicator";
 import QuoteHeader from "../components/quote/QuoteHeader";
 import ClientDetailsCard from "../components/quote/ClientDetailsCard";
 import HotelSelection from "../components/quote/HotelSelection";
-import RoomArrangementSection from "../components/quote/RoomArrangementSection";
-import HotelRoomList from "../components/quote/HotelRoomList";
-import QuoteActionButtons from "../components/quote/QuoteActionButtons";
+import AccommodationSection from "../components/quote/AccommodationSection";
+import TransportBookingSection from "../components/quote/TransportBookingSection";
 import TransferSection from "../components/quote/TransferSection";
+import ExcursionSection from "../components/quote/ExcursionSection";
+import MarkupManagementSection from "../components/quote/MarkupManagementSection";
 import QuoteSummary from "../components/quote/QuoteSummary";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Plus, Hotel, Bus, MapPin, Compass, FileText, X } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Badge } from "../components/ui/badge";
+
+import { Hotel, Bus, MapPin, Compass, FileText, X, Calculator, TrendingUp } from "lucide-react";
 
 const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -49,20 +52,11 @@ const EditQuote = () => {
     isHotelSelectionComplete
   } = useQuoteEditor(quoteId, role);
   
-  const [hotelRoomTypes, setHotelRoomTypes] = useState<any[]>([]);
   const [selectedHotelObjects, setSelectedHotelObjects] = useState<any[]>([]);
-  const [selectedHotel, setSelectedHotel] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<string>("edit");
-  
-  // Update selected hotel when hotel ID changes
-  useEffect(() => {
-    if (selectedHotelId && hotels.length > 0) {
-      const hotel = hotels.find(h => h.id === selectedHotelId);
-      setSelectedHotel(hotel || null);
-    } else {
-      setSelectedHotel(null);
-    }
-  }, [selectedHotelId, hotels]);
+  const [activeSection, setActiveSection] = useState<string>("accommodation");
+  const [transports, setTransports] = useState<any[]>([]);
+  const [excursions, setExcursions] = useState<any[]>([]);
+  const [sectionMarkups, setSectionMarkups] = useState<Record<string, any>>({});
   
   // Update selected hotel objects when selectedHotels changes
   useEffect(() => {
@@ -76,25 +70,49 @@ const EditQuote = () => {
     }
   }, [selectedHotels, hotels]);
 
-  // Handle room types loaded from hotel selection
+  // Calculate section totals
+  const accommodationTotal = quote?.room_arrangements?.reduce((sum, arr) => sum + (arr.total || 0), 0) || 0;
+  const transportTotal = transports.reduce((sum, transport) => sum + (transport.total_cost || 0), 0);
+  const transferTotal = quote?.transfers?.reduce((sum, transfer) => sum + (transfer.total || 0), 0) || 0;
+  const excursionTotal = excursions.reduce((sum, excursion) => sum + (excursion.total_cost || 0), 0);
+
   const handleRoomTypesLoaded = (roomTypes: any[]) => {
-    setHotelRoomTypes(roomTypes);
-    
-    // Populate room arrangements based on hotel room types
     if (quote && roomTypes.length > 0) {
       populateRoomArrangementsFromHotel(roomTypes, quote.duration_nights);
     }
   };
-  
-  // Handle adding a new room type to the quote
-  const handleAddRoom = (roomType: any) => {
-    if (quote) {
-      addRoomArrangement(roomType, quote.duration_nights);
-    }
+
+  const handleMarkupChange = (section: string, markup: any) => {
+    setSectionMarkups(prev => ({
+      ...prev,
+      [section]: markup
+    }));
   };
-  
-  const MAX_HOTELS = 2; // Maximum number of hotels allowed for comparison
-  
+
+  // Calculate completion percentage
+  const calculateProgress = () => {
+    let completedSections = 0;
+    const totalSections = 6;
+    
+    if (selectedHotelObjects.length > 0 && accommodationTotal > 0) completedSections++;
+    if (transportTotal > 0) completedSections++;
+    if (transferTotal > 0) completedSections++;
+    if (excursionTotal > 0) completedSections++;
+    if (Object.keys(sectionMarkups).length > 0) completedSections++;
+    if (accommodationTotal > 0 || transportTotal > 0 || transferTotal > 0 || excursionTotal > 0) completedSections++; // Summary
+    
+    return (completedSections / totalSections) * 100;
+  };
+
+  const sections = [
+    { id: 'accommodation', label: 'Accommodation', icon: Hotel, completed: selectedHotelObjects.length > 0 && accommodationTotal > 0 },
+    { id: 'transport', label: 'Transport Booking', icon: Bus, completed: transportTotal > 0 },
+    { id: 'transfer', label: 'Transfer', icon: MapPin, completed: transferTotal > 0 },
+    { id: 'excursion', label: 'Quote Excursion', icon: Compass, completed: excursionTotal > 0 },
+    { id: 'markup', label: 'Quote Markup', icon: Calculator, completed: Object.keys(sectionMarkups).length > 0 },
+    { id: 'summary', label: 'Summary', icon: FileText, completed: true }
+  ];
+
   if (loading) {
     return <LoadingIndicator message="Loading quote data..." />;
   }
@@ -123,9 +141,9 @@ const EditQuote = () => {
         emailQuote={emailQuote}
         downloadQuote={downloadQuote}
         isHotelSelectionRequired={!isHotelSelectionComplete()}
-        disableSave={editorStage === 'hotel-selection' && !isHotelSelectionComplete()}
-        stage={editorStage}
-        onStageChange={handleStageChange}
+        disableSave={false}
+        stage="quote-details"
+        onStageChange={() => {}}
       />
       
       {/* Client Details Card */}
@@ -141,211 +159,156 @@ const EditQuote = () => {
         }}
         status={quote.status}
       />
-      
-      {/* Hotel Selection Stage */}
-      {editorStage === 'hotel-selection' && (
-        <Card className="border border-teal-100">
-          <CardHeader className="bg-teal-50 pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Hotel className="h-5 w-5 text-teal-600" />
-                <CardTitle className="text-lg text-teal-700">Select Hotels</CardTitle>
+
+      {/* Progress Indicator */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">Quote Builder Progress</CardTitle>
+            <Badge variant="outline">{Math.round(calculateProgress())}% Complete</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Progress value={calculateProgress()} className="w-full" />
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
+            {sections.map(section => (
+              <span key={section.id} className={section.completed ? 'text-green-600' : ''}>
+                {section.label}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 6-Section Quote Builder */}
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          {sections.map(section => (
+            <TabsTrigger
+              key={section.id}
+              value={section.id}
+              className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 relative"
+            >
+              <div className="flex items-center gap-1">
+                <section.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{section.label}</span>
+                {section.completed && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></div>
+                )}
               </div>
-              <Badge variant={selectedHotelObjects.length > 0 ? "outline" : "destructive"}>
-                {selectedHotelObjects.length} of {MAX_HOTELS} Hotels Selected
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-6">
-            {/* Hotel Selection */}
-            <div>
-              <h3 className="text-md font-medium mb-4">Add a Hotel</h3>
-              <HotelSelection
-                selectedHotelId={selectedHotelId}
-                hotels={hotels}
-                onHotelSelection={handleHotelSelection}
-                onRoomTypesLoaded={handleRoomTypesLoaded}
-                isRequired={true}
-                maxHotels={MAX_HOTELS}
-                selectedHotelsCount={selectedHotelObjects.length}
-              />
-            </div>
-            
-            {/* Selected Hotels List */}
-            {selectedHotelObjects.length > 0 && (
-              <div className="space-y-6">
-                {selectedHotelObjects.map(hotel => (
-                  <Card key={hotel.id} className="border border-gray-200">
-                    <CardHeader className="bg-gray-50 flex flex-row justify-between items-center py-3">
-                      <div>
-                        <h4 className="text-md font-medium">{hotel.name}</h4>
-                        <p className="text-sm text-gray-500">{hotel.category} • {hotel.destination}</p>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeSelectedHotel(hotel.id)}
-                        className="text-red-600"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Remove Hotel
-                      </Button>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      {/* Hotel Room Types List */}
-                      <div className="mb-4">
-                        <h3 className="text-md font-medium mb-4">Available Room Types</h3>
-                        <HotelRoomList 
-                          roomTypes={hotel.roomTypes || []}
-                          selectedHotel={hotel}
-                          onAddRoom={(roomType) => addRoomArrangement(roomType, quote.duration_nights, hotel.id)}
-                        />
-                      </div>
-                      
-                      {/* Room Arrangements Section for this hotel */}
-                      {quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id).length > 0 ? (
-                        <div>
-                          <h3 className="text-md font-medium mb-4">Room Arrangements</h3>
-                          <RoomArrangementSection 
-                            roomArrangements={quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id)}
-                            duration={quote.duration_nights}
-                            onRoomArrangementsChange={(arrangements) => {
-                              // Preserve arrangements for other hotels
-                              const otherHotelsArrangements = quote.room_arrangements.filter(arr => arr.hotel_id !== hotel.id);
-                              handleRoomArrangementsChange([...otherHotelsArrangements, ...arrangements]);
-                            }}
-                            availableRoomTypes={hotel.roomTypes?.map((rt: any) => rt.name) || ["Standard Room", "Deluxe Room", "Suite"]}
-                            hotelId={hotel.id}
-                          />
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 border border-dashed border-gray-200 rounded-md">
-                          <p className="text-gray-500">No room arrangements added yet</p>
-                          <p className="text-sm text-gray-400 mt-2">Click on "Add Room" above to add room arrangements</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-            
-            {/* Action Buttons for Hotel Selection */}
-            <div className="pt-4 flex justify-between">
-              <Button variant="outline" onClick={() => navigate("/quotes")}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => handleStageChange('quote-details')} 
-                disabled={!isHotelSelectionComplete()}
-                className="bg-teal-600 hover:bg-teal-700"
-              >
-                Continue to Quote Details
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Quote Details Stage */}
-      {editorStage === 'quote-details' && (
-        <>
-          {/* Tabs for Edit and Summary Views */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="edit" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
-                Edit Quote
-              </TabsTrigger>
-              <TabsTrigger value="summary" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
-                Quote Summary
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="edit" className="mt-6 space-y-6">
-              {/* Hotel Cards - One for each selected hotel */}
-              {selectedHotelObjects.map(hotel => (
-                <Card key={hotel.id}>
-                  <CardHeader className="flex flex-row items-center gap-2">
-                    <Hotel className="h-5 w-5 text-teal-600" />
-                    <CardTitle>{hotel.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Room Arrangements for this hotel */}
-                    <div>
-                      <h3 className="text-md font-medium mb-4">Room Arrangements</h3>
-                      <RoomArrangementSection 
-                        roomArrangements={quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id)}
-                        duration={quote.duration_nights}
-                        onRoomArrangementsChange={(arrangements) => {
-                          // Preserve arrangements for other hotels
-                          const otherHotelsArrangements = quote.room_arrangements.filter(arr => arr.hotel_id !== hotel.id);
-                          handleRoomArrangementsChange([...otherHotelsArrangements, ...arrangements]);
-                        }}
-                        availableRoomTypes={hotel.roomTypes?.map((rt: any) => rt.name) || ["Standard Room", "Deluxe Room", "Suite"]}
-                        hotelId={hotel.id}
-                      />
-                    </div>
-                    
-                    {/* Activities for this hotel */}
-                    <div>
-                      <h3 className="text-md font-medium mb-4">Hotel Activities</h3>
-                      <div className="text-center py-6 border border-dashed border-gray-200 rounded-md">
-                        <p className="text-gray-500">Activities will be configured here</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {/* Transfer Section */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <MapPin className="h-5 w-5 text-teal-600" />
-                  <CardTitle>Transfer</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TransferSection 
-                    transfers={quote.transfers || []} 
-                    onTransfersChange={handleTransfersChange}
-                  />
-                </CardContent>
-              </Card>
-              
-              {/* Transportation Section */}
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <Bus className="h-5 w-5 text-teal-600" />
-                  <CardTitle>Transportation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-6 border border-dashed border-gray-200 rounded-md">
-                    <p className="text-gray-500">Transportation options will be configured here</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="summary" className="mt-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <FileText className="h-5 w-5 text-teal-600" />
-                  <CardTitle>Quote Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <QuoteSummary quote={quote} hotels={selectedHotelObjects} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        
+        <div className="mt-6">
+          {/* Hotel Selection for Accommodation */}
+          {selectedHotelObjects.length === 0 && (
+            <Card className="mb-6 border border-blue-100">
+              <CardHeader className="bg-blue-50">
+                <CardTitle className="flex items-center gap-2">
+                  <Hotel className="h-5 w-5 text-blue-600" />
+                  Select Hotels First
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <HotelSelection
+                  selectedHotelId={selectedHotelId}
+                  hotels={hotels}
+                  onHotelSelection={handleHotelSelection}
+                  onRoomTypesLoaded={handleRoomTypesLoaded}
+                  isRequired={true}
+                  maxHotels={2}
+                  selectedHotelsCount={selectedHotelObjects.length}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          <TabsContent value="accommodation" className="mt-0">
+            <AccommodationSection
+              selectedHotels={selectedHotelObjects}
+              roomArrangements={quote.room_arrangements || []}
+              onRoomArrangementsChange={handleRoomArrangementsChange}
+              availableRoomTypes={["Standard Room", "Deluxe Room", "Suite", "Family Room"]}
+              duration={quote.duration_nights}
+            />
+          </TabsContent>
           
-          {/* Action Buttons */}
-          <QuoteActionButtons
-            saving={saving}
-            handleSave={handleSave}
-            onCancel={() => navigate("/quotes")}
-          />
-        </>
-      )}
+          <TabsContent value="transport" className="mt-0">
+            <TransportBookingSection
+              transports={transports}
+              onTransportsChange={setTransports}
+            />
+          </TabsContent>
+          
+          <TabsContent value="transfer" className="mt-0">
+            <TransferSection 
+              transfers={quote.transfers || []} 
+              onTransfersChange={handleTransfersChange}
+            />
+          </TabsContent>
+          
+          <TabsContent value="excursion" className="mt-0">
+            <ExcursionSection
+              excursions={excursions}
+              onExcursionsChange={setExcursions}
+            />
+          </TabsContent>
+          
+          <TabsContent value="markup" className="mt-0">
+            <MarkupManagementSection
+              accommodationTotal={accommodationTotal}
+              transportTotal={transportTotal}
+              transferTotal={transferTotal}
+              excursionTotal={excursionTotal}
+              onMarkupChange={handleMarkupChange}
+            />
+          </TabsContent>
+          
+          <TabsContent value="summary" className="mt-0">
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-2">
+                <FileText className="h-5 w-5 text-green-600" />
+                <CardTitle>Quote Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <QuoteSummary 
+                  quote={{
+                    ...quote,
+                    transports,
+                    excursions,
+                    sectionMarkups
+                  }} 
+                  hotels={selectedHotelObjects} 
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </div>
+      </Tabs>
+
+      {/* Action Buttons */}
+      <div className="flex justify-between pt-4">
+        <Button variant="outline" onClick={() => navigate("/quotes")}>
+          Cancel
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {saving ? "Saving..." : "Save Quote"}
+          </Button>
+          <Button
+            onClick={previewQuote}
+            variant="outline"
+            className="border-green-600 text-green-600 hover:bg-green-50"
+          >
+            Preview
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

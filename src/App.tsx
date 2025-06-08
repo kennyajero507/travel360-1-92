@@ -40,7 +40,6 @@ import Clients from "./pages/Clients";
 import Calendar from "./pages/Calendar";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import AgentManagement from "./pages/AgentManagement";
 import TeamManagement from "./pages/TeamManagement";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -313,6 +312,16 @@ function App() {
                     } 
                   />
                   <Route 
+                    path="/reports" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Reports />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+                  <Route 
                     path="/settings" 
                     element={
                       <AuthGuard>
@@ -323,7 +332,7 @@ function App() {
                     } 
                   />
                   
-                  {/* Management routes */}
+                  {/* Team Management - consolidated route */}
                   <Route 
                     path="/team" 
                     element={
@@ -334,23 +343,13 @@ function App() {
                       </AuthGuard>
                     } 
                   />
-                  <Route 
-                    path="/agents" 
-                    element={
-                      <AuthGuard allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
-                        <Layout>
-                          <AgentManagement />
-                        </Layout>
-                      </AuthGuard>
-                    } 
-                  />
 
                   {/* 404 route */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </CurrencyProvider>
             </RoleProvider>
-          </AuthProvider>
+          </AuthGuard>
         </Router>
       </TooltipProvider>
     </QueryClientProvider>

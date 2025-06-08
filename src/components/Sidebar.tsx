@@ -94,13 +94,7 @@ export function Sidebar({ className }: SidebarProps) {
       roles: ['system_admin', 'org_owner', 'tour_operator']
     },
     {
-      title: "Agents",
-      href: "/agents",
-      icon: Users,
-      roles: ['system_admin', 'org_owner']
-    },
-    {
-      title: "Team",
+      title: "Team Management",
       href: "/team",
       icon: Users,
       roles: ['system_admin', 'org_owner', 'tour_operator']
