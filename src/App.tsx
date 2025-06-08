@@ -349,7 +349,7 @@ function App() {
                 </Routes>
               </CurrencyProvider>
             </RoleProvider>
-          </AuthGuard>
+          </AuthProvider>
         </Router>
       </TooltipProvider>
     </QueryClientProvider>
