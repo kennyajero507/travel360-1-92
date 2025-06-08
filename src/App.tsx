@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Outlet } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,6 +40,7 @@ import Calendar from "./pages/Calendar";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import TeamManagement from "./pages/TeamManagement";
+import AgentManagement from "./pages/AgentManagement";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminLogin from "./pages/AdminLogin";
@@ -339,6 +339,18 @@ function App() {
                       <AuthGuard allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
                         <Layout>
                           <TeamManagement />
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
+
+                  {/* Agent Management redirect */}
+                  <Route 
+                    path="/agent-management" 
+                    element={
+                      <AuthGuard allowedRoles={['system_admin', 'org_owner', 'tour_operator']}>
+                        <Layout>
+                          <AgentManagement />
                         </Layout>
                       </AuthGuard>
                     } 
