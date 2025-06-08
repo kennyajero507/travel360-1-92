@@ -278,7 +278,7 @@ const EditQuote = () => {
                     transports,
                     excursions,
                     sectionMarkups
-                  }} 
+                  } as any} 
                   hotels={selectedHotelObjects} 
                 />
               </CardContent>

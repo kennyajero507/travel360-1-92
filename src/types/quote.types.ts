@@ -1,4 +1,3 @@
-
 import { Hotel } from "./hotel.types";
 
 export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
@@ -34,6 +33,7 @@ export interface QuoteTransport {
   date: string;
   cost: number;
   description?: string;
+  total_cost?: number;
 }
 
 export interface QuoteActivity {
@@ -43,6 +43,7 @@ export interface QuoteActivity {
   date: string;
   cost: number;
   num_people: number;
+  total_cost?: number;
 }
 
 export interface QuoteTransfer {
@@ -53,6 +54,7 @@ export interface QuoteTransfer {
   vehicle_type?: string;
   cost: number;
   description?: string;
+  total: number; // Added missing total property
 }
 
 // Main QuoteData interface matching database structure
@@ -85,6 +87,8 @@ export interface QuoteData {
   activities: QuoteActivity[];
   transports: QuoteTransport[];
   transfers: QuoteTransfer[];
+  excursions?: QuoteActivity[]; // Added excursions property
+  sectionMarkups?: Record<string, any>; // Added section markups property
 }
 
 export interface QuoteFormData {
