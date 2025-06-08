@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -11,11 +12,12 @@ import { CalendarIcon, Users, MapPin, FileText } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "../../lib/utils";
 import { QuoteData } from "../../types/quote.types";
+import { Inquiry } from "../../services/inquiryService";
 
 interface QuoteInitializerProps {
   onInitializeQuote: (quote: QuoteData) => Promise<void>;
   onCancel: () => void;
-  preselectedInquiry?: any;
+  preselectedInquiry?: Inquiry | null;
 }
 
 const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
@@ -37,20 +39,21 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
     notes: ""
   });
 
+  // Auto-populate from selected inquiry
   useEffect(() => {
     if (preselectedInquiry) {
       setFormData({
-        client: preselectedInquiry.client || "",
-        mobile: preselectedInquiry.mobile || "",
+        client: preselectedInquiry.client_name || "",
+        mobile: preselectedInquiry.client_mobile || "",
         destination: preselectedInquiry.destination || "",
-        startDate: preselectedInquiry.start_date ? new Date(preselectedInquiry.start_date) : undefined,
-        endDate: preselectedInquiry.end_date ? new Date(preselectedInquiry.end_date) : undefined,
+        startDate: preselectedInquiry.check_in_date ? new Date(preselectedInquiry.check_in_date) : undefined,
+        endDate: preselectedInquiry.check_out_date ? new Date(preselectedInquiry.check_out_date) : undefined,
         adults: preselectedInquiry.adults || 1,
-        childrenWithBed: preselectedInquiry.children_with_bed || 0,
-        childrenNoBed: preselectedInquiry.children_no_bed || 0,
+        childrenWithBed: Math.floor((preselectedInquiry.children || 0) / 2), // Assume split
+        childrenNoBed: Math.ceil((preselectedInquiry.children || 0) / 2),
         infants: preselectedInquiry.infants || 0,
         tourType: preselectedInquiry.tour_type || "domestic",
-        notes: preselectedInquiry.notes || ""
+        notes: preselectedInquiry.description || ""
       });
     }
   }, [preselectedInquiry]);
@@ -101,13 +104,20 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
     await onInitializeQuote(quoteData);
   };
 
+  const isFormValid = formData.client && formData.mobile && formData.destination && formData.startDate && formData.endDate;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Initialize New Quote
+          {preselectedInquiry ? 'Quote from Inquiry' : 'Initialize New Quote'}
         </CardTitle>
+        {preselectedInquiry && (
+          <p className="text-sm text-green-600">
+            Auto-populated from Inquiry #{preselectedInquiry.enquiry_number}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -122,6 +132,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
                   value={formData.client}
                   onChange={(e) => setFormData({ ...formData, client: e.target.value })}
                   required
+                  disabled={!!preselectedInquiry}
                 />
               </div>
               <div>
@@ -131,6 +142,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
                   value={formData.mobile}
                   onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                   required
+                  disabled={!!preselectedInquiry}
                 />
               </div>
             </div>
@@ -147,6 +159,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
                   value={formData.destination}
                   onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                   required
+                  disabled={!!preselectedInquiry}
                 />
               </div>
               <div>
@@ -159,6 +172,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
                         "w-full justify-start text-left font-normal",
                         !formData.startDate && "text-muted-foreground"
                       )}
+                      disabled={!!preselectedInquiry}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.startDate ? format(formData.startDate, "PPP") : "Pick a date"}
@@ -184,6 +198,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
                         "w-full justify-start text-left font-normal",
                         !formData.endDate && "text-muted-foreground"
                       )}
+                      disabled={!!preselectedInquiry}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.endDate ? format(formData.endDate, "PPP") : "Pick a date"}
@@ -252,7 +267,11 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
           {/* Tour Type */}
           <div>
             <Label htmlFor="tourType">Tour Type</Label>
-            <Select value={formData.tourType} onValueChange={(value) => setFormData({ ...formData, tourType: value })}>
+            <Select 
+              value={formData.tourType} 
+              onValueChange={(value) => setFormData({ ...formData, tourType: value })}
+              disabled={!!preselectedInquiry}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -275,12 +294,28 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
             />
           </div>
 
+          {/* Duration Display */}
+          {formData.startDate && formData.endDate && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 text-blue-600" />
+                  <span><strong>Duration:</strong> {calculateDuration().days} days, {calculateDuration().nights} nights</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <span><strong>Total:</strong> {formData.adults + formData.childrenWithBed + formData.childrenNoBed + formData.infants} travelers</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end space-x-4">
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={!isFormValid}>
               Initialize Quote
             </Button>
           </div>

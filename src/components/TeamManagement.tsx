@@ -23,34 +23,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-import { toast } from "sonner";
-import { Users, UserPlus, Mail, Phone, MoreVertical, Edit, Trash2 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role: 'tour_operator' | 'agent';
-  status: 'active' | 'inactive' | 'pending';
-  lastActive?: string;
-  createdAt: string;
-}
+import { toast } from "sonner";
+import { Users, UserPlus, Mail, Phone, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { teamService, TeamMember } from "../services/teamService";
 
 const TeamManagement = () => {
-  const { userProfile, sendInvitation, getInvitations } = useAuth();
-  const [members, setMembers] = useState<TeamMember[]>([]);
+  const { userProfile, sendInvitation, getInvitations, checkRoleAccess } = useAuth();
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchingData, setFetchingData] = useState(true);
   
   const [newMember, setNewMember] = useState({
     name: "",
@@ -59,41 +49,35 @@ const TeamManagement = () => {
     role: "agent" as 'tour_operator' | 'agent'
   });
 
+  // Check access permissions
+  const canManageTeam = checkRoleAccess(['system_admin', 'org_owner', 'tour_operator']);
+
   useEffect(() => {
     fetchTeamData();
-  }, []);
+  }, [userProfile?.org_id]);
 
   const fetchTeamData = async () => {
+    if (!userProfile?.org_id || !canManageTeam) {
+      setFetchingData(false);
+      return;
+    }
+
     try {
-      const invitationData = await getInvitations();
-      setInvitations(invitationData);
+      setFetchingData(true);
       
-      // Mock team members data - in a real app, this would come from the database
-      const mockMembers: TeamMember[] = [
-        {
-          id: "1",
-          name: "Sarah Johnson",
-          email: "sarah@company.com",
-          phone: "+1234567890",
-          role: "tour_operator",
-          status: "active",
-          lastActive: "2024-01-15",
-          createdAt: "2024-01-01"
-        },
-        {
-          id: "2",
-          name: "Mike Chen",
-          email: "mike@company.com",
-          phone: "+1234567891",
-          role: "agent",
-          status: "active",
-          lastActive: "2024-01-14",
-          createdAt: "2024-01-05"
-        }
-      ];
-      setMembers(mockMembers);
+      // Fetch team members and invitations in parallel
+      const [members, invitationData] = await Promise.all([
+        teamService.getTeamMembers(userProfile.org_id),
+        getInvitations()
+      ]);
+      
+      setTeamMembers(members);
+      setInvitations(invitationData);
     } catch (error) {
       console.error('Error fetching team data:', error);
+      toast.error('Failed to load team data');
+    } finally {
+      setFetchingData(false);
     }
   };
 
@@ -116,13 +100,40 @@ const TeamManagement = () => {
       if (success) {
         setNewMember({ name: "", email: "", phone: "", role: "agent" });
         setDialogOpen(false);
-        fetchTeamData();
+        await fetchTeamData(); // Refresh data
         toast.success(`Invitation sent to ${newMember.email}`);
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
+      toast.error('Failed to send invitation');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (memberId: string, newRole: string) => {
+    try {
+      await teamService.updateMemberRole(memberId, newRole);
+      setTeamMembers(prev => 
+        prev.map(member => 
+          member.id === memberId ? { ...member, role: newRole } : member
+        )
+      );
+      toast.success("Member role updated successfully");
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast.error("Failed to update member role");
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      await teamService.removeMember(memberId);
+      setTeamMembers(prev => prev.filter(member => member.id !== memberId));
+      toast.success("Member removed from organization");
+    } catch (error) {
+      console.error("Error removing member:", error);
+      toast.error("Failed to remove member");
     }
   };
 
@@ -148,6 +159,7 @@ const TeamManagement = () => {
   };
 
   const canManageRole = (memberRole: string) => {
+    if (userProfile?.role === 'system_admin') return true;
     if (userProfile?.role === 'org_owner') return true;
     if (userProfile?.role === 'tour_operator' && memberRole === 'agent') return true;
     return false;
@@ -162,10 +174,28 @@ const TeamManagement = () => {
         { value: 'agent', label: 'Travel Agent' }
       ];
 
-  if (!userProfile || !['org_owner', 'tour_operator'].includes(userProfile.role)) {
+  if (!canManageTeam) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">You don't have permission to manage team members.</p>
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="text-red-600">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-500">You don't have permission to manage team members.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (fetchingData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading team data...</p>
+        </div>
       </div>
     );
   }
@@ -264,7 +294,7 @@ const TeamManagement = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Team Members
+            Team Members ({teamMembers.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -273,36 +303,31 @@ const TeamManagement = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last Active</TableHead>
+                <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {members.map((member) => (
+              {teamMembers.map((member) => (
                 <TableRow key={member.id}>
-                  <TableCell className="font-medium">{member.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {member.full_name || 'Unnamed User'}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-gray-400" />
                       {member.email}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {member.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        {member.phone}
-                      </div>
-                    )}
-                  </TableCell>
                   <TableCell>{getRoleBadge(member.role)}</TableCell>
-                  <TableCell>{getStatusBadge(member.status)}</TableCell>
-                  <TableCell>{member.lastActive || 'Never'}</TableCell>
+                  <TableCell>{getStatusBadge('active')}</TableCell>
+                  <TableCell>
+                    {new Date(member.created_at).toLocaleDateString()}
+                  </TableCell>
                   <TableCell className="text-right">
-                    {canManageRole(member.role) && (
+                    {canManageRole(member.role) && member.id !== userProfile?.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -310,11 +335,14 @@ const TeamManagement = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingMember(member)}>
+                          <DropdownMenuItem onClick={() => {}}>
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                            Change Role
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => handleRemoveMember(member.id)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Remove
                           </DropdownMenuItem>
@@ -324,10 +352,10 @@ const TeamManagement = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {members.length === 0 && (
+              {teamMembers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                    No team members yet. Invite your first team member to get started.
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    No team members found. Invite some team members to get started.
                   </TableCell>
                 </TableRow>
               )}
@@ -340,7 +368,7 @@ const TeamManagement = () => {
       {invitations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Pending Invitations</CardTitle>
+            <CardTitle>Pending Invitations ({invitations.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>

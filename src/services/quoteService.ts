@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
@@ -119,28 +120,6 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
   }
 };
 
-export const getAvailableInquiries = async () => {
-  try {
-    console.log('[QuoteService] Fetching available inquiries for quotes');
-    
-    const { data, error } = await supabase
-      .from('inquiries')
-      .select('*')
-      .in('status', ['New', 'Assigned'])
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('[QuoteService] Error fetching inquiries:', error);
-      throw error;
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('[QuoteService] Error in getAvailableInquiries:', error);
-    return [];
-  }
-};
-
 export const generateClientPreview = async (quoteId: string) => {
   try {
     console.log('[QuoteService] Generating client preview for quote:', quoteId);
@@ -150,7 +129,7 @@ export const generateClientPreview = async (quoteId: string) => {
       throw new Error('Quote not found');
     }
 
-    // Get related inquiry details
+    // Get related inquiry details if quote is linked to inquiry
     let inquiry = null;
     if (quote.inquiry_id) {
       const { data: inquiryData, error: inquiryError } = await supabase
