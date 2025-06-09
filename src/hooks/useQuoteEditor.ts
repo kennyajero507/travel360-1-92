@@ -2,8 +2,10 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { getQuoteById, saveQuote, updateQuoteStatus, generateClientPreview } from "../services/quoteService";
+import { updateQuoteStatus, generateClientPreview } from "../services/quoteService";
+import { enhancedQuoteService } from "../services/enhancedQuoteService";
 import { QuoteData, RoomArrangement } from "../types/quote.types";
+import { useEnhancedQuoteCalculations } from "./useEnhancedQuoteCalculations";
 
 export const useQuoteEditor = (quoteId?: string, role?: string) => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -12,15 +14,19 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
   const [selectedHotels, setSelectedHotels] = useState<string[]>([]);
   const [editorStage, setEditorStage] = useState<'hotel-selection' | 'quote-details'>('hotel-selection');
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  // Load quote data
+  // Use enhanced calculations
+  const { calculations, validation, progressData } = useEnhancedQuoteCalculations(quote);
+
+  // Load quote data using enhanced service
   useEffect(() => {
     const loadQuote = async () => {
       if (quoteId) {
         setLoading(true);
         try {
-          const quoteData = await getQuoteById(quoteId);
+          const quoteData = await enhancedQuoteService.getQuoteById(quoteId);
           setQuote(quoteData);
           
           // Collect selected hotels from room arrangements
@@ -43,6 +49,12 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
           if (quoteData?.hotel_id) {
             setSelectedHotelId(quoteData.hotel_id);
           }
+
+          // Enable auto-save for existing quotes
+          if (quoteData) {
+            enhancedQuoteService.enableAutoSave(quoteData.id, quoteData);
+            setAutoSaveEnabled(true);
+          }
         } catch (error) {
           console.error("Error loading quote:", error);
           toast.error("Failed to load quote data");
@@ -53,7 +65,19 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     };
     
     loadQuote();
+
+    // Cleanup auto-save on unmount
+    return () => {
+      enhancedQuoteService.disableAutoSave();
+    };
   }, [quoteId]);
+
+  // Update pending changes when quote changes
+  useEffect(() => {
+    if (quote && autoSaveEnabled) {
+      enhancedQuoteService.updatePendingChanges(quote.id, quote);
+    }
+  }, [quote, autoSaveEnabled]);
 
   // Handlers for quote modifications
   const handleHotelSelection = (hotelId: string) => {
@@ -65,10 +89,11 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     }
     
     if (quote) {
-      setQuote({
+      const updatedQuote = {
         ...quote,
         hotel_id: hotelId
-      });
+      };
+      setQuote(updatedQuote);
     }
   };
 
@@ -83,10 +108,11 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     
     // Remove room arrangements for this hotel
     if (quote) {
-      setQuote({
+      const updatedQuote = {
         ...quote,
         room_arrangements: quote.room_arrangements.filter(arr => arr.hotel_id !== hotelId)
-      });
+      };
+      setQuote(updatedQuote);
     }
   };
 
@@ -135,55 +161,12 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
         })
       };
       
-      setQuote({
+      const updatedQuote = {
         ...quote,
         room_arrangements: [...quote.room_arrangements, newArrangement]
-      });
+      };
+      setQuote(updatedQuote);
     }
-  };
-
-  const addRoomArrangement = (roomType: any, nights: number, hotelId?: string) => {
-    if (!quote) return;
-    
-    const targetHotelId = hotelId || selectedHotelId;
-    if (!targetHotelId) return;
-    
-    const newArrangement: RoomArrangement = {
-      id: `room-${Date.now()}`,
-      hotel_id: targetHotelId,
-      room_type: roomType.name,
-      num_rooms: 1,
-      adults: 2,
-      children_with_bed: 0,
-      children_no_bed: 0,
-      infants: 0,
-      rate_per_night: {
-        adult: roomType.rate || 100,
-        childWithBed: roomType.childRate || 70,
-        childNoBed: roomType.childNoBedrRate || 40,
-        infant: 0
-      },
-      nights: nights,
-      total: calculateRoomTotal({
-        adults: 2,
-        children_with_bed: 0,
-        children_no_bed: 0,
-        infants: 0,
-        rate_per_night: {
-          adult: roomType.rate || 100,
-          childWithBed: roomType.childRate || 70,
-          childNoBed: roomType.childNoBedrRate || 40,
-          infant: 0
-        },
-        num_rooms: 1,
-        nights: nights
-      })
-    };
-    
-    setQuote({
-      ...quote,
-      room_arrangements: [...quote.room_arrangements, newArrangement]
-    });
   };
 
   // Calculate total cost for a room arrangement
@@ -207,19 +190,41 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
       total: calculateRoomTotal(arr)
     }));
     
-    setQuote({
+    const updatedQuote = {
       ...quote,
       room_arrangements: updatedArrangements
-    });
+    };
+    setQuote(updatedQuote);
   };
 
   const handleTransfersChange = (transfers: any[]) => {
     if (!quote) return;
     
-    setQuote({
+    const updatedQuote = {
       ...quote,
       transfers
-    });
+    };
+    setQuote(updatedQuote);
+  };
+
+  const handleTransportsChange = (transports: any[]) => {
+    if (!quote) return;
+    
+    const updatedQuote = {
+      ...quote,
+      transports
+    };
+    setQuote(updatedQuote);
+  };
+
+  const handleActivitiesChange = (activities: any[]) => {
+    if (!quote) return;
+    
+    const updatedQuote = {
+      ...quote,
+      activities
+    };
+    setQuote(updatedQuote);
   };
 
   // Enhanced preview function for client view
@@ -258,7 +263,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     setEditorStage(stage);
   };
 
-  // Save the quote
+  // Save the quote using enhanced service
   const handleSave = async () => {
     if (!quote) return;
     
@@ -270,7 +275,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     
     setSaving(true);
     try {
-      const savedQuote = await saveQuote(quote);
+      const savedQuote = await enhancedQuoteService.saveQuote(quote);
       setQuote(savedQuote);
       
       // If we're in hotel selection and everything is complete, move to quote details
@@ -300,10 +305,11 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     // Update status to sent
     try {
       await updateQuoteStatus(quote.id!, "sent");
-      setQuote({
+      const updatedQuote = {
         ...quote,
-        status: "sent"
-      });
+        status: "sent" as const
+      };
+      setQuote(updatedQuote);
     } catch (error) {
       console.error("Error updating quote status:", error);
     }
@@ -342,13 +348,18 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     selectedHotelId,
     selectedHotels,
     editorStage,
+    autoSaveEnabled,
+    calculations,
+    validation,
+    progressData,
     handleStageChange,
     handleHotelSelection,
     removeSelectedHotel,
     populateRoomArrangementsFromHotel,
-    addRoomArrangement,
     handleRoomArrangementsChange,
     handleTransfersChange,
+    handleTransportsChange,
+    handleActivitiesChange,
     handleSave,
     previewQuote,
     downloadQuote,

@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   getAllQuotes, 
-  saveQuote, 
   deleteQuote, 
   emailQuote, 
   printQuote, 
   downloadQuotePDF 
 } from "../services/quoteService";
+import { enhancedQuoteService } from "../services/enhancedQuoteService";
 import { QuoteData } from "../types/quote.types";
 import { toast } from "sonner";
 
@@ -25,9 +25,9 @@ export const useQuoteData = () => {
     queryFn: getAllQuotes,
   });
 
-  // Create quote mutation
+  // Create quote mutation using enhanced service
   const createQuoteMutation = useMutation({
-    mutationFn: saveQuote,
+    mutationFn: (quote: QuoteData) => enhancedQuoteService.saveQuote(quote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
       toast.success("Quote created successfully");
@@ -38,9 +38,9 @@ export const useQuoteData = () => {
     }
   });
 
-  // Update quote mutation
+  // Update quote mutation using enhanced service
   const updateQuoteMutation = useMutation({
-    mutationFn: saveQuote,
+    mutationFn: (quote: QuoteData) => enhancedQuoteService.saveQuote(quote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
       toast.success("Quote updated successfully");
@@ -113,6 +113,8 @@ export const useQuoteData = () => {
     downloadQuotePDF: downloadPDFMutation.mutateAsync,
     isCreating: createQuoteMutation.isPending,
     isUpdating: updateQuoteMutation.isPending,
-    isDeleting: deleteQuoteMutation.isPending
+    isDeleting: deleteQuoteMutation.isPending,
+    // Enhanced service methods
+    enhancedService: enhancedQuoteService
   };
 };
