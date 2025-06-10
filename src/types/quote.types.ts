@@ -42,7 +42,7 @@ export interface QuoteTransport {
   notes?: string;
 }
 
-// Enhanced activity interface
+// Enhanced activity interface with hotel_id
 export interface QuoteActivity {
   id: string;
   name: string;
@@ -57,9 +57,10 @@ export interface QuoteActivity {
   total_cost: number;
   group_discount?: number;
   notes?: string;
+  hotel_id?: string; // Added hotel_id for multi-hotel comparison
 }
 
-// Enhanced transfer interface
+// Enhanced transfer interface with hotel_id
 export interface QuoteTransfer {
   id: string;
   type: 'airport_pickup' | 'airport_drop' | 'hotel_transfer' | 'sightseeing' | 'intercity';
@@ -76,6 +77,7 @@ export interface QuoteTransfer {
   total: number;
   description?: string;
   notes?: string;
+  hotel_id?: string; // Added hotel_id for multi-hotel comparison
 }
 
 // Section markup interface
