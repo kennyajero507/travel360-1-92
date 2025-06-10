@@ -42,7 +42,6 @@ const EditQuote = () => {
     handleHotelSelection,
     removeSelectedHotel,
     populateRoomArrangementsFromHotel,
-    addRoomArrangement,
     handleRoomArrangementsChange,
     handleTransfersChange,
     handleSave,

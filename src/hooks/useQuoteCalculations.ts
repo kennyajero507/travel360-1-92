@@ -26,17 +26,17 @@ export const useQuoteCalculations = (quote: QuoteData) => {
 
   // Calculate activities subtotal
   const calculateActivitiesSubtotal = () => {
-    return quote.activities?.reduce((sum, item) => sum + (item.cost * item.num_people || 0), 0) || 0;
+    return quote.activities?.reduce((sum, item) => sum + (item.total_cost || 0), 0) || 0;
   };
 
   // Calculate transport subtotal
   const calculateTransportSubtotal = () => {
-    return quote.transports?.reduce((sum, item) => sum + (item.cost || 0), 0) || 0;
+    return quote.transports?.reduce((sum, item) => sum + (item.total_cost || 0), 0) || 0;
   };
   
   // Calculate transfers subtotal
   const calculateTransfersSubtotal = () => {
-    return quote.transfers?.reduce((sum, item) => sum + (item.cost || 0), 0) || 0;
+    return quote.transfers?.reduce((sum, item) => sum + (item.total || 0), 0) || 0;
   };
 
   // Calculate overall subtotal

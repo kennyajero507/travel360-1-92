@@ -21,9 +21,9 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
 }) => {
   const calculateSubtotal = () => {
     const roomTotal = quote.room_arrangements?.reduce((sum, room) => sum + (room.total || 0), 0) || 0;
-    const activitiesTotal = quote.activities?.reduce((sum, activity) => sum + (activity.cost * activity.num_people || 0), 0) || 0;
-    const transportTotal = quote.transports?.reduce((sum, transport) => sum + (transport.cost || 0), 0) || 0;
-    const transfersTotal = quote.transfers?.reduce((sum, transfer) => sum + (transfer.cost || 0), 0) || 0;
+    const activitiesTotal = quote.activities?.reduce((sum, activity) => sum + (activity.total_cost || 0), 0) || 0;
+    const transportTotal = quote.transports?.reduce((sum, transport) => sum + (transport.total_cost || 0), 0) || 0;
+    const transfersTotal = quote.transfers?.reduce((sum, transfer) => sum + (transfer.total || 0), 0) || 0;
     
     return roomTotal + activitiesTotal + transportTotal + transfersTotal;
   };
@@ -185,7 +185,7 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
                     <p className="text-sm text-gray-600">{activity.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">${(activity.cost * activity.num_people).toFixed(2)}</p>
+                    <p className="font-medium">${activity.total_cost?.toFixed(2)}</p>
                     <p className="text-sm text-gray-600">{activity.num_people} people</p>
                   </div>
                 </div>
