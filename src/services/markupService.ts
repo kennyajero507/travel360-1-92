@@ -6,11 +6,8 @@ export interface MarkupCalculation {
   finalPrice: number;
 }
 
-export const markupService = {
-  /**
-   * Calculate final price with markup using reverse percentage formula
-   * Formula: Final Price = Base Price * (1 + markup/100)
-   */
+export class MarkupService {
+  // Forward calculation: Base price + markup = Final price
   calculateWithMarkup(basePrice: number, markupPercentage: number): MarkupCalculation {
     const markupAmount = (basePrice * markupPercentage) / 100;
     const finalPrice = basePrice + markupAmount;
@@ -21,13 +18,15 @@ export const markupService = {
       markupAmount,
       finalPrice
     };
-  },
+  }
 
-  /**
-   * Calculate base price from final price (reverse calculation)
-   * Formula: Base Price = Final Price / (1 + markup/100)
-   */
-  calculateBaseFromFinal(finalPrice: number, markupPercentage: number): MarkupCalculation {
+  // Reverse calculation: Final price - markup = Base price
+  calculateFromFinalPrice(finalPrice: number, markupPercentage: number): MarkupCalculation {
+    // If final price includes markup, we need to reverse calculate
+    // finalPrice = basePrice + (basePrice * markup/100)
+    // finalPrice = basePrice * (1 + markup/100)
+    // basePrice = finalPrice / (1 + markup/100)
+    
     const basePrice = finalPrice / (1 + markupPercentage / 100);
     const markupAmount = finalPrice - basePrice;
     
@@ -37,14 +36,17 @@ export const markupService = {
       markupAmount,
       finalPrice
     };
-  },
-
-  /**
-   * Calculate markup percentage from base and final prices
-   * Formula: Markup % = ((Final Price - Base Price) / Base Price) * 100
-   */
-  calculateMarkupPercentage(basePrice: number, finalPrice: number): number {
-    if (basePrice === 0) return 0;
-    return ((finalPrice - basePrice) / basePrice) * 100;
   }
-};
+
+  // Calculate margin percentage from markup percentage
+  calculateMarginFromMarkup(markupPercentage: number): number {
+    return (markupPercentage / (100 + markupPercentage)) * 100;
+  }
+
+  // Calculate markup percentage from margin percentage
+  calculateMarkupFromMargin(marginPercentage: number): number {
+    return (marginPercentage / (100 - marginPercentage)) * 100;
+  }
+}
+
+export const markupService = new MarkupService();

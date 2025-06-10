@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
@@ -8,11 +7,24 @@ const transformQuoteData = (dbRow: any): QuoteData => {
   return {
     ...dbRow,
     status: dbRow.status as QuoteStatus,
-    room_arrangements: Array.isArray(dbRow.room_arrangements) ? dbRow.room_arrangements : [],
-    activities: Array.isArray(dbRow.activities) ? dbRow.activities : [],
-    transports: Array.isArray(dbRow.transports) ? dbRow.transports : [],
-    transfers: Array.isArray(dbRow.transfers) ? dbRow.transfers : []
+    room_arrangements: parseJsonField(dbRow.room_arrangements, []),
+    activities: parseJsonField(dbRow.activities, []),
+    transports: parseJsonField(dbRow.transports, []),
+    transfers: parseJsonField(dbRow.transfers, []),
+    excursions: parseJsonField(dbRow.excursions, []),
+    sectionMarkups: parseJsonField(dbRow.sectionMarkups, {})
   };
+};
+
+const parseJsonField = (field: any, defaultValue: any) => {
+  if (typeof field === 'string') {
+    try {
+      return JSON.parse(field);
+    } catch {
+      return defaultValue;
+    }
+  }
+  return Array.isArray(field) || typeof field === 'object' ? field : defaultValue;
 };
 
 export const getAllQuotes = async (): Promise<QuoteData[]> => {
@@ -65,6 +77,11 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
   try {
     console.log('[QuoteService] Saving quote:', quote);
     
+    // Validate that we have essential data
+    if (!quote.client || !quote.destination) {
+      throw new Error('Quote must have client name and destination');
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error('User not authenticated');
@@ -73,17 +90,19 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
     // Prepare data for database with JSON serialization
     const dbQuoteData = {
       ...quote,
-      created_by: user.id,
+      created_by: quote.created_by || user.id,
       updated_at: new Date().toISOString(),
       room_arrangements: JSON.stringify(quote.room_arrangements || []),
       activities: JSON.stringify(quote.activities || []),
       transports: JSON.stringify(quote.transports || []),
-      transfers: JSON.stringify(quote.transfers || [])
+      transfers: JSON.stringify(quote.transfers || []),
+      excursions: JSON.stringify(quote.excursions || []),
+      sectionMarkups: JSON.stringify(quote.sectionMarkups || {})
     };
 
     let data, error;
 
-    if (quote.id) {
+    if (quote.id && !quote.id.startsWith('quote-')) {
       // Update existing quote
       ({ data, error } = await supabase
         .from('quotes')
@@ -92,7 +111,7 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
         .select()
         .single());
     } else {
-      // Create new quote
+      // Create new quote with proper UUID
       const newQuote = {
         ...dbQuoteData,
         id: crypto.randomUUID(),
@@ -108,7 +127,7 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
 
     if (error) {
       console.error('[QuoteService] Error saving quote:', error);
-      toast.error('Failed to save quote');
+      toast.error('Failed to save quote: ' + error.message);
       throw error;
     }
 
@@ -143,6 +162,24 @@ export const generateClientPreview = async (quoteId: string) => {
       }
     }
 
+    // Get hotel details for the quote
+    const hotelIds = new Set<string>();
+    quote.room_arrangements?.forEach(arr => {
+      if (arr.hotel_id) hotelIds.add(arr.hotel_id);
+    });
+
+    let hotels: any[] = [];
+    if (hotelIds.size > 0) {
+      const { data: hotelData, error: hotelError } = await supabase
+        .from('hotels')
+        .select('*')
+        .in('id', Array.from(hotelIds));
+      
+      if (!hotelError && hotelData) {
+        hotels = hotelData;
+      }
+    }
+
     // Transform quote data into client preview format
     const clientPreview = {
       id: quote.id,
@@ -164,9 +201,16 @@ export const generateClientPreview = async (quoteId: string) => {
       },
       tourType: quote.tour_type,
       createdAt: quote.created_at,
-      hotels: [], // Will be populated from room arrangements
-      hotelOptions: [], // Will be populated from room arrangements
-      totalCost: 0,
+      hotels,
+      hotelOptions: hotels.map(hotel => ({
+        id: hotel.id,
+        name: hotel.name,
+        category: hotel.category,
+        pricePerNight: 0, // Will be calculated from room arrangements
+        totalPrice: 0, // Will be calculated from room arrangements
+        currencyCode: quote.currency_code || 'USD'
+      })),
+      totalCost: 0, // Will be calculated
       currency: quote.currency_code || 'USD'
     };
 
