@@ -14,7 +14,7 @@ import { Progress } from "../components/ui/progress";
 import LoadingIndicator from "../components/quote/LoadingIndicator";
 import QuoteHeader from "../components/quote/QuoteHeader";
 import ClientDetailsCard from "../components/quote/ClientDetailsCard";
-import HotelSelection from "../components/quote/HotelSelection";
+import HotelSelectionSection from "../components/quote/HotelSelectionSection";
 import AccommodationSection from "../components/quote/AccommodationSection";
 import TransportBookingSection from "../components/quote/TransportBookingSection";
 import TransferSection from "../components/quote/TransferSection";
@@ -22,7 +22,7 @@ import ExcursionSection from "../components/quote/ExcursionSection";
 import MarkupManagementSection from "../components/quote/MarkupManagementSection";
 import QuoteSummary from "../components/quote/QuoteSummary";
 
-import { Hotel, Bus, MapPin, Compass, FileText, X, Calculator, TrendingUp } from "lucide-react";
+import { User, Hotel, Bus, MapPin, Compass, Calculator, FileText } from "lucide-react";
 
 const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
@@ -44,6 +44,8 @@ const EditQuote = () => {
     populateRoomArrangementsFromHotel,
     handleRoomArrangementsChange,
     handleTransfersChange,
+    handleTransportsChange,
+    handleActivitiesChange,
     handleSave,
     previewQuote,
     downloadQuote,
@@ -52,10 +54,7 @@ const EditQuote = () => {
   } = useQuoteEditor(quoteId, role);
   
   const [selectedHotelObjects, setSelectedHotelObjects] = useState<any[]>([]);
-  const [activeSection, setActiveSection] = useState<string>("accommodation");
-  const [transports, setTransports] = useState<any[]>([]);
-  const [excursions, setExcursions] = useState<any[]>([]);
-  const [sectionMarkups, setSectionMarkups] = useState<Record<string, any>>({});
+  const [activeSection, setActiveSection] = useState<string>("client");
   
   // Update selected hotel objects when selectedHotels changes
   useEffect(() => {
@@ -69,11 +68,11 @@ const EditQuote = () => {
     }
   }, [selectedHotels, hotels]);
 
-  // Calculate section totals
+  // Calculate section totals using the enhanced quote calculations
   const accommodationTotal = quote?.room_arrangements?.reduce((sum, arr) => sum + (arr.total || 0), 0) || 0;
-  const transportTotal = transports.reduce((sum, transport) => sum + (transport.total_cost || 0), 0);
+  const transportTotal = quote?.transports?.reduce((sum, transport) => sum + (transport.total_cost || 0), 0) || 0;
   const transferTotal = quote?.transfers?.reduce((sum, transfer) => sum + (transfer.total || 0), 0) || 0;
-  const excursionTotal = excursions.reduce((sum, excursion) => sum + (excursion.total_cost || 0), 0);
+  const excursionTotal = quote?.activities?.reduce((sum, activity) => sum + (activity.total_cost || 0), 0) || 0;
 
   const handleRoomTypesLoaded = (roomTypes: any[]) => {
     if (quote && roomTypes.length > 0) {
@@ -81,36 +80,22 @@ const EditQuote = () => {
     }
   };
 
-  const handleMarkupChange = (section: string, markup: any) => {
-    setSectionMarkups(prev => ({
-      ...prev,
-      [section]: markup
-    }));
-  };
+  // Define sections for the new flow
+  const sections = [
+    { id: 'client', label: 'Client Details', icon: User, completed: !!quote?.client },
+    { id: 'hotels', label: 'Hotel Selection', icon: Hotel, completed: selectedHotelObjects.length > 0 },
+    { id: 'accommodation', label: 'Accommodation', icon: Hotel, completed: accommodationTotal > 0 },
+    { id: 'transport', label: 'Transport', icon: Bus, completed: transportTotal > 0 },
+    { id: 'transfer', label: 'Transfer', icon: MapPin, completed: transferTotal > 0 },
+    { id: 'excursion', label: 'Excursion', icon: Compass, completed: excursionTotal > 0 },
+    { id: 'markup', label: 'Markup & Summary', icon: Calculator, completed: true }
+  ];
 
   // Calculate completion percentage
   const calculateProgress = () => {
-    let completedSections = 0;
-    const totalSections = 6;
-    
-    if (selectedHotelObjects.length > 0 && accommodationTotal > 0) completedSections++;
-    if (transportTotal > 0) completedSections++;
-    if (transferTotal > 0) completedSections++;
-    if (excursionTotal > 0) completedSections++;
-    if (Object.keys(sectionMarkups).length > 0) completedSections++;
-    if (accommodationTotal > 0 || transportTotal > 0 || transferTotal > 0 || excursionTotal > 0) completedSections++; // Summary
-    
-    return (completedSections / totalSections) * 100;
+    let completedSections = sections.filter(section => section.completed).length;
+    return (completedSections / sections.length) * 100;
   };
-
-  const sections = [
-    { id: 'accommodation', label: 'Accommodation', icon: Hotel, completed: selectedHotelObjects.length > 0 && accommodationTotal > 0 },
-    { id: 'transport', label: 'Transport Booking', icon: Bus, completed: transportTotal > 0 },
-    { id: 'transfer', label: 'Transfer', icon: MapPin, completed: transferTotal > 0 },
-    { id: 'excursion', label: 'Quote Excursion', icon: Compass, completed: excursionTotal > 0 },
-    { id: 'markup', label: 'Quote Markup', icon: Calculator, completed: Object.keys(sectionMarkups).length > 0 },
-    { id: 'summary', label: 'Summary', icon: FileText, completed: true }
-  ];
 
   if (loading) {
     return <LoadingIndicator message="Loading quote data..." />;
@@ -145,20 +130,6 @@ const EditQuote = () => {
         onStageChange={() => {}}
       />
       
-      {/* Client Details Card */}
-      <ClientDetailsCard
-        client={quote.client}
-        mobile={quote.mobile}
-        destination={quote.destination}
-        startDate={quote.start_date}
-        endDate={quote.end_date}
-        duration={{
-          days: quote.duration_days,
-          nights: quote.duration_nights
-        }}
-        status={quote.status}
-      />
-
       {/* Progress Indicator */}
       <Card>
         <CardHeader className="pb-3">
@@ -169,19 +140,12 @@ const EditQuote = () => {
         </CardHeader>
         <CardContent>
           <Progress value={calculateProgress()} className="w-full" />
-          <div className="flex justify-between mt-2 text-xs text-gray-500">
-            {sections.map(section => (
-              <span key={section.id} className={section.completed ? 'text-green-600' : ''}>
-                {section.label}
-              </span>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
-      {/* 6-Section Quote Builder */}
+      {/* New 7-Section Quote Builder */}
       <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           {sections.map(section => (
             <TabsTrigger
               key={section.id}
@@ -200,29 +164,29 @@ const EditQuote = () => {
         </TabsList>
         
         <div className="mt-6">
-          {/* Hotel Selection for Accommodation */}
-          {selectedHotelObjects.length === 0 && (
-            <Card className="mb-6 border border-blue-100">
-              <CardHeader className="bg-blue-50">
-                <CardTitle className="flex items-center gap-2">
-                  <Hotel className="h-5 w-5 text-blue-600" />
-                  Select Hotels First
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <HotelSelection
-                  selectedHotelId={selectedHotelId}
-                  hotels={hotels}
-                  onHotelSelection={handleHotelSelection}
-                  onRoomTypesLoaded={handleRoomTypesLoaded}
-                  isRequired={true}
-                  maxHotels={2}
-                  selectedHotelsCount={selectedHotelObjects.length}
-                />
-              </CardContent>
-            </Card>
-          )}
+          {/* 1. Client Details Section */}
+          <TabsContent value="client" className="mt-0">
+            <ClientDetailsEditableSection 
+              quote={quote} 
+              onQuoteUpdate={(updatedQuote) => {
+                if (!quote) return;
+                handleSave({...quote, ...updatedQuote});
+              }} 
+            />
+          </TabsContent>
 
+          {/* 2. Hotel Selection Section */}
+          <TabsContent value="hotels" className="mt-0">
+            <HotelSelectionSection
+              selectedHotels={selectedHotelObjects}
+              availableHotels={hotels}
+              onHotelSelection={handleHotelSelection}
+              onHotelRemove={removeSelectedHotel}
+              onRoomTypesLoaded={handleRoomTypesLoaded}
+            />
+          </TabsContent>
+          
+          {/* 3. Accommodation Section */}
           <TabsContent value="accommodation" className="mt-0">
             <AccommodationSection
               selectedHotels={selectedHotelObjects}
@@ -233,13 +197,15 @@ const EditQuote = () => {
             />
           </TabsContent>
           
+          {/* 4. Transport Section */}
           <TabsContent value="transport" className="mt-0">
             <TransportBookingSection
-              transports={transports}
-              onTransportsChange={setTransports}
+              transports={quote.transports || []}
+              onTransportsChange={handleTransportsChange}
             />
           </TabsContent>
           
+          {/* 5. Transfer Section */}
           <TabsContent value="transfer" className="mt-0">
             <TransferSection 
               transfers={quote.transfers || []} 
@@ -247,41 +213,44 @@ const EditQuote = () => {
             />
           </TabsContent>
           
+          {/* 6. Excursion Section */}
           <TabsContent value="excursion" className="mt-0">
             <ExcursionSection
-              excursions={excursions}
-              onExcursionsChange={setExcursions}
+              excursions={quote.activities || []}
+              onExcursionsChange={handleActivitiesChange}
             />
           </TabsContent>
           
+          {/* 7. Markup & Summary Section */}
           <TabsContent value="markup" className="mt-0">
-            <MarkupManagementSection
-              accommodationTotal={accommodationTotal}
-              transportTotal={transportTotal}
-              transferTotal={transferTotal}
-              excursionTotal={excursionTotal}
-              onMarkupChange={handleMarkupChange}
-            />
-          </TabsContent>
-          
-          <TabsContent value="summary" className="mt-0">
-            <Card>
-              <CardHeader className="flex flex-row items-center gap-2">
-                <FileText className="h-5 w-5 text-green-600" />
-                <CardTitle>Quote Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <QuoteSummary 
-                  quote={{
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <MarkupManagementSection
+                accommodationTotal={accommodationTotal}
+                transportTotal={transportTotal}
+                transferTotal={transferTotal}
+                excursionTotal={excursionTotal}
+                onMarkupChange={(type, value) => {
+                  if (!quote) return;
+                  handleSave({
                     ...quote,
-                    transports,
-                    excursions,
-                    sectionMarkups
-                  } as any} 
-                  hotels={selectedHotelObjects} 
-                />
-              </CardContent>
-            </Card>
+                    markup_type: type,
+                    markup_value: value
+                  });
+                }}
+                markupType={quote.markup_type}
+                markupValue={quote.markup_value}
+              />
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <FileText className="h-5 w-5 text-green-600" />
+                  <CardTitle>Quote Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <QuoteSummary quote={quote} hotels={selectedHotelObjects} />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </div>
       </Tabs>

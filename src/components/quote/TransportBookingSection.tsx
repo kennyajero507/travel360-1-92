@@ -1,391 +1,315 @@
+
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Textarea } from "../ui/textarea";
+import { DatePicker } from "../ui/date-picker";
+import { QuoteTransport } from "../../types/quote.types";
+import { Bus, PlaneTakeoff, Train, Car, Trash, Plus, Edit, Check } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { Plane, Train, Bus, Car, Plus, Trash2, Calendar, Clock } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar as CalendarComponent } from "../ui/calendar";
-import { format } from "date-fns";
-import { cn } from "../../lib/utils";
-
-interface Transport {
-  id: string;
-  type: 'flight' | 'train' | 'bus' | 'private_car';
-  from: string;
-  to: string;
-  date: string;
-  time?: string;
-  passengers: number;
-  cost_per_person: number;
-  total_cost: number;
-  description?: string;
-  booking_reference?: string;
-  provider?: string;
-}
 
 interface TransportBookingSectionProps {
-  transports: Transport[];
-  onTransportsChange: (transports: Transport[]) => void;
+  transports: QuoteTransport[];
+  onTransportsChange: (transports: QuoteTransport[]) => void;
 }
 
-const TransportBookingSection: React.FC<TransportBookingSectionProps> = ({
-  transports,
-  onTransportsChange
-}) => {
-  const [newTransport, setNewTransport] = useState<Partial<Transport>>({
-    type: 'flight',
-    from: '',
-    to: '',
-    date: '',
-    time: '',
-    passengers: 1,
+const TransportBookingSection: React.FC<TransportBookingSectionProps> = ({ transports, onTransportsChange }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [transport, setTransport] = useState<QuoteTransport>({
+    id: `transport-${Date.now()}`,
+    type: "flight",
+    from: "",
+    to: "",
+    date: new Date().toISOString(),
     cost_per_person: 0,
-    description: '',
-    provider: ''
+    num_passengers: 1,
+    total_cost: 0
   });
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const transportIcons = {
-    flight: Plane,
-    train: Train,
-    bus: Bus,
-    private_car: Car
-  };
-
-  const transportTypes = [
-    { value: 'flight', label: 'Flight', icon: Plane },
-    { value: 'train', label: 'Train', icon: Train },
-    { value: 'bus', label: 'Bus', icon: Bus },
-    { value: 'private_car', label: 'Private Car', icon: Car }
-  ];
-
-  const addTransport = () => {
-    if (!newTransport.from || !newTransport.to || !newTransport.date) {
-      return;
-    }
-
-    const transport: Transport = {
-      id: `transport-${Date.now()}`,
-      type: newTransport.type as Transport['type'],
-      from: newTransport.from!,
-      to: newTransport.to!,
-      date: newTransport.date!,
-      time: newTransport.time,
-      passengers: newTransport.passengers || 1,
-      cost_per_person: newTransport.cost_per_person || 0,
-      total_cost: (newTransport.passengers || 1) * (newTransport.cost_per_person || 0),
-      description: newTransport.description,
-      booking_reference: '',
-      provider: newTransport.provider
-    };
-
-    onTransportsChange([...transports, transport]);
-    
-    // Reset form
-    setNewTransport({
-      type: 'flight',
-      from: '',
-      to: '',
-      date: '',
-      time: '',
-      passengers: 1,
-      cost_per_person: 0,
-      description: '',
-      provider: ''
+  const handleInputChange = (field: string, value: any) => {
+    setTransport(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Recalculate total cost
+      if (field === "cost_per_person" || field === "num_passengers") {
+        updated.total_cost = updated.cost_per_person * updated.num_passengers;
+      }
+      
+      return updated;
     });
-    setSelectedDate(null);
   };
 
-  const removeTransport = (id: string) => {
-    onTransportsChange(transports.filter(t => t.id !== id));
+  const handleAdd = () => {
+    const newTransport = {
+      ...transport,
+      id: `transport-${Date.now()}`,
+      total_cost: transport.cost_per_person * transport.num_passengers
+    };
+    
+    onTransportsChange([...transports, newTransport]);
+    resetForm();
+    setIsAdding(false);
   };
 
-  const updateTransport = (id: string, updates: Partial<Transport>) => {
-    onTransportsChange(transports.map(t => 
-      t.id === id 
-        ? { 
-            ...t, 
-            ...updates, 
-            total_cost: updates.passengers && updates.cost_per_person 
-              ? updates.passengers * updates.cost_per_person 
-              : t.total_cost 
-          } 
-        : t
-    ));
+  const handleEdit = (index: number) => {
+    setTransport(transports[index]);
+    setEditingIndex(index);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  const handleUpdate = () => {
+    if (editingIndex === null) return;
+    
+    const updatedTransport = {
+      ...transport,
+      total_cost: transport.cost_per_person * transport.num_passengers
+    };
+    
+    const updatedTransports = [...transports];
+    updatedTransports[editingIndex] = updatedTransport;
+    onTransportsChange(updatedTransports);
+    
+    resetForm();
   };
 
-  const totalTransportCost = transports.reduce((sum, transport) => sum + transport.total_cost, 0);
+  const handleDelete = (index: number) => {
+    const updatedTransports = [...transports];
+    updatedTransports.splice(index, 1);
+    onTransportsChange(updatedTransports);
+  };
+
+  const resetForm = () => {
+    setTransport({
+      id: `transport-${Date.now()}`,
+      type: "flight",
+      from: "",
+      to: "",
+      date: new Date().toISOString(),
+      cost_per_person: 0,
+      num_passengers: 1,
+      total_cost: 0
+    });
+    setEditingIndex(null);
+  };
+
+  const cancelForm = () => {
+    resetForm();
+    setIsAdding(false);
+  };
+
+  const getTransportIcon = (type: string) => {
+    switch (type) {
+      case "flight":
+        return <PlaneTakeoff className="h-4 w-4" />;
+      case "train":
+        return <Train className="h-4 w-4" />;
+      case "bus":
+        return <Bus className="h-4 w-4" />;
+      default:
+        return <Car className="h-4 w-4" />;
+    }
+  };
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center gap-2">
-        <Plane className="h-5 w-5 text-blue-600" />
-        <CardTitle>Transport Booking</CardTitle>
-        <Badge variant="outline" className="ml-auto">
-          Total: {formatCurrency(totalTransportCost)}
-        </Badge>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2">
+            <Bus className="h-5 w-5 text-blue-600" />
+            Transport Bookings
+          </CardTitle>
+          {!isAdding && editingIndex === null && (
+            <Button 
+              size="sm"
+              onClick={() => setIsAdding(true)}
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              Add Transport
+            </Button>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Add New Transport Form */}
-        <Card className="border border-blue-100 bg-blue-50/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Add New Transport</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <CardContent>
+        {/* Transport form */}
+        {(isAdding || editingIndex !== null) && (
+          <div className="space-y-4 p-4 border rounded-md bg-gray-50 mb-4">
+            <h3 className="font-medium">{editingIndex !== null ? "Edit Transport" : "Add New Transport"}</h3>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Transport Type</Label>
-                <Select 
-                  value={newTransport.type} 
-                  onValueChange={(value) => setNewTransport({...newTransport, type: value as Transport['type']})}
+              <div className="space-y-2">
+                <Label htmlFor="transport-type">Transport Type</Label>
+                <Select
+                  value={transport.type}
+                  onValueChange={(value) => handleInputChange("type", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="transport-type">
                     <SelectValue placeholder="Select transport type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {transportTypes.map(type => {
-                      const Icon = type.icon;
-                      return (
-                        <SelectItem key={type.value} value={type.value}>
-                          <div className="flex items-center gap-2">
-                            <Icon className="h-4 w-4" />
-                            {type.label}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                    <SelectItem value="flight">Flight</SelectItem>
+                    <SelectItem value="train">Train</SelectItem>
+                    <SelectItem value="bus">Bus</SelectItem>
+                    <SelectItem value="private_car">Private Car</SelectItem>
+                    <SelectItem value="taxi">Taxi</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <Label>Provider/Airline</Label>
-                <Input
-                  value={newTransport.provider || ''}
-                  onChange={(e) => setNewTransport({...newTransport, provider: e.target.value})}
-                  placeholder="e.g., Emirates, Indian Railways"
+              
+              <div className="space-y-2">
+                <Label htmlFor="transport-date">Date</Label>
+                <DatePicker
+                  date={transport.date ? new Date(transport.date) : undefined}
+                  onSelect={(date) => 
+                    handleInputChange("date", date ? date.toISOString() : new Date().toISOString())
+                  }
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>From</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="transport-from">From</Label>
                 <Input
-                  value={newTransport.from || ''}
-                  onChange={(e) => setNewTransport({...newTransport, from: e.target.value})}
-                  placeholder="Departure city/airport"
+                  id="transport-from"
+                  value={transport.from}
+                  onChange={(e) => handleInputChange("from", e.target.value)}
                 />
               </div>
-
-              <div>
-                <Label>To</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="transport-to">To</Label>
                 <Input
-                  value={newTransport.to || ''}
-                  onChange={(e) => setNewTransport({...newTransport, to: e.target.value})}
-                  placeholder="Arrival city/airport"
+                  id="transport-to"
+                  value={transport.to}
+                  onChange={(e) => handleInputChange("to", e.target.value)}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label>Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : "Pick date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedDate || undefined}
-                      onSelect={(date) => {
-                        setSelectedDate(date || null);
-                        setNewTransport({
-                          ...newTransport, 
-                          date: date ? format(date, 'yyyy-MM-dd') : ''
-                        });
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div>
-                <Label>Time (Optional)</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="transport-cost">Cost Per Person</Label>
                 <Input
-                  type="time"
-                  value={newTransport.time || ''}
-                  onChange={(e) => setNewTransport({...newTransport, time: e.target.value})}
+                  id="transport-cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={transport.cost_per_person}
+                  onChange={(e) => handleInputChange("cost_per_person", parseFloat(e.target.value) || 0)}
                 />
               </div>
-
-              <div>
-                <Label>Passengers</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="transport-passengers">Number of Passengers</Label>
                 <Input
+                  id="transport-passengers"
                   type="number"
                   min="1"
-                  value={newTransport.passengers || 1}
-                  onChange={(e) => {
-                    const passengers = parseInt(e.target.value) || 1;
-                    setNewTransport({
-                      ...newTransport, 
-                      passengers,
-                      total_cost: passengers * (newTransport.cost_per_person || 0)
-                    });
-                  }}
+                  value={transport.num_passengers}
+                  onChange={(e) => handleInputChange("num_passengers", parseInt(e.target.value) || 1)}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Cost per Person</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="transport-description">Description/Notes (Optional)</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  value={newTransport.cost_per_person || ''}
-                  onChange={(e) => {
-                    const cost = parseFloat(e.target.value) || 0;
-                    setNewTransport({
-                      ...newTransport, 
-                      cost_per_person: cost,
-                      total_cost: (newTransport.passengers || 1) * cost
-                    });
-                  }}
-                  placeholder="0.00"
+                  id="transport-description"
+                  value={transport.description || ""}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
                 />
               </div>
-
-              <div>
+              
+              <div className="space-y-2">
                 <Label>Total Cost</Label>
-                <Input
-                  value={formatCurrency((newTransport.passengers || 1) * (newTransport.cost_per_person || 0))}
-                  disabled
-                  className="bg-gray-50"
-                />
+                <div className="p-2 bg-gray-100 border rounded-md font-medium">
+                  ${(transport.cost_per_person * transport.num_passengers).toFixed(2)}
+                </div>
               </div>
             </div>
-
-            <div>
-              <Label>Description (Optional)</Label>
-              <Textarea
-                value={newTransport.description || ''}
-                onChange={(e) => setNewTransport({...newTransport, description: e.target.value})}
-                placeholder="Additional details about the transport"
-                rows={2}
-              />
+            
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={cancelForm}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={editingIndex !== null ? handleUpdate : handleAdd}
+                disabled={!transport.from || !transport.to || transport.cost_per_person <= 0}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                {editingIndex !== null ? "Update" : "Add"} Transport
+              </Button>
             </div>
-
-            <Button 
-              onClick={addTransport}
-              className="w-full"
-              disabled={!newTransport.from || !newTransport.to || !newTransport.date}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Transport
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Existing Transports */}
-        {transports.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-semibold">Transport Bookings ({transports.length})</h3>
-            {transports.map((transport) => {
-              const Icon = transportIcons[transport.type];
-              return (
-                <Card key={transport.id} className="border-l-4 border-l-blue-500">
-                  <CardContent className="pt-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-5 w-5 text-blue-600" />
-                        <Badge variant="outline">
-                          {transport.type.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                        {transport.provider && (
-                          <span className="text-sm text-gray-600">• {transport.provider}</span>
-                        )}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeTransport(transport.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <Label className="text-xs text-gray-500">Route</Label>
-                        <p className="font-medium">{transport.from} → {transport.to}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500">Date & Time</Label>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-gray-400" />
-                          <p className="text-sm">{format(new Date(transport.date), 'MMM dd, yyyy')}</p>
-                          {transport.time && (
-                            <>
-                              <Clock className="h-3 w-3 text-gray-400 ml-2" />
-                              <p className="text-sm">{transport.time}</p>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500">Passengers</Label>
-                        <p className="font-medium">{transport.passengers}</p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500">Total Cost</Label>
-                        <p className="font-bold text-green-600">{formatCurrency(transport.total_cost)}</p>
-                      </div>
-                    </div>
-
-                    {transport.description && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                        <strong>Notes:</strong> {transport.description}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
           </div>
         )}
-
-        {transports.length === 0 && (
-          <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-            <Plane className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No transport bookings added yet</p>
-            <p className="text-sm text-gray-400">Add flights, trains, buses, or private car transfers</p>
+        
+        {/* Transport list */}
+        {transports.length > 0 ? (
+          <div className="space-y-3">
+            {transports.map((item, index) => (
+              <div key={item.id || index} className="flex items-center justify-between p-3 border rounded-md">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Badge className="capitalize" variant="outline">
+                      <span className="flex items-center gap-1">
+                        {getTransportIcon(item.type)}
+                        {item.type.replace('_', ' ')}
+                      </span>
+                    </Badge>
+                    <h4 className="font-medium">
+                      {item.from} → {item.to}
+                    </h4>
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <span>{new Date(item.date).toLocaleDateString()}</span>
+                    {item.description && <span> | {item.description}</span>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-medium">${item.total_cost.toFixed(2)}</div>
+                  <div className="text-xs text-gray-500">
+                    ${item.cost_per_person.toFixed(2)} × {item.num_passengers} passengers
+                  </div>
+                </div>
+                <div className="ml-4 flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(index)}
+                    disabled={isAdding || editingIndex !== null}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(index)}
+                    className="text-red-500"
+                    disabled={isAdding || editingIndex !== null}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            No transport bookings added yet. Click "Add Transport" to get started.
           </div>
         )}
       </CardContent>
+      <CardFooter className="border-t pt-4">
+        <div className="w-full flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            {transports.length} transport booking{transports.length !== 1 ? 's' : ''} added
+          </div>
+          <div className="font-medium">
+            Total: ${transports.reduce((sum, item) => sum + item.total_cost, 0).toFixed(2)}
+          </div>
+        </div>
+      </CardFooter>
     </Card>
   );
 };
