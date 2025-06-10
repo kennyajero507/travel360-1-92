@@ -1,24 +1,29 @@
 
+import { ReactNode } from "react";
 import { Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 import ProfessionalSidebar from "./ProfessionalSidebar";
 import { CurrencyProvider } from "../contexts/CurrencyContext";
 
-const Layout = () => {
+interface LayoutProps {
+  children?: ReactNode;
+}
+
+const Layout = ({ children }: LayoutProps) => {
   return (
     <CurrencyProvider>
       <div className="min-h-screen flex w-full bg-slate-50">
         <ProfessionalSidebar />
         <main className="flex-1 overflow-auto">
           <div className="p-6">
-            <Outlet />
+            {children || <Outlet />}
           </div>
         </main>
         <Toaster 
           position="top-right" 
           toastOptions={{
             style: {
-              fontFamily: 'Jost, sans-serif',
+              fontFamily: 'Inter, sans-serif',
             },
           }}
         />
