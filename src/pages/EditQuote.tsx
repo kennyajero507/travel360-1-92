@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -22,7 +21,7 @@ const EditQuote = () => {
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
   const { role } = useRole();
-  const { hotels, loading: hotelsLoading } = useHotelsData();
+  const { hotels, isLoading: hotelsLoading } = useHotelsData();
   
   // Use our custom hook for quote editing logic
   const {
