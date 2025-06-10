@@ -1,283 +1,313 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Hotel, Star, Users, Bed, DollarSign, Building2 } from "lucide-react";
-import { QuoteData, RoomArrangement } from "../../types/quote.types";
-import { markupService, MarkupCalculation } from "../../services/markupService";
-
-interface HotelQuoteOption {
-  hotel: any;
-  roomArrangements: RoomArrangement[];
-  transfers: any[];
-  activities: any[];
-  basePrice: number;
-  markupCalculation: MarkupCalculation;
-  totalTravelers: number;
-}
+import { Hotel, DollarSign, Users, Calendar, MapPin, Star } from "lucide-react";
+import { QuoteData } from "../../types/quote.types";
+import { markupService } from "../../services/markupService";
+import { useCurrency } from "../../contexts/CurrencyContext";
 
 interface MultiHotelQuoteComparisonProps {
   quote: QuoteData;
   hotels: any[];
-  onSelectHotel?: (hotelId: string) => void;
   viewMode: 'agent' | 'client';
-  markupPercentage?: number;
+  markupPercentage: number;
+  onSelectHotel?: (hotelId: string) => void;
 }
 
 const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
   quote,
   hotels,
-  onSelectHotel,
-  viewMode = 'agent',
-  markupPercentage = 25
+  viewMode,
+  markupPercentage,
+  onSelectHotel
 }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: quote.currency_code || 'USD'
-    }).format(amount);
-  };
+  const { formatAmount } = useCurrency();
 
-  const getTotalTravelers = () => {
-    return quote.adults + quote.children_with_bed + quote.children_no_bed + quote.infants;
-  };
+  const hotelComparisons = useMemo(() => {
+    return hotels.map(hotel => {
+      // Calculate costs for this hotel
+      const hotelRoomArrangements = quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id);
+      const hotelTransfers = quote.transfers?.filter(t => t.hotel_id === hotel.id) || [];
+      const hotelActivities = quote.activities?.filter(a => a.hotel_id === hotel.id) || [];
+      
+      const accommodationCost = hotelRoomArrangements.reduce((sum, arr) => sum + (arr.total || 0), 0);
+      const transfersCost = hotelTransfers.reduce((sum, transfer) => sum + (transfer.total || 0), 0);
+      const activitiesCost = hotelActivities.reduce((sum, activity) => sum + (activity.total_cost || 0), 0);
+      
+      const basePrice = accommodationCost + transfersCost + activitiesCost;
+      const markupCalculation = markupService.calculateWithMarkup(basePrice, markupPercentage);
+      
+      const totalTravelers = quote.adults + quote.children_with_bed + quote.children_no_bed + quote.infants;
+      const pricePerPerson = totalTravelers > 0 ? markupCalculation.finalPrice / totalTravelers : markupCalculation.finalPrice;
 
-  // Group data by hotel and calculate costs
-  const hotelOptions: HotelQuoteOption[] = hotels.map(hotel => {
-    // Get room arrangements for this hotel
-    const hotelRoomArrangements = quote.room_arrangements?.filter(arr => arr.hotel_id === hotel.id) || [];
-    
-    // Get transfers for this hotel
-    const hotelTransfers = quote.transfers?.filter(transfer => transfer.hotel_id === hotel.id) || [];
-    
-    // Get activities for this hotel
-    const hotelActivities = quote.activities?.filter(activity => activity.hotel_id === hotel.id) || [];
-    
-    // Calculate base costs
-    const accommodationCost = hotelRoomArrangements.reduce((sum, arr) => sum + (arr.total || 0), 0);
-    const transfersCost = hotelTransfers.reduce((sum, transfer) => sum + (transfer.total || 0), 0);
-    const activitiesCost = hotelActivities.reduce((sum, activity) => sum + (activity.total_cost || 0), 0);
-    
-    const basePrice = accommodationCost + transfersCost + activitiesCost;
-    
-    // Calculate markup
-    const markupCalculation = markupService.calculateWithMarkup(basePrice, markupPercentage);
+      return {
+        hotel,
+        basePrice,
+        finalPrice: markupCalculation.finalPrice,
+        markupAmount: markupCalculation.markupAmount,
+        pricePerPerson,
+        accommodationCost,
+        transfersCost,
+        activitiesCost,
+        roomArrangements: hotelRoomArrangements,
+        transfers: hotelTransfers,
+        activities: hotelActivities
+      };
+    });
+  }, [quote, hotels, markupPercentage]);
+
+  const cheapestOption = useMemo(() => {
+    return hotelComparisons.reduce((cheapest, current) => 
+      current.finalPrice < cheapest.finalPrice ? current : cheapest
+    );
+  }, [hotelComparisons]);
+
+  const savings = useMemo(() => {
+    if (hotelComparisons.length < 2) return null;
+    const [option1, option2] = hotelComparisons;
+    const difference = Math.abs(option1.finalPrice - option2.finalPrice);
+    const percentage = ((difference / Math.max(option1.finalPrice, option2.finalPrice)) * 100).toFixed(1);
     
     return {
-      hotel,
-      roomArrangements: hotelRoomArrangements,
-      transfers: hotelTransfers,
-      activities: hotelActivities,
-      basePrice,
-      markupCalculation,
-      totalTravelers: getTotalTravelers()
+      amount: difference,
+      percentage: parseFloat(percentage),
+      cheaperOption: option1.finalPrice < option2.finalPrice ? option1 : option2,
+      expensiveOption: option1.finalPrice > option2.finalPrice ? option1 : option2
     };
-  }).filter(option => option.basePrice > 0); // Only show hotels with actual bookings
+  }, [hotelComparisons]);
 
-  const calculatePricePerPerson = (totalPrice: number) => {
-    const travelers = getTotalTravelers();
-    return travelers > 0 ? totalPrice / travelers : totalPrice;
-  };
-
-  if (hotelOptions.length === 0) {
+  if (hotelComparisons.length === 0) {
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Hotels with Bookings</h3>
-          <p className="text-gray-500">Add room arrangements to hotels to see comparison options</p>
+          <Hotel className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500">No hotels selected for comparison</p>
         </CardContent>
       </Card>
     );
   }
 
-  // Find the cheapest option for comparison
-  const cheapestOption = hotelOptions.reduce((min, option) => 
-    option.markupCalculation.finalPrice < min.markupCalculation.finalPrice ? option : min
-  );
-
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h3 className="text-xl font-semibold">
-          {viewMode === 'agent' ? 'Hotel Quote Comparison - Agent View' : 'Choose Your Preferred Hotel'}
-        </h3>
-        <p className="text-gray-600 mt-2">
-          Comparing {hotelOptions.length} hotel option{hotelOptions.length > 1 ? 's' : ''} for {getTotalTravelers()} travelers
-        </p>
-        {viewMode === 'agent' && (
-          <Badge variant="outline" className="mt-2">
-            Markup: {markupPercentage}%
-          </Badge>
-        )}
-      </div>
+      {/* Comparison Summary */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Hotel className="h-5 w-5 text-blue-600" />
+            {viewMode === 'agent' ? 'Hotel Comparison - Agent View' : 'Choose Your Preferred Hotel'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{hotelComparisons.length}</div>
+              <p className="text-sm text-gray-600">Hotel Options</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {formatAmount(cheapestOption.finalPrice)}
+              </div>
+              <p className="text-sm text-gray-600">Best Price</p>
+            </div>
+            {savings && (
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {formatAmount(savings.amount)}
+                </div>
+                <p className="text-sm text-gray-600">Potential Savings</p>
+              </div>
+            )}
+          </div>
 
+          {savings && viewMode === 'agent' && (
+            <div className="mt-4 p-3 bg-white rounded-lg border">
+              <p className="text-sm text-gray-700">
+                <strong>{savings.cheaperOption.hotel.name}</strong> is {savings.percentage}% cheaper 
+                than <strong>{savings.expensiveOption.hotel.name}</strong>, 
+                saving <strong>{formatAmount(savings.amount)}</strong> total.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Hotel Options Grid */}
       <div className="grid md:grid-cols-2 gap-6">
-        {hotelOptions.map((option, index) => {
-          const isRecommended = option === cheapestOption && hotelOptions.length > 1;
-          const savings = option !== cheapestOption ? 
-            cheapestOption.markupCalculation.finalPrice - option.markupCalculation.finalPrice : 0;
-
-          return (
-            <Card 
-              key={option.hotel.id} 
-              className={`border-2 hover:shadow-lg transition-all ${
-                isRecommended ? 'border-green-500 bg-green-50' : 'border-gray-200'
-              }`}
-            >
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="flex items-center gap-2">
-                      <Hotel className="h-5 w-5 text-blue-600" />
-                      {option.hotel.name}
-                      {isRecommended && (
-                        <Badge className="bg-green-600 text-white">Best Value</Badge>
-                      )}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline">{option.hotel.category}</Badge>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm text-gray-600">{option.hotel.destination}</span>
-                      </div>
-                    </div>
-                    {savings > 0 && viewMode === 'client' && (
-                      <div className="mt-2">
-                        <Badge variant="destructive" className="text-xs">
-                          +{formatCurrency(savings)} vs Best Value
-                        </Badge>
-                      </div>
+        {hotelComparisons.map((comparison, index) => (
+          <Card 
+            key={comparison.hotel.id} 
+            className={`border-2 transition-all hover:shadow-lg ${
+              comparison === cheapestOption ? 'border-green-500 bg-green-50' : 'border-gray-200'
+            }`}
+          >
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Hotel className="h-5 w-5 text-blue-600" />
+                    <CardTitle className="text-lg">{comparison.hotel.name}</CardTitle>
+                    {comparison === cheapestOption && (
+                      <Badge className="bg-green-600 text-white">Best Value</Badge>
                     )}
                   </div>
-                  {viewMode === 'client' && onSelectHotel && (
-                    <Button 
-                      onClick={() => onSelectHotel(option.hotel.id)}
-                      className={isRecommended ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}
-                    >
-                      Select Hotel
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4" />
+                      <span>{comparison.hotel.category}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      <span>{comparison.hotel.destination}</span>
+                    </div>
+                  </div>
                 </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {/* Room Arrangements Summary */}
+                {viewMode === 'client' && onSelectHotel && (
+                  <Button 
+                    onClick={() => onSelectHotel(comparison.hotel.id)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Select Hotel
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              {/* Room Arrangements */}
+              <div>
+                <h4 className="font-medium text-gray-800 mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Room Arrangements
+                </h4>
+                <div className="space-y-1">
+                  {comparison.roomArrangements.map((room, roomIndex) => (
+                    <div key={roomIndex} className="text-sm bg-gray-50 p-2 rounded">
+                      <div className="flex justify-between">
+                        <span>{room.num_rooms}x {room.room_type}</span>
+                        {viewMode === 'agent' && (
+                          <span className="font-medium">{formatAmount(room.total)}</span>
+                        )}
+                      </div>
+                      <div className="text-gray-600">
+                        {room.adults} Adults, {room.children_with_bed + room.children_no_bed} Children
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Additional Services */}
+              {(comparison.transfers.length > 0 || comparison.activities.length > 0) && (
                 <div>
-                  <h4 className="font-medium flex items-center gap-2 mb-2">
-                    <Bed className="h-4 w-4" />
-                    Room Arrangements ({option.roomArrangements.length})
-                  </h4>
-                  <div className="space-y-2">
-                    {option.roomArrangements.map((room, roomIndex) => (
-                      <div key={roomIndex} className="bg-gray-50 p-3 rounded text-sm">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{room.num_rooms}x {room.room_type}</span>
-                          {viewMode === 'agent' && (
-                            <span className="font-medium">{formatCurrency(room.total)}</span>
-                          )}
-                        </div>
-                        <div className="text-gray-600 mt-1 flex items-center gap-4">
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            <span>{room.adults} Adults</span>
-                          </div>
-                          {(room.children_with_bed + room.children_no_bed) > 0 && (
-                            <span>{room.children_with_bed + room.children_no_bed} Children</span>
-                          )}
-                          {room.infants > 0 && (
-                            <span>{room.infants} Infants</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {quote.duration_nights} nights @ {formatCurrency(
-                            room.total / (room.num_rooms * quote.duration_nights)
-                          )}/room/night
-                        </div>
+                  <h4 className="font-medium text-gray-800 mb-2">Additional Services</h4>
+                  <div className="space-y-1 text-sm">
+                    {comparison.transfers.map((transfer, idx) => (
+                      <div key={idx} className="flex justify-between bg-blue-50 p-2 rounded">
+                        <span>{transfer.type} ({transfer.from} → {transfer.to})</span>
+                        {viewMode === 'agent' && (
+                          <span>{formatAmount(transfer.total)}</span>
+                        )}
+                      </div>
+                    ))}
+                    {comparison.activities.map((activity, idx) => (
+                      <div key={idx} className="flex justify-between bg-purple-50 p-2 rounded">
+                        <span>{activity.name}</span>
+                        {viewMode === 'agent' && (
+                          <span>{formatAmount(activity.total_cost)}</span>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
 
-                {/* Additional Services */}
-                {(option.transfers.length > 0 || option.activities.length > 0) && (
-                  <div>
-                    <h4 className="font-medium text-sm text-gray-700 mb-2">Additional Services</h4>
-                    <div className="space-y-1 text-sm">
-                      {option.transfers.length > 0 && (
-                        <div className="flex justify-between">
-                          <span>Transfers ({option.transfers.length})</span>
-                          {viewMode === 'agent' && (
-                            <span>{formatCurrency(option.transfers.reduce((sum, t) => sum + t.total, 0))}</span>
-                          )}
-                        </div>
-                      )}
-                      {option.activities.length > 0 && (
-                        <div className="flex justify-between">
-                          <span>Activities ({option.activities.length})</span>
-                          {viewMode === 'agent' && (
-                            <span>{formatCurrency(option.activities.reduce((sum, a) => sum + a.total_cost, 0))}</span>
-                          )}
-                        </div>
-                      )}
+              {/* Pricing */}
+              <div className="border-t pt-4">
+                <div className="space-y-2">
+                  {viewMode === 'agent' ? (
+                    // Agent View - Show breakdown
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span>Base Price:</span>
+                        <span>{formatAmount(comparison.basePrice)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-orange-600">
+                        <span>Markup ({markupPercentage}%):</span>
+                        <span>+{formatAmount(comparison.markupAmount)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                        <span>Client Price:</span>
+                        <span className="text-green-600">{formatAmount(comparison.finalPrice)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    // Client View - Show only final price
+                    <div className="flex justify-between font-semibold text-xl">
+                      <span>Total Price:</span>
+                      <span className="text-green-600">{formatAmount(comparison.finalPrice)}</span>
                     </div>
+                  )}
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Per Person:</span>
+                    <span>{formatAmount(comparison.pricePerPerson)}</span>
                   </div>
-                )}
-
-                {/* Pricing Breakdown */}
-                <div className="border-t pt-4">
-                  <div className="space-y-2">
-                    {viewMode === 'agent' ? (
-                      // Agent View - Show full breakdown
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span>Base Price:</span>
-                          <span>{formatCurrency(option.basePrice)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm text-orange-600">
-                          <span>Markup ({option.markupCalculation.markupPercentage}%):</span>
-                          <span>+{formatCurrency(option.markupCalculation.markupAmount)}</span>
-                        </div>
-                        <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                          <span>Client Price:</span>
-                          <span className="text-green-600">{formatCurrency(option.markupCalculation.finalPrice)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm text-gray-600">
-                          <span>Per Person:</span>
-                          <span>{formatCurrency(calculatePricePerPerson(option.markupCalculation.finalPrice))}</span>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>Profit Margin:</span>
-                          <span>{markupService.calculateMarginFromMarkup(markupPercentage).toFixed(1)}%</span>
-                        </div>
-                      </>
-                    ) : (
-                      // Client View - Show only final price
-                      <>
-                        <div className="flex justify-between font-semibold text-xl">
-                          <span>Total Price:</span>
-                          <span className="text-green-600">{formatCurrency(option.markupCalculation.finalPrice)}</span>
-                        </div>
-                        <div className="flex justify-between text-gray-600">
-                          <span>Per Person:</span>
-                          <span>{formatCurrency(calculatePricePerPerson(option.markupCalculation.finalPrice))}</span>
-                        </div>
-                        <div className="text-sm text-gray-500 mt-2">
-                          Includes: Accommodation, transfers, activities, taxes & service charges
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {quote.duration_nights} nights • {quote.destination}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  {viewMode === 'client' && (
+                    <div className="text-xs text-gray-500 mt-2">
+                      Includes: Accommodation, transfers, activities, taxes & service charges
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+              </div>
+
+              {/* Trip Duration */}
+              <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>{quote.duration_nights} nights, {quote.duration_days} days</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  <span>{quote.adults + quote.children_with_bed + quote.children_no_bed + quote.infants} travelers</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {/* Agent Comparison Tools */}
+      {viewMode === 'agent' && hotelComparisons.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              Pricing Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Markup Percentage</p>
+                <p className="text-2xl font-bold text-blue-600">{markupPercentage}%</p>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Total Markup Amount</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {formatAmount(hotelComparisons.reduce((sum, comp) => sum + comp.markupAmount, 0) / hotelComparisons.length)}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Average Price Difference</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {savings ? formatAmount(savings.amount) : formatAmount(0)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

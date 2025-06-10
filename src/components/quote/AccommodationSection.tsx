@@ -3,12 +3,11 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
-import { Plus, X, Hotel, Edit } from "lucide-react";
+import { Bed, Users, Plus, X } from "lucide-react";
 import { RoomArrangement } from "../../types/quote.types";
-import MarkupCalculator from "./MarkupCalculator";
 
 interface AccommodationSectionProps {
   selectedHotels: any[];
@@ -42,40 +41,32 @@ const AccommodationSection: React.FC<AccommodationSectionProps> = ({
         infant: 0
       },
       nights: duration,
-      total: 0
+      total: 200 * duration // 2 adults * 100 * duration
     };
-    
-    // Calculate total
-    newArrangement.total = calculateRoomTotal(newArrangement);
     
     onRoomArrangementsChange([...roomArrangements, newArrangement]);
   };
 
-  const updateRoomArrangement = (id: string, updates: Partial<RoomArrangement>) => {
-    const updated = roomArrangements.map(arr => {
+  const updateArrangement = (id: string, updates: Partial<RoomArrangement>) => {
+    const updatedArrangements = roomArrangements.map(arr => {
       if (arr.id === id) {
-        const updatedArr = { ...arr, ...updates };
-        updatedArr.total = calculateRoomTotal(updatedArr);
-        return updatedArr;
+        const updated = { ...arr, ...updates };
+        // Recalculate total
+        updated.total = updated.num_rooms * (
+          (updated.adults * updated.rate_per_night.adult * updated.nights) +
+          (updated.children_with_bed * updated.rate_per_night.childWithBed * updated.nights) +
+          (updated.children_no_bed * updated.rate_per_night.childNoBed * updated.nights) +
+          (updated.infants * updated.rate_per_night.infant * updated.nights)
+        );
+        return updated;
       }
       return arr;
     });
-    onRoomArrangementsChange(updated);
+    onRoomArrangementsChange(updatedArrangements);
   };
 
-  const removeRoomArrangement = (id: string) => {
+  const removeArrangement = (id: string) => {
     onRoomArrangementsChange(roomArrangements.filter(arr => arr.id !== id));
-  };
-
-  const calculateRoomTotal = (room: RoomArrangement) => {
-    if (!room.rate_per_night || !room.nights) return 0;
-    
-    return room.num_rooms * (
-      (room.adults * room.rate_per_night.adult * room.nights) +
-      (room.children_with_bed * room.rate_per_night.childWithBed * room.nights) +
-      (room.children_no_bed * room.rate_per_night.childNoBed * room.nights) +
-      (room.infants * room.rate_per_night.infant * room.nights)
-    );
   };
 
   const formatCurrency = (amount: number) => {
@@ -87,216 +78,164 @@ const AccommodationSection: React.FC<AccommodationSectionProps> = ({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center gap-2">
-        <Hotel className="h-5 w-5 text-blue-600" />
-        <CardTitle>Accommodation</CardTitle>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bed className="h-5 w-5 text-blue-600" />
+          Room Arrangements
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {selectedHotels.map(hotel => (
-          <div key={hotel.id} className="border rounded-lg p-4 space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h4 className="font-medium text-lg">{hotel.name}</h4>
-                <p className="text-sm text-gray-500">{hotel.category} • {hotel.destination}</p>
+        {selectedHotels.map(hotel => {
+          const hotelArrangements = roomArrangements.filter(arr => arr.hotel_id === hotel.id);
+          
+          return (
+            <div key={hotel.id} className="border rounded-lg p-4">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="font-medium">{hotel.name}</h3>
+                  <p className="text-sm text-gray-600">{hotel.category} • {hotel.destination}</p>
+                </div>
+                <Button
+                  onClick={() => addRoomArrangement(hotel.id)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Room
+                </Button>
               </div>
-              <Button
-                onClick={() => addRoomArrangement(hotel.id)}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Room
-              </Button>
-            </div>
 
-            {/* Room Arrangements Table */}
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Room Type</TableHead>
-                    <TableHead className="text-center">No. Rooms</TableHead>
-                    <TableHead className="text-center">No. Adults</TableHead>
-                    <TableHead className="text-center">No. CWB</TableHead>
-                    <TableHead className="text-center">No. CNB</TableHead>
-                    <TableHead className="text-center">No. Infants</TableHead>
-                    <TableHead className="text-right">Adult Cost</TableHead>
-                    <TableHead className="text-right">CWB Cost</TableHead>
-                    <TableHead className="text-right">CNB Cost</TableHead>
-                    <TableHead className="text-right">Infant Cost</TableHead>
-                    <TableHead className="text-center">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {roomArrangements
-                    .filter(arr => arr.hotel_id === hotel.id)
-                    .map((arrangement) => (
-                      <TableRow key={arrangement.id}>
-                        <TableCell>
-                          <Select
-                            value={arrangement.room_type}
-                            onValueChange={(value) => updateRoomArrangement(arrangement.id, { room_type: value })}
-                          >
-                            <SelectTrigger className="w-40">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableRoomTypes.map(type => (
-                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={arrangement.num_rooms}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { num_rooms: parseInt(e.target.value) || 1 })}
-                            className="w-20 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={arrangement.adults}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { adults: parseInt(e.target.value) || 0 })}
-                            className="w-20 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={arrangement.children_with_bed}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { children_with_bed: parseInt(e.target.value) || 0 })}
-                            className="w-20 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={arrangement.children_no_bed}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { children_no_bed: parseInt(e.target.value) || 0 })}
-                            className="w-20 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={arrangement.infants}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { infants: parseInt(e.target.value) || 0 })}
-                            className="w-20 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={arrangement.rate_per_night?.adult || 0}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { 
-                              rate_per_night: { 
-                                ...arrangement.rate_per_night!, 
-                                adult: parseFloat(e.target.value) || 0 
-                              } 
-                            })}
-                            className="w-24 text-right"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={arrangement.rate_per_night?.childWithBed || 0}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { 
-                              rate_per_night: { 
-                                ...arrangement.rate_per_night!, 
-                                childWithBed: parseFloat(e.target.value) || 0 
-                              } 
-                            })}
-                            className="w-24 text-right"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={arrangement.rate_per_night?.childNoBed || 0}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { 
-                              rate_per_night: { 
-                                ...arrangement.rate_per_night!, 
-                                childNoBed: parseFloat(e.target.value) || 0 
-                              } 
-                            })}
-                            className="w-24 text-right"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={arrangement.rate_per_night?.infant || 0}
-                            onChange={(e) => updateRoomArrangement(arrangement.id, { 
-                              rate_per_night: { 
-                                ...arrangement.rate_per_night!, 
-                                infant: parseFloat(e.target.value) || 0 
-                              } 
-                            })}
-                            className="w-24 text-right"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeRoomArrangement(arrangement.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  {roomArrangements.filter(arr => arr.hotel_id === hotel.id).length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={11} className="text-center py-6 text-gray-500">
-                        No room arrangements added yet. Click "Add Room" to start.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+              {hotelArrangements.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Bed className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No room arrangements added yet</p>
+                  <Button
+                    onClick={() => addRoomArrangement(hotel.id)}
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Add First Room
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {hotelArrangements.map(arrangement => (
+                    <Card key={arrangement.id} className="border border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-3">
+                            <div>
+                              <Label>Room Type</Label>
+                              <Select
+                                value={arrangement.room_type}
+                                onValueChange={(value) => updateArrangement(arrangement.id, { room_type: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableRoomTypes.map(type => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Number of Rooms</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={arrangement.num_rooms}
+                                onChange={(e) => updateArrangement(arrangement.id, { num_rooms: parseInt(e.target.value) || 1 })}
+                              />
+                            </div>
+                          </div>
 
-            {/* Hotel Total */}
-            <div className="flex justify-end pt-4 border-t">
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Hotel Total:</p>
-                <p className="text-lg font-semibold">
-                  {formatCurrency(roomArrangements
-                    .filter(arr => arr.hotel_id === hotel.id)
-                    .reduce((sum, arr) => sum + arr.total, 0)
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label>Adults</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={arrangement.adults}
+                                  onChange={(e) => updateArrangement(arrangement.id, { adults: parseInt(e.target.value) || 0 })}
+                                />
+                              </div>
+                              <div>
+                                <Label>Children (with bed)</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={arrangement.children_with_bed}
+                                  onChange={(e) => updateArrangement(arrangement.id, { children_with_bed: parseInt(e.target.value) || 0 })}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label>Children (no bed)</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={arrangement.children_no_bed}
+                                  onChange={(e) => updateArrangement(arrangement.id, { children_no_bed: parseInt(e.target.value) || 0 })}
+                                />
+                              </div>
+                              <div>
+                                <Label>Infants</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={arrangement.infants}
+                                  onChange={(e) => updateArrangement(arrangement.id, { infants: parseInt(e.target.value) || 0 })}
+                                />
+                              </div>
+                            </div>
+                          </div>
 
-        {selectedHotels.length === 0 && (
-          <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-            <Hotel className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No hotels selected yet</p>
-            <p className="text-sm text-gray-400">Select hotels in the hotel selection step first</p>
-          </div>
-        )}
+                          <div className="space-y-3">
+                            <div className="text-right">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm text-gray-600">Total Cost:</span>
+                                <Badge variant="outline" className="text-green-600 font-medium">
+                                  {formatCurrency(arrangement.total)}
+                                </Badge>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {arrangement.nights} nights × {arrangement.num_rooms} room(s)
+                              </div>
+                              <Button
+                                onClick={() => removeArrangement(arrangement.id)}
+                                size="sm"
+                                variant="ghost"
+                                className="text-red-500 hover:text-red-700 mt-2"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {hotelArrangements.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Hotel Total:</span>
+                    <Badge className="bg-blue-600 text-white">
+                      {formatCurrency(hotelArrangements.reduce((sum, arr) => sum + arr.total, 0))}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
   );

@@ -1,321 +1,242 @@
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { DatePicker } from "../ui/date-picker";
-import { QuoteTransfer } from "../../types/quote.types";
-import { MapPin, Car, Trash, Plus, Edit, Check } from "lucide-react";
 import { Badge } from "../ui/badge";
+import { MapPin, Plus, X, Car } from "lucide-react";
+import { QuoteTransfer } from "../../types/quote.types";
 
 interface TransferSectionProps {
   transfers: QuoteTransfer[];
   onTransfersChange: (transfers: QuoteTransfer[]) => void;
 }
 
-const TransferSection: React.FC<TransferSectionProps> = ({ transfers, onTransfersChange }) => {
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [transfer, setTransfer] = useState<QuoteTransfer>({
-    id: `transfer-${Date.now()}`,
-    type: "airport_pickup",
-    from: "",
-    to: "",
-    date: new Date().toISOString(),
-    vehicle_type: "sedan",
-    cost_per_vehicle: 0,
-    num_vehicles: 1,
-    total: 0
-  });
-
-  const handleInputChange = (field: string, value: any) => {
-    setTransfer(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      // Recalculate total cost
-      if (field === "cost_per_vehicle" || field === "num_vehicles") {
-        updated.total = updated.cost_per_vehicle * updated.num_vehicles;
-      }
-      
-      return updated;
-    });
-  };
-
-  const handleAdd = () => {
-    const newTransfer = {
-      ...transfer,
+const TransferSection: React.FC<TransferSectionProps> = ({
+  transfers,
+  onTransfersChange
+}) => {
+  const addTransfer = () => {
+    const newTransfer: QuoteTransfer = {
       id: `transfer-${Date.now()}`,
-      total: transfer.cost_per_vehicle * transfer.num_vehicles
+      type: 'airport_pickup',
+      from: '',
+      to: '',
+      date: new Date().toISOString().split('T')[0],
+      vehicle_type: 'sedan',
+      cost_per_vehicle: 50,
+      num_vehicles: 1,
+      total: 50,
+      description: '',
+      hotel_id: undefined
     };
     
     onTransfersChange([...transfers, newTransfer]);
-    resetForm();
-    setIsAdding(false);
   };
 
-  const handleEdit = (index: number) => {
-    setTransfer(transfers[index]);
-    setEditingIndex(index);
-  };
-
-  const handleUpdate = () => {
-    if (editingIndex === null) return;
-    
-    const updatedTransfer = {
-      ...transfer,
-      total: transfer.cost_per_vehicle * transfer.num_vehicles
-    };
-    
-    const updatedTransfers = [...transfers];
-    updatedTransfers[editingIndex] = updatedTransfer;
-    onTransfersChange(updatedTransfers);
-    
-    resetForm();
-  };
-
-  const handleDelete = (index: number) => {
-    const updatedTransfers = [...transfers];
-    updatedTransfers.splice(index, 1);
-    onTransfersChange(updatedTransfers);
-  };
-
-  const resetForm = () => {
-    setTransfer({
-      id: `transfer-${Date.now()}`,
-      type: "airport_pickup",
-      from: "",
-      to: "",
-      date: new Date().toISOString(),
-      vehicle_type: "sedan",
-      cost_per_vehicle: 0,
-      num_vehicles: 1,
-      total: 0
+  const updateTransfer = (id: string, updates: Partial<QuoteTransfer>) => {
+    const updatedTransfers = transfers.map(transfer => {
+      if (transfer.id === id) {
+        const updated = { ...transfer, ...updates };
+        updated.total = updated.cost_per_vehicle * updated.num_vehicles;
+        return updated;
+      }
+      return transfer;
     });
-    setEditingIndex(null);
+    onTransfersChange(updatedTransfers);
   };
 
-  const cancelForm = () => {
-    resetForm();
-    setIsAdding(false);
+  const removeTransfer = (id: string) => {
+    onTransfersChange(transfers.filter(transfer => transfer.id !== id));
   };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const transferTypes = [
+    { value: 'airport_pickup', label: 'Airport Pickup' },
+    { value: 'airport_drop', label: 'Airport Drop-off' },
+    { value: 'hotel_transfer', label: 'Hotel Transfer' },
+    { value: 'sightseeing', label: 'Sightseeing Transfer' },
+    { value: 'intercity', label: 'Intercity Transfer' }
+  ];
+
+  const vehicleTypes = [
+    { value: 'sedan', label: 'Sedan (1-3 pax)' },
+    { value: 'suv', label: 'SUV (1-6 pax)' },
+    { value: 'van', label: 'Van (7-12 pax)' },
+    { value: 'bus', label: 'Bus (13+ pax)' }
+  ];
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-blue-600" />
-            Transfers
-          </CardTitle>
-          {!isAdding && editingIndex === null && (
-            <Button 
-              size="sm"
-              onClick={() => setIsAdding(true)}
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              Add Transfer
-            </Button>
-          )}
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-green-600" />
+          Transfers & Transportation
+        </CardTitle>
+        <Button onClick={addTransfer} size="sm" className="w-fit">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Transfer
+        </Button>
       </CardHeader>
-      <CardContent>
-        {/* Transfer form */}
-        {(isAdding || editingIndex !== null) && (
-          <div className="space-y-4 p-4 border rounded-md bg-gray-50 mb-4">
-            <h3 className="font-medium">{editingIndex !== null ? "Edit Transfer" : "Add New Transfer"}</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="transfer-type">Transfer Type</Label>
-                <Select
-                  value={transfer.type}
-                  onValueChange={(value) => handleInputChange("type", value)}
-                >
-                  <SelectTrigger id="transfer-type">
-                    <SelectValue placeholder="Select transfer type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="airport_pickup">Airport Pickup</SelectItem>
-                    <SelectItem value="airport_drop">Airport Drop-off</SelectItem>
-                    <SelectItem value="hotel_transfer">Hotel Transfer</SelectItem>
-                    <SelectItem value="sightseeing">Sightseeing Transfer</SelectItem>
-                    <SelectItem value="intercity">Intercity Transfer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="transfer-date">Date</Label>
-                <DatePicker
-                  date={transfer.date ? new Date(transfer.date) : undefined}
-                  onSelect={(date) => 
-                    handleInputChange("date", date ? date.toISOString() : new Date().toISOString())
-                  }
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="transfer-from">From</Label>
-                <Input
-                  id="transfer-from"
-                  value={transfer.from}
-                  onChange={(e) => handleInputChange("from", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="transfer-to">To</Label>
-                <Input
-                  id="transfer-to"
-                  value={transfer.to}
-                  onChange={(e) => handleInputChange("to", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="vehicle-type">Vehicle Type</Label>
-                <Select
-                  value={transfer.vehicle_type}
-                  onValueChange={(value) => handleInputChange("vehicle_type", value)}
-                >
-                  <SelectTrigger id="vehicle-type">
-                    <SelectValue placeholder="Select vehicle type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sedan">Sedan</SelectItem>
-                    <SelectItem value="suv">SUV</SelectItem>
-                    <SelectItem value="van">Van</SelectItem>
-                    <SelectItem value="mini_bus">Mini Bus</SelectItem>
-                    <SelectItem value="coach">Coach</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="transfer-cost">Cost Per Vehicle</Label>
-                <Input
-                  id="transfer-cost"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={transfer.cost_per_vehicle}
-                  onChange={(e) => handleInputChange("cost_per_vehicle", parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="transfer-vehicles">Number of Vehicles</Label>
-                <Input
-                  id="transfer-vehicles"
-                  type="number"
-                  min="1"
-                  value={transfer.num_vehicles}
-                  onChange={(e) => handleInputChange("num_vehicles", parseInt(e.target.value) || 1)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="transfer-description">Description/Notes (Optional)</Label>
-                <Input
-                  id="transfer-description"
-                  value={transfer.description || ""}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Total Cost</Label>
-                <div className="p-2 bg-gray-100 border rounded-md font-medium">
-                  ${(transfer.cost_per_vehicle * transfer.num_vehicles).toFixed(2)}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={cancelForm}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={editingIndex !== null ? handleUpdate : handleAdd}
-                disabled={!transfer.from || !transfer.to || transfer.cost_per_vehicle <= 0}
-              >
-                <Check className="h-4 w-4 mr-1" />
-                {editingIndex !== null ? "Update" : "Add"} Transfer
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        {/* Transfer list */}
-        {transfers.length > 0 ? (
-          <div className="space-y-3">
-            {transfers.map((item, index) => (
-              <div key={item.id || index} className="flex items-center justify-between p-3 border rounded-md">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Badge className="capitalize" variant="outline">
-                      {item.type.replace('_', ' ')}
-                    </Badge>
-                    <h4 className="font-medium">
-                      {item.from} → {item.to}
-                    </h4>
-                  </div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    <span>{new Date(item.date).toLocaleDateString()}</span>
-                    <span> | {item.vehicle_type.replace('_', ' ')} </span>
-                    {item.description && <span> | {item.description}</span>}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">${item.total.toFixed(2)}</div>
-                  <div className="text-xs text-gray-500">
-                    ${item.cost_per_vehicle.toFixed(2)} × {item.num_vehicles} vehicle(s)
-                  </div>
-                </div>
-                <div className="ml-4 flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(index)}
-                    disabled={isAdding || editingIndex !== null}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(index)}
-                    className="text-red-500"
-                    disabled={isAdding || editingIndex !== null}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+      <CardContent className="space-y-4">
+        {transfers.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Car className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>No transfers added yet</p>
+            <Button onClick={addTransfer} size="sm" className="mt-2">
+              Add First Transfer
+            </Button>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            No transfers added yet. Click "Add Transfer" to get started.
+          <div className="space-y-4">
+            {transfers.map(transfer => (
+              <Card key={transfer.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Transfer Type</Label>
+                        <Select
+                          value={transfer.type}
+                          onValueChange={(value) => updateTransfer(transfer.id, { type: value as any })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {transferTypes.map(type => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Date</Label>
+                        <Input
+                          type="date"
+                          value={transfer.date}
+                          onChange={(e) => updateTransfer(transfer.id, { date: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <Label>From</Label>
+                        <Input
+                          value={transfer.from}
+                          onChange={(e) => updateTransfer(transfer.id, { from: e.target.value })}
+                          placeholder="Pickup location"
+                        />
+                      </div>
+                      <div>
+                        <Label>To</Label>
+                        <Input
+                          value={transfer.to}
+                          onChange={(e) => updateTransfer(transfer.id, { to: e.target.value })}
+                          placeholder="Drop-off location"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Vehicle Type</Label>
+                        <Select
+                          value={transfer.vehicle_type}
+                          onValueChange={(value) => updateTransfer(transfer.id, { vehicle_type: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {vehicleTypes.map(vehicle => (
+                              <SelectItem key={vehicle.value} value={vehicle.value}>
+                                {vehicle.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label>Cost per Vehicle</Label>
+                          <Input
+                            type="number"
+                            value={transfer.cost_per_vehicle}
+                            onChange={(e) => updateTransfer(transfer.id, { cost_per_vehicle: parseFloat(e.target.value) || 0 })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Vehicles</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={transfer.num_vehicles}
+                            onChange={(e) => updateTransfer(transfer.id, { num_vehicles: parseInt(e.target.value) || 1 })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="text-right">
+                        <div className="mb-2">
+                          <span className="text-sm text-gray-600">Total:</span>
+                          <Badge variant="outline" className="ml-2 text-green-600 font-medium">
+                            {formatCurrency(transfer.total)}
+                          </Badge>
+                        </div>
+                        <Button
+                          onClick={() => removeTransfer(transfer.id)}
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {transfer.description && (
+                    <div className="mt-3 pt-3 border-t">
+                      <Label>Description</Label>
+                      <Input
+                        value={transfer.description}
+                        onChange={(e) => updateTransfer(transfer.id, { description: e.target.value })}
+                        placeholder="Additional details..."
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {transfers.length > 0 && (
+          <div className="pt-4 border-t">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Total Transfers:</span>
+              <Badge className="bg-green-600 text-white">
+                {formatCurrency(transfers.reduce((sum, transfer) => sum + transfer.total, 0))}
+              </Badge>
+            </div>
           </div>
         )}
       </CardContent>
-      <CardFooter className="border-t pt-4">
-        <div className="w-full flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            {transfers.length} transfer{transfers.length !== 1 ? 's' : ''} added
-          </div>
-          <div className="font-medium">
-            Total: ${transfers.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
-          </div>
-        </div>
-      </CardFooter>
     </Card>
   );
 };

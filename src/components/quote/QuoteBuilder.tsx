@@ -122,6 +122,15 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     return sections.find(section => !section.completed)?.id || 'summary';
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Scroll the specific section into view
+    const element = document.querySelector(`[data-section="${value}"]`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -184,7 +193,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                 variant="link"
                 size="sm"
                 className="h-auto p-0 text-blue-600"
-                onClick={() => setActiveTab(getNextIncompleteSection())}
+                onClick={() => handleTabChange(getNextIncompleteSection())}
               >
                 Continue with {sections.find(s => s.id === getNextIncompleteSection())?.label}
               </Button>
@@ -193,8 +202,8 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
         </CardContent>
       </Card>
 
-      {/* Quote Builder Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      {/* Quote Builder Navigation */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-7">
           {sections.map(section => (
             <TabsTrigger
@@ -215,28 +224,47 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             </TabsTrigger>
           ))}
         </TabsList>
-        
-        <div className="mt-6">
-          {/* Tab contents will be rendered by parent component */}
-          <TabsContent value={activeTab} className="mt-0">
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-8">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {sections.find(s => s.id === activeTab)?.label} Section
-                  </h3>
-                  <p className="text-gray-600">
-                    {sections.find(s => s.id === activeTab)?.description}
-                  </p>
-                  <p className="text-sm text-gray-400 mt-4">
-                    This section will be populated by the specific components for {activeTab}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </div>
       </Tabs>
+
+      {/* Section Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-blue-50">
+          <CardContent className="p-4 text-center">
+            <Hotel className="h-6 w-6 mx-auto mb-2 text-blue-600" />
+            <p className="text-sm text-gray-600">Accommodation</p>
+            <p className="text-lg font-semibold text-blue-600">
+              ${accommodationTotal.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-50">
+          <CardContent className="p-4 text-center">
+            <Bus className="h-6 w-6 mx-auto mb-2 text-green-600" />
+            <p className="text-sm text-gray-600">Transport</p>
+            <p className="text-lg font-semibold text-green-600">
+              ${transportTotal.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-purple-50">
+          <CardContent className="p-4 text-center">
+            <MapPin className="h-6 w-6 mx-auto mb-2 text-purple-600" />
+            <p className="text-sm text-gray-600">Transfers</p>
+            <p className="text-lg font-semibold text-purple-600">
+              ${transferTotal.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-orange-50">
+          <CardContent className="p-4 text-center">
+            <Compass className="h-6 w-6 mx-auto mb-2 text-orange-600" />
+            <p className="text-sm text-gray-600">Activities</p>
+            <p className="text-lg font-semibold text-orange-600">
+              ${excursionTotal.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
