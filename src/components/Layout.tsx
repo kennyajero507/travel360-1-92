@@ -1,32 +1,29 @@
 
-import React, { useState } from 'react';
-import VerticalNav from './VerticalNav';
-import Header from './Header';
-import { useAuth } from '../contexts/AuthContext';
-import AdminRoleSwitcher from './AdminRoleSwitcher';
+import { Outlet } from "react-router-dom";
+import { Toaster } from "sonner";
+import ProfessionalSidebar from "./ProfessionalSidebar";
+import { CurrencyProvider } from "../contexts/CurrencyContext";
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const { userProfile } = useAuth();
-  
+const Layout = () => {
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <VerticalNav collapsed={collapsed} setCollapsed={setCollapsed} />
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-64'}`}>
-        <Header />
-        
-        {/* Add AdminRoleSwitcher if user is system_admin */}
-        {userProfile && userProfile.role === 'system_admin' && (
-          <div className="bg-amber-50 px-4 py-2 border-b border-amber-200">
-            <AdminRoleSwitcher />
+    <CurrencyProvider>
+      <div className="min-h-screen flex w-full bg-slate-50">
+        <ProfessionalSidebar />
+        <main className="flex-1 overflow-auto">
+          <div className="p-6">
+            <Outlet />
           </div>
-        )}
-        
-        <main className="flex-1 p-4">
-          {children}
         </main>
+        <Toaster 
+          position="top-right" 
+          toastOptions={{
+            style: {
+              fontFamily: 'Jost, sans-serif',
+            },
+          }}
+        />
       </div>
-    </div>
+    </CurrencyProvider>
   );
 };
 

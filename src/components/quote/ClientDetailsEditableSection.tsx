@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { QuoteData } from "../../types/quote.types";
 import { User, Phone, MapPin, Calendar, Users, Check, Pencil } from "lucide-react";
 import { Badge } from "../ui/badge";
+import { useCurrency } from "../../contexts/CurrencyContext";
 
 interface ClientDetailsEditableSectionProps {
   quote: QuoteData;
@@ -20,6 +21,7 @@ const ClientDetailsEditableSection: React.FC<ClientDetailsEditableSectionProps> 
   onQuoteUpdate 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const { currency, setCurrency, currencies } = useCurrency();
   const [formData, setFormData] = useState({
     client: quote.client,
     mobile: quote.mobile,
@@ -30,7 +32,8 @@ const ClientDetailsEditableSection: React.FC<ClientDetailsEditableSectionProps> 
     children_with_bed: quote.children_with_bed,
     children_no_bed: quote.children_no_bed,
     infants: quote.infants,
-    tour_type: quote.tour_type
+    tour_type: quote.tour_type,
+    currency_code: quote.currency_code || currency.code
   });
 
   // Calculate duration when dates change
@@ -51,6 +54,14 @@ const ClientDetailsEditableSection: React.FC<ClientDetailsEditableSectionProps> 
       [field]: value
     }));
 
+    // Update currency context when currency changes
+    if (field === "currency_code") {
+      const selectedCurrency = currencies.find(c => c.code === value);
+      if (selectedCurrency) {
+        setCurrency(selectedCurrency);
+      }
+    }
+
     // Recalculate duration when dates change
     if (field === "start_date" || field === "end_date") {
       const startDate = field === "start_date" ? value : formData.start_date;
@@ -70,12 +81,13 @@ const ClientDetailsEditableSection: React.FC<ClientDetailsEditableSectionProps> 
   const handleSave = () => {
     const duration = calculateDuration(formData.start_date, formData.end_date);
     
-    onQuoteUpdate({
+    const updatedQuote = {
       ...formData,
       duration_days: duration.days,
       duration_nights: duration.nights
-    });
+    };
     
+    onQuoteUpdate(updatedQuote);
     setIsEditing(false);
   };
 
@@ -157,6 +169,11 @@ const ClientDetailsEditableSection: React.FC<ClientDetailsEditableSectionProps> 
               </p>
             </div>
             
+            <div className="space-y-1">
+              <div className="text-sm font-medium text-gray-500">Currency</div>
+              <p>{quote.currency_code || currency.code}</p>
+            </div>
+            
             {quote.inquiry_id && (
               <div className="space-y-1 col-span-full">
                 <div className="text-sm font-medium text-gray-500">Inquiry Reference</div>
@@ -231,6 +248,25 @@ const ClientDetailsEditableSection: React.FC<ClientDetailsEditableSectionProps> 
               value={formData.destination} 
               onChange={(e) => handleChange("destination", e.target.value)}
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="currency">Currency</Label>
+            <Select 
+              value={formData.currency_code} 
+              onValueChange={(value) => handleChange("currency_code", value)}
+            >
+              <SelectTrigger id="currency">
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((curr) => (
+                  <SelectItem key={curr.code} value={curr.code}>
+                    {curr.code} - {curr.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">

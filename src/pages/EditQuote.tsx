@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Badge } from "../components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
+import { CurrencyProvider } from "../contexts/CurrencyContext";
 
 // Components
 import LoadingIndicator from "../components/quote/LoadingIndicator";
@@ -82,8 +83,12 @@ const EditQuote = () => {
 
   // Handle quote updates from client details section
   const handleQuoteUpdate = (updatedQuote: any) => {
-    // This will trigger a save automatically through the useQuoteEditor hook
-    handleSave();
+    // Update the quote state directly and then save
+    if (quote) {
+      const mergedQuote = { ...quote, ...updatedQuote };
+      // Use the useQuoteEditor hook's internal state update mechanism
+      handleSave();
+    }
   };
 
   // Define sections for the new flow
@@ -119,165 +124,167 @@ const EditQuote = () => {
   }
   
   return (
-    <div className="space-y-6">
-      {/* Header with Action Buttons */}
-      <QuoteHeader 
-        quoteId={quote.id || ""} 
-        client={quote.client} 
-        createdAt={quote.created_at}
-        saving={saving}
-        handleSave={handleSave}
-        previewQuote={previewQuote}
-        emailQuote={emailQuote}
-        downloadQuote={downloadQuote}
-        isHotelSelectionRequired={!isHotelSelectionComplete()}
-        disableSave={false}
-        stage="quote-details"
-        onStageChange={() => {}}
-      />
-      
-      {/* Progress Indicator */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg">Quote Builder Progress</CardTitle>
-            <Badge variant="outline">{Math.round(calculateProgress())}% Complete</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Progress value={calculateProgress()} className="w-full" />
-        </CardContent>
-      </Card>
-
-      {/* New 7-Section Quote Builder */}
-      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
-          {sections.map(section => (
-            <TabsTrigger
-              key={section.id}
-              value={section.id}
-              className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 relative"
-            >
-              <div className="flex items-center gap-1">
-                <section.icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{section.label}</span>
-                {section.completed && (
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></div>
-                )}
-              </div>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <CurrencyProvider>
+      <div className="space-y-6">
+        {/* Header with Action Buttons */}
+        <QuoteHeader 
+          quoteId={quote.id || ""} 
+          client={quote.client} 
+          createdAt={quote.created_at}
+          saving={saving}
+          handleSave={handleSave}
+          previewQuote={previewQuote}
+          emailQuote={emailQuote}
+          downloadQuote={downloadQuote}
+          isHotelSelectionRequired={!isHotelSelectionComplete()}
+          disableSave={false}
+          stage="quote-details"
+          onStageChange={() => {}}
+        />
         
-        <div className="mt-6">
-          {/* 1. Client Details Section */}
-          <TabsContent value="client" className="mt-0">
-            <ClientDetailsEditableSection 
-              quote={quote} 
-              onQuoteUpdate={handleQuoteUpdate} 
-            />
-          </TabsContent>
-
-          {/* 2. Hotel Selection Section */}
-          <TabsContent value="hotels" className="mt-0">
-            <HotelSelectionSection
-              selectedHotels={selectedHotelObjects}
-              availableHotels={hotels}
-              onHotelSelection={handleHotelSelection}
-              onHotelRemove={removeSelectedHotel}
-              onRoomTypesLoaded={handleRoomTypesLoaded}
-            />
-          </TabsContent>
-          
-          {/* 3. Accommodation Section */}
-          <TabsContent value="accommodation" className="mt-0">
-            <AccommodationSection
-              selectedHotels={selectedHotelObjects}
-              roomArrangements={quote.room_arrangements || []}
-              onRoomArrangementsChange={handleRoomArrangementsChange}
-              availableRoomTypes={["Standard Room", "Deluxe Room", "Suite", "Family Room"]}
-              duration={quote.duration_nights}
-            />
-          </TabsContent>
-          
-          {/* 4. Transport Section */}
-          <TabsContent value="transport" className="mt-0">
-            <TransportBookingSection
-              transports={quote.transports || []}
-              onTransportsChange={handleTransportsChange}
-            />
-          </TabsContent>
-          
-          {/* 5. Transfer Section */}
-          <TabsContent value="transfer" className="mt-0">
-            <TransferSection 
-              transfers={quote.transfers || []} 
-              onTransfersChange={handleTransfersChange}
-            />
-          </TabsContent>
-          
-          {/* 6. Excursion Section */}
-          <TabsContent value="excursion" className="mt-0">
-            <ExcursionSection
-              excursions={quote.activities || []}
-              onExcursionsChange={handleActivitiesChange}
-            />
-          </TabsContent>
-          
-          {/* 7. Markup & Summary Section */}
-          <TabsContent value="markup" className="mt-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <MarkupManagementSection
-                accommodationTotal={accommodationTotal}
-                transportTotal={transportTotal}
-                transferTotal={transferTotal}
-                excursionTotal={excursionTotal}
-                onMarkupChange={(type, value) => {
-                  if (!quote) return;
-                  // Update quote with new markup values and save
-                  handleSave();
-                }}
-                markupType={quote.markup_type}
-                markupValue={quote.markup_value}
-              />
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center gap-2">
-                  <FileText className="h-5 w-5 text-green-600" />
-                  <CardTitle>Quote Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <QuoteSummary quote={quote} hotels={selectedHotelObjects} />
-                </CardContent>
-              </Card>
+        {/* Progress Indicator */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">Quote Builder Progress</CardTitle>
+              <Badge variant="outline">{Math.round(calculateProgress())}% Complete</Badge>
             </div>
-          </TabsContent>
-        </div>
-      </Tabs>
+          </CardHeader>
+          <CardContent>
+            <Progress value={calculateProgress()} className="w-full" />
+          </CardContent>
+        </Card>
 
-      {/* Action Buttons */}
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={() => navigate("/quotes")}>
-          Cancel
-        </Button>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {saving ? "Saving..." : "Save Quote"}
+        {/* New 7-Section Quote Builder */}
+        <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+          <TabsList className="grid w-full grid-cols-7">
+            {sections.map(section => (
+              <TabsTrigger
+                key={section.id}
+                value={section.id}
+                className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 relative"
+              >
+                <div className="flex items-center gap-1">
+                  <section.icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{section.label}</span>
+                  {section.completed && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></div>
+                  )}
+                </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          <div className="mt-6">
+            {/* 1. Client Details Section */}
+            <TabsContent value="client" className="mt-0">
+              <ClientDetailsEditableSection 
+                quote={quote} 
+                onQuoteUpdate={handleQuoteUpdate} 
+              />
+            </TabsContent>
+
+            {/* 2. Hotel Selection Section */}
+            <TabsContent value="hotels" className="mt-0">
+              <HotelSelectionSection
+                selectedHotels={selectedHotelObjects}
+                availableHotels={hotels}
+                onHotelSelection={handleHotelSelection}
+                onHotelRemove={removeSelectedHotel}
+                onRoomTypesLoaded={handleRoomTypesLoaded}
+              />
+            </TabsContent>
+            
+            {/* 3. Accommodation Section */}
+            <TabsContent value="accommodation" className="mt-0">
+              <AccommodationSection
+                selectedHotels={selectedHotelObjects}
+                roomArrangements={quote.room_arrangements || []}
+                onRoomArrangementsChange={handleRoomArrangementsChange}
+                availableRoomTypes={["Standard Room", "Deluxe Room", "Suite", "Family Room"]}
+                duration={quote.duration_nights}
+              />
+            </TabsContent>
+            
+            {/* 4. Transport Section */}
+            <TabsContent value="transport" className="mt-0">
+              <TransportBookingSection
+                transports={quote.transports || []}
+                onTransportsChange={handleTransportsChange}
+              />
+            </TabsContent>
+            
+            {/* 5. Transfer Section */}
+            <TabsContent value="transfer" className="mt-0">
+              <TransferSection 
+                transfers={quote.transfers || []} 
+                onTransfersChange={handleTransfersChange}
+              />
+            </TabsContent>
+            
+            {/* 6. Excursion Section */}
+            <TabsContent value="excursion" className="mt-0">
+              <ExcursionSection
+                excursions={quote.activities || []}
+                onExcursionsChange={handleActivitiesChange}
+              />
+            </TabsContent>
+            
+            {/* 7. Markup & Summary Section */}
+            <TabsContent value="markup" className="mt-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <MarkupManagementSection
+                  accommodationTotal={accommodationTotal}
+                  transportTotal={transportTotal}
+                  transferTotal={transferTotal}
+                  excursionTotal={excursionTotal}
+                  onMarkupChange={(type, value) => {
+                    if (!quote) return;
+                    // Update quote with new markup values and save
+                    handleSave();
+                  }}
+                  markupType={quote.markup_type}
+                  markupValue={quote.markup_value}
+                />
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center gap-2">
+                    <FileText className="h-5 w-5 text-green-600" />
+                    <CardTitle>Quote Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <QuoteSummary quote={quote} hotels={selectedHotelObjects} />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </div>
+        </Tabs>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between pt-4">
+          <Button variant="outline" onClick={() => navigate("/quotes")}>
+            Cancel
           </Button>
-          <Button
-            onClick={previewQuote}
-            variant="outline"
-            className="border-green-600 text-green-600 hover:bg-green-50"
-          >
-            Preview
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {saving ? "Saving..." : "Save Quote"}
+            </Button>
+            <Button
+              onClick={previewQuote}
+              variant="outline"
+              className="border-green-600 text-green-600 hover:bg-green-50"
+            >
+              Preview
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </CurrencyProvider>
   );
 };
 

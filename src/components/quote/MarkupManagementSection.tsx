@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Separator } from "../ui/separator";
 import { Calculator, DollarSign, Percent } from "lucide-react";
+import { useCurrency } from "../../contexts/CurrencyContext";
 
 interface MarkupManagementSectionProps {
   accommodationTotal: number;
@@ -27,6 +28,7 @@ const MarkupManagementSection: React.FC<MarkupManagementSectionProps> = ({
   markupType = "percentage",
   markupValue = 25
 }) => {
+  const { formatAmount } = useCurrency();
   const [markupSettings, setMarkupSettings] = useState({
     type: markupType,
     value: markupValue
@@ -84,24 +86,24 @@ const MarkupManagementSection: React.FC<MarkupManagementSectionProps> = ({
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Accommodation</span>
-                <span>${accommodationTotal.toFixed(2)}</span>
+                <span>{formatAmount(accommodationTotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Transport</span>
-                <span>${transportTotal.toFixed(2)}</span>
+                <span>{formatAmount(transportTotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Transfer</span>
-                <span>${transferTotal.toFixed(2)}</span>
+                <span>{formatAmount(transferTotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Excursion</span>
-                <span>${excursionTotal.toFixed(2)}</span>
+                <span>{formatAmount(excursionTotal)}</span>
               </div>
               <Separator className="my-2" />
               <div className="flex justify-between font-medium">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatAmount(subtotal)}</span>
               </div>
             </div>
           </div>
@@ -166,25 +168,25 @@ const MarkupManagementSection: React.FC<MarkupManagementSectionProps> = ({
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatAmount(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>
                   Markup ({markupSettings.type === "percentage" ? `${markupSettings.value}%` : "Fixed"})
                 </span>
-                <span>${calculateMarkupAmount().toFixed(2)}</span>
+                <span>{formatAmount(calculateMarkupAmount())}</span>
               </div>
               <Separator className="my-2" />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total Price</span>
                 <span className="text-teal-600">
-                  ${(subtotal + calculateMarkupAmount()).toFixed(2)}
+                  {formatAmount(subtotal + calculateMarkupAmount())}
                 </span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Per Person</span>
                 <span>
-                  ${((subtotal + calculateMarkupAmount()) / Math.max(1, accommodationTotal > 0 ? 1 : 0)).toFixed(2)}
+                  {formatAmount((subtotal + calculateMarkupAmount()) / Math.max(1, accommodationTotal > 0 ? 1 : 0))}
                 </span>
               </div>
             </div>
