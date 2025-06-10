@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Search } from "lucide-react";
+import { Search, Building } from "lucide-react";
 import { Input } from "../ui/input";
 import HotelSelection from "./HotelSelection";
 import { Hotel } from "../../types/hotel.types";
@@ -47,7 +47,7 @@ const HotelSelectionSection: React.FC<HotelSelectionSectionProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Hotel className="h-5 w-5 text-blue-600" />
+          <Building className="h-5 w-5 text-blue-600" />
           Select Hotels ({selectedHotels.length}/{maxSelections})
         </CardTitle>
       </CardHeader>

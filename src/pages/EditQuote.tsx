@@ -13,7 +13,7 @@ import { Progress } from "../components/ui/progress";
 // Components
 import LoadingIndicator from "../components/quote/LoadingIndicator";
 import QuoteHeader from "../components/quote/QuoteHeader";
-import ClientDetailsCard from "../components/quote/ClientDetailsCard";
+import ClientDetailsEditableSection from "../components/quote/ClientDetailsEditableSection";
 import HotelSelectionSection from "../components/quote/HotelSelectionSection";
 import AccommodationSection from "../components/quote/AccommodationSection";
 import TransportBookingSection from "../components/quote/TransportBookingSection";
@@ -262,7 +262,7 @@ const EditQuote = () => {
         </Button>
         <div className="flex gap-2">
           <Button
-            onClick={handleSave}
+            onClick={() => handleSave()}
             disabled={saving}
             className="bg-blue-600 hover:bg-blue-700"
           >

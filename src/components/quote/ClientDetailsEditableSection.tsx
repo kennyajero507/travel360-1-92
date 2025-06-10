@@ -175,7 +175,7 @@ const ClientDetailsEditableSection: React.FC<ClientDetailsEditableSectionProps> 
             
             <div className="space-y-1">
               <div className="text-sm font-medium text-gray-500">Status</div>
-              <Badge variant={quote.status === "approved" ? "success" : "secondary"}>
+              <Badge variant={quote.status === "approved" ? "default" : "secondary"}>
                 {quote.status}
               </Badge>
             </div>
