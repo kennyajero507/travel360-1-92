@@ -80,6 +80,12 @@ const EditQuote = () => {
     }
   };
 
+  // Handle quote updates from client details section
+  const handleQuoteUpdate = (updatedQuote: any) => {
+    // This will trigger a save automatically through the useQuoteEditor hook
+    handleSave();
+  };
+
   // Define sections for the new flow
   const sections = [
     { id: 'client', label: 'Client Details', icon: User, completed: !!quote?.client },
@@ -168,10 +174,7 @@ const EditQuote = () => {
           <TabsContent value="client" className="mt-0">
             <ClientDetailsEditableSection 
               quote={quote} 
-              onQuoteUpdate={(updatedQuote) => {
-                if (!quote) return;
-                handleSave({...quote, ...updatedQuote});
-              }} 
+              onQuoteUpdate={handleQuoteUpdate} 
             />
           </TabsContent>
 
@@ -231,11 +234,8 @@ const EditQuote = () => {
                 excursionTotal={excursionTotal}
                 onMarkupChange={(type, value) => {
                   if (!quote) return;
-                  handleSave({
-                    ...quote,
-                    markup_type: type,
-                    markup_value: value
-                  });
+                  // Update quote with new markup values and save
+                  handleSave();
                 }}
                 markupType={quote.markup_type}
                 markupValue={quote.markup_value}
@@ -262,7 +262,7 @@ const EditQuote = () => {
         </Button>
         <div className="flex gap-2">
           <Button
-            onClick={() => handleSave()}
+            onClick={handleSave}
             disabled={saving}
             className="bg-blue-600 hover:bg-blue-700"
           >
