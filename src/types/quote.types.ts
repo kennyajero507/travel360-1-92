@@ -1,5 +1,5 @@
-
 import { Hotel } from "./hotel.types";
+import { QuoteSummaryData } from "./quoteSummary.types";
 
 export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
 
@@ -119,6 +119,7 @@ export interface QuoteData {
   transports: QuoteTransport[];
   transfers: QuoteTransfer[];
   sectionMarkups?: Record<string, SectionMarkup>;
+  summary_data?: QuoteSummaryData; // Added summary_data field
 }
 
 // Enhanced quote calculations interface
