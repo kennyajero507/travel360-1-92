@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
@@ -12,7 +11,9 @@ const transformQuoteData = (dbRow: any): QuoteData => {
     activities: parseJsonField(dbRow.activities, []),
     transports: parseJsonField(dbRow.transports, []),
     transfers: parseJsonField(dbRow.transfers, []),
-    sectionMarkups: parseJsonField(dbRow.sectionMarkups, {})
+    sectionMarkups: parseJsonField(dbRow.sectionMarkups, {}),
+    // Include the summary_data from normalized tables
+    summary_data: dbRow.summary_data || {}
   };
 };
 
@@ -179,6 +180,9 @@ export const generateClientPreview = async (quoteId: string) => {
       }
     }
 
+    // Use summary data from normalized tables if available
+    const summaryData = quote.summary_data || {};
+
     // Transform quote data into client preview format
     const clientPreview = {
       id: quote.id,
@@ -206,11 +210,12 @@ export const generateClientPreview = async (quoteId: string) => {
         name: hotel.name,
         category: hotel.category,
         pricePerNight: 0, // Will be calculated from room arrangements
-        totalPrice: 0, // Will be calculated from room arrangements
+        totalPrice: summaryData.total_cost || 0,
         currencyCode: quote.currency_code || 'USD'
       })),
-      totalCost: 0, // Will be calculated
-      currency: quote.currency_code || 'USD'
+      totalCost: summaryData.total_cost || 0,
+      currency: quote.currency_code || 'USD',
+      summaryData // Include the calculated summary
     };
 
     return clientPreview;

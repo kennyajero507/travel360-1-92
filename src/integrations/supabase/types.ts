@@ -492,6 +492,57 @@ export type Database = {
           },
         ]
       }
+      quote_accommodations: {
+        Row: {
+          adult_cost: number
+          cnb_cost: number
+          created_at: string
+          cwb_cost: number
+          id: string
+          infant_cost: number
+          no_adults: number
+          no_cnb: number
+          no_cwb: number
+          no_infants: number
+          no_rooms: number
+          quote_id: string
+          room_arrangement: string
+          room_type: string
+        }
+        Insert: {
+          adult_cost?: number
+          cnb_cost?: number
+          created_at?: string
+          cwb_cost?: number
+          id?: string
+          infant_cost?: number
+          no_adults?: number
+          no_cnb?: number
+          no_cwb?: number
+          no_infants?: number
+          no_rooms?: number
+          quote_id: string
+          room_arrangement: string
+          room_type: string
+        }
+        Update: {
+          adult_cost?: number
+          cnb_cost?: number
+          created_at?: string
+          cwb_cost?: number
+          id?: string
+          infant_cost?: number
+          no_adults?: number
+          no_cnb?: number
+          no_cwb?: number
+          no_infants?: number
+          no_rooms?: number
+          quote_id?: string
+          room_arrangement?: string
+          room_type?: string
+        }
+        Relationships: []
+      }
       quote_activities: {
         Row: {
           activity_id: string | null
@@ -538,6 +589,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quote_excursions: {
+        Row: {
+          activity_type: string
+          adult_cost: number
+          child_cost: number
+          created_at: string
+          description: string | null
+          id: string
+          number_of_children: number
+          number_of_people: number
+          quote_id: string
+        }
+        Insert: {
+          activity_type: string
+          adult_cost?: number
+          child_cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          number_of_children?: number
+          number_of_people?: number
+          quote_id: string
+        }
+        Update: {
+          activity_type?: string
+          adult_cost?: number
+          child_cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          number_of_children?: number
+          number_of_people?: number
+          quote_id?: string
+        }
+        Relationships: []
       }
       quote_hotel_options: {
         Row: {
@@ -636,6 +723,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quote_markup: {
+        Row: {
+          created_at: string
+          id: string
+          markup_percentage: number
+          notes: string | null
+          quote_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          markup_percentage?: number
+          notes?: string | null
+          quote_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          markup_percentage?: number
+          notes?: string | null
+          quote_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       quote_room_arrangements: {
         Row: {
@@ -749,6 +863,96 @@ export type Database = {
           },
         ]
       }
+      quote_transfers_new: {
+        Row: {
+          adult_cost: number
+          child_cost: number
+          created_at: string
+          id: string
+          no_adults: number
+          no_children: number
+          quote_id: string
+          ticket_type: string | null
+          transfer_operator: string | null
+          transfer_type: string
+          travel_route: string
+        }
+        Insert: {
+          adult_cost?: number
+          child_cost?: number
+          created_at?: string
+          id?: string
+          no_adults?: number
+          no_children?: number
+          quote_id: string
+          ticket_type?: string | null
+          transfer_operator?: string | null
+          transfer_type: string
+          travel_route: string
+        }
+        Update: {
+          adult_cost?: number
+          child_cost?: number
+          created_at?: string
+          id?: string
+          no_adults?: number
+          no_children?: number
+          quote_id?: string
+          ticket_type?: string | null
+          transfer_operator?: string | null
+          transfer_type?: string
+          travel_route?: string
+        }
+        Relationships: []
+      }
+      quote_transport: {
+        Row: {
+          adult_cost: number
+          child_cost: number
+          created_at: string
+          id: string
+          no_adults: number
+          no_children: number
+          note: string | null
+          quote_id: string
+          ticket_class: string | null
+          ticket_type: string | null
+          transport_mode: string
+          transport_operator: string | null
+          travel_route: string
+        }
+        Insert: {
+          adult_cost?: number
+          child_cost?: number
+          created_at?: string
+          id?: string
+          no_adults?: number
+          no_children?: number
+          note?: string | null
+          quote_id: string
+          ticket_class?: string | null
+          ticket_type?: string | null
+          transport_mode: string
+          transport_operator?: string | null
+          travel_route: string
+        }
+        Update: {
+          adult_cost?: number
+          child_cost?: number
+          created_at?: string
+          id?: string
+          no_adults?: number
+          no_children?: number
+          note?: string | null
+          quote_id?: string
+          ticket_class?: string | null
+          ticket_type?: string | null
+          transport_mode?: string
+          transport_operator?: string | null
+          travel_route?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           activities: Json
@@ -778,6 +982,7 @@ export type Database = {
           selected_hotel_option_id: string | null
           start_date: string
           status: string | null
+          summary_data: Json | null
           tour_type: string | null
           transfers: Json
           transports: Json
@@ -811,6 +1016,7 @@ export type Database = {
           selected_hotel_option_id?: string | null
           start_date: string
           status?: string | null
+          summary_data?: Json | null
           tour_type?: string | null
           transfers?: Json
           transports?: Json
@@ -844,6 +1050,7 @@ export type Database = {
           selected_hotel_option_id?: string | null
           start_date?: string
           status?: string | null
+          summary_data?: Json | null
           tour_type?: string | null
           transfers?: Json
           transports?: Json
@@ -1001,6 +1208,10 @@ export type Database = {
       calculate_nights: {
         Args: { start_date: string; end_date: string }
         Returns: number
+      }
+      calculate_quote_summary: {
+        Args: { quote_id_param: string }
+        Returns: Json
       }
       can_access_inquiry: {
         Args: {
