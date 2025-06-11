@@ -1,4 +1,4 @@
-import { supabase } from "../integrations/supabase/client";
+
 import { toast } from "sonner";
 
 export interface ErrorLog {
@@ -60,7 +60,8 @@ class EnhancedErrorService {
 
   private handleOnline() {
     this.isOnline = true;
-    this.flushErrorQueue();
+    // Note: We'll implement database sync when tables are available
+    console.log('[EnhancedErrorService] Back online - database sync pending table creation');
   }
 
   private handleOffline() {
@@ -80,46 +81,25 @@ class EnhancedErrorService {
     context?: any;
     severity?: ErrorSeverity;
   }): Promise<void> {
-    const errorLog = {
+    const errorLog: ErrorLog = {
       id: crypto.randomUUID(),
       error_type: type,
       error_message: message,
       stack_trace: stack,
-      context: context ? JSON.stringify(context) : null,
+      context: context ? JSON.stringify(context) : undefined,
       resolved: false,
       created_at: new Date().toISOString()
     };
 
-    // Add to queue if offline
-    if (!this.isOnline) {
-      this.errorQueue.push(errorLog as ErrorLog);
-      this.saveToLocalStorage();
-      return;
-    }
+    // Store in localStorage until database tables are available
+    this.errorQueue.push(errorLog);
+    this.saveToLocalStorage();
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from('error_logs')
-        .insert([{
-          ...errorLog,
-          user_id: user?.id
-        }]);
-
-      if (error) {
-        console.error('Failed to log error to database:', error);
-        this.errorQueue.push(errorLog as ErrorLog);
-        this.saveToLocalStorage();
-      }
-
-      // Show user-friendly notifications based on severity
-      this.showUserNotification(severity, message);
-    } catch (error) {
-      console.error('Error logging to database:', error);
-      this.errorQueue.push(errorLog as ErrorLog);
-      this.saveToLocalStorage();
-    }
+    // Show user-friendly notifications based on severity
+    this.showUserNotification(severity, message);
+    
+    // Log to console for development
+    console.error('[EnhancedErrorService] Error logged:', errorLog);
   }
 
   private showUserNotification(severity: ErrorSeverity, message: string) {
@@ -137,30 +117,6 @@ class EnhancedErrorService {
         // Don't show toast for low severity errors
         console.warn('Low severity error:', message);
         break;
-    }
-  }
-
-  private async flushErrorQueue() {
-    if (this.errorQueue.length === 0) return;
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const errorsToInsert = this.errorQueue.map(error => ({
-        ...error,
-        user_id: user?.id
-      }));
-
-      const { error } = await supabase
-        .from('error_logs')
-        .insert(errorsToInsert);
-
-      if (!error) {
-        this.errorQueue = [];
-        this.clearLocalStorage();
-      }
-    } catch (error) {
-      console.error('Failed to flush error queue:', error);
     }
   }
 
@@ -193,14 +149,8 @@ class EnhancedErrorService {
 
   async getErrorLogs(limit: number = 50): Promise<ErrorLog[]> {
     try {
-      const { data, error } = await supabase
-        .from('error_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data || [];
+      // Return from localStorage until database is available
+      return this.errorQueue.slice(0, limit);
     } catch (error) {
       console.error('Failed to fetch error logs:', error);
       return [];
@@ -209,12 +159,14 @@ class EnhancedErrorService {
 
   async markErrorResolved(errorId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('error_logs')
-        .update({ resolved: true })
-        .eq('id', errorId);
-
-      return !error;
+      // Update in localStorage
+      const errorIndex = this.errorQueue.findIndex(e => e.id === errorId);
+      if (errorIndex !== -1) {
+        this.errorQueue[errorIndex].resolved = true;
+        this.saveToLocalStorage();
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Failed to mark error as resolved:', error);
       return false;
