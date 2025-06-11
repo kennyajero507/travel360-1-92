@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,9 +13,6 @@ import Hotels from "./pages/Hotels";
 import CreateHotel from "./pages/CreateHotel";
 import EditHotel from "./pages/EditHotel";
 import Settings from "./pages/Settings";
-import OrganizationSettings from "./pages/OrganizationSettings";
-import Team from "./pages/Team";
-import Invitations from "./pages/Invitations";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
@@ -23,13 +21,9 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import Quotes from "./pages/Quotes";
 import CreateQuote from "./pages/CreateQuote";
 import EditQuote from "./pages/EditQuote";
-import ViewQuote from "./pages/ViewQuote";
 import Inquiries from "./pages/Inquiries";
 import CreateInquiry from "./pages/CreateInquiry";
 import EditInquiry from "./pages/EditInquiry";
-import ViewInquiry from "./pages/ViewInquiry";
-import QuotePackages from "./pages/QuotePackages";
-import ViewQuotePackage from "./pages/ViewQuotePackage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,20 +72,12 @@ function App() {
                       <Route path="quotes" element={<Quotes />} />
                       <Route path="quotes/create" element={<CreateQuote />} />
                       <Route path="quotes/:quoteId" element={<EditQuote />} />
-                      <Route path="quotes/view/:quoteId" element={<ViewQuote />} />
-
-                      <Route path="quote-packages" element={<QuotePackages />} />
-                      <Route path="quote-packages/:packageId" element={<ViewQuotePackage />} />
 
                       <Route path="inquiries" element={<Inquiries />} />
                       <Route path="inquiries/create" element={<CreateInquiry />} />
                       <Route path="inquiries/:inquiryId" element={<EditInquiry />} />
-                      <Route path="inquiries/view/:inquiryId" element={<ViewInquiry />} />
 
                       <Route path="settings" element={<Settings />} />
-                      <Route path="organization" element={<OrganizationSettings />} />
-                      <Route path="team" element={<Team />} />
-                      <Route path="invitations" element={<Invitations />} />
                     </Route>
 
                     <Route

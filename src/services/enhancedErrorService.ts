@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -26,6 +25,9 @@ class EnhancedErrorService {
     
     // Set up global error handlers
     this.setupGlobalErrorHandlers();
+    
+    // Load any stored errors from localStorage
+    this.loadFromLocalStorage();
   }
 
   private setupGlobalErrorHandlers() {

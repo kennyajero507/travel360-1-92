@@ -36,19 +36,22 @@ class AuditService {
       // Get client info
       const userAgent = navigator.userAgent;
       
-      const { error } = await supabase
-        .from('user_activities')
-        .insert([{
-          user_id: user?.id,
-          activity_type: activityType,
-          description,
-          metadata,
-          user_agent: userAgent
-        }]);
+      // Store in localStorage as fallback since we need to create the table first
+      const activity = {
+        user_id: user?.id,
+        activity_type: activityType,
+        description,
+        metadata,
+        user_agent: userAgent,
+        created_at: new Date().toISOString()
+      };
 
-      if (error) {
-        console.error('Failed to log user activity:', error);
-      }
+      // Store in localStorage until backend tables are ready
+      const activities = JSON.parse(localStorage.getItem('user_activities') || '[]');
+      activities.push(activity);
+      localStorage.setItem('user_activities', JSON.stringify(activities.slice(-100))); // Keep last 100
+
+      console.log('[AuditService] User activity logged:', activity);
     } catch (error) {
       console.error('Error logging user activity:', error);
     }
@@ -60,24 +63,9 @@ class AuditService {
     limit: number = 50
   ): Promise<AuditLog[]> {
     try {
-      let query = supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (tableNames?.length) {
-        query = query.in('table_name', tableNames);
-      }
-
-      if (operations?.length) {
-        query = query.in('operation', operations);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data || [];
+      // Return mock data until backend is ready
+      const mockLogs: AuditLog[] = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+      return mockLogs.slice(0, limit);
     } catch (error) {
       errorHandler.handleError(error, 'AuditService.getAuditLogs');
       return [];
@@ -90,24 +78,22 @@ class AuditService {
     limit: number = 50
   ): Promise<UserActivity[]> {
     try {
-      let query = supabase
-        .from('user_activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
+      // Return from localStorage until backend is ready
+      const activities: UserActivity[] = JSON.parse(localStorage.getItem('user_activities') || '[]');
+      
+      let filteredActivities = activities;
+      
       if (userId) {
-        query = query.eq('user_id', userId);
+        filteredActivities = filteredActivities.filter(a => a.user_id === userId);
       }
-
+      
       if (activityTypes?.length) {
-        query = query.in('activity_type', activityTypes);
+        filteredActivities = filteredActivities.filter(a => 
+          activityTypes.includes(a.activity_type)
+        );
       }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data || [];
+      
+      return filteredActivities.slice(0, limit);
     } catch (error) {
       errorHandler.handleError(error, 'AuditService.getUserActivities');
       return [];
