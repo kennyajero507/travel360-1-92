@@ -2,6 +2,8 @@
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { Payment, BookingAnalytics, EmailTemplate, Notification, VoucherTemplate, BookingFilters } from "../types/enhanced-booking.types";
+import { Booking } from "../types/booking.types";
+import { convertToPayment, convertToEmailTemplate, convertToBooking, isValidBookingStatus } from "../utils/typeHelpers";
 
 export const enhancedBookingService = {
   // Payment Management
@@ -14,7 +16,7 @@ export const enhancedBookingService = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(convertToPayment);
     } catch (error) {
       console.error('Error fetching payments:', error);
       toast.error('Failed to load payment information');
@@ -32,7 +34,7 @@ export const enhancedBookingService = {
 
       if (error) throw error;
       toast.success('Payment record created successfully');
-      return data;
+      return convertToPayment(data);
     } catch (error) {
       console.error('Error creating payment:', error);
       toast.error('Failed to create payment record');
@@ -137,7 +139,7 @@ export const enhancedBookingService = {
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(convertToEmailTemplate);
     } catch (error) {
       console.error('Error fetching email templates:', error);
       toast.error('Failed to load email templates');
@@ -155,7 +157,7 @@ export const enhancedBookingService = {
 
       if (error) throw error;
       toast.success('Email template created successfully');
-      return data;
+      return convertToEmailTemplate(data);
     } catch (error) {
       console.error('Error creating email template:', error);
       toast.error('Failed to create email template');
@@ -183,6 +185,10 @@ export const enhancedBookingService = {
   // Bulk Operations
   async bulkUpdateBookingStatus(bookingIds: string[], status: string): Promise<boolean> {
     try {
+      if (!isValidBookingStatus(status)) {
+        throw new Error('Invalid booking status');
+      }
+
       const { error } = await supabase
         .from('bookings')
         .update({ 
@@ -202,7 +208,7 @@ export const enhancedBookingService = {
   },
 
   // Advanced Filtering
-  async getFilteredBookings(filters: BookingFilters) {
+  async getFilteredBookings(filters: BookingFilters): Promise<Booking[]> {
     try {
       let query = supabase
         .from('bookings')
@@ -210,7 +216,8 @@ export const enhancedBookingService = {
         .order('created_at', { ascending: false });
 
       if (filters.status?.length) {
-        query = query.in('status', filters.status);
+        const validStatuses = filters.status.filter(isValidBookingStatus);
+        query = query.in('status', validStatuses);
       }
 
       if (filters.dateRange) {
@@ -235,7 +242,7 @@ export const enhancedBookingService = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data || []).map(convertToBooking);
     } catch (error) {
       console.error('Error filtering bookings:', error);
       toast.error('Failed to filter bookings');
@@ -260,7 +267,7 @@ export const enhancedBookingService = {
     }
   },
 
-  exportToCSV(bookings: any[]): string {
+  exportToCSV(bookings: Booking[]): string {
     const headers = ['Booking Reference', 'Client', 'Hotel', 'Travel Start', 'Travel End', 'Status', 'Total Price'];
     const csvContent = [
       headers.join(','),
@@ -286,14 +293,31 @@ export const enhancedBookingService = {
     return 'CSV export completed';
   },
 
-  exportToExcel(bookings: any[]): string {
-    // Simplified Excel export - in production, use a library like xlsx
+  exportToExcel(bookings: Booking[]): string {
+    // Simplified Excel export - uses CSV format for now
     return this.exportToCSV(bookings);
   },
 
-  exportToPDF(bookings: any[]): string {
-    // Simplified PDF export - in production, use a library like jsPDF
+  exportToPDF(bookings: Booking[]): string {
+    // Simplified PDF export - placeholder
     toast.info('PDF export feature coming soon');
     return 'PDF export feature coming soon';
+  },
+
+  // Voucher Management
+  async getVoucherTemplates(): Promise<VoucherTemplate[]> {
+    try {
+      const { data, error } = await supabase
+        .from('voucher_templates')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching voucher templates:', error);
+      toast.error('Failed to load voucher templates');
+      return [];
+    }
   }
 };

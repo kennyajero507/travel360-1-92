@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { DatePicker } from "../ui/date-picker";
 import { Checkbox } from "../ui/checkbox";
 import { BookingFilters as FilterType } from "../../types/enhanced-booking.types";
@@ -81,7 +80,7 @@ const BookingFilters = ({ filters, onFiltersChange, onApplyFilters, onClearFilte
             <Label>Travel Date Range</Label>
             <div className="space-y-2">
               <DatePicker
-                selected={localFilters.dateRange?.start ? new Date(localFilters.dateRange.start) : undefined}
+                date={localFilters.dateRange?.start ? new Date(localFilters.dateRange.start) : undefined}
                 onSelect={(date) => 
                   setLocalFilters(prev => ({ 
                     ...prev, 
@@ -92,10 +91,10 @@ const BookingFilters = ({ filters, onFiltersChange, onApplyFilters, onClearFilte
                     }
                   }))
                 }
-                placeholderText="Start Date"
+                placeholder="Start Date"
               />
               <DatePicker
-                selected={localFilters.dateRange?.end ? new Date(localFilters.dateRange.end) : undefined}
+                date={localFilters.dateRange?.end ? new Date(localFilters.dateRange.end) : undefined}
                 onSelect={(date) => 
                   setLocalFilters(prev => ({ 
                     ...prev, 
@@ -106,7 +105,7 @@ const BookingFilters = ({ filters, onFiltersChange, onApplyFilters, onClearFilte
                     }
                   }))
                 }
-                placeholderText="End Date"
+                placeholder="End Date"
               />
             </div>
           </div>

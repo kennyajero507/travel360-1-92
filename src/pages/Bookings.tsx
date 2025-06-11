@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -6,13 +5,14 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from ".
 import { Badge } from "../components/ui/badge";
 import { Checkbox } from "../components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { CalendarClock, CheckCircle, FileText, List, ShoppingCart, XCircle, BarChart3, Filter, Users } from "lucide-react";
+import { CalendarClock, CheckCircle, FileText, List, BarChart3, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Booking, BookingStatus } from "../types/booking.types";
 import { BookingFilters as FilterType } from "../types/enhanced-booking.types";
 import { getAllBookings, updateBookingStatus } from "../services/bookingService";
 import { enhancedBookingService } from "../services/enhancedBookingService";
+import { convertToBooking } from "../utils/typeHelpers";
 import BookingFilters from "../components/booking/BookingFilters";
 import BulkBookingActions from "../components/booking/BulkBookingActions";
 import BookingAnalyticsDashboard from "../components/booking/BookingAnalyticsDashboard";
@@ -34,8 +34,9 @@ const Bookings = () => {
   const loadBookings = async () => {
     try {
       const data = await getAllBookings();
-      setBookings(data as Booking[]);
-      setFilteredBookings(data as Booking[]);
+      const convertedBookings = data.map(convertToBooking);
+      setBookings(convertedBookings);
+      setFilteredBookings(convertedBookings);
     } catch (error) {
       console.error("Error loading bookings:", error);
       toast.error("Failed to load bookings data");
@@ -277,15 +278,6 @@ const Bookings = () => {
                                 >
                                   <CheckCircle className="h-4 w-4 mr-1" />
                                   Confirm
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="border-red-300 hover:bg-red-50 text-red-700"
-                                  onClick={() => handleStatusUpdate(booking.id, 'cancelled')}
-                                >
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Cancel
                                 </Button>
                               </>
                             )}
