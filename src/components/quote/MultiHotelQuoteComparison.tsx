@@ -26,9 +26,13 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
   const { formatAmount } = useCurrency();
 
   const hotelComparisons = useMemo(() => {
+    if (!hotels || hotels.length === 0 || !quote) {
+      return [];
+    }
+
     return hotels.map(hotel => {
       // Calculate costs for this hotel
-      const hotelRoomArrangements = quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id);
+      const hotelRoomArrangements = quote.room_arrangements?.filter(arr => arr.hotel_id === hotel.id) || [];
       const hotelTransfers = quote.transfers?.filter(t => t.hotel_id === hotel.id) || [];
       const hotelActivities = quote.activities?.filter(a => a.hotel_id === hotel.id) || [];
       
@@ -39,7 +43,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
       const basePrice = accommodationCost + transfersCost + activitiesCost;
       const markupCalculation = markupService.calculateWithMarkup(basePrice, markupPercentage);
       
-      const totalTravelers = quote.adults + quote.children_with_bed + quote.children_no_bed + quote.infants;
+      const totalTravelers = (quote.adults || 0) + (quote.children_with_bed || 0) + (quote.children_no_bed || 0) + (quote.infants || 0);
       const pricePerPerson = totalTravelers > 0 ? markupCalculation.finalPrice / totalTravelers : markupCalculation.finalPrice;
 
       return {
@@ -59,6 +63,10 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
   }, [quote, hotels, markupPercentage]);
 
   const cheapestOption = useMemo(() => {
+    if (hotelComparisons.length === 0) {
+      return null;
+    }
+    
     return hotelComparisons.reduce((cheapest, current) => 
       current.finalPrice < cheapest.finalPrice ? current : cheapest
     );
@@ -68,7 +76,11 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
     if (hotelComparisons.length < 2) return null;
     const [option1, option2] = hotelComparisons;
     const difference = Math.abs(option1.finalPrice - option2.finalPrice);
-    const percentage = ((difference / Math.max(option1.finalPrice, option2.finalPrice)) * 100).toFixed(1);
+    const maxPrice = Math.max(option1.finalPrice, option2.finalPrice);
+    
+    if (maxPrice === 0) return null;
+    
+    const percentage = ((difference / maxPrice) * 100).toFixed(1);
     
     return {
       amount: difference,
@@ -107,7 +119,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {formatAmount(cheapestOption.finalPrice)}
+                {cheapestOption ? formatAmount(cheapestOption.finalPrice) : formatAmount(0)}
               </div>
               <p className="text-sm text-gray-600">Best Price</p>
             </div>
@@ -139,7 +151,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
           <Card 
             key={comparison.hotel.id} 
             className={`border-2 transition-all hover:shadow-lg ${
-              comparison === cheapestOption ? 'border-green-500 bg-green-50' : 'border-gray-200'
+              cheapestOption && comparison === cheapestOption ? 'border-green-500 bg-green-50' : 'border-gray-200'
             }`}
           >
             <CardHeader className="pb-4">
@@ -148,7 +160,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
                   <div className="flex items-center gap-2 mb-2">
                     <Hotel className="h-5 w-5 text-blue-600" />
                     <CardTitle className="text-lg">{comparison.hotel.name}</CardTitle>
-                    {comparison === cheapestOption && (
+                    {cheapestOption && comparison === cheapestOption && (
                       <Badge className="bg-green-600 text-white">Best Value</Badge>
                     )}
                   </div>
@@ -187,11 +199,11 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
                       <div className="flex justify-between">
                         <span>{room.num_rooms}x {room.room_type}</span>
                         {viewMode === 'agent' && (
-                          <span className="font-medium">{formatAmount(room.total)}</span>
+                          <span className="font-medium">{formatAmount(room.total || 0)}</span>
                         )}
                       </div>
                       <div className="text-gray-600">
-                        {room.adults} Adults, {room.children_with_bed + room.children_no_bed} Children
+                        {room.adults} Adults, {(room.children_with_bed || 0) + (room.children_no_bed || 0)} Children
                       </div>
                     </div>
                   ))}
@@ -207,7 +219,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
                       <div key={idx} className="flex justify-between bg-blue-50 p-2 rounded">
                         <span>{transfer.type} ({transfer.from} → {transfer.to})</span>
                         {viewMode === 'agent' && (
-                          <span>{formatAmount(transfer.total)}</span>
+                          <span>{formatAmount(transfer.total || 0)}</span>
                         )}
                       </div>
                     ))}
@@ -215,7 +227,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
                       <div key={idx} className="flex justify-between bg-purple-50 p-2 rounded">
                         <span>{activity.name}</span>
                         {viewMode === 'agent' && (
-                          <span>{formatAmount(activity.total_cost)}</span>
+                          <span>{formatAmount(activity.total_cost || 0)}</span>
                         )}
                       </div>
                     ))}
@@ -265,11 +277,11 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
               <div className="flex items-center justify-between text-sm text-gray-600 pt-2 border-t">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>{quote.duration_nights} nights, {quote.duration_days} days</span>
+                  <span>{quote.duration_nights || 0} nights, {quote.duration_days || 0} days</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  <span>{quote.adults + quote.children_with_bed + quote.children_no_bed + quote.infants} travelers</span>
+                  <span>{(quote.adults || 0) + (quote.children_with_bed || 0) + (quote.children_no_bed || 0) + (quote.infants || 0)} travelers</span>
                 </div>
               </div>
             </CardContent>
