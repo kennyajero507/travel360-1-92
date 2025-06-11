@@ -92,27 +92,43 @@ export class UnifiedQuoteService {
     }
   }
 
-  // Quote package operations for multi-quote client selection (temporary implementation)
+  // Quote package operations using proper database tables
   async createQuotePackage(quotes: QuoteData[], packageName: string): Promise<string> {
     try {
-      console.log('[UnifiedQuoteService] Creating quote package (temporary implementation)');
+      console.log('[UnifiedQuoteService] Creating quote package with proper database tables');
       
-      // For now, we'll create a simple grouping in the quotes table
-      // This will be replaced with proper quote_packages table later
-      const packageId = crypto.randomUUID();
-      
-      // Update quotes to mark them as part of a package
-      const updates = quotes.map(quote => ({
-        ...quote,
-        notes: `${quote.notes || ''}\nPackage: ${packageName} (ID: ${packageId})`.trim()
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Create the quote package
+      const { data: packageData, error: packageError } = await supabase
+        .from('quote_packages')
+        .insert([{
+          package_name: packageName,
+          client_name: quotes[0]?.client || 'Unknown Client',
+          created_by: user.id,
+          status: 'draft'
+        }])
+        .select()
+        .single();
+
+      if (packageError) throw packageError;
+
+      // Create package items for each quote
+      const packageItems = quotes.map((quote, index) => ({
+        package_id: packageData.id,
+        quote_id: quote.id,
+        option_name: `Option ${index + 1}`
       }));
 
-      for (const quote of updates) {
-        await this.saveQuote(quote);
-      }
+      const { error: itemsError } = await supabase
+        .from('quote_package_items')
+        .insert(packageItems);
 
-      toast.success('Quote package created successfully (using temporary implementation)');
-      return packageId;
+      if (itemsError) throw itemsError;
+
+      toast.success('Quote package created successfully');
+      return packageData.id;
     } catch (error) {
       console.error('[UnifiedQuoteService] Error creating quote package:', error);
       toast.error('Failed to create quote package');
@@ -122,20 +138,37 @@ export class UnifiedQuoteService {
 
   async getQuotePackage(packageId: string) {
     try {
-      // Temporary implementation - search for quotes with package ID in notes
-      const { data: quotes, error } = await supabase
-        .from('quotes')
-        .select('*')
-        .ilike('notes', `%${packageId}%`);
-
-      if (error) throw error;
+      console.log('[UnifiedQuoteService] Fetching quote package:', packageId);
       
+      // Get package data
+      const { data: packageData, error: packageError } = await supabase
+        .from('quote_packages')
+        .select('*')
+        .eq('id', packageId)
+        .single();
+
+      if (packageError) throw packageError;
+
+      // Get package items with quote details
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('quote_package_items')
+        .select(`
+          *,
+          quotes (*)
+        `)
+        .eq('package_id', packageId);
+
+      if (itemsError) throw itemsError;
+
       return {
-        id: packageId,
-        package_name: 'Quote Package',
-        quotes: quotes?.map(quote => ({
-          ...this.transformQuoteData(quote),
-          isSelected: false
+        id: packageData.id,
+        package_name: packageData.package_name,
+        client_name: packageData.client_name,
+        status: packageData.status,
+        quotes: itemsData?.map(item => ({
+          ...this.transformQuoteData(item.quotes),
+          isSelected: item.is_selected,
+          option_name: item.option_name
         })) || []
       };
     } catch (error) {
@@ -152,9 +185,16 @@ export class UnifiedQuoteService {
 
       if (error) throw error;
       
-      // Type guard to ensure we get proper data
+      // Type guard and safe casting for summary data
       if (data && typeof data === 'object' && !Array.isArray(data)) {
-        return data as QuoteSummaryData;
+        const summaryData = data as { [key: string]: any };
+        
+        // Validate that we have the expected structure
+        if (typeof summaryData.number_of_adults === 'number' &&
+            typeof summaryData.accommodation_cost === 'number' &&
+            typeof summaryData.total_cost === 'number') {
+          return summaryData as QuoteSummaryData;
+        }
       }
       
       throw new Error('Invalid summary data returned from database');

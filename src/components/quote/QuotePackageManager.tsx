@@ -55,8 +55,10 @@ const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
       // Reset form
       setPackageName('');
       setSelectedQuotes([]);
+      toast.success('Quote package created successfully!');
     } catch (error) {
       console.error('Error creating package:', error);
+      toast.error('Failed to create quote package');
     } finally {
       setIsCreating(false);
     }
@@ -81,7 +83,7 @@ const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            This is a temporary implementation. Full quote package functionality will be available after database schema updates.
+            Create a package of multiple quote options for your client to choose from.
           </AlertDescription>
         </Alert>
 

@@ -751,6 +751,104 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_package_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_selected: boolean | null
+          option_name: string
+          package_id: string
+          quote_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_selected?: boolean | null
+          option_name?: string
+          package_id: string
+          quote_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_selected?: boolean | null
+          option_name?: string
+          package_id?: string
+          quote_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_package_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "quote_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_package_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_packages: {
+        Row: {
+          client_email: string | null
+          client_feedback: string | null
+          client_mobile: string | null
+          client_name: string
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          package_name: string
+          selected_quote_id: string | null
+          selection_date: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_email?: string | null
+          client_feedback?: string | null
+          client_mobile?: string | null
+          client_name: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          package_name: string
+          selected_quote_id?: string | null
+          selection_date?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_email?: string | null
+          client_feedback?: string | null
+          client_mobile?: string | null
+          client_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          package_name?: string
+          selected_quote_id?: string | null
+          selection_date?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_packages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_room_arrangements: {
         Row: {
           adults: number
@@ -1248,6 +1346,10 @@ export type Database = {
       get_authenticated_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_quote_package_with_items: {
+        Args: { package_id_param: string }
+        Returns: Json
       }
       get_user_email: {
         Args: { user_id: string }
