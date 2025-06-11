@@ -6,6 +6,7 @@ import { useRole } from "../contexts/RoleContext";
 import { useHotelsData } from "../hooks/useHotelsData";
 import { useQuoteEditor } from "../hooks/useQuoteEditor";
 import { CurrencyProvider } from "../contexts/CurrencyContext";
+import ErrorBoundary from "../components/quote/ErrorBoundary";
 
 // Components
 import LoadingIndicator from "../components/quote/LoadingIndicator";
@@ -47,7 +48,7 @@ const EditQuote = () => {
   
   // Update selected hotel objects when selectedHotels changes
   useEffect(() => {
-    if (hotels.length > 0 && selectedHotels.length > 0) {
+    if (Array.isArray(hotels) && hotels.length > 0 && Array.isArray(selectedHotels) && selectedHotels.length > 0) {
       const hotelObjects = selectedHotels
         .map(id => hotels.find(h => h.id === id))
         .filter(hotel => hotel !== undefined);
@@ -62,8 +63,8 @@ const EditQuote = () => {
   };
 
   const handleRoomTypesLoaded = (roomTypes: any[], hotelId: string) => {
-    if (quote && roomTypes.length > 0) {
-      populateRoomArrangementsFromHotel(roomTypes, quote.duration_nights, hotelId);
+    if (quote && Array.isArray(roomTypes) && roomTypes.length > 0) {
+      populateRoomArrangementsFromHotel(roomTypes, quote.duration_nights || 1, hotelId);
     }
   };
 
@@ -83,108 +84,126 @@ const EditQuote = () => {
   }
   
   return (
-    <CurrencyProvider>
-      <div className="space-y-6">
-        <QuoteBuilder
-          quote={quote}
-          hotels={hotels}
-          selectedHotels={selectedHotelObjects}
-          onQuoteUpdate={handleQuoteUpdate}
-          onSave={handleSave}
-          onPreview={previewQuote}
-          onEmail={emailQuote}
-          onDownload={downloadQuote}
-          saving={saving}
-        />
+    <ErrorBoundary>
+      <CurrencyProvider>
+        <div className="space-y-6">
+          <ErrorBoundary>
+            <QuoteBuilder
+              quote={quote}
+              hotels={Array.isArray(hotels) ? hotels : []}
+              selectedHotels={selectedHotelObjects}
+              onQuoteUpdate={handleQuoteUpdate}
+              onSave={handleSave}
+              onPreview={previewQuote}
+              onEmail={emailQuote}
+              onDownload={downloadQuote}
+              saving={saving}
+            />
+          </ErrorBoundary>
 
-        {/* Client Details Section */}
-        <div data-section="client">
-          <ClientDetailsEditableSection 
-            quote={quote} 
-            onQuoteUpdate={handleQuoteUpdate} 
-          />
-        </div>
+          {/* Client Details Section */}
+          <ErrorBoundary>
+            <div data-section="client">
+              <ClientDetailsEditableSection 
+                quote={quote} 
+                onQuoteUpdate={handleQuoteUpdate} 
+              />
+            </div>
+          </ErrorBoundary>
 
-        {/* Hotel Selection Section */}
-        <div data-section="hotels">
-          <HotelSelectionSection
-            selectedHotels={selectedHotelObjects}
-            availableHotels={hotels}
-            onHotelSelection={handleHotelSelection}
-            onHotelRemove={removeSelectedHotel}
-            onRoomTypesLoaded={handleRoomTypesLoaded}
-          />
-        </div>
-        
-        {/* Accommodation Section */}
-        <div data-section="accommodation">
-          <AccommodationSection
-            selectedHotels={selectedHotelObjects}
-            roomArrangements={quote.room_arrangements || []}
-            onRoomArrangementsChange={handleRoomArrangementsChange}
-            availableRoomTypes={["Standard Room", "Deluxe Room", "Suite", "Family Room"]}
-            duration={quote.duration_nights}
-          />
-        </div>
-        
-        {/* Transport Section */}
-        <div data-section="transport">
-          <TransportBookingSection
-            transports={quote.transports || []}
-            onTransportsChange={handleTransportsChange}
-          />
-        </div>
-        
-        {/* Transfer Section */}
-        <div data-section="transfer">
-          <TransferSection 
-            transfers={quote.transfers || []} 
-            onTransfersChange={handleTransfersChange}
-          />
-        </div>
-        
-        {/* Activities Section */}
-        <div data-section="excursion">
-          <ExcursionSection
-            excursions={quote.activities || []}
-            onExcursionsChange={handleActivitiesChange}
-          />
-        </div>
-        
-        {/* Multi-Hotel Comparison Summary */}
-        <div data-section="summary">
-          <MultiHotelQuoteComparison
-            quote={quote}
-            hotels={selectedHotelObjects}
-            viewMode="agent"
-            markupPercentage={quote.markup_value || 25}
-          />
-        </div>
+          {/* Hotel Selection Section */}
+          <ErrorBoundary>
+            <div data-section="hotels">
+              <HotelSelectionSection
+                selectedHotels={selectedHotelObjects}
+                availableHotels={Array.isArray(hotels) ? hotels : []}
+                onHotelSelection={handleHotelSelection}
+                onHotelRemove={removeSelectedHotel}
+                onRoomTypesLoaded={handleRoomTypesLoaded}
+              />
+            </div>
+          </ErrorBoundary>
+          
+          {/* Accommodation Section */}
+          <ErrorBoundary>
+            <div data-section="accommodation">
+              <AccommodationSection
+                selectedHotels={selectedHotelObjects}
+                roomArrangements={Array.isArray(quote.room_arrangements) ? quote.room_arrangements : []}
+                onRoomArrangementsChange={handleRoomArrangementsChange}
+                availableRoomTypes={["Standard Room", "Deluxe Room", "Suite", "Family Room"]}
+                duration={quote.duration_nights || 1}
+              />
+            </div>
+          </ErrorBoundary>
+          
+          {/* Transport Section */}
+          <ErrorBoundary>
+            <div data-section="transport">
+              <TransportBookingSection
+                transports={Array.isArray(quote.transports) ? quote.transports : []}
+                onTransportsChange={handleTransportsChange}
+              />
+            </div>
+          </ErrorBoundary>
+          
+          {/* Transfer Section */}
+          <ErrorBoundary>
+            <div data-section="transfer">
+              <TransferSection 
+                transfers={Array.isArray(quote.transfers) ? quote.transfers : []} 
+                onTransfersChange={handleTransfersChange}
+              />
+            </div>
+          </ErrorBoundary>
+          
+          {/* Activities Section */}
+          <ErrorBoundary>
+            <div data-section="excursion">
+              <ExcursionSection
+                excursions={Array.isArray(quote.activities) ? quote.activities : []}
+                onExcursionsChange={handleActivitiesChange}
+              />
+            </div>
+          </ErrorBoundary>
+          
+          {/* Multi-Hotel Comparison Summary */}
+          <ErrorBoundary>
+            <div data-section="summary">
+              <MultiHotelQuoteComparison
+                quote={quote}
+                hotels={selectedHotelObjects}
+                viewMode="agent"
+                markupPercentage={quote.markup_value || 25}
+              />
+            </div>
+          </ErrorBoundary>
 
-        {/* Action Buttons */}
-        <div className="flex justify-between pt-4">
-          <Button variant="outline" onClick={() => navigate("/quotes")}>
-            Cancel
-          </Button>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {saving ? "Saving..." : "Save Quote"}
+          {/* Action Buttons */}
+          <div className="flex justify-between pt-4">
+            <Button variant="outline" onClick={() => navigate("/quotes")}>
+              Cancel
             </Button>
-            <Button
-              onClick={previewQuote}
-              variant="outline"
-              className="border-green-600 text-green-600 hover:bg-green-50"
-            >
-              Preview
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {saving ? "Saving..." : "Save Quote"}
+              </Button>
+              <Button
+                onClick={previewQuote}
+                variant="outline"
+                className="border-green-600 text-green-600 hover:bg-green-50"
+              >
+                Preview
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </CurrencyProvider>
+      </CurrencyProvider>
+    </ErrorBoundary>
   );
 };
 

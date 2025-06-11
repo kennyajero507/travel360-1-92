@@ -26,22 +26,29 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
   const { formatAmount } = useCurrency();
 
   const hotelComparisons = useMemo(() => {
-    if (!hotels || hotels.length === 0 || !quote) {
+    // Early return with safe defaults if no data
+    if (!hotels || !Array.isArray(hotels) || hotels.length === 0 || !quote) {
       return [];
     }
 
     return hotels.map(hotel => {
-      // Calculate costs for this hotel
-      const hotelRoomArrangements = quote.room_arrangements?.filter(arr => arr.hotel_id === hotel.id) || [];
-      const hotelTransfers = quote.transfers?.filter(t => t.hotel_id === hotel.id) || [];
-      const hotelActivities = quote.activities?.filter(a => a.hotel_id === hotel.id) || [];
+      // Safely access quote arrays with fallbacks
+      const hotelRoomArrangements = Array.isArray(quote.room_arrangements) 
+        ? quote.room_arrangements.filter(arr => arr.hotel_id === hotel.id) 
+        : [];
+      const hotelTransfers = Array.isArray(quote.transfers) 
+        ? quote.transfers.filter(t => t.hotel_id === hotel.id) 
+        : [];
+      const hotelActivities = Array.isArray(quote.activities) 
+        ? quote.activities.filter(a => a.hotel_id === hotel.id) 
+        : [];
       
       const accommodationCost = hotelRoomArrangements.reduce((sum, arr) => sum + (arr.total || 0), 0);
       const transfersCost = hotelTransfers.reduce((sum, transfer) => sum + (transfer.total || 0), 0);
       const activitiesCost = hotelActivities.reduce((sum, activity) => sum + (activity.total_cost || 0), 0);
       
       const basePrice = accommodationCost + transfersCost + activitiesCost;
-      const markupCalculation = markupService.calculateWithMarkup(basePrice, markupPercentage);
+      const markupCalculation = markupService.calculateWithMarkup(basePrice, markupPercentage || 0);
       
       const totalTravelers = (quote.adults || 0) + (quote.children_with_bed || 0) + (quote.children_no_bed || 0) + (quote.infants || 0);
       const pricePerPerson = totalTravelers > 0 ? markupCalculation.finalPrice / totalTravelers : markupCalculation.finalPrice;
@@ -63,7 +70,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
   }, [quote, hotels, markupPercentage]);
 
   const cheapestOption = useMemo(() => {
-    if (hotelComparisons.length === 0) {
+    if (!Array.isArray(hotelComparisons) || hotelComparisons.length === 0) {
       return null;
     }
     
@@ -73,7 +80,8 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
   }, [hotelComparisons]);
 
   const savings = useMemo(() => {
-    if (hotelComparisons.length < 2) return null;
+    if (!Array.isArray(hotelComparisons) || hotelComparisons.length < 2) return null;
+    
     const [option1, option2] = hotelComparisons;
     const difference = Math.abs(option1.finalPrice - option2.finalPrice);
     const maxPrice = Math.max(option1.finalPrice, option2.finalPrice);
@@ -90,7 +98,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
     };
   }, [hotelComparisons]);
 
-  if (hotelComparisons.length === 0) {
+  if (!Array.isArray(hotelComparisons) || hotelComparisons.length === 0) {
     return (
       <Card>
         <CardContent className="text-center py-8">
@@ -194,28 +202,33 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
                   Room Arrangements
                 </h4>
                 <div className="space-y-1">
-                  {comparison.roomArrangements.map((room, roomIndex) => (
-                    <div key={roomIndex} className="text-sm bg-gray-50 p-2 rounded">
-                      <div className="flex justify-between">
-                        <span>{room.num_rooms}x {room.room_type}</span>
-                        {viewMode === 'agent' && (
-                          <span className="font-medium">{formatAmount(room.total || 0)}</span>
-                        )}
+                  {Array.isArray(comparison.roomArrangements) && comparison.roomArrangements.length > 0 ? (
+                    comparison.roomArrangements.map((room, roomIndex) => (
+                      <div key={roomIndex} className="text-sm bg-gray-50 p-2 rounded">
+                        <div className="flex justify-between">
+                          <span>{room.num_rooms}x {room.room_type}</span>
+                          {viewMode === 'agent' && (
+                            <span className="font-medium">{formatAmount(room.total || 0)}</span>
+                          )}
+                        </div>
+                        <div className="text-gray-600">
+                          {room.adults} Adults, {(room.children_with_bed || 0) + (room.children_no_bed || 0)} Children
+                        </div>
                       </div>
-                      <div className="text-gray-600">
-                        {room.adults} Adults, {(room.children_with_bed || 0) + (room.children_no_bed || 0)} Children
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500 p-2">No room arrangements configured</div>
+                  )}
                 </div>
               </div>
 
               {/* Additional Services */}
-              {(comparison.transfers.length > 0 || comparison.activities.length > 0) && (
+              {(Array.isArray(comparison.transfers) && comparison.transfers.length > 0) || 
+               (Array.isArray(comparison.activities) && comparison.activities.length > 0) ? (
                 <div>
                   <h4 className="font-medium text-gray-800 mb-2">Additional Services</h4>
                   <div className="space-y-1 text-sm">
-                    {comparison.transfers.map((transfer, idx) => (
+                    {Array.isArray(comparison.transfers) && comparison.transfers.map((transfer, idx) => (
                       <div key={idx} className="flex justify-between bg-blue-50 p-2 rounded">
                         <span>{transfer.type} ({transfer.from} → {transfer.to})</span>
                         {viewMode === 'agent' && (
@@ -223,7 +236,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
                         )}
                       </div>
                     ))}
-                    {comparison.activities.map((activity, idx) => (
+                    {Array.isArray(comparison.activities) && comparison.activities.map((activity, idx) => (
                       <div key={idx} className="flex justify-between bg-purple-50 p-2 rounded">
                         <span>{activity.name}</span>
                         {viewMode === 'agent' && (
@@ -233,7 +246,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
                     ))}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Pricing */}
               <div className="border-t pt-4">
@@ -290,7 +303,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
       </div>
 
       {/* Agent Comparison Tools */}
-      {viewMode === 'agent' && hotelComparisons.length > 1 && (
+      {viewMode === 'agent' && Array.isArray(hotelComparisons) && hotelComparisons.length > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -307,7 +320,7 @@ const MultiHotelQuoteComparison: React.FC<MultiHotelQuoteComparisonProps> = ({
               <div className="text-center p-4 bg-orange-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Total Markup Amount</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {formatAmount(hotelComparisons.reduce((sum, comp) => sum + comp.markupAmount, 0) / hotelComparisons.length)}
+                  {formatAmount(hotelComparisons.reduce((sum, comp) => sum + (comp.markupAmount || 0), 0) / hotelComparisons.length)}
                 </p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
