@@ -184,7 +184,9 @@ const BookingDetails = () => {
                       <div key={index} className="p-3 border rounded-lg">
                         <p className="font-medium">{room.room_type}</p>
                         <p className="text-sm text-gray-600">
-                          {room.adults} Adults, {room.children} Children
+                          {room.adults} Adults
+                          {room.children_with_bed && `, ${room.children_with_bed} Children with bed`}
+                          {room.children_no_bed && `, ${room.children_no_bed} Children without bed`}
                         </p>
                       </div>
                     ))}
@@ -203,8 +205,8 @@ const BookingDetails = () => {
                   <div className="space-y-3">
                     {booking.transport.map((transport, index) => (
                       <div key={index} className="p-3 border rounded-lg">
-                        <p className="font-medium">{transport.mode}</p>
-                        <p className="text-sm text-gray-600">{transport.details}</p>
+                        <p className="font-medium">{transport.transport_mode || 'Transport'}</p>
+                        <p className="text-sm text-gray-600">{transport.travel_route || 'Route details'}</p>
                       </div>
                     ))}
                   </div>

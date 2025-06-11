@@ -25,6 +25,12 @@ import EditQuote from "./pages/EditQuote";
 import Inquiries from "./pages/Inquiries";
 import CreateInquiry from "./pages/CreateInquiry";
 import EditInquiry from "./pages/EditInquiry";
+import Bookings from "./pages/Bookings";
+import BookingDetails from "./pages/BookingDetails";
+import Vouchers from "./pages/Vouchers";
+import Clients from "./pages/Clients";
+import Reports from "./pages/Reports";
+import TeamManagementPage from "./pages/TeamManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +88,22 @@ function App() {
                       <Route path="inquiries" element={<Inquiries />} />
                       <Route path="inquiries/create" element={<CreateInquiry />} />
                       <Route path="inquiries/:inquiryId" element={<EditInquiry />} />
+
+                      {/* Bookings */}
+                      <Route path="bookings" element={<Bookings />} />
+                      <Route path="bookings/:id" element={<BookingDetails />} />
+
+                      {/* Vouchers */}
+                      <Route path="vouchers" element={<Vouchers />} />
+
+                      {/* Clients */}
+                      <Route path="clients" element={<Clients />} />
+
+                      {/* Reports */}
+                      <Route path="reports" element={<Reports />} />
+
+                      {/* Team Management */}
+                      <Route path="team" element={<TeamManagementPage />} />
 
                       {/* Settings */}
                       <Route path="settings" element={<Settings />} />

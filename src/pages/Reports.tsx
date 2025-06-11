@@ -1,384 +1,215 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { DatePickerWithRange } from "../components/ui/date-picker";
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  FileText, 
-  DollarSign,
-  MessageSquare,
-  Calendar,
-  Target,
-  Download
-} from "lucide-react";
+import { DatePicker } from "../components/ui/date-picker";
+import { BarChart3, TrendingUp, DollarSign, Users, Download, Calendar } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { getAllInquiries } from "../services/inquiryService";
-import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns";
-import { toast } from "sonner";
-import { InquiryData } from "../types/inquiry.types";
 
-interface AgentPerformance {
-  total: number;
-  quoted: number;
-  closed: number;
-}
+// Mock data - replace with real API calls
+const mockBookingData = [
+  { month: 'Jan', bookings: 12, revenue: 24000 },
+  { month: 'Feb', bookings: 19, revenue: 38000 },
+  { month: 'Mar', bookings: 15, revenue: 30000 },
+  { month: 'Apr', bookings: 22, revenue: 44000 },
+  { month: 'May', bookings: 18, revenue: 36000 },
+  { month: 'Jun', bookings: 25, revenue: 50000 },
+];
 
-interface AgentStats extends AgentPerformance {
-  agent: string;
-  conversionRate: string;
-}
+const mockStatusData = [
+  { name: 'Confirmed', value: 45, color: '#10B981' },
+  { name: 'Pending', value: 25, color: '#F59E0B' },
+  { name: 'Completed', value: 20, color: '#3B82F6' },
+  { name: 'Cancelled', value: 10, color: '#EF4444' },
+];
 
 const Reports = () => {
-  const [inquiries, setInquiries] = useState<InquiryData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
-    from: startOfMonth(subMonths(new Date(), 2)),
-    to: endOfMonth(new Date())
-  });
-  const [selectedPeriod, setSelectedPeriod] = useState("3months");
+  const [dateRange, setDateRange] = useState<{ start?: Date; end?: Date }>({});
+  const [reportType, setReportType] = useState('overview');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllInquiries();
-        setInquiries(data || []);
-      } catch (error) {
-        console.error("Error loading reports data:", error);
-        toast.error("Failed to load reports data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Filter inquiries by date range
-  const filteredInquiries = inquiries.filter(inquiry => {
-    if (!inquiry.created_at) return false;
-    const inquiryDate = parseISO(inquiry.created_at);
-    return inquiryDate >= dateRange.from && inquiryDate <= dateRange.to;
-  });
-
-  // Calculate metrics
-  const totalInquiries = filteredInquiries.length;
-  const assignedInquiries = filteredInquiries.filter(inq => inq.status === 'Assigned').length;
-  const quotedInquiries = filteredInquiries.filter(inq => inq.status === 'Quoted').length;
-  const closedInquiries = filteredInquiries.filter(inq => inq.status === 'Closed').length;
-  const conversionRate = totalInquiries > 0 ? ((quotedInquiries + closedInquiries) / totalInquiries * 100).toFixed(1) : '0';
-
-  // Monthly trend data
-  const monthlyData = [];
-  for (let i = 2; i >= 0; i--) {
-    const monthStart = startOfMonth(subMonths(new Date(), i));
-    const monthEnd = endOfMonth(subMonths(new Date(), i));
-    const monthInquiries = inquiries.filter(inq => {
-      if (!inq.created_at) return false;
-      const inquiryDate = parseISO(inq.created_at);
-      return inquiryDate >= monthStart && inquiryDate <= monthEnd;
-    });
-    
-    monthlyData.push({
-      month: format(monthStart, 'MMM yyyy'),
-      inquiries: monthInquiries.length,
-      quotes: monthInquiries.filter(inq => inq.status === 'Quoted').length,
-      bookings: monthInquiries.filter(inq => inq.status === 'Closed').length
-    });
-  }
-
-  // Tour type distribution
-  const tourTypeData = [
-    {
-      name: 'Domestic',
-      value: filteredInquiries.filter(inq => inq.tour_type === 'domestic').length,
-      color: '#0088FE'
-    },
-    {
-      name: 'International',
-      value: filteredInquiries.filter(inq => inq.tour_type === 'international').length,
-      color: '#00C49F'
-    }
-  ];
-
-  // Status distribution
-  const statusData = [
-    { name: 'New', value: filteredInquiries.filter(inq => inq.status === 'New').length, color: '#8884d8' },
-    { name: 'Assigned', value: assignedInquiries, color: '#82ca9d' },
-    { name: 'Quoted', value: quotedInquiries, color: '#ffc658' },
-    { name: 'Closed', value: closedInquiries, color: '#ff7300' }
-  ];
-
-  // Top destinations
-  const destinationCounts: Record<string, number> = filteredInquiries.reduce((acc, inq) => {
-    acc[inq.destination] = (acc[inq.destination] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const topDestinations = Object.entries(destinationCounts)
-    .sort(([,a], [,b]) => (b as number) - (a as number))
-    .slice(0, 5)
-    .map(([destination, count]) => ({ destination, count: count as number }));
-
-  // Agent performance
-  const agentPerformance = filteredInquiries
-    .filter(inq => inq.assigned_agent_name)
-    .reduce((acc, inq) => {
-      const agent = inq.assigned_agent_name!;
-      if (!acc[agent]) {
-        acc[agent] = { total: 0, quoted: 0, closed: 0 };
-      }
-      acc[agent].total++;
-      if (inq.status === 'Quoted') acc[agent].quoted++;
-      if (inq.status === 'Closed') acc[agent].closed++;
-      return acc;
-    }, {} as Record<string, AgentPerformance>);
-
-  const agentStats: AgentStats[] = Object.entries(agentPerformance).map(([agent, stats]) => ({
-    agent,
-    ...stats,
-    conversionRate: stats.total > 0 ? ((stats.quoted + stats.closed) / stats.total * 100).toFixed(1) : '0'
-  }));
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading reports...</p>
-        </div>
-      </div>
-    );
-  }
+  const exportReport = (format: string) => {
+    // Placeholder for export functionality
+    console.log(`Exporting ${reportType} report as ${format}`);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-teal-600">Reports & Analytics</h1>
-          <p className="text-gray-500 mt-2">Comprehensive insights into your business performance</p>
+          <h1 className="text-2xl font-bold tracking-tight">Reports & Analytics</h1>
+          <p className="text-gray-500">Track your business performance and key metrics</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+        
+        <div className="flex gap-2">
+          <Select value={reportType} onValueChange={setReportType}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1month">Last Month</SelectItem>
-              <SelectItem value="3months">Last 3 Months</SelectItem>
-              <SelectItem value="6months">Last 6 Months</SelectItem>
-              <SelectItem value="1year">Last Year</SelectItem>
+              <SelectItem value="overview">Overview</SelectItem>
+              <SelectItem value="bookings">Bookings</SelectItem>
+              <SelectItem value="revenue">Revenue</SelectItem>
+              <SelectItem value="clients">Clients</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm">
+          
+          <Button variant="outline" onClick={() => exportReport('pdf')}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Export PDF
           </Button>
         </div>
       </div>
+
+      {/* Date Range Filter */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <Calendar className="h-5 w-5 text-gray-400" />
+            <span className="text-sm font-medium">Date Range:</span>
+            <DatePicker
+              date={dateRange.start}
+              onSelect={(date) => setDateRange(prev => ({ ...prev, start: date }))}
+              placeholder="Start Date"
+            />
+            <span className="text-gray-400">to</span>
+            <DatePicker
+              date={dateRange.end}
+              onSelect={(date) => setDateRange(prev => ({ ...prev, end: date }))}
+              placeholder="End Date"
+            />
+            <Button variant="outline" size="sm">
+              Apply Filter
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Inquiries</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalInquiries}</div>
+            <div className="text-2xl font-bold">111</div>
             <p className="text-xs text-muted-foreground">
-              +12% from last period
+              +12% from last month
             </p>
           </CardContent>
         </Card>
-
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">$222,000</div>
+            <p className="text-xs text-muted-foreground">
+              +8% from last month
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">89</div>
+            <p className="text-xs text-muted-foreground">
+              +5% from last month
+            </p>
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{conversionRate}%</div>
-            <p className="text-xs text-muted-foreground">
-              Quotes + Bookings
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Quotes</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{quotedInquiries}</div>
-            <p className="text-xs text-muted-foreground">
-              Pending decisions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Closed Deals</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{closedInquiries}</div>
+            <div className="text-2xl font-bold">78%</div>
             <p className="text-xs text-muted-foreground">
-              Successful bookings
+              +3% from last month
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts and Analytics */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      {/* Charts */}
+      <Tabs defaultValue="bookings" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="destinations">Destinations</TabsTrigger>
-          <TabsTrigger value="agents">Agent Performance</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
+          <TabsTrigger value="bookings">Booking Trends</TabsTrigger>
+          <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
+          <TabsTrigger value="status">Status Distribution</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Inquiry Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      dataKey="value"
-                      data={statusData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ name, value }) => `${name}: ${value}`}
-                    >
-                      {statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tour Type Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      dataKey="value"
-                      data={tourTypeData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ name, value }) => `${name}: ${value}`}
-                    >
-                      {tourTypeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="destinations" className="space-y-4">
+        
+        <TabsContent value="bookings">
           <Card>
             <CardHeader>
-              <CardTitle>Top Destinations</CardTitle>
+              <CardTitle>Monthly Booking Trends</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {topDestinations.map((dest, index) => (
-                  <div key={dest.destination} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline">{index + 1}</Badge>
-                      <span className="font-medium">{dest.destination}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">{dest.count} inquiries</span>
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-teal-600 h-2 rounded-full" 
-                          style={{ width: `${totalInquiries > 0 ? (dest.count / totalInquiries) * 100 : 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="agents" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {agentStats.map((agent) => (
-                  <div key={agent.agent} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">{agent.agent}</h4>
-                      <Badge variant="outline">{agent.conversionRate}% conversion</Badge>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Total: </span>
-                        <span className="font-medium">{agent.total}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Quoted: </span>
-                        <span className="font-medium">{agent.quoted}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Closed: </span>
-                        <span className="font-medium">{agent.closed}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="trends" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Monthly Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={monthlyData}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={mockBookingData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="inquiries" fill="#8884d8" name="Inquiries" />
-                  <Bar dataKey="quotes" fill="#82ca9d" name="Quotes" />
-                  <Bar dataKey="bookings" fill="#ffc658" name="Bookings" />
+                  <Bar dataKey="bookings" fill="#3B82F6" />
                 </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="revenue">
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Growth</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={mockBookingData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="status">
+          <Card>
+            <CardHeader>
+              <CardTitle>Booking Status Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={mockStatusData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {mockStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

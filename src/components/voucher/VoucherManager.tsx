@@ -59,13 +59,16 @@ const VoucherManager = ({ bookingId }: VoucherManagerProps) => {
     }
 
     try {
+      const voucherReference = `VOL-${Date.now()}`;
+      
       const { data, error } = await supabase
         .from('travel_vouchers')
-        .insert([{
+        .insert({
           booking_id: bookingId,
           issued_by: newVoucher.issued_by,
-          notes: newVoucher.notes
-        }])
+          notes: newVoucher.notes,
+          voucher_reference: voucherReference
+        })
         .select()
         .single();
 

@@ -50,7 +50,8 @@ const NotificationCenter = ({ bookingId }: NotificationCenterProps) => {
     try {
       const notification = {
         ...newNotification,
-        booking_id: bookingId
+        booking_id: bookingId,
+        status: 'pending' as const
       };
 
       const success = await enhancedBookingService.sendNotification(notification);
