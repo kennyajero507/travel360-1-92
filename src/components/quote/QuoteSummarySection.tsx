@@ -50,8 +50,30 @@ const QuoteSummarySection: React.FC<QuoteSummarySectionProps> = ({
     );
   }
 
-  // Type guard to ensure summary has the correct structure
-  const summaryData = summary as QuoteSummaryData;
+  // Type guard and validation for summary data
+  const isValidSummaryData = (data: any): data is QuoteSummaryData => {
+    return data && 
+           typeof data === 'object' && 
+           typeof data.number_of_adults === 'number' &&
+           typeof data.accommodation_cost === 'number' &&
+           typeof data.total_cost === 'number';
+  };
+
+  if (!isValidSummaryData(summary)) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-blue-600" />
+            Quote Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500">Invalid summary data format</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -73,9 +95,9 @@ const QuoteSummarySection: React.FC<QuoteSummarySectionProps> = ({
         <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
           <Users className="h-5 w-5 text-gray-600" />
           <div className="flex gap-4 text-sm">
-            <Badge variant="outline">{summaryData.number_of_adults} Adults</Badge>
-            <Badge variant="outline">{summaryData.number_of_children} Children</Badge>
-            <Badge variant="outline">{summaryData.number_of_infants} Infants</Badge>
+            <Badge variant="outline">{summary.number_of_adults} Adults</Badge>
+            <Badge variant="outline">{summary.number_of_children} Children</Badge>
+            <Badge variant="outline">{summary.number_of_infants} Infants</Badge>
           </div>
         </div>
 
@@ -84,36 +106,36 @@ const QuoteSummarySection: React.FC<QuoteSummarySectionProps> = ({
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>🏨 Accommodation:</span>
-              <span className="font-medium">{formatCurrency(summaryData.accommodation_cost)}</span>
+              <span className="font-medium">{formatCurrency(summary.accommodation_cost)}</span>
             </div>
             <div className="flex justify-between">
               <span>🚗 Transport:</span>
-              <span className="font-medium">{formatCurrency(summaryData.transport_cost)}</span>
+              <span className="font-medium">{formatCurrency(summary.transport_cost)}</span>
             </div>
             <div className="flex justify-between">
               <span>🚐 Transfers:</span>
-              <span className="font-medium">{formatCurrency(summaryData.transfer_cost)}</span>
+              <span className="font-medium">{formatCurrency(summary.transfer_cost)}</span>
             </div>
             <div className="flex justify-between">
               <span>🏞️ Excursions:</span>
-              <span className="font-medium">{formatCurrency(summaryData.excursion_cost)}</span>
+              <span className="font-medium">{formatCurrency(summary.excursion_cost)}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between border-t pt-2">
               <span className="font-medium">Net Cost:</span>
-              <span className="font-medium">{formatCurrency(summaryData.net_cost)}</span>
+              <span className="font-medium">{formatCurrency(summary.net_cost)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Markup ({summaryData.markup_percentage}%):</span>
+              <span>Markup ({summary.markup_percentage}%):</span>
               <span className="font-medium text-green-600">
-                +{formatCurrency(summaryData.markup_cost)}
+                +{formatCurrency(summary.markup_cost)}
               </span>
             </div>
             <div className="flex justify-between border-t pt-2 text-lg font-bold">
               <span>Total Cost:</span>
-              <span className="text-blue-600">{formatCurrency(summaryData.total_cost)}</span>
+              <span className="text-blue-600">{formatCurrency(summary.total_cost)}</span>
             </div>
           </div>
         </div>
@@ -128,14 +150,14 @@ const QuoteSummarySection: React.FC<QuoteSummarySectionProps> = ({
         )}
 
         {/* Per Person Cost */}
-        {summaryData.number_of_adults > 0 && (
+        {summary.number_of_adults > 0 && (
           <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-blue-600" />
               <span className="text-blue-800 font-medium">Cost per Adult:</span>
             </div>
             <span className="text-blue-800 font-bold">
-              {formatCurrency(summaryData.total_cost / summaryData.number_of_adults)}
+              {formatCurrency(summary.total_cost / summary.number_of_adults)}
             </span>
           </div>
         )}

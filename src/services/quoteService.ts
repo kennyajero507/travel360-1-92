@@ -12,8 +12,8 @@ const transformQuoteData = (dbRow: any): QuoteData => {
     transports: parseJsonField(dbRow.transports, []),
     transfers: parseJsonField(dbRow.transfers, []),
     sectionMarkups: parseJsonField(dbRow.sectionMarkups, {}),
-    // Include the summary_data from normalized tables
-    summary_data: dbRow.summary_data || {}
+    // Parse summary_data as JSON if it exists
+    summary_data: parseJsonField(dbRow.summary_data, {})
   };
 };
 
@@ -89,7 +89,7 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
     }
 
     // Prepare data for database with JSON serialization
-    const dbQuoteData = {
+    const dbQuoteData: any = {
       ...quote,
       created_by: quote.created_by || user.id,
       updated_at: new Date().toISOString(),
@@ -97,7 +97,9 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
       activities: JSON.stringify(quote.activities || []),
       transports: JSON.stringify(quote.transports || []),
       transfers: JSON.stringify(quote.transfers || []),
-      sectionMarkups: JSON.stringify(quote.sectionMarkups || {})
+      sectionMarkups: JSON.stringify(quote.sectionMarkups || {}),
+      // Convert summary_data to JSON for database storage
+      summary_data: quote.summary_data ? JSON.stringify(quote.summary_data) : null
     };
 
     let data, error;
@@ -180,8 +182,11 @@ export const generateClientPreview = async (quoteId: string) => {
       }
     }
 
-    // Use summary data from normalized tables if available
+    // Use summary data from quote if available
     const summaryData = quote.summary_data || {};
+    const totalCost = typeof summaryData === 'object' && summaryData !== null && 'total_cost' in summaryData 
+      ? (summaryData as any).total_cost 
+      : 0;
 
     // Transform quote data into client preview format
     const clientPreview = {
@@ -210,10 +215,10 @@ export const generateClientPreview = async (quoteId: string) => {
         name: hotel.name,
         category: hotel.category,
         pricePerNight: 0, // Will be calculated from room arrangements
-        totalPrice: summaryData.total_cost || 0,
+        totalPrice: totalCost,
         currencyCode: quote.currency_code || 'USD'
       })),
-      totalCost: summaryData.total_cost || 0,
+      totalCost: totalCost,
       currency: quote.currency_code || 'USD',
       summaryData // Include the calculated summary
     };
