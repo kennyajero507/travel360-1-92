@@ -92,41 +92,27 @@ export class UnifiedQuoteService {
     }
   }
 
-  // Quote package operations for multi-quote client selection
+  // Quote package operations for multi-quote client selection (temporary implementation)
   async createQuotePackage(quotes: QuoteData[], packageName: string): Promise<string> {
     try {
-      console.log('[UnifiedQuoteService] Creating quote package');
+      console.log('[UnifiedQuoteService] Creating quote package (temporary implementation)');
       
-      const packageData = {
-        package_name: packageName,
-        client_name: quotes[0]?.client || '',
-        status: 'draft',
-        created_at: new Date().toISOString()
-      };
-
-      const { data: packageResult, error: packageError } = await supabase
-        .from('quote_packages')
-        .insert([packageData])
-        .select()
-        .single();
-
-      if (packageError) throw packageError;
-
-      // Link quotes to package
-      const quoteLinks = quotes.map(quote => ({
-        package_id: packageResult.id,
-        quote_id: quote.id,
-        is_selected: false
+      // For now, we'll create a simple grouping in the quotes table
+      // This will be replaced with proper quote_packages table later
+      const packageId = crypto.randomUUID();
+      
+      // Update quotes to mark them as part of a package
+      const updates = quotes.map(quote => ({
+        ...quote,
+        notes: `${quote.notes || ''}\nPackage: ${packageName} (ID: ${packageId})`.trim()
       }));
 
-      const { error: linkError } = await supabase
-        .from('quote_package_items')
-        .insert(quoteLinks);
+      for (const quote of updates) {
+        await this.saveQuote(quote);
+      }
 
-      if (linkError) throw linkError;
-
-      toast.success('Quote package created successfully');
-      return packageResult.id;
+      toast.success('Quote package created successfully (using temporary implementation)');
+      return packageId;
     } catch (error) {
       console.error('[UnifiedQuoteService] Error creating quote package:', error);
       toast.error('Failed to create quote package');
@@ -136,27 +122,21 @@ export class UnifiedQuoteService {
 
   async getQuotePackage(packageId: string) {
     try {
-      const { data, error } = await supabase
-        .from('quote_packages')
-        .select(`
-          *,
-          quote_package_items (
-            quote_id,
-            is_selected,
-            quotes (*)
-          )
-        `)
-        .eq('id', packageId)
-        .single();
+      // Temporary implementation - search for quotes with package ID in notes
+      const { data: quotes, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .ilike('notes', `%${packageId}%`);
 
       if (error) throw error;
       
       return {
-        ...data,
-        quotes: data.quote_package_items.map((item: any) => ({
-          ...this.transformQuoteData(item.quotes),
-          isSelected: item.is_selected
-        }))
+        id: packageId,
+        package_name: 'Quote Package',
+        quotes: quotes?.map(quote => ({
+          ...this.transformQuoteData(quote),
+          isSelected: false
+        })) || []
       };
     } catch (error) {
       console.error('[UnifiedQuoteService] Error fetching quote package:', error);
@@ -172,7 +152,12 @@ export class UnifiedQuoteService {
 
       if (error) throw error;
       
-      return data as QuoteSummaryData;
+      // Type guard to ensure we get proper data
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return data as QuoteSummaryData;
+      }
+      
+      throw new Error('Invalid summary data returned from database');
     } catch (error) {
       console.error('[UnifiedQuoteService] Error calculating summary:', error);
       throw error;

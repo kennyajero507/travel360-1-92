@@ -4,10 +4,11 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { Package, Plus, Check } from 'lucide-react';
+import { Package, Plus, Check, AlertCircle } from 'lucide-react';
 import { QuoteData } from '../../types/quote.types';
 import { unifiedQuoteService } from '../../services/unifiedQuoteService';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '../ui/alert';
 
 interface QuotePackageManagerProps {
   quotes: QuoteData[];
@@ -61,6 +62,13 @@ const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
     }
   };
 
+  const getTotalCost = (quote: QuoteData) => {
+    if (quote.summary_data && typeof quote.summary_data === 'object') {
+      return (quote.summary_data as any).total_cost || 0;
+    }
+    return 0;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -70,6 +78,13 @@ const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            This is a temporary implementation. Full quote package functionality will be available after database schema updates.
+          </AlertDescription>
+        </Alert>
+
         <div>
           <label className="block text-sm font-medium mb-2">Package Name</label>
           <Input
@@ -102,9 +117,9 @@ const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
                     </div>
                     <div className="flex gap-2 mt-1">
                       <Badge variant="outline">{quote.status}</Badge>
-                      {quote.summary_data && (
+                      {getTotalCost(quote) > 0 && (
                         <Badge variant="secondary">
-                          ${(quote.summary_data as any).total_cost || 0}
+                          ${getTotalCost(quote).toLocaleString()}
                         </Badge>
                       )}
                     </div>
