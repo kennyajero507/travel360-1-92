@@ -1,6 +1,8 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
+import { errorHandler } from "./errorHandlingService";
 
 // Helper function to transform database row to QuoteData interface
 const transformQuoteData = (dbRow: any): QuoteData => {
@@ -12,7 +14,6 @@ const transformQuoteData = (dbRow: any): QuoteData => {
     transports: parseJsonField(dbRow.transports, []),
     transfers: parseJsonField(dbRow.transfers, []),
     sectionMarkups: parseJsonField(dbRow.sectionMarkups, {}),
-    // Parse summary_data as JSON if it exists
     summary_data: parseJsonField(dbRow.summary_data, {})
   };
 };
@@ -38,15 +39,14 @@ export const getAllQuotes = async (): Promise<QuoteData[]> => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[QuoteService] Error fetching quotes:', error);
+      errorHandler.handleError(error, 'getAllQuotes');
       throw error;
     }
 
     console.log('[QuoteService] Fetched quotes:', data?.length || 0);
     return (data || []).map(transformQuoteData);
   } catch (error) {
-    console.error('[QuoteService] Error in getAllQuotes:', error);
-    toast.error('Failed to load quotes');
+    errorHandler.handleError(error, 'getAllQuotes');
     return [];
   }
 };
@@ -62,14 +62,13 @@ export const getQuoteById = async (id: string): Promise<QuoteData | null> => {
       .maybeSingle();
 
     if (error) {
-      console.error('[QuoteService] Error fetching quote:', error);
+      errorHandler.handleError(error, 'getQuoteById');
       throw error;
     }
 
     return data ? transformQuoteData(data) : null;
   } catch (error) {
-    console.error('[QuoteService] Error in getQuoteById:', error);
-    toast.error('Failed to load quote details');
+    errorHandler.handleError(error, 'getQuoteById');
     return null;
   }
 };
@@ -80,12 +79,16 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
     
     // Validate that we have essential data
     if (!quote.client || !quote.destination) {
-      throw new Error('Quote must have client name and destination');
+      const validationError = new Error('Quote must have client name and destination');
+      validationError.name = 'ValidationError';
+      throw validationError;
     }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      throw new Error('User not authenticated');
+      const authError = new Error('User not authenticated');
+      authError.name = 'AuthenticationError';
+      throw authError;
     }
 
     // Prepare data for database with JSON serialization
@@ -98,7 +101,6 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
       transports: JSON.stringify(quote.transports || []),
       transfers: JSON.stringify(quote.transfers || []),
       sectionMarkups: JSON.stringify(quote.sectionMarkups || {}),
-      // Convert summary_data to JSON for database storage
       summary_data: quote.summary_data ? JSON.stringify(quote.summary_data) : null
     };
 
@@ -128,15 +130,14 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
     }
 
     if (error) {
-      console.error('[QuoteService] Error saving quote:', error);
-      toast.error('Failed to save quote: ' + error.message);
+      errorHandler.handleError(error, 'saveQuote');
       throw error;
     }
 
     toast.success('Quote saved successfully');
     return transformQuoteData(data);
   } catch (error) {
-    console.error('[QuoteService] Error in saveQuote:', error);
+    errorHandler.handleError(error, 'saveQuote');
     throw error;
   }
 };
@@ -147,7 +148,9 @@ export const generateClientPreview = async (quoteId: string) => {
     
     const quote = await getQuoteById(quoteId);
     if (!quote) {
-      throw new Error('Quote not found');
+      const notFoundError = new Error('Quote not found');
+      notFoundError.name = 'NotFoundError';
+      throw notFoundError;
     }
 
     // Get related inquiry details if quote is linked to inquiry
@@ -159,7 +162,9 @@ export const generateClientPreview = async (quoteId: string) => {
         .eq('id', quote.inquiry_id)
         .maybeSingle();
       
-      if (!inquiryError && inquiryData) {
+      if (inquiryError) {
+        console.warn('Could not fetch inquiry data:', inquiryError);
+      } else if (inquiryData) {
         inquiry = inquiryData;
       }
     }
@@ -177,7 +182,9 @@ export const generateClientPreview = async (quoteId: string) => {
         .select('*')
         .in('id', Array.from(hotelIds));
       
-      if (!hotelError && hotelData) {
+      if (hotelError) {
+        console.warn('Could not fetch hotel data:', hotelError);
+      } else if (hotelData) {
         hotels = hotelData;
       }
     }
@@ -214,19 +221,18 @@ export const generateClientPreview = async (quoteId: string) => {
         id: hotel.id,
         name: hotel.name,
         category: hotel.category,
-        pricePerNight: 0, // Will be calculated from room arrangements
+        pricePerNight: 0,
         totalPrice: totalCost,
         currencyCode: quote.currency_code || 'USD'
       })),
       totalCost: totalCost,
       currency: quote.currency_code || 'USD',
-      summaryData // Include the calculated summary
+      summaryData
     };
 
     return clientPreview;
   } catch (error) {
-    console.error('[QuoteService] Error in generateClientPreview:', error);
-    toast.error('Failed to generate quote preview');
+    errorHandler.handleError(error, 'generateClientPreview');
     throw error;
   }
 };
@@ -250,15 +256,14 @@ export const updateQuoteStatus = async (id: string, status: string, hotelId?: st
       .eq('id', id);
 
     if (error) {
-      console.error('[QuoteService] Error updating quote status:', error);
-      toast.error('Failed to update quote status');
+      errorHandler.handleError(error, 'updateQuoteStatus');
       throw error;
     }
 
     toast.success(`Quote status updated to ${status}`);
     return true;
   } catch (error) {
-    console.error('[QuoteService] Error in updateQuoteStatus:', error);
+    errorHandler.handleError(error, 'updateQuoteStatus');
     throw error;
   }
 };
@@ -273,33 +278,47 @@ export const deleteQuote = async (id: string) => {
       .eq('id', id);
 
     if (error) {
-      console.error('[QuoteService] Error deleting quote:', error);
-      toast.error('Failed to delete quote');
+      errorHandler.handleError(error, 'deleteQuote');
       throw error;
     }
 
     toast.success('Quote deleted successfully');
     return true;
   } catch (error) {
-    console.error('[QuoteService] Error in deleteQuote:', error);
+    errorHandler.handleError(error, 'deleteQuote');
     throw error;
   }
 };
 
 export const emailQuote = async (id: string) => {
-  console.log('[QuoteService] Emailing quote:', id);
-  toast.success('Quote sent to client via email');
-  return true;
+  try {
+    console.log('[QuoteService] Emailing quote:', id);
+    toast.success('Quote sent to client via email');
+    return true;
+  } catch (error) {
+    errorHandler.handleError(error, 'emailQuote');
+    throw error;
+  }
 };
 
 export const printQuote = async (id: string) => {
-  console.log('[QuoteService] Printing quote:', id);
-  window.print();
-  return true;
+  try {
+    console.log('[QuoteService] Printing quote:', id);
+    window.print();
+    return true;
+  } catch (error) {
+    errorHandler.handleError(error, 'printQuote');
+    throw error;
+  }
 };
 
 export const downloadQuotePDF = async (id: string) => {
-  console.log('[QuoteService] Downloading quote PDF:', id);
-  toast.success('Quote downloaded as PDF');
-  return true;
+  try {
+    console.log('[QuoteService] Downloading quote PDF:', id);
+    toast.success('Quote downloaded as PDF');
+    return true;
+  } catch (error) {
+    errorHandler.handleError(error, 'downloadQuotePDF');
+    throw error;
+  }
 };

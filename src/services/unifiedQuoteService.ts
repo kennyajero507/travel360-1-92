@@ -3,6 +3,7 @@ import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
 import { QuoteSummaryData } from "../types/quoteSummary.types";
+import { errorHandler } from "./errorHandlingService";
 
 // Unified Quote Service that combines functionality from multiple services
 export class UnifiedQuoteService {
@@ -22,7 +23,7 @@ export class UnifiedQuoteService {
       return (data || []).map(this.transformQuoteData);
     } catch (error) {
       console.error('[UnifiedQuoteService] Error fetching quotes:', error);
-      toast.error('Failed to load quotes');
+      errorHandler.handleError(error, 'getAllQuotes');
       return [];
     }
   }
@@ -42,7 +43,7 @@ export class UnifiedQuoteService {
       return data ? this.transformQuoteData(data) : null;
     } catch (error) {
       console.error('[UnifiedQuoteService] Error fetching quote:', error);
-      toast.error('Failed to load quote details');
+      errorHandler.handleError(error, 'getQuoteById');
       return null;
     }
   }
@@ -52,7 +53,11 @@ export class UnifiedQuoteService {
       console.log('[UnifiedQuoteService] Saving quote:', quote.id);
       
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        const authError = new Error('User not authenticated');
+        authError.name = 'AuthenticationError';
+        throw authError;
+      }
 
       const dbQuoteData = this.prepareQuoteForDatabase(quote, user.id);
       
@@ -87,7 +92,7 @@ export class UnifiedQuoteService {
       return this.transformQuoteData(data);
     } catch (error) {
       console.error('[UnifiedQuoteService] Error saving quote:', error);
-      toast.error('Failed to save quote');
+      errorHandler.handleError(error, 'saveQuote');
       throw error;
     }
   }
@@ -98,7 +103,11 @@ export class UnifiedQuoteService {
       console.log('[UnifiedQuoteService] Creating quote package with proper database tables');
       
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        const authError = new Error('User not authenticated');
+        authError.name = 'AuthenticationError';
+        throw authError;
+      }
 
       // Create the quote package
       const { data: packageData, error: packageError } = await supabase
@@ -131,7 +140,7 @@ export class UnifiedQuoteService {
       return packageData.id;
     } catch (error) {
       console.error('[UnifiedQuoteService] Error creating quote package:', error);
-      toast.error('Failed to create quote package');
+      errorHandler.handleError(error, 'createQuotePackage');
       throw error;
     }
   }
@@ -173,6 +182,7 @@ export class UnifiedQuoteService {
       };
     } catch (error) {
       console.error('[UnifiedQuoteService] Error fetching quote package:', error);
+      errorHandler.handleError(error, 'getQuotePackage');
       throw error;
     }
   }
@@ -200,6 +210,7 @@ export class UnifiedQuoteService {
       throw new Error('Invalid summary data returned from database');
     } catch (error) {
       console.error('[UnifiedQuoteService] Error calculating summary:', error);
+      errorHandler.handleError(error, 'calculateQuoteSummary');
       throw error;
     }
   }

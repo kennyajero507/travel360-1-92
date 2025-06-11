@@ -24,6 +24,7 @@ import { Plus, MoreHorizontal, Eye, Edit, Trash2, Send, Download, FileText } fro
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
 import { useRole } from "../contexts/RoleContext";
+import { PageLoading, ErrorState, EmptyState } from "../components/common/LoadingStates";
 
 const Quotes = () => {
   const { role, permissions } = useRole();
@@ -55,7 +56,7 @@ const Quotes = () => {
         await deleteQuote(id);
         toast.success('Quote deleted successfully');
       } catch (error) {
-        toast.error('Failed to delete quote');
+        console.error('Delete quote error:', error);
       }
     }
   };
@@ -64,7 +65,7 @@ const Quotes = () => {
     try {
       await emailQuote(id);
     } catch (error) {
-      toast.error('Failed to send quote');
+      console.error('Email quote error:', error);
     }
   };
 
@@ -72,7 +73,7 @@ const Quotes = () => {
     try {
       await printQuote(id);
     } catch (error) {
-      toast.error('Failed to print quote');
+      console.error('Print quote error:', error);
     }
   };
 
@@ -80,7 +81,7 @@ const Quotes = () => {
     try {
       await downloadQuotePDF(id);
     } catch (error) {
-      toast.error('Failed to download PDF');
+      console.error('Download PDF error:', error);
     }
   };
 
@@ -115,23 +116,23 @@ const Quotes = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading quotes...</p>
-        </div>
-      </div>
-    );
+    return <PageLoading title="Loading quotes..." description="Fetching your quote data" />;
   }
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-red-600">Failed to load quotes. Please try again.</p>
-        <Button onClick={() => window.location.reload()} className="mt-4">
-          Retry
-        </Button>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-teal-600">Quotes</h1>
+            <p className="text-gray-500">Manage your quotes</p>
+          </div>
+        </div>
+        <ErrorState 
+          title="Failed to load quotes"
+          message="There was an error loading your quotes. Please try again."
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }
@@ -195,122 +196,120 @@ const Quotes = () => {
             </div>
           </div>
 
-          {/* Quotes Table */}
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quote ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Destination</TableHead>
-                  <TableHead>Travel Dates</TableHead>
-                  <TableHead>Travelers</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredQuotes.map((quote) => (
-                  <TableRow key={quote.id}>
-                    <TableCell className="font-medium">{quote.id}</TableCell>
-                    <TableCell>{quote.client}</TableCell>
-                    <TableCell>{quote.destination}</TableCell>
-                    <TableCell>{formatDateRange(quote.start_date, quote.end_date)}</TableCell>
-                    <TableCell>
-                      {quote.adults} Adults
-                      {quote.children_with_bed > 0 && `, ${quote.children_with_bed} Children`}
-                      {quote.infants > 0 && `, ${quote.infants} Infants`}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadgeColor(quote.status)}>
-                        {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'Unknown'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => navigate(`/quotes/${quote.id}`)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuItem
-                            onClick={() => navigate(`/quotes/${quote.id}/preview`)}
-                          >
-                            <FileText className="mr-2 h-4 w-4" />
-                            Preview
-                          </DropdownMenuItem>
-                          
-                          {permissions.canEditQuotes && (
-                            <DropdownMenuItem
-                              onClick={() => navigate(`/quotes/edit/${quote.id}`)}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit Quote
-                            </DropdownMenuItem>
-                          )}
-                          
-                          <DropdownMenuItem
-                            onClick={() => handleEmailQuote(quote.id)}
-                          >
-                            <Send className="mr-2 h-4 w-4" />
-                            Send to Client
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuItem
-                            onClick={() => handleDownloadPDF(quote.id)}
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            Download PDF
-                          </DropdownMenuItem>
-                          
-                          {permissions.canDeleteQuotes && (
-                            <DropdownMenuItem
-                              className="text-red-600"
-                              onClick={() => handleDeleteQuote(quote.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete Quote
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          {/* Quotes Table or Empty State */}
+          {filteredQuotes.length === 0 ? (
+            <EmptyState
+              title={search || filter !== "all" 
+                ? "No quotes match your search criteria" 
+                : "No quotes created yet"
+              }
+              description={search || filter !== "all" 
+                ? "Try adjusting your search or filter criteria"
+                : "Create your first quote to get started"
+              }
+              action={permissions.canCreateQuotes && (!search && filter === "all") ? {
+                label: "Create First Quote",
+                onClick: () => navigate('/quotes/create')
+              } : undefined}
+              icon={<FileText className="h-12 w-12 text-gray-400" />}
+            />
+          ) : (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Quote ID</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Travel Dates</TableHead>
+                    <TableHead>Travelers</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {filteredQuotes.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">
-                {search || filter !== "all" 
-                  ? "No quotes match your search criteria." 
-                  : "No quotes created yet."
-                }
-              </p>
-              {permissions.canCreateQuotes && (
-                <Button 
-                  onClick={() => navigate('/quotes/create')}
-                  className="mt-4 bg-teal-600 hover:bg-teal-700"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create First Quote
-                </Button>
-              )}
+                </TableHeader>
+                <TableBody>
+                  {filteredQuotes.map((quote) => (
+                    <TableRow key={quote.id}>
+                      <TableCell className="font-medium">{quote.id}</TableCell>
+                      <TableCell>{quote.client}</TableCell>
+                      <TableCell>{quote.destination}</TableCell>
+                      <TableCell>{formatDateRange(quote.start_date, quote.end_date)}</TableCell>
+                      <TableCell>
+                        {quote.adults} Adults
+                        {quote.children_with_bed > 0 && `, ${quote.children_with_bed} Children`}
+                        {quote.infants > 0 && `, ${quote.infants} Infants`}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusBadgeColor(quote.status)}>
+                          {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'Unknown'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/quotes/${quote.id}`)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/quotes/${quote.id}/preview`)}
+                            >
+                              <FileText className="mr-2 h-4 w-4" />
+                              Preview
+                            </DropdownMenuItem>
+                            
+                            {permissions.canEditQuotes && (
+                              <DropdownMenuItem
+                                onClick={() => navigate(`/quotes/edit/${quote.id}`)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Quote
+                              </DropdownMenuItem>
+                            )}
+                            
+                            <DropdownMenuItem
+                              onClick={() => handleEmailQuote(quote.id)}
+                            >
+                              <Send className="mr-2 h-4 w-4" />
+                              Send to Client
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem
+                              onClick={() => handleDownloadPDF(quote.id)}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Download PDF
+                            </DropdownMenuItem>
+                            
+                            {permissions.canDeleteQuotes && (
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteQuote(quote.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Quote
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
