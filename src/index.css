@@ -32,6 +32,18 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
+    /* Government/Professional color scheme */
+    --government-50: 239 100% 97%;
+    --government-100: 239 96% 93%;
+    --government-200: 239 88% 85%;
+    --government-300: 239 82% 77%;
+    --government-400: 239 77% 69%;
+    --government-500: 239 70% 59%;
+    --government-600: 239 61% 50%;
+    --government-700: 239 55% 42%;
+    --government-800: 239 48% 35%;
+    --government-900: 239 45% 28%;
+
     /* Sidebar variables */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -86,49 +98,124 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-jost;
+    @apply bg-background text-foreground font-jost antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+@layer utilities {
+  .government-50 { @apply bg-[hsl(var(--government-50))]; }
+  .government-100 { @apply bg-[hsl(var(--government-100))]; }
+  .government-200 { @apply bg-[hsl(var(--government-200))]; }
+  .government-300 { @apply bg-[hsl(var(--government-300))]; }
+  .government-400 { @apply bg-[hsl(var(--government-400))]; }
+  .government-500 { @apply bg-[hsl(var(--government-500))]; }
+  .government-600 { @apply bg-[hsl(var(--government-600))]; }
+  .government-700 { @apply bg-[hsl(var(--government-700))]; }
+  .government-800 { @apply bg-[hsl(var(--government-800))]; }
+  .government-900 { @apply bg-[hsl(var(--government-900))]; }
+  
+  .text-government-50 { @apply text-[hsl(var(--government-50))]; }
+  .text-government-100 { @apply text-[hsl(var(--government-100))]; }
+  .text-government-200 { @apply text-[hsl(var(--government-200))]; }
+  .text-government-300 { @apply text-[hsl(var(--government-300))]; }
+  .text-government-400 { @apply text-[hsl(var(--government-400))]; }
+  .text-government-500 { @apply text-[hsl(var(--government-500))]; }
+  .text-government-600 { @apply text-[hsl(var(--government-600))]; }
+  .text-government-700 { @apply text-[hsl(var(--government-700))]; }
+  .text-government-800 { @apply text-[hsl(var(--government-800))]; }
+  .text-government-900 { @apply text-[hsl(var(--government-900))]; }
+  
+  .border-government-50 { @apply border-[hsl(var(--government-50))]; }
+  .border-government-100 { @apply border-[hsl(var(--government-100))]; }
+  .border-government-200 { @apply border-[hsl(var(--government-200))]; }
+  .border-government-300 { @apply border-[hsl(var(--government-300))]; }
+  .border-government-400 { @apply border-[hsl(var(--government-400))]; }
+  .border-government-500 { @apply border-[hsl(var(--government-500))]; }
+  .border-government-600 { @apply border-[hsl(var(--government-600))]; }
+  .border-government-700 { @apply border-[hsl(var(--government-700))]; }
+  .border-government-800 { @apply border-[hsl(var(--government-800))]; }
+  .border-government-900 { @apply border-[hsl(var(--government-900))]; }
 }
 
 /* Professional system styles inspired by eCitizen */
 .professional-sidebar {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-right: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-right: 1px solid hsl(var(--border));
   font-family: 'Jost', sans-serif;
 }
 
-.professional-nav-item {
-  @apply transition-all duration-200 ease-in-out;
-  @apply hover:bg-slate-50 hover:border-l-4 hover:border-government-500;
-  @apply active:bg-government-50;
-}
-
-.professional-nav-item.active {
-  @apply bg-government-50 border-l-4 border-government-600 text-government-700;
-  @apply font-medium;
-}
-
-.professional-nav-item:not(.active) {
-  @apply text-slate-600 hover:text-slate-900;
-}
-
 .professional-logo {
-  @apply font-bold text-xl tracking-tight;
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  background: linear-gradient(135deg, hsl(var(--government-600)) 0%, hsl(var(--government-700)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 .professional-brand {
-  @apply text-sm text-slate-500 font-medium tracking-wide;
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.professional-divider {
-  @apply border-slate-200;
+/* Smooth transitions for all interactive elements */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 
-.currency-selector {
+/* Focus styles for better accessibility */
+.focus-visible:focus-visible {
+  outline: 2px solid hsl(var(--government-600));
+  outline-offset: 2px;
+}
+
+/* Loading animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Enhanced card styles */
+.card {
   @apply bg-white border border-slate-200 rounded-lg shadow-sm;
-  @apply transition-all duration-200 hover:shadow-md;
+  transition: all 0.2s ease-in-out;
+}
+
+.card:hover {
+  @apply shadow-md border-slate-300;
+}
+
+/* Form improvements */
+.form-input {
+  @apply w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm;
+  @apply focus:outline-none focus:ring-2 focus:ring-government-500 focus:border-government-500;
+  @apply transition-colors duration-200;
+}
+
+.form-input:disabled {
+  @apply bg-slate-50 text-slate-500 cursor-not-allowed;
+}
+
+/* Button enhancements */
+.btn-primary {
+  @apply bg-government-600 text-white hover:bg-government-700;
+  @apply focus:outline-none focus:ring-2 focus:ring-government-500 focus:ring-offset-2;
+  @apply transition-all duration-200;
+}
+
+.btn-secondary {
+  @apply bg-white text-government-700 border border-government-300;
+  @apply hover:bg-government-50 hover:border-government-400;
+  @apply focus:outline-none focus:ring-2 focus:ring-government-500 focus:ring-offset-2;
+  @apply transition-all duration-200;
 }

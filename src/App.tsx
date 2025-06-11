@@ -8,6 +8,7 @@ import { RoleProvider } from "./contexts/RoleContext";
 import Layout from "./components/Layout";
 import AuthGuard from "./components/auth/AuthGuard";
 import GlobalErrorBoundary from "./components/common/GlobalErrorBoundary";
+import NotFound from "./components/common/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Hotels from "./pages/Hotels";
 import CreateHotel from "./pages/CreateHotel";
@@ -48,12 +49,14 @@ function App() {
           <AuthProvider>
             <RoleProvider>
               <BrowserRouter>
-                <div className="min-h-screen bg-background font-sans antialiased">
+                <div className="min-h-screen bg-background font-sans antialiased w-full">
                   <Routes>
+                    {/* Public Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
 
+                    {/* Protected Routes */}
                     <Route
                       path="/"
                       element={
@@ -65,21 +68,26 @@ function App() {
                       <Route index element={<Dashboard />} />
                       <Route path="dashboard" element={<Dashboard />} />
 
+                      {/* Hotels */}
                       <Route path="hotels" element={<Hotels />} />
                       <Route path="hotels/create" element={<CreateHotel />} />
                       <Route path="hotels/:hotelId" element={<EditHotel />} />
 
+                      {/* Quotes */}
                       <Route path="quotes" element={<Quotes />} />
                       <Route path="quotes/create" element={<CreateQuote />} />
                       <Route path="quotes/:quoteId" element={<EditQuote />} />
 
+                      {/* Inquiries */}
                       <Route path="inquiries" element={<Inquiries />} />
                       <Route path="inquiries/create" element={<CreateInquiry />} />
                       <Route path="inquiries/:inquiryId" element={<EditInquiry />} />
 
+                      {/* Settings */}
                       <Route path="settings" element={<Settings />} />
                     </Route>
 
+                    {/* Admin Routes */}
                     <Route
                       path="/admin"
                       element={
@@ -91,6 +99,9 @@ function App() {
                       <Route path="dashboard" element={<AdminDashboard />} />
                       <Route path="settings" element={<AdminSettings />} />
                     </Route>
+
+                    {/* 404 Route - Must be last */}
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                   <Toaster />
                 </div>
