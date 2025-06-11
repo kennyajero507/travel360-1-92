@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
@@ -11,7 +12,6 @@ const transformQuoteData = (dbRow: any): QuoteData => {
     activities: parseJsonField(dbRow.activities, []),
     transports: parseJsonField(dbRow.transports, []),
     transfers: parseJsonField(dbRow.transfers, []),
-    excursions: parseJsonField(dbRow.excursions, []),
     sectionMarkups: parseJsonField(dbRow.sectionMarkups, {})
   };
 };
@@ -96,7 +96,6 @@ export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
       activities: JSON.stringify(quote.activities || []),
       transports: JSON.stringify(quote.transports || []),
       transfers: JSON.stringify(quote.transfers || []),
-      excursions: JSON.stringify(quote.excursions || []),
       sectionMarkups: JSON.stringify(quote.sectionMarkups || {})
     };
 

@@ -92,7 +92,6 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
       activities: [],
       transports: [],
       transfers: [],
-      excursions: [],
       sectionMarkups: {}
     };
 
