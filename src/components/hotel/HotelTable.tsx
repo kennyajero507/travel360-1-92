@@ -39,16 +39,37 @@ interface HotelTableProps {
   onToggleStatus: (hotelId: string) => void;
 }
 
-const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleStatus }) => {
+const HotelTable: React.FC<HotelTableProps> = ({ 
+  hotels = [], // Default to empty array
+  permissions, 
+  onToggleStatus 
+}) => {
   const getMinRatePerNight = (roomTypes: any[]) => {
-    if (!roomTypes || roomTypes.length === 0) return 0;
+    if (!Array.isArray(roomTypes) || roomTypes.length === 0) return 0;
     
-    const rates = roomTypes
-      .map(rt => rt.ratePerNight || 0)
-      .filter(rate => rate > 0);
-    
-    return rates.length > 0 ? Math.min(...rates) : 0;
+    try {
+      const rates = roomTypes
+        .map(rt => {
+          // Handle different possible property names
+          return rt?.ratePerNight || rt?.rate_per_night || rt?.baseRate || 0;
+        })
+        .filter(rate => typeof rate === 'number' && rate > 0);
+      
+      return rates.length > 0 ? Math.min(...rates) : 0;
+    } catch (error) {
+      console.warn('Error calculating min rate:', error);
+      return 0;
+    }
   };
+
+  // Safety check for hotels array
+  if (!Array.isArray(hotels)) {
+    return (
+      <div className="border rounded-md p-4 text-center text-gray-500">
+        <p>No hotel data available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="border rounded-md">
@@ -68,12 +89,12 @@ const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleSt
         <TableBody>
           {hotels.map((hotel) => (
             <TableRow key={hotel.id}>
-              <TableCell className="font-medium">{hotel.id}</TableCell>
-              <TableCell>{hotel.name}</TableCell>
-              <TableCell>{hotel.destination}</TableCell>
+              <TableCell className="font-medium">{hotel.id || 'N/A'}</TableCell>
+              <TableCell>{hotel.name || 'Unknown Name'}</TableCell>
+              <TableCell>{hotel.destination || 'Unknown Location'}</TableCell>
               <TableCell>
                 <div className="flex items-center">
-                  {hotel.category}
+                  {hotel.category || 'Unknown Category'}
                   {hotel.category?.includes("5") && <Star className="ml-1 h-3.5 w-3.5 text-yellow-500" />}
                 </div>
               </TableCell>
@@ -81,14 +102,25 @@ const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleSt
                 ${getMinRatePerNight(hotel.room_types || []).toFixed(2)}
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className={hotel.additional_details?.hasNegotiatedRate ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                <Badge 
+                  variant="outline" 
+                  className={
+                    hotel.additional_details?.hasNegotiatedRate 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-blue-100 text-blue-800"
+                  }
+                >
                   {hotel.additional_details?.hasNegotiatedRate ? "Negotiated" : "Standard"}
                 </Badge>
               </TableCell>
               <TableCell>
                 <Badge 
                   variant="outline" 
-                  className={hotel.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                  className={
+                    hotel.status === "Active" 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-gray-100 text-gray-800"
+                  }
                 >
                   {hotel.status || "Active"}
                 </Badge>
@@ -109,7 +141,6 @@ const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleSt
                       </Link>
                     </DropdownMenuItem>
                     
-                    {/* Only show edit option if user has edit permissions */}
                     {permissions.canEditHotels && (
                       <DropdownMenuItem asChild>
                         <Link to={`/hotels/${hotel.id}/edit`} className="flex items-center w-full">
@@ -119,7 +150,6 @@ const HotelTable: React.FC<HotelTableProps> = ({ hotels, permissions, onToggleSt
                       </DropdownMenuItem>
                     )}
                     
-                    {/* Only show status change option for users with appropriate permissions */}
                     {permissions.canEditHotels && (
                       <DropdownMenuItem 
                         className="text-red-600"

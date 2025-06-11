@@ -9,6 +9,7 @@ export interface ErrorDetails {
   code?: string;
   details?: any;
   context?: string;
+  timestamp?: string; // Added timestamp to interface
 }
 
 class ErrorHandlingService {

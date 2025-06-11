@@ -9,6 +9,7 @@ import { QuoteData } from '../../types/quote.types';
 import { unifiedQuoteService } from '../../services/unifiedQuoteService';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '../ui/alert';
+import { errorHandler } from '../../services/errorHandlingService';
 
 interface QuotePackageManagerProps {
   quotes: QuoteData[];
@@ -16,7 +17,7 @@ interface QuotePackageManagerProps {
 }
 
 const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
-  quotes,
+  quotes = [], // Default to empty array
   onPackageCreated
 }) => {
   const [packageName, setPackageName] = useState('');
@@ -58,18 +59,45 @@ const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
       toast.success('Quote package created successfully!');
     } catch (error) {
       console.error('Error creating package:', error);
-      toast.error('Failed to create quote package');
+      errorHandler.handleError(error, 'createQuotePackage');
     } finally {
       setIsCreating(false);
     }
   };
 
   const getTotalCost = (quote: QuoteData) => {
-    if (quote.summary_data && typeof quote.summary_data === 'object') {
-      return (quote.summary_data as any).total_cost || 0;
+    try {
+      if (quote.summary_data && typeof quote.summary_data === 'object') {
+        return (quote.summary_data as any).total_cost || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.warn('Error getting total cost for quote:', quote.id, error);
+      return 0;
     }
-    return 0;
   };
+
+  // Safety check for quotes array
+  if (!Array.isArray(quotes) || quotes.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-blue-600" />
+            Create Quote Package for Client Selection
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No quotes available to create a package. Please create some quotes first.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -113,12 +141,12 @@ const QuotePackageManager: React.FC<QuotePackageManagerProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">{quote.client}</div>
+                    <div className="font-medium">{quote.client || 'Unknown Client'}</div>
                     <div className="text-sm text-gray-600">
-                      {quote.destination} • {quote.duration_nights} nights
+                      {quote.destination || 'Unknown Destination'} • {quote.duration_nights || 0} nights
                     </div>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant="outline">{quote.status}</Badge>
+                      <Badge variant="outline">{quote.status || 'draft'}</Badge>
                       {getTotalCost(quote) > 0 && (
                         <Badge variant="secondary">
                           ${getTotalCost(quote).toLocaleString()}

@@ -17,7 +17,7 @@ interface HotelSelectionProps {
 
 const HotelSelection: React.FC<HotelSelectionProps> = ({
   selectedHotelId,
-  hotels,
+  hotels = [], // Default to empty array
   onHotelSelection,
   placeholder = "Select a hotel",
   maxHotels = 2,
@@ -26,13 +26,15 @@ const HotelSelection: React.FC<HotelSelectionProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [showOptions, setShowOptions] = useState(false);
 
-  const filteredHotels = hotels.filter(hotel =>
-    hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  // Safely filter hotels with null checks
+  const filteredHotels = Array.isArray(hotels) ? hotels.filter(hotel =>
+    hotel && hotel.name && hotel.destination && hotel.category &&
+    (hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     hotel.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    hotel.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    hotel.category.toLowerCase().includes(searchTerm.toLowerCase()))
+  ) : [];
 
-  const selectedHotel = hotels.find(h => h.id === selectedHotelId);
+  const selectedHotel = Array.isArray(hotels) ? hotels.find(h => h.id === selectedHotelId) : null;
 
   return (
     <div className="relative">
@@ -109,7 +111,7 @@ const HotelSelection: React.FC<HotelSelectionProps> = ({
                           <MapPin className="h-3 w-3" />
                           <span>{hotel.destination}</span>
                         </div>
-                        {hotel.room_types && (
+                        {hotel.room_types && Array.isArray(hotel.room_types) && (
                           <div className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             <span>{hotel.room_types.length} room types</span>

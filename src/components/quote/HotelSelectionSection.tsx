@@ -19,8 +19,8 @@ interface HotelSelectionSectionProps {
 }
 
 const HotelSelectionSection: React.FC<HotelSelectionSectionProps> = ({
-  selectedHotels,
-  availableHotels,
+  selectedHotels = [], // Default to empty array
+  availableHotels = [], // Default to empty array
   onHotelSelection,
   onHotelRemove,
   onRoomTypesLoaded,
@@ -28,10 +28,12 @@ const HotelSelectionSection: React.FC<HotelSelectionSectionProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   
-  const filteredHotels = availableHotels.filter(hotel => 
-    hotel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (hotel.destination && hotel.destination.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Safely filter hotels with null checks
+  const filteredHotels = Array.isArray(availableHotels) ? availableHotels.filter(hotel => 
+    hotel && hotel.name && 
+    (hotel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (hotel.destination && hotel.destination.toLowerCase().includes(searchQuery.toLowerCase())))
+  ) : [];
 
   return (
     <div className="space-y-6">

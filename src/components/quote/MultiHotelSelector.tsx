@@ -8,6 +8,7 @@ import { Label } from '../ui/label';
 import { useHotelsData } from '../../hooks/useHotelsData';
 import { Hotel } from '../../types/hotel.types';
 import { MapPin, Star, Plus, X } from 'lucide-react';
+import { LoadingSpinner, ErrorState } from '../common/LoadingStates';
 
 interface MultiHotelSelectorProps {
   selectedHotels: Hotel[];
@@ -16,20 +17,22 @@ interface MultiHotelSelectorProps {
 }
 
 const MultiHotelSelector: React.FC<MultiHotelSelectorProps> = ({
-  selectedHotels,
+  selectedHotels = [], // Default to empty array
   onHotelsChange,
   maxSelections = 3
 }) => {
-  const { hotels, isLoading } = useHotelsData();
+  const { hotels, isLoading, error } = useHotelsData();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredHotels = hotels.filter(hotel =>
-    hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    hotel.destination.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Safely filter hotels with null checks
+  const filteredHotels = Array.isArray(hotels) ? hotels.filter(hotel =>
+    hotel && hotel.name && hotel.destination &&
+    (hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    hotel.destination.toLowerCase().includes(searchTerm.toLowerCase()))
+  ) : [];
 
   const handleHotelSelect = (hotel: Hotel) => {
-    if (selectedHotels.length >= maxSelections) {
+    if (!hotel || selectedHotels.length >= maxSelections) {
       return;
     }
     
@@ -42,7 +45,13 @@ const MultiHotelSelector: React.FC<MultiHotelSelectorProps> = ({
     onHotelsChange(selectedHotels.filter(h => h.id !== hotelId));
   };
 
-  if (isLoading) return <div>Loading hotels...</div>;
+  if (isLoading) {
+    return <LoadingSpinner message="Loading hotels..." />;
+  }
+
+  if (error) {
+    return <ErrorState title="Failed to load hotels" message="Unable to fetch hotel data" />;
+  }
 
   return (
     <div className="space-y-4">
