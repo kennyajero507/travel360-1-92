@@ -45,7 +45,6 @@ class EnhancedQuoteService {
       activities: this.parseJsonField(dbRow.activities, []),
       transports: this.parseJsonField(dbRow.transports, []),
       transfers: this.parseJsonField(dbRow.transfers, []),
-      excursions: this.parseJsonField(dbRow.excursions, []),
       sectionMarkups: this.parseJsonField(dbRow.sectionMarkups, {})
     };
   }
@@ -79,20 +78,37 @@ class EnhancedQuoteService {
 
       // Prepare data for database with proper JSON serialization
       const dbQuoteData = {
-        ...quote,
+        id: quote.id.startsWith('quote-') ? crypto.randomUUID() : quote.id,
+        inquiry_id: quote.inquiry_id || null,
+        client: quote.client,
+        mobile: quote.mobile,
+        destination: quote.destination,
+        start_date: quote.start_date,
+        end_date: quote.end_date,
+        duration_days: quote.duration_days,
+        duration_nights: quote.duration_nights,
+        adults: quote.adults,
+        children_with_bed: quote.children_with_bed,
+        children_no_bed: quote.children_no_bed,
+        infants: quote.infants,
+        tour_type: quote.tour_type,
+        status: quote.status,
+        notes: quote.notes || null,
         created_by: user.id,
-        updated_at: new Date().toISOString(),
+        hotel_id: quote.hotel_id || null,
+        currency_code: quote.currency_code,
+        markup_type: quote.markup_type,
+        markup_value: quote.markup_value,
         room_arrangements: JSON.stringify(quote.room_arrangements || []),
         activities: JSON.stringify(quote.activities || []),
         transports: JSON.stringify(quote.transports || []),
         transfers: JSON.stringify(quote.transfers || []),
-        excursions: JSON.stringify(quote.excursions || []),
-        sectionMarkups: JSON.stringify(quote.sectionMarkups || {})
+        updated_at: new Date().toISOString()
       };
 
       let data, error;
 
-      if (quote.id && quote.id !== `quote-${Date.now()}`) {
+      if (quote.id && !quote.id.startsWith('quote-')) {
         // Update existing quote
         ({ data, error } = await supabase
           .from('quotes')
@@ -101,10 +117,9 @@ class EnhancedQuoteService {
           .select()
           .single());
       } else {
-        // Create new quote with proper ID
+        // Create new quote
         const newQuote = {
           ...dbQuoteData,
-          id: quote.id.startsWith('quote-') ? crypto.randomUUID() : quote.id,
           created_at: new Date().toISOString()
         };
         

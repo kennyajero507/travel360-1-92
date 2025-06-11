@@ -1,3 +1,4 @@
+
 import { Hotel } from "./hotel.types";
 
 export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
@@ -84,7 +85,7 @@ export interface QuoteTransfer {
 export interface SectionMarkup {
   type: 'percentage' | 'fixed';
   value: number;
-  applied_to: 'accommodation' | 'transport' | 'transfer' | 'excursion' | 'all';
+  applied_to: 'accommodation' | 'transport' | 'transfer' | 'activity' | 'all';
 }
 
 // Main QuoteData interface matching database structure
@@ -117,7 +118,6 @@ export interface QuoteData {
   activities: QuoteActivity[];
   transports: QuoteTransport[];
   transfers: QuoteTransfer[];
-  excursions?: QuoteActivity[];
   sectionMarkups?: Record<string, SectionMarkup>;
 }
 
@@ -126,7 +126,7 @@ export interface QuoteCalculations {
   accommodation_subtotal: number;
   transport_subtotal: number;
   transfer_subtotal: number;
-  excursion_subtotal: number;
+  excursion_subtotal: number; // Keep this for backwards compatibility in calculations
   subtotal: number;
   markup_amount: number;
   total_amount: number;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -57,7 +58,6 @@ const EditQuote = () => {
   }, [selectedHotels, hotels]);
 
   const handleQuoteUpdate = (updatedQuote: any) => {
-    // This will be handled by the useQuoteEditor hook internally
     console.log('Quote updated:', updatedQuote);
   };
 

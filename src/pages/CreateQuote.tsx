@@ -43,8 +43,6 @@ const CreateQuote = () => {
     const checkExistingQuotes = async () => {
       if (selectedInquiry) {
         try {
-          // This would be a service call to check existing quotes for the inquiry
-          // For now, we'll just reset the array
           setQuotesForInquiry([]);
         } catch (error) {
           console.error("Error checking existing quotes:", error);
@@ -57,6 +55,8 @@ const CreateQuote = () => {
 
   const handleInitializeQuote = async (quoteData: QuoteData) => {
     try {
+      console.log('Creating quote with data:', quoteData);
+      
       // Add inquiry_id if an inquiry is selected
       if (selectedInquiry) {
         quoteData.inquiry_id = selectedInquiry.id;
@@ -81,9 +81,28 @@ const CreateQuote = () => {
         quoteData.duration_nights = Math.max(0, daysDiff - 1);
       }
       
+      // Set default values for required fields
+      quoteData.currency_code = quoteData.currency_code || 'USD';
+      quoteData.markup_type = quoteData.markup_type || 'percentage';
+      quoteData.markup_value = quoteData.markup_value || 25;
+      quoteData.status = 'draft';
+      
+      // Initialize empty arrays for sections
+      quoteData.room_arrangements = [];
+      quoteData.activities = [];
+      quoteData.transports = [];
+      quoteData.transfers = [];
+      
+      console.log('Final quote data before creation:', quoteData);
+      
       const newQuote = await createQuote(quoteData);
+      console.log('Quote created successfully:', newQuote);
+      
       if (newQuote && newQuote.id) {
+        // Navigate to edit page with the new quote ID
         navigate(`/quotes/${newQuote.id}`);
+      } else {
+        throw new Error('Quote creation failed - no ID returned');
       }
     } catch (error) {
       console.error("Error creating quote:", error);
