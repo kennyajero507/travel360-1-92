@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -181,9 +182,9 @@ const BookingDetails = () => {
                   <div className="space-y-3">
                     {booking.room_arrangement.map((room, index) => (
                       <div key={index} className="p-3 border rounded-lg">
-                        <p className="font-medium">{room.room_type}</p>
+                        <p className="font-medium">{room.room_type || 'Room'}</p>
                         <p className="text-sm text-gray-600">
-                          {room.adults} Adults
+                          {room.adults || 0} Adults
                           {room.children_with_bed && `, ${room.children_with_bed} Children with bed`}
                           {room.children_no_bed && `, ${room.children_no_bed} Children without bed`}
                         </p>
@@ -204,8 +205,8 @@ const BookingDetails = () => {
                   <div className="space-y-3">
                     {booking.transport.map((transport, index) => (
                       <div key={index} className="p-3 border rounded-lg">
-                        <p className="font-medium">{transport.transport_mode || 'Transport'}</p>
-                        <p className="text-sm text-gray-600">{transport.travel_route || 'Route details'}</p>
+                        <p className="font-medium">{transport.mode || 'Transport'}</p>
+                        <p className="text-sm text-gray-600">{transport.route || 'Route details'}</p>
                       </div>
                     ))}
                   </div>

@@ -14,7 +14,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 const BookingAnalyticsDashboard = () => {
-  const [analytics, setAnalytics] = useState<BookingAnalytics[]>([]);
+  const [analytics, setAnalytics] = useState<BookingAnalytics | null>(null);
   const [metrics, setMetrics] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +59,14 @@ const BookingAnalyticsDashboard = () => {
     );
   }
 
+  if (!analytics) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No analytics data available</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -69,7 +77,7 @@ const BookingAnalyticsDashboard = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue || 0)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(analytics.totalRevenue)}</div>
             <p className="text-xs text-muted-foreground">
               +12% from last month
             </p>
@@ -82,7 +90,7 @@ const BookingAnalyticsDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalBookings || 0}</div>
+            <div className="text-2xl font-bold">{analytics.totalBookings}</div>
             <p className="text-xs text-muted-foreground">
               +5% from last month
             </p>
@@ -91,11 +99,11 @@ const BookingAnalyticsDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Profit Margin</CardTitle>
+            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(metrics.averageProfitMargin || 0).toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{analytics.conversionRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
               +2.1% from last month
             </p>
@@ -108,9 +116,7 @@ const BookingAnalyticsDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(metrics.totalBookings > 0 ? metrics.totalRevenue / metrics.totalBookings : 0)}
-            </div>
+            <div className="text-2xl font-bold">{formatCurrency(analytics.averageBookingValue)}</div>
             <p className="text-xs text-muted-foreground">
               +8% from last month
             </p>
@@ -128,7 +134,7 @@ const BookingAnalyticsDashboard = () => {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={metrics.monthlyRevenue || []}>
+            <LineChart data={analytics.monthlyTrends}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -151,51 +157,47 @@ const BookingAnalyticsDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PieChart className="h-5 w-5" />
-              Booking Sources
+              Revenue by Source
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {['Direct Website', 'Travel Agents', 'Phone Inquiries', 'Email Campaigns'].map((source, index) => (
-                <div key={source} className="flex justify-between items-center">
-                  <span className="text-sm">{source}</span>
+              {analytics.revenueBySource.map((source, index) => (
+                <div key={source.source} className="flex justify-between items-center">
+                  <span className="text-sm">{source.source}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-20 bg-gray-200 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full" 
-                        style={{ width: `${[45, 30, 15, 10][index]}%` }}
+                        style={{ width: `${(source.revenue / analytics.totalRevenue * 100)}%` }}
                       ></div>
                     </div>
-                    <span className="text-sm font-medium">{[45, 30, 15, 10][index]}%</span>
+                    <span className="text-sm font-medium">{formatCurrency(source.revenue)}</span>
                   </div>
                 </div>
               ))}
+              {analytics.revenueBySource.length === 0 && (
+                <p className="text-gray-500 text-center py-4">No revenue data yet</p>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Performance Metrics</CardTitle>
+            <CardTitle>Status Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-sm">Conversion Rate</span>
-                <span className="font-medium">18.5%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Avg Days to Book</span>
-                <span className="font-medium">7.2 days</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Client Satisfaction</span>
-                <span className="font-medium">4.7/5.0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Repeat Customers</span>
-                <span className="font-medium">23%</span>
-              </div>
+              {Object.entries(analytics.statusBreakdown).map(([status, count]) => (
+                <div key={status} className="flex justify-between">
+                  <span className="text-sm capitalize">{status}</span>
+                  <span className="font-medium">{count}</span>
+                </div>
+              ))}
+              {Object.keys(analytics.statusBreakdown).length === 0 && (
+                <p className="text-gray-500 text-center py-4">No status data available</p>
+              )}
             </div>
           </CardContent>
         </Card>
