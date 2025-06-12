@@ -207,10 +207,10 @@ const BookingDetails = () => {
                   <div className="space-y-3">
                     {booking.transport.map((transport, index) => (
                       <div key={index} className="p-3 border rounded-lg">
-                        <p className="font-medium">{transport.transport_mode || 'Transport'}</p>
-                        <p className="text-sm text-gray-600">{transport.travel_route || 'Route details'}</p>
-                        {transport.transport_operator && (
-                          <p className="text-sm text-gray-500">Operator: {transport.transport_operator}</p>
+                        <p className="font-medium">{transport.mode || 'Transport'}</p>
+                        <p className="text-sm text-gray-600">{transport.route || 'Route details'}</p>
+                        {transport.operator && (
+                          <p className="text-sm text-gray-500">Operator: {transport.operator}</p>
                         )}
                       </div>
                     ))}

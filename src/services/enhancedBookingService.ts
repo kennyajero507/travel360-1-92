@@ -136,12 +136,13 @@ class EnhancedBookingService {
   private processRevenueBySource(data: any[], totalRevenue: number): Array<{ source: string; revenue: number }> {
     const agentStats = data.reduce((acc, booking) => {
       const agent = booking.agent_id || 'Direct';
-      acc[agent] = (acc[agent] || 0) + Number(booking.total_price);
+      const revenue = Number(booking.total_price) || 0;
+      acc[agent] = (acc[agent] || 0) + revenue;
       return acc;
     }, {} as Record<string, number>);
 
     return Object.entries(agentStats)
-      .map(([source, revenue]) => ({ source, revenue }))
+      .map(([source, revenue]) => ({ source, revenue: Number(revenue) }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 4);
   }
