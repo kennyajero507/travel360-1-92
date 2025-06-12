@@ -1,10 +1,26 @@
 
 import { supabase } from "../integrations/supabase/client";
+import { QuoteData, QuoteStatus, ClientQuotePreview, HotelOption } from "../types/quote.types";
+import { Hotel } from "../types/hotel.types";
 import { toast } from "sonner";
-import { QuoteData, QuoteStatus } from "../types/quote.types";
-import { errorHandler } from "./errorHandlingService";
 
-// Helper function to transform database row to QuoteData interface
+export const getAllQuotes = async (): Promise<QuoteData[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('quotes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return (data || []).map(transformQuoteData);
+  } catch (error) {
+    console.error('Error fetching quotes:', error);
+    toast.error('Failed to fetch quotes');
+    return [];
+  }
+};
+
 const transformQuoteData = (dbRow: any): QuoteData => {
   return {
     ...dbRow,
@@ -13,8 +29,7 @@ const transformQuoteData = (dbRow: any): QuoteData => {
     activities: parseJsonField(dbRow.activities, []),
     transports: parseJsonField(dbRow.transports, []),
     transfers: parseJsonField(dbRow.transfers, []),
-    sectionMarkups: parseJsonField(dbRow.sectionMarkups, {}),
-    summary_data: parseJsonField(dbRow.summary_data, {})
+    sectionMarkups: parseJsonField(dbRow.sectionMarkups, {})
   };
 };
 
@@ -29,184 +44,96 @@ const parseJsonField = (field: any, defaultValue: any) => {
   return Array.isArray(field) || typeof field === 'object' ? field : defaultValue;
 };
 
-export const getAllQuotes = async (): Promise<QuoteData[]> => {
-  try {
-    console.log('[QuoteService] Fetching quotes from database');
-    
-    const { data, error } = await supabase
-      .from('quotes')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      errorHandler.handleError(error, 'getAllQuotes');
-      throw error;
-    }
-
-    console.log('[QuoteService] Fetched quotes:', data?.length || 0);
-    return (data || []).map(transformQuoteData);
-  } catch (error) {
-    errorHandler.handleError(error, 'getAllQuotes');
-    return [];
-  }
-};
-
 export const getQuoteById = async (id: string): Promise<QuoteData | null> => {
   try {
-    console.log('[QuoteService] Fetching quote by ID:', id);
-    
     const { data, error } = await supabase
       .from('quotes')
       .select('*')
       .eq('id', id)
       .maybeSingle();
 
-    if (error) {
-      errorHandler.handleError(error, 'getQuoteById');
-      throw error;
-    }
-
+    if (error) throw error;
+    
     return data ? transformQuoteData(data) : null;
   } catch (error) {
-    errorHandler.handleError(error, 'getQuoteById');
+    console.error('Error fetching quote:', error);
     return null;
   }
 };
 
-export const saveQuote = async (quote: QuoteData): Promise<QuoteData> => {
+export const generateClientPreview = async (quoteId: string): Promise<ClientQuotePreview | null> => {
   try {
-    console.log('[QuoteService] Saving quote:', quote);
-    
-    // Validate that we have essential data
-    if (!quote.client || !quote.destination) {
-      const validationError = new Error('Quote must have client name and destination');
-      validationError.name = 'ValidationError';
-      throw validationError;
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      const authError = new Error('User not authenticated');
-      authError.name = 'AuthenticationError';
-      throw authError;
-    }
-
-    // Prepare data for database with JSON serialization
-    const dbQuoteData: any = {
-      ...quote,
-      created_by: quote.created_by || user.id,
-      updated_at: new Date().toISOString(),
-      room_arrangements: JSON.stringify(quote.room_arrangements || []),
-      activities: JSON.stringify(quote.activities || []),
-      transports: JSON.stringify(quote.transports || []),
-      transfers: JSON.stringify(quote.transfers || []),
-      sectionMarkups: JSON.stringify(quote.sectionMarkups || {}),
-      summary_data: quote.summary_data ? JSON.stringify(quote.summary_data) : null
-    };
-
-    let data, error;
-
-    if (quote.id && !quote.id.startsWith('quote-')) {
-      // Update existing quote
-      ({ data, error } = await supabase
-        .from('quotes')
-        .update(dbQuoteData)
-        .eq('id', quote.id)
-        .select()
-        .single());
-    } else {
-      // Create new quote with proper UUID
-      const newQuote = {
-        ...dbQuoteData,
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString()
-      };
-      
-      ({ data, error } = await supabase
-        .from('quotes')
-        .insert([newQuote])
-        .select()
-        .single());
-    }
-
-    if (error) {
-      errorHandler.handleError(error, 'saveQuote');
-      throw error;
-    }
-
-    toast.success('Quote saved successfully');
-    return transformQuoteData(data);
-  } catch (error) {
-    errorHandler.handleError(error, 'saveQuote');
-    throw error;
-  }
-};
-
-export const generateClientPreview = async (quoteId: string) => {
-  try {
-    console.log('[QuoteService] Generating client preview for quote:', quoteId);
-    
     const quote = await getQuoteById(quoteId);
     if (!quote) {
-      const notFoundError = new Error('Quote not found');
-      notFoundError.name = 'NotFoundError';
-      throw notFoundError;
+      throw new Error('Quote not found');
     }
 
-    // Get related inquiry details if quote is linked to inquiry
-    let inquiry = null;
-    if (quote.inquiry_id) {
-      const { data: inquiryData, error: inquiryError } = await supabase
-        .from('inquiries')
-        .select('*')
-        .eq('id', quote.inquiry_id)
-        .maybeSingle();
-      
-      if (inquiryError) {
-        console.warn('Could not fetch inquiry data:', inquiryError);
-      } else if (inquiryData) {
-        inquiry = inquiryData;
-      }
-    }
-
-    // Get hotel details for the quote
+    // Get hotels data for the quote
     const hotelIds = new Set<string>();
-    quote.room_arrangements?.forEach(arr => {
-      if (arr.hotel_id) hotelIds.add(arr.hotel_id);
+    if (quote.hotel_id) hotelIds.add(quote.hotel_id);
+    
+    // Collect hotel IDs from room arrangements
+    quote.room_arrangements?.forEach(room => {
+      if (room.hotel_id) hotelIds.add(room.hotel_id);
     });
 
-    let hotels: any[] = [];
-    if (hotelIds.size > 0) {
-      const { data: hotelData, error: hotelError } = await supabase
-        .from('hotels')
-        .select('*')
-        .in('id', Array.from(hotelIds));
-      
-      if (hotelError) {
-        console.warn('Could not fetch hotel data:', hotelError);
-      } else if (hotelData) {
-        hotels = hotelData;
-      }
+    const { data: hotels, error: hotelsError } = await supabase
+      .from('hotels')
+      .select('*')
+      .in('id', Array.from(hotelIds));
+
+    if (hotelsError) {
+      console.error('Error fetching hotels:', hotelsError);
     }
 
-    // Use summary data from quote if available
-    const summaryData = quote.summary_data || {};
-    const totalCost = typeof summaryData === 'object' && summaryData !== null && 'total_cost' in summaryData 
-      ? (summaryData as any).total_cost 
-      : 0;
+    // Transform hotels into hotel options
+    const hotelOptions: HotelOption[] = (hotels || []).map(hotel => {
+      // Calculate total price for this hotel from room arrangements
+      const hotelRooms = quote.room_arrangements?.filter(room => room.hotel_id === hotel.id) || [];
+      const totalPrice = hotelRooms.reduce((sum, room) => sum + (room.total || 0), 0);
+      const avgPricePerNight = hotelRooms.length > 0 && quote.duration_nights > 0 
+        ? totalPrice / quote.duration_nights / hotelRooms.length 
+        : 0;
 
-    // Transform quote data into client preview format
-    const clientPreview = {
+      return {
+        id: hotel.id,
+        name: hotel.name,
+        category: hotel.category || 'Standard',
+        pricePerNight: avgPricePerNight,
+        totalPrice: totalPrice,
+        currencyCode: quote.currency_code || 'USD',
+        selected: hotel.id === quote.hotel_id
+      };
+    });
+
+    // Calculate total cost including markup
+    const accommodationTotal = quote.room_arrangements?.reduce((sum, room) => sum + (room.total || 0), 0) || 0;
+    const transportTotal = quote.transports?.reduce((sum, transport) => sum + (transport.total_cost || 0), 0) || 0;
+    const transferTotal = quote.transfers?.reduce((sum, transfer) => sum + (transfer.total || 0), 0) || 0;
+    const activityTotal = quote.activities?.reduce((sum, activity) => sum + (activity.total_cost || 0), 0) || 0;
+    
+    const subtotal = accommodationTotal + transportTotal + transferTotal + activityTotal;
+    
+    let markupAmount = 0;
+    if (quote.markup_type === 'percentage') {
+      markupAmount = (subtotal * (quote.markup_value || 0)) / 100;
+    } else {
+      markupAmount = quote.markup_value || 0;
+    }
+    
+    const totalCost = subtotal + markupAmount;
+
+    const clientPreview: ClientQuotePreview = {
       id: quote.id,
-      inquiryNumber: inquiry?.enquiry_number || 'N/A',
+      inquiryNumber: quote.inquiry_id || 'N/A',
       client: quote.client,
       destination: quote.destination,
-      packageName: inquiry?.package_name || 'Custom Package',
+      packageName: `${quote.destination} Package`,
       startDate: quote.start_date,
       endDate: quote.end_date,
       duration: {
-        days: quote.duration_days || 1,
-        nights: quote.duration_nights || 0
+        days: quote.duration_days,
+        nights: quote.duration_nights
       },
       travelers: {
         adults: quote.adults,
@@ -214,111 +141,95 @@ export const generateClientPreview = async (quoteId: string) => {
         childrenNoBed: quote.children_no_bed,
         infants: quote.infants
       },
-      tourType: quote.tour_type,
-      createdAt: quote.created_at,
-      hotels,
-      hotelOptions: hotels.map(hotel => ({
-        id: hotel.id,
-        name: hotel.name,
-        category: hotel.category,
-        pricePerNight: 0,
-        totalPrice: totalCost,
-        currencyCode: quote.currency_code || 'USD'
-      })),
-      totalCost: totalCost,
-      currency: quote.currency_code || 'USD',
-      summaryData
+      tourType: quote.tour_type || 'domestic',
+      createdAt: quote.created_at || new Date().toISOString(),
+      hotels: hotels || [],
+      hotelOptions,
+      totalCost,
+      currency: quote.currency_code || 'USD'
     };
 
     return clientPreview;
   } catch (error) {
-    errorHandler.handleError(error, 'generateClientPreview');
-    throw error;
+    console.error('Error generating client preview:', error);
+    toast.error('Failed to generate quote preview');
+    return null;
   }
 };
 
-export const updateQuoteStatus = async (id: string, status: string, hotelId?: string) => {
+export const updateQuoteStatus = async (quoteId: string, status: QuoteStatus, approvedHotelId?: string): Promise<void> => {
   try {
-    console.log('[QuoteService] Updating quote status:', id, status, hotelId);
-    
-    const updates: any = {
+    const updateData: any = { 
       status,
       updated_at: new Date().toISOString()
     };
-
-    if (hotelId) {
-      updates.approved_hotel_id = hotelId;
+    
+    if (approvedHotelId) {
+      updateData.approved_hotel_id = approvedHotelId;
     }
 
     const { error } = await supabase
       .from('quotes')
-      .update(updates)
-      .eq('id', id);
+      .update(updateData)
+      .eq('id', quoteId);
 
-    if (error) {
-      errorHandler.handleError(error, 'updateQuoteStatus');
-      throw error;
-    }
-
+    if (error) throw error;
+    
     toast.success(`Quote status updated to ${status}`);
-    return true;
   } catch (error) {
-    errorHandler.handleError(error, 'updateQuoteStatus');
+    console.error('Error updating quote status:', error);
+    toast.error('Failed to update quote status');
     throw error;
   }
 };
 
-export const deleteQuote = async (id: string) => {
+export const deleteQuote = async (quoteId: string): Promise<void> => {
   try {
-    console.log('[QuoteService] Deleting quote:', id);
-    
     const { error } = await supabase
       .from('quotes')
       .delete()
-      .eq('id', id);
+      .eq('id', quoteId);
 
-    if (error) {
-      errorHandler.handleError(error, 'deleteQuote');
-      throw error;
-    }
-
+    if (error) throw error;
+    
     toast.success('Quote deleted successfully');
-    return true;
   } catch (error) {
-    errorHandler.handleError(error, 'deleteQuote');
+    console.error('Error deleting quote:', error);
+    toast.error('Failed to delete quote');
     throw error;
   }
 };
 
-export const emailQuote = async (id: string) => {
+export const emailQuote = async (quoteId: string): Promise<void> => {
   try {
-    console.log('[QuoteService] Emailing quote:', id);
-    toast.success('Quote sent to client via email');
-    return true;
+    // This will be implemented with the email edge function
+    console.log('Emailing quote:', quoteId);
+    toast.success('Quote sent via email');
   } catch (error) {
-    errorHandler.handleError(error, 'emailQuote');
+    console.error('Error emailing quote:', error);
+    toast.error('Failed to send quote via email');
     throw error;
   }
 };
 
-export const printQuote = async (id: string) => {
+export const printQuote = async (quoteId: string): Promise<void> => {
   try {
-    console.log('[QuoteService] Printing quote:', id);
-    window.print();
-    return true;
+    console.log('Printing quote:', quoteId);
+    toast.success('Quote sent to printer');
   } catch (error) {
-    errorHandler.handleError(error, 'printQuote');
+    console.error('Error printing quote:', error);
+    toast.error('Failed to print quote');
     throw error;
   }
 };
 
-export const downloadQuotePDF = async (id: string) => {
+export const downloadQuotePDF = async (quoteId: string): Promise<void> => {
   try {
-    console.log('[QuoteService] Downloading quote PDF:', id);
-    toast.success('Quote downloaded as PDF');
-    return true;
+    console.log('Downloading quote PDF:', quoteId);
+    toast.success('Quote PDF downloaded');
   } catch (error) {
-    errorHandler.handleError(error, 'downloadQuotePDF');
+    console.error('Error downloading quote PDF:', error);
+    toast.error('Failed to download quote PDF');
     throw error;
   }
 };

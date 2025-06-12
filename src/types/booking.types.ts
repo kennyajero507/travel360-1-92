@@ -1,47 +1,65 @@
 
-import { QuoteActivity, QuoteTransport, QuoteTransfer, RoomArrangement } from "./quote.types";
-
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
-export type PaymentStatus = 'paid' | 'partially_paid' | 'pending';
 
-// Updated to match database structure with proper JSON field handling
+export interface BookingTransport {
+  mode: string;
+  route: string;
+  operator?: string;
+  cost_per_person?: number;
+  num_passengers?: number;
+  total_cost?: number;
+  description?: string;
+  notes?: string;
+}
+
+export interface BookingActivity {
+  name: string;
+  description?: string;
+  date?: string;
+  cost_per_person?: number;
+  num_people?: number;
+  total_cost?: number;
+}
+
+export interface BookingTransfer {
+  type: string;
+  from: string;
+  to: string;
+  vehicle_type?: string;
+  cost_per_vehicle?: number;
+  num_vehicles?: number;
+  total?: number;
+  description?: string;
+}
+
+export interface RoomArrangement {
+  room_type: string;
+  adults: number;
+  children_with_bed: number;
+  children_no_bed: number;
+  infants?: number;
+  num_rooms?: number;
+  rate_per_night?: number;
+  total?: number;
+}
+
 export interface Booking {
   id: string;
   booking_reference: string;
-  quote_id: string;
   client: string;
-  agent_id?: string;
-  hotel_id: string;
   hotel_name: string;
+  hotel_id: string;
+  agent_id?: string;
   travel_start: string;
   travel_end: string;
-  room_arrangement: RoomArrangement[]; // This will be JSON in DB
-  transport: QuoteTransport[];         // This will be JSON in DB
-  activities: QuoteActivity[];         // This will be JSON in DB
-  transfers: QuoteTransfer[];          // This will be JSON in DB
+  room_arrangement: RoomArrangement[];
+  transport: BookingTransport[];
+  activities: BookingActivity[];
+  transfers: BookingTransfer[];
   status: BookingStatus;
-  payment_status?: PaymentStatus;
   total_price: number;
-  created_at?: string;
-  updated_at?: string;
-  notes?: string;
-}
-
-export interface TravelVoucher {
-  id: string;
-  booking_id: string;
-  voucher_reference: string;
-  voucher_pdf_url?: string;
-  issued_date: string;
-  issued_by?: string;
+  quote_id: string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
-  email_sent: boolean;
-}
-
-export interface BookingFormData {
-  hotel_id: string;
-  payment_status: PaymentStatus;
-  notes?: string;
 }
