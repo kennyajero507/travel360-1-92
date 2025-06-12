@@ -12,6 +12,7 @@ import { Booking } from "../types/booking.types";
 import { convertToBooking } from "../utils/typeHelpers";
 import VoucherManager from "../components/voucher/VoucherManager";
 import PaymentTracker from "../components/booking/PaymentTracker";
+import NotificationCenter from "../components/communication/NotificationCenter";
 
 const BookingDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -168,6 +169,7 @@ const BookingDetails = () => {
             <FileText className="h-4 w-4 mr-2" />
             Vouchers
           </TabsTrigger>
+          <TabsTrigger value="communications">Communications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
@@ -205,8 +207,11 @@ const BookingDetails = () => {
                   <div className="space-y-3">
                     {booking.transport.map((transport, index) => (
                       <div key={index} className="p-3 border rounded-lg">
-                        <p className="font-medium">{transport.mode || 'Transport'}</p>
-                        <p className="text-sm text-gray-600">{transport.route || 'Route details'}</p>
+                        <p className="font-medium">{transport.transport_mode || 'Transport'}</p>
+                        <p className="text-sm text-gray-600">{transport.travel_route || 'Route details'}</p>
+                        {transport.transport_operator && (
+                          <p className="text-sm text-gray-500">Operator: {transport.transport_operator}</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -244,6 +249,10 @@ const BookingDetails = () => {
 
         <TabsContent value="vouchers">
           <VoucherManager bookingId={booking.id} />
+        </TabsContent>
+
+        <TabsContent value="communications">
+          <NotificationCenter bookingId={booking.id} />
         </TabsContent>
       </Tabs>
     </div>

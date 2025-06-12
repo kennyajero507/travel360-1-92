@@ -4,19 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { enhancedBookingService } from "../../services/enhancedBookingService";
 import { Payment } from "../../types/enhanced-booking.types";
 import { 
   CreditCard, 
   DollarSign, 
-  Plus, 
   CheckCircle, 
   Clock, 
   XCircle, 
   RotateCcw
 } from "lucide-react";
-import { toast } from "sonner";
+import RecordPaymentDialog from "./RecordPaymentDialog";
 
 interface PaymentTrackerProps {
   bookingId: string;
@@ -138,10 +136,10 @@ const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
               <CreditCard className="h-5 w-5" />
               Payment History
             </div>
-            <Button size="sm" onClick={() => toast.info('Add payment feature coming soon')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Record Payment
-            </Button>
+            <RecordPaymentDialog 
+              bookingId={bookingId} 
+              onPaymentRecorded={loadPayments}
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -164,14 +162,14 @@ const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
                 {payments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">
-                      ${payment.amount.toFixed(2)}
+                      ${payment.amount.toFixed(2)} {payment.currency_code}
                     </TableCell>
                     <TableCell>{payment.payment_method || 'Not specified'}</TableCell>
                     <TableCell>{getStatusBadge(payment.payment_status)}</TableCell>
                     <TableCell>
                       {payment.payment_date 
                         ? new Date(payment.payment_date).toLocaleDateString()
-                        : 'Pending'
+                        : new Date(payment.created_at).toLocaleDateString()
                       }
                     </TableCell>
                     <TableCell>
@@ -194,6 +192,16 @@ const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
                             Mark Failed
                           </Button>
                         </div>
+                      )}
+                      {payment.payment_status === 'completed' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStatusUpdate(payment.id, 'refunded')}
+                          className="text-gray-700 hover:bg-gray-50"
+                        >
+                          Refund
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
