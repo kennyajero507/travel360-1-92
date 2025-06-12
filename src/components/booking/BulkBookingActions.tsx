@@ -50,9 +50,12 @@ const BulkBookingActions = ({
 
     setIsUpdating(true);
     try {
-      await enhancedBookingService.bulkUpdateBookingStatus(selectedBookings, status);
+      await enhancedBookingService.bulkUpdateStatus(selectedBookings, status as any);
       onSelectionChange([]);
       onRefresh();
+      toast.success(`Updated ${selectedBookings.length} bookings to ${status}`);
+    } catch (error) {
+      toast.error('Failed to update bookings');
     } finally {
       setIsUpdating(false);
     }
@@ -69,6 +72,8 @@ const BulkBookingActions = ({
       const selectedBookingData = bookings.filter(b => selectedBookings.includes(b.id));
       await enhancedBookingService.exportBookings(selectedBookingData, format);
       toast.success(`Export completed in ${format.toUpperCase()} format`);
+    } catch (error) {
+      toast.error('Failed to export bookings');
     } finally {
       setIsExporting(false);
     }

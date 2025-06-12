@@ -1,6 +1,6 @@
 
 import { Payment, EmailTemplate } from "../types/enhanced-booking.types";
-import { Booking } from "../types/booking.types";
+import { Booking, BookingStatus } from "../types/booking.types";
 
 // Type guards for safe type conversion
 export const isValidPaymentStatus = (status: string): status is Payment['payment_status'] => {
@@ -11,8 +11,15 @@ export const isValidEmailTemplateType = (type: string): type is EmailTemplate['t
   return ['booking_confirmation', 'status_update', 'payment_reminder', 'voucher_delivery'].includes(type);
 };
 
-export const isValidBookingStatus = (status: string): status is Booking['status'] => {
+export const isValidBookingStatus = (status: string): status is BookingStatus => {
   return ['pending', 'confirmed', 'cancelled', 'completed'].includes(status);
+};
+
+export const ensureBookingStatus = (status: any): BookingStatus => {
+  if (isValidBookingStatus(status)) {
+    return status;
+  }
+  return 'pending';
 };
 
 // Safe type converters for database responses
@@ -33,7 +40,7 @@ export const convertToEmailTemplate = (data: any): EmailTemplate => {
 export const convertToBooking = (data: any): Booking => {
   return {
     ...data,
-    status: isValidBookingStatus(data.status) ? data.status : 'pending',
+    status: ensureBookingStatus(data.status),
     room_arrangement: Array.isArray(data.room_arrangement) ? data.room_arrangement : [],
     transport: Array.isArray(data.transport) ? data.transport : [],
     activities: Array.isArray(data.activities) ? data.activities : [],

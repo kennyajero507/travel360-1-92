@@ -1,6 +1,7 @@
+
 import { supabase } from "../integrations/supabase/client";
-import { Booking, BookingStatus, Payment, TravelVoucher } from "../types/booking.types";
-import { BookingFilters, BookingAnalytics, BulkActionResult, Notification, VoucherTemplate } from "../types/enhanced-booking.types";
+import { Booking, BookingStatus } from "../types/booking.types";
+import { BookingFilters, BookingAnalytics, BulkActionResult, Notification, VoucherTemplate, Payment } from "../types/enhanced-booking.types";
 import { convertToBooking, ensureBookingStatus } from "../utils/typeHelpers";
 
 class EnhancedBookingService {
@@ -11,7 +12,12 @@ class EnhancedBookingService {
 
     // Apply filters
     if (filters.status && filters.status.length > 0) {
-      query = query.in('status', filters.status);
+      const validStatuses = filters.status.filter(status => 
+        ['pending', 'confirmed', 'cancelled', 'completed'].includes(status)
+      ) as BookingStatus[];
+      if (validStatuses.length > 0) {
+        query = query.in('status', validStatuses);
+      }
     }
 
     if (filters.dateRange?.start) {
@@ -41,14 +47,7 @@ class EnhancedBookingService {
     const { data, error } = await query;
     if (error) throw error;
 
-    return data?.map(booking => ({
-      ...booking,
-      status: ensureBookingStatus(booking.status),
-      room_arrangement: Array.isArray(booking.room_arrangement) ? booking.room_arrangement : [],
-      transport: Array.isArray(booking.transport) ? booking.transport : [],
-      activities: Array.isArray(booking.activities) ? booking.activities : [],
-      transfers: Array.isArray(booking.transfers) ? booking.transfers : []
-    })) || [];
+    return data?.map(convertToBooking) || [];
   }
 
   async getBookingAnalytics(): Promise<BookingAnalytics> {
@@ -65,7 +64,7 @@ class EnhancedBookingService {
       const status = ensureBookingStatus(booking.status);
       acc[status] = (acc[status] || 0) + 1;
       return acc;
-    }, {} as Record<BookingStatus, number>) || {} as Record<BookingStatus, number>;
+    }, {} as Record<string, number>) || {};
 
     const conversionRate = totalBookings > 0 ? (statusCounts.confirmed || 0) / totalBookings * 100 : 0;
 
@@ -77,6 +76,25 @@ class EnhancedBookingService {
       statusBreakdown: statusCounts,
       monthlyTrends: [], // Would need more complex query for trends
       revenueBySource: [] // Would need booking source tracking
+    };
+  }
+
+  async getRevenueMetrics(): Promise<any> {
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('*');
+
+    if (error) throw error;
+
+    const totalRevenue = bookings?.reduce((sum, booking) => sum + Number(booking.total_price), 0) || 0;
+    const totalBookings = bookings?.length || 0;
+    const averageProfitMargin = 15; // Mock value - would calculate from actual data
+
+    return {
+      totalRevenue,
+      totalBookings,
+      averageProfitMargin,
+      monthlyRevenue: [] // Would implement actual monthly data
     };
   }
 
@@ -106,6 +124,10 @@ class EnhancedBookingService {
     }
   }
 
+  async bulkUpdateBookingStatus(bookingIds: string[], newStatus: BookingStatus): Promise<BulkActionResult> {
+    return this.bulkUpdateStatus(bookingIds, newStatus);
+  }
+
   async bulkDelete(bookingIds: string[]): Promise<BulkActionResult> {
     try {
       const { data, error } = await supabase
@@ -132,17 +154,20 @@ class EnhancedBookingService {
     }
   }
 
-  async exportBookings(bookingIds: string[], format: 'csv' | 'excel' | 'pdf'): Promise<Blob> {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .in('id', bookingIds);
-
-    if (error) throw error;
-
-    // For now, return CSV format
-    const csvContent = this.convertToCSV(data || []);
-    return new Blob([csvContent], { type: 'text/csv' });
+  async exportBookings(bookings: any[], format: 'csv' | 'excel' | 'pdf'): Promise<void> {
+    // For now, just log the export request
+    console.log(`Exporting ${bookings.length} bookings as ${format}`);
+    
+    if (format === 'csv') {
+      const csvContent = this.convertToCSV(bookings);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bookings-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
   }
 
   private convertToCSV(bookings: any[]): string {
@@ -174,15 +199,47 @@ class EnhancedBookingService {
     return data || [];
   }
 
-  async recordPayment(payment: Omit<Payment, 'id' | 'created_at' | 'updated_at'>): Promise<Payment> {
+  async getPaymentsByBooking(bookingId: string): Promise<Payment[]> {
+    return this.getPayments(bookingId);
+  }
+
+  async recordPayment(payment: {
+    booking_id: string;
+    amount: number;
+    currency_code: string;
+    payment_method?: string;
+    payment_status?: string;
+    notes?: string;
+  }): Promise<Payment> {
     const { data, error } = await supabase
       .from('payments')
-      .insert(payment)
+      .insert({
+        ...payment,
+        payment_status: payment.payment_status || 'pending'
+      })
       .select()
       .single();
 
     if (error) throw error;
     return data;
+  }
+
+  async updatePaymentStatus(paymentId: string, status: Payment['payment_status']): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          payment_status: status,
+          payment_date: status === 'completed' ? new Date().toISOString() : null
+        })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      return false;
+    }
   }
 
   async sendNotification(notification: Omit<Notification, 'id' | 'created_at'>): Promise<boolean> {

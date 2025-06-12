@@ -15,16 +15,13 @@ export interface Payment {
 }
 
 export interface BookingAnalytics {
-  id: string;
-  booking_id: string;
-  organization_id: string;
-  revenue: number;
-  profit_margin: number;
-  booking_source?: string;
-  conversion_days?: number;
-  client_satisfaction_score?: number;
-  created_at: string;
-  updated_at: string;
+  totalBookings: number;
+  totalRevenue: number;
+  conversionRate: number;
+  averageBookingValue: number;
+  statusBreakdown: Record<string, number>;
+  monthlyTrends: Array<{ month: string; bookings: number; revenue: number }>;
+  revenueBySource: Array<{ source: string; revenue: number }>;
 }
 
 export interface EmailTemplate {
@@ -59,6 +56,7 @@ export interface VoucherTemplate {
   organization_id: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
 }
 
 export interface BookingFilters {
@@ -80,4 +78,11 @@ export interface BookingExportOptions {
   format: 'csv' | 'pdf' | 'excel';
   fields: string[];
   filters?: BookingFilters;
+}
+
+export interface BulkActionResult {
+  success: boolean;
+  processedCount: number;
+  failedIds: string[];
+  error?: string;
 }
