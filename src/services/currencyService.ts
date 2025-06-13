@@ -115,7 +115,7 @@ export class CurrencyService {
   }
 
   // Save user's preferred currency - now compatible with database schema
-  async saveUserCurrencyPreference(userId: string, currencyCode: string): Promise<void> => {
+  async saveUserCurrencyPreference(userId: string, currencyCode: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('profiles')

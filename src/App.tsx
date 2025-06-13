@@ -18,7 +18,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminSettings from "./pages/admin/AdminSettings";
+import AdminSettingsPage from "./pages/admin/AdminSettings";
 import Quotes from "./pages/Quotes";
 import CreateQuote from "./pages/CreateQuote";
 import EditQuote from "./pages/EditQuote";
@@ -119,7 +119,7 @@ function App() {
                       }
                     >
                       <Route path="dashboard" element={<AdminDashboard />} />
-                      <Route path="settings" element={<AdminSettings />} />
+                      <Route path="settings" element={<AdminSettingsPage />} />
                     </Route>
 
                     {/* 404 Route - Must be last */}
