@@ -15,7 +15,7 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import AdminSetup from "../components/admin/AdminSetup";
-import OrganizationSetupModal from "../components/auth/OrganizationSetupModal";
+import { OrganizationSetupModal } from "../components/auth/OrganizationSetupModal";
 
 const Dashboard = () => {
   const { userProfile } = useAuth();
