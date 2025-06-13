@@ -9,15 +9,24 @@ import Layout from "./components/Layout";
 import AuthGuard from "./components/auth/AuthGuard";
 import GlobalErrorBoundary from "./components/common/GlobalErrorBoundary";
 import NotFound from "./components/common/NotFound";
+
+// Public Pages
+import LandingPage from "./pages/LandingPage";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
+import About from "./pages/About";
+import Blog from "./pages/Blog";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ResetPassword from "./pages/ResetPassword";
+import AdminLogin from "./pages/AdminLogin";
+
+// Protected Pages
 import Dashboard from "./pages/Dashboard";
 import Hotels from "./pages/Hotels";
 import CreateHotel from "./pages/CreateHotel";
 import EditHotel from "./pages/EditHotel";
 import Settings from "./pages/Settings";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ResetPassword from "./pages/ResetPassword";
-import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminSettingsPage from "./pages/admin/AdminSettings";
 import Quotes from "./pages/Quotes";
@@ -59,6 +68,11 @@ function App() {
                 <div className="min-h-screen bg-background font-sans antialiased w-full">
                   <Routes>
                     {/* Public Routes */}
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/features" element={<Features />} />
+                    <Route path="/pricing" element={<Pricing />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/blog" element={<Blog />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
@@ -66,7 +80,7 @@ function App() {
 
                     {/* Protected Routes */}
                     <Route
-                      path="/"
+                      path="/app"
                       element={
                         <AuthGuard>
                           <Layout />

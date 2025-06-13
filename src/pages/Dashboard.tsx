@@ -29,10 +29,10 @@ const Dashboard = () => {
   ];
 
   const quickActions = [
-    { title: "Create Quote", description: "Generate a new travel quote", href: "/quotes/create", icon: FileText },
-    { title: "New Inquiry", description: "Add a new client inquiry", href: "/inquiries/create", icon: Users },
-    { title: "Add Hotel", description: "Register a new hotel", href: "/hotels/create", icon: Building2 },
-    { title: "View Reports", description: "Check analytics and reports", href: "/reports", icon: BarChart3 },
+    { title: "Create Quote", description: "Generate a new travel quote", href: "/app/quotes/create", icon: FileText },
+    { title: "New Inquiry", description: "Add a new client inquiry", href: "/app/inquiries/create", icon: Users },
+    { title: "Add Hotel", description: "Register a new hotel", href: "/app/hotels/create", icon: Building2 },
+    { title: "View Reports", description: "Check analytics and reports", href: "/app/reports", icon: BarChart3 },
   ];
 
   const isAdmin = userProfile?.role === 'system_admin';

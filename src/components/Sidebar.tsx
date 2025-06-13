@@ -47,61 +47,61 @@ export function Sidebar({ className }: SidebarProps) {
   const navigationItems = [
     {
       title: "Dashboard",
-      href: "/dashboard",
+      href: "/app/dashboard",
       icon: LayoutDashboard,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     },
     {
       title: "Inquiries",
-      href: "/inquiries",
+      href: "/app/inquiries",
       icon: MessageSquare,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     },
     {
       title: "Quotes",
-      href: "/quotes",
+      href: "/app/quotes",
       icon: FileText,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     },
     {
       title: "Bookings",
-      href: "/bookings",
+      href: "/app/bookings",
       icon: BookOpen,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     },
     {
       title: "Hotels",
-      href: "/hotels",
+      href: "/app/hotels",
       icon: Building,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     },
     {
       title: "Vouchers",
-      href: "/vouchers",
+      href: "/app/vouchers",
       icon: Plane,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     },
     {
       title: "Clients",
-      href: "/clients",
+      href: "/app/clients",
       icon: Users,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     },
     {
       title: "Reports",
-      href: "/reports",
+      href: "/app/reports",
       icon: BarChart3,
       roles: ['system_admin', 'org_owner', 'tour_operator']
     },
     {
       title: "Team Management",
-      href: "/team",
+      href: "/app/team",
       icon: Users,
       roles: ['system_admin', 'org_owner', 'tour_operator']
     },
     {
       title: "Settings",
-      href: "/settings",
+      href: "/app/settings",
       icon: Settings,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
     }

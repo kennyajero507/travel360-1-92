@@ -30,8 +30,8 @@ const Login = () => {
     password: "",
   });
   
-  // Get the redirect path from location state, default to dashboard
-  const from = location.state?.from?.pathname || "/dashboard";
+  // Get the redirect path from location state, default to app dashboard
+  const from = location.state?.from?.pathname || "/app/dashboard";
   
   // Redirect if already logged in
   useEffect(() => {
