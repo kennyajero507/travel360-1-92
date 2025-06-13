@@ -23,6 +23,7 @@ const Login = () => {
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mounted, setMounted] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -33,12 +34,18 @@ const Login = () => {
   // Get the redirect path from location state, default to app dashboard
   const from = location.state?.from?.pathname || "/app/dashboard";
   
+  // Set mounted state to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   // Redirect if already logged in
   useEffect(() => {
-    if (session && !authLoading) {
+    if (mounted && session && !authLoading) {
+      console.log("User is logged in, redirecting to:", from);
       navigate(from, { replace: true });
     }
-  }, [session, authLoading, navigate, from]);
+  }, [session, authLoading, navigate, from, mounted]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -61,13 +68,10 @@ const Login = () => {
     try {
       const success = await login(formData.email, formData.password);
       
-      if (!success) {
-        // Error message will be shown by the login function
-        return;
+      if (success) {
+        toast.success("Login successful!");
+        // Navigation will be handled by the useEffect above
       }
-      
-      toast.success("Login successful!");
-      // Navigation will be handled by the useEffect above
     } catch (error) {
       console.error("Login error:", error);
       toast.error("An error occurred during login");
@@ -76,13 +80,25 @@ const Login = () => {
     }
   };
   
-  // Show loading state while checking auth
-  if (authLoading) {
+  // Show loading state while checking auth or not mounted
+  if (!mounted || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render login form if user is already logged in
+  if (session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Redirecting...</p>
         </div>
       </div>
     );

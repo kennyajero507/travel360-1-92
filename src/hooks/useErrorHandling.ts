@@ -1,48 +1,97 @@
 
-import { useCallback } from 'react';
-import { enhancedErrorService } from '../services/enhancedErrorService';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { auditService } from '../services/auditService';
+
+interface ErrorState {
+  message: string;
+  code?: string;
+  details?: any;
+}
 
 export const useErrorHandling = () => {
+  const [error, setError] = useState<ErrorState | null>(null);
+
   const handleError = useCallback(async (
-    error: any,
+    error: Error | any,
     context?: string,
     showToast: boolean = true
   ) => {
-    console.error('Error handled by useErrorHandling:', error);
+    console.error('Error caught:', error, 'Context:', context);
 
-    const errorType = error?.name || 'unknown_error';
-    const errorMessage = error?.message || 'An unexpected error occurred';
-    const errorStack = error?.stack;
+    const errorState: ErrorState = {
+      message: error?.message || 'An unexpected error occurred',
+      code: error?.code,
+      details: error,
+    };
 
-    await enhancedErrorService.logError({
-      type: errorType,
-      message: errorMessage,
-      stack: errorStack,
-      context: { context, originalError: error },
-      severity: 'medium'
-    });
+    setError(errorState);
 
-    if (showToast) {
-      toast.error('Something went wrong. Please try again.');
+    // Log error to audit service
+    try {
+      await auditService.logAction(
+        'ERROR',
+        'system',
+        undefined,
+        undefined,
+        {
+          error: errorState,
+          context,
+          timestamp: new Date().toISOString(),
+        }
+      );
+    } catch (auditError) {
+      console.error('Failed to log error to audit service:', auditError);
     }
+
+    // Show toast notification
+    if (showToast) {
+      if (error?.code === 'auth/invalid-credential') {
+        toast.error('Invalid email or password');
+      } else if (error?.code === 'auth/too-many-requests') {
+        toast.error('Too many failed attempts. Please try again later.');
+      } else if (error?.message?.includes('Network')) {
+        toast.error('Network error. Please check your connection.');
+      } else {
+        toast.error(errorState.message);
+      }
+    }
+
+    return errorState;
   }, []);
 
-  const handleAsyncOperation = useCallback(async <T>(
-    operation: () => Promise<T>,
-    context?: string,
-    showErrorToast: boolean = true
-  ): Promise<T | null> => {
-    try {
-      return await operation();
-    } catch (error) {
-      await handleError(error, context, showErrorToast);
-      return null;
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const retryWithErrorHandling = useCallback(async (
+    operation: () => Promise<any>,
+    maxRetries: number = 3,
+    context?: string
+  ) => {
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        console.warn(`Attempt ${attempt}/${maxRetries} failed:`, error);
+        
+        if (attempt === maxRetries) {
+          return handleError(error, context);
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      }
     }
   }, [handleError]);
 
   return {
+    error,
     handleError,
-    handleAsyncOperation
+    clearError,
+    retryWithErrorHandling,
   };
 };

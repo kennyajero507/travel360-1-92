@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       booking_analytics: {
         Row: {
           booking_id: string
@@ -177,6 +216,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exchange_rates: {
+        Row: {
+          base_currency: string
+          id: string
+          rate: number
+          target_currency: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_currency?: string
+          id?: string
+          rate: number
+          target_currency: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_currency?: string
+          id?: string
+          rate?: number
+          target_currency?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       hotels: {
         Row: {
@@ -531,6 +594,7 @@ export type Database = {
           name: string
           owner_id: string | null
           settings: Json | null
+          short_code: string | null
           subscription_end_date: string | null
           subscription_plan_id: string | null
           subscription_start_date: string | null
@@ -551,6 +615,7 @@ export type Database = {
           name: string
           owner_id?: string | null
           settings?: Json | null
+          short_code?: string | null
           subscription_end_date?: string | null
           subscription_plan_id?: string | null
           subscription_start_date?: string | null
@@ -571,6 +636,7 @@ export type Database = {
           name?: string
           owner_id?: string | null
           settings?: Json | null
+          short_code?: string | null
           subscription_end_date?: string | null
           subscription_plan_id?: string | null
           subscription_start_date?: string | null
@@ -1283,6 +1349,7 @@ export type Database = {
           notes: string | null
           room_arrangements: Json
           selected_hotel_option_id: string | null
+          short_id: string | null
           start_date: string
           status: string | null
           summary_data: Json | null
@@ -1317,6 +1384,7 @@ export type Database = {
           notes?: string | null
           room_arrangements?: Json
           selected_hotel_option_id?: string | null
+          short_id?: string | null
           start_date: string
           status?: string | null
           summary_data?: Json | null
@@ -1351,6 +1419,7 @@ export type Database = {
           notes?: string | null
           room_arrangements?: Json
           selected_hotel_option_id?: string | null
+          short_id?: string | null
           start_date?: string
           status?: string | null
           summary_data?: Json | null
@@ -1587,6 +1656,14 @@ export type Database = {
         Returns: string
       }
       generate_enquiry_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_org_short_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_quote_short_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

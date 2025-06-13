@@ -1,160 +1,113 @@
 
 import { supabase } from "../integrations/supabase/client";
 
-export interface CurrencyRate {
-  code: string;
-  name: string;
-  symbol: string;
-  rate: number; // Rate relative to USD
-}
-
-export interface CurrencyConversion {
-  amount: number;
-  fromCurrency: string;
-  toCurrency: string;
-  convertedAmount: number;
+export interface ExchangeRate {
+  base_currency: string;
+  target_currency: string;
   rate: number;
+  updated_at: string;
 }
 
-// Static currency data - in production, this would come from an API
-const SUPPORTED_CURRENCIES: CurrencyRate[] = [
-  { code: 'USD', name: 'US Dollar', symbol: '$', rate: 1 },
-  { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.85 },
-  { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.73 },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', rate: 1.25 },
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rate: 1.35 },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', rate: 110 },
-  { code: 'INR', name: 'Indian Rupee', symbol: '₹', rate: 75 },
-  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', rate: 6.5 },
-];
+class CurrencyService {
+  private cache: Map<string, { rate: number; timestamp: number }> = new Map();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export class CurrencyService {
-  private static instance: CurrencyService;
-  private rates: Map<string, CurrencyRate> = new Map();
+  async getExchangeRate(from: string, to: string): Promise<number> {
+    if (from === to) return 1;
 
-  private constructor() {
-    // Initialize with static rates
-    SUPPORTED_CURRENCIES.forEach(currency => {
-      this.rates.set(currency.code, currency);
-    });
-  }
-
-  public static getInstance(): CurrencyService {
-    if (!CurrencyService.instance) {
-      CurrencyService.instance = new CurrencyService();
-    }
-    return CurrencyService.instance;
-  }
-
-  // Get all supported currencies
-  getSupportedCurrencies(): CurrencyRate[] {
-    return Array.from(this.rates.values());
-  }
-
-  // Get currency by code
-  getCurrency(code: string): CurrencyRate | null {
-    return this.rates.get(code) || null;
-  }
-
-  // Convert amount between currencies
-  convertCurrency(amount: number, fromCurrency: string, toCurrency: string): CurrencyConversion {
-    const fromRate = this.rates.get(fromCurrency);
-    const toRate = this.rates.get(toCurrency);
-
-    if (!fromRate || !toRate) {
-      throw new Error(`Unsupported currency conversion: ${fromCurrency} to ${toCurrency}`);
+    const cacheKey = `${from}-${to}`;
+    const cached = this.cache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      return cached.rate;
     }
 
-    // Convert to USD first, then to target currency
-    const usdAmount = amount / fromRate.rate;
-    const convertedAmount = usdAmount * toRate.rate;
-    const conversionRate = toRate.rate / fromRate.rate;
+    try {
+      // Try to get from database first
+      const { data } = await supabase
+        .from('exchange_rates')
+        .select('rate')
+        .eq('base_currency', from)
+        .eq('target_currency', to)
+        .single();
 
-    return {
-      amount,
-      fromCurrency,
-      toCurrency,
-      convertedAmount: Math.round(convertedAmount * 100) / 100,
-      rate: Math.round(conversionRate * 10000) / 10000
+      if (data) {
+        this.cache.set(cacheKey, { rate: data.rate, timestamp: Date.now() });
+        return data.rate;
+      }
+
+      // If not in database, use fallback rates
+      const fallbackRate = this.getFallbackRate(from, to);
+      this.cache.set(cacheKey, { rate: fallbackRate, timestamp: Date.now() });
+      return fallbackRate;
+    } catch (error) {
+      console.error('Error fetching exchange rate:', error);
+      return this.getFallbackRate(from, to);
+    }
+  }
+
+  private getFallbackRate(from: string, to: string): number {
+    const rates: Record<string, number> = {
+      'USD-EUR': 0.85,
+      'USD-GBP': 0.73,
+      'USD-JPY': 110.0,
+      'USD-CAD': 1.25,
+      'USD-AUD': 1.35,
+      'USD-INR': 75.0,
+      'USD-CNY': 6.5,
+      'EUR-USD': 1.18,
+      'GBP-USD': 1.37,
+      'JPY-USD': 0.009,
+      'CAD-USD': 0.80,
+      'AUD-USD': 0.74,
+      'INR-USD': 0.013,
+      'CNY-USD': 0.15,
     };
+
+    return rates[`${from}-${to}`] || 1;
   }
 
-  // Format amount with currency symbol
-  formatAmount(amount: number, currencyCode: string): string {
-    const currency = this.getCurrency(currencyCode);
-    if (!currency) return `${amount}`;
-
-    // Format with appropriate decimal places
-    const decimals = currencyCode === 'JPY' ? 0 : 2;
-    const formattedAmount = amount.toFixed(decimals);
-
-    return `${currency.symbol}${formattedAmount}`;
+  async convertAmount(amount: number, from: string, to: string): Promise<number> {
+    const rate = await this.getExchangeRate(from, to);
+    return amount * rate;
   }
 
-  // Get exchange rate between two currencies
-  getExchangeRate(fromCurrency: string, toCurrency: string): number {
-    const fromRate = this.rates.get(fromCurrency);
-    const toRate = this.rates.get(toCurrency);
-
-    if (!fromRate || !toRate) {
-      return 1; // Default to 1:1 if currencies not found
-    }
-
-    return toRate.rate / fromRate.rate;
-  }
-
-  // Update currency rates (for future API integration)
-  async updateRates(): Promise<void> {
+  async updateExchangeRates(): Promise<void> {
     try {
-      // In production, this would fetch from a currency API
-      // For now, we'll keep static rates
-      console.log('Currency rates updated');
-    } catch (error) {
-      console.error('Failed to update currency rates:', error);
-    }
-  }
+      // This would normally call a real exchange rate API
+      // For now, we'll just update with mock data
+      const rates = [
+        { base_currency: 'USD', target_currency: 'EUR', rate: 0.85 },
+        { base_currency: 'USD', target_currency: 'GBP', rate: 0.73 },
+        { base_currency: 'USD', target_currency: 'JPY', rate: 110.0 },
+        { base_currency: 'USD', target_currency: 'CAD', rate: 1.25 },
+        { base_currency: 'USD', target_currency: 'AUD', rate: 1.35 },
+        { base_currency: 'USD', target_currency: 'INR', rate: 75.0 },
+        { base_currency: 'USD', target_currency: 'CNY', rate: 6.5 },
+      ];
 
-  // Save user's preferred currency - now compatible with database schema
-  async saveUserCurrencyPreference(userId: string, currencyCode: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          preferred_currency: currencyCode,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
-
-      if (error) {
-        console.error('Error saving currency preference:', error);
-        throw error;
+      for (const rate of rates) {
+        await supabase
+          .from('exchange_rates')
+          .upsert(rate, { onConflict: 'base_currency,target_currency' });
       }
+
+      console.log('Exchange rates updated successfully');
     } catch (error) {
-      console.error('Failed to save currency preference:', error);
-      throw error;
+      console.error('Error updating exchange rates:', error);
     }
   }
 
-  // Get user's preferred currency - now compatible with database schema
-  async getUserCurrencyPreference(userId: string): Promise<string> {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('preferred_currency')
-        .eq('id', userId)
-        .maybeSingle();
+  getSupportedCurrencies(): string[] {
+    return ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'INR', 'CNY'];
+  }
 
-      if (error) {
-        console.error('Error fetching currency preference:', error);
-        return 'USD';
-      }
-      
-      return data?.preferred_currency || 'USD';
-    } catch (error) {
-      console.error('Failed to get currency preference:', error);
-      return 'USD';
-    }
+  formatCurrency(amount: number, currency: string): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
   }
 }
 
-export const currencyService = CurrencyService.getInstance();
+export const currencyService = new CurrencyService();

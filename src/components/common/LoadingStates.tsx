@@ -1,94 +1,63 @@
 
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import React from 'react';
+import { Skeleton } from '../ui/skeleton';
 
-interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
-  message?: string;
-}
-
-export const LoadingSpinner = ({ size = 'md', message }: LoadingSpinnerProps) => {
-  const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12'
-  };
-
-  return (
-    <div className="flex items-center justify-center p-4">
-      <div className="text-center">
-        <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600 mx-auto`} />
-        {message && <p className="mt-2 text-sm text-gray-600">{message}</p>}
+export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({ 
+  rows = 5, 
+  columns = 4 
+}) => (
+  <div className="space-y-4">
+    {Array.from({ length: rows }).map((_, i) => (
+      <div key={i} className="flex space-x-4">
+        {Array.from({ length: columns }).map((_, j) => (
+          <Skeleton key={j} className="h-12 flex-1" />
+        ))}
       </div>
-    </div>
-  );
-};
+    ))}
+  </div>
+);
 
-interface PageLoadingProps {
-  title?: string;
-  description?: string;
-}
-
-export const PageLoading = ({ title = "Loading...", description }: PageLoadingProps) => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="text-center">
-      <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-      {description && <p className="text-gray-600 mt-2">{description}</p>}
+export const CardSkeleton: React.FC = () => (
+  <div className="p-6 border rounded-lg space-y-4">
+    <Skeleton className="h-6 w-3/4" />
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-2/3" />
+    <div className="flex space-x-2">
+      <Skeleton className="h-8 w-20" />
+      <Skeleton className="h-8 w-20" />
     </div>
   </div>
 );
 
-interface ErrorStateProps {
-  title?: string;
-  message?: string;
-  onRetry?: () => void;
-  showRetry?: boolean;
-}
-
-export const ErrorState = ({ 
-  title = "Something went wrong", 
-  message = "An error occurred while loading this content.", 
-  onRetry,
-  showRetry = true 
-}: ErrorStateProps) => (
-  <Card className="max-w-md mx-auto">
-    <CardHeader className="text-center">
-      <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-      <CardTitle className="text-red-600">{title}</CardTitle>
-    </CardHeader>
-    <CardContent className="text-center space-y-4">
-      <p className="text-gray-600">{message}</p>
-      {showRetry && onRetry && (
-        <Button onClick={onRetry} variant="outline">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
-        </Button>
-      )}
-    </CardContent>
-  </Card>
+export const PageSkeleton: React.FC = () => (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-10 w-32" />
+    </div>
+    <Skeleton className="h-12 w-full" />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <CardSkeleton key={i} />
+      ))}
+    </div>
+  </div>
 );
 
-interface EmptyStateProps {
-  title: string;
-  description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-  icon?: React.ReactNode;
-}
-
-export const EmptyState = ({ title, description, action, icon }: EmptyStateProps) => (
-  <div className="text-center py-12">
-    {icon && <div className="mb-4">{icon}</div>}
-    <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-    {description && <p className="text-gray-600 mb-6 max-w-md mx-auto">{description}</p>}
-    {action && (
-      <Button onClick={action.onClick}>
-        {action.label}
-      </Button>
-    )}
+export const FormSkeleton: React.FC = () => (
+  <div className="space-y-6">
+    <Skeleton className="h-8 w-48" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ))}
+    </div>
+    <div className="flex space-x-4">
+      <Skeleton className="h-10 w-24" />
+      <Skeleton className="h-10 w-24" />
+    </div>
   </div>
 );
