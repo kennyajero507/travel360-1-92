@@ -50,6 +50,39 @@ class AuditService {
     }
   }
 
+  async logUserActivity(
+    action: string,
+    description?: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const auditLog = {
+        user_id: user?.id,
+        action,
+        table_name: 'user_activity',
+        record_id: user?.id,
+        new_data: {
+          description,
+          metadata,
+          timestamp: new Date().toISOString()
+        },
+        user_agent: navigator.userAgent,
+      };
+
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert([auditLog]);
+
+      if (error) {
+        console.error('Error logging user activity:', error);
+      }
+    } catch (error) {
+      console.error('Error in logUserActivity:', error);
+    }
+  }
+
   async getAuditLogs(
     tableNames?: string[],
     actions?: string[],
@@ -77,14 +110,21 @@ class AuditService {
         return [];
       }
 
-      return data || [];
+      return (data || []).map(log => ({
+        ...log,
+        ip_address: log.ip_address as string
+      }));
     } catch (error) {
       console.error('Error in getAuditLogs:', error);
       return [];
     }
   }
 
-  async getUserActivities(userId?: string, limit: number = 50): Promise<AuditLog[]> {
+  async getUserActivities(
+    userId?: string, 
+    actions?: string[],
+    limit: number = 50
+  ): Promise<AuditLog[]> {
     try {
       let query = supabase
         .from('audit_logs')
@@ -96,6 +136,10 @@ class AuditService {
         query = query.eq('user_id', userId);
       }
 
+      if (actions?.length) {
+        query = query.in('action', actions);
+      }
+
       const { data, error } = await query;
 
       if (error) {
@@ -103,7 +147,10 @@ class AuditService {
         return [];
       }
 
-      return data || [];
+      return (data || []).map(log => ({
+        ...log,
+        ip_address: log.ip_address as string
+      }));
     } catch (error) {
       console.error('Error in getUserActivities:', error);
       return [];

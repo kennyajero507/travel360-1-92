@@ -1,112 +1,119 @@
 
-import { supabase } from "../integrations/supabase/client";
-
-export interface ExchangeRate {
-  base_currency: string;
-  target_currency: string;
-  rate: number;
-  updated_at: string;
-}
+import { supabase } from '../integrations/supabase/client';
 
 class CurrencyService {
-  private cache: Map<string, { rate: number; timestamp: number }> = new Map();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private supportedCurrencies = [
+    'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'INR', 'CNY'
+  ];
 
-  async getExchangeRate(from: string, to: string): Promise<number> {
-    if (from === to) return 1;
-
-    const cacheKey = `${from}-${to}`;
-    const cached = this.cache.get(cacheKey);
-    
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      return cached.rate;
-    }
-
+  async getExchangeRates(): Promise<Record<string, number>> {
     try {
-      // Try to get from database first
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('exchange_rates')
-        .select('rate')
-        .eq('base_currency', from)
-        .eq('target_currency', to)
-        .single();
+        .select('*');
 
-      if (data) {
-        this.cache.set(cacheKey, { rate: data.rate, timestamp: Date.now() });
-        return data.rate;
+      if (error) {
+        console.error('Error fetching exchange rates:', error);
+        return this.getFallbackRates();
       }
 
-      // If not in database, use fallback rates
-      const fallbackRate = this.getFallbackRate(from, to);
-      this.cache.set(cacheKey, { rate: fallbackRate, timestamp: Date.now() });
-      return fallbackRate;
+      const rates: Record<string, number> = {};
+      data?.forEach(rate => {
+        const key = `${rate.base_currency}_${rate.target_currency}`;
+        rates[key] = rate.rate;
+      });
+
+      return rates;
     } catch (error) {
-      console.error('Error fetching exchange rate:', error);
-      return this.getFallbackRate(from, to);
+      console.error('Error in getExchangeRates:', error);
+      return this.getFallbackRates();
     }
   }
 
-  private getFallbackRate(from: string, to: string): number {
-    const rates: Record<string, number> = {
-      'USD-EUR': 0.85,
-      'USD-GBP': 0.73,
-      'USD-JPY': 110.0,
-      'USD-CAD': 1.25,
-      'USD-AUD': 1.35,
-      'USD-INR': 75.0,
-      'USD-CNY': 6.5,
-      'EUR-USD': 1.18,
-      'GBP-USD': 1.37,
-      'JPY-USD': 0.009,
-      'CAD-USD': 0.80,
-      'AUD-USD': 0.74,
-      'INR-USD': 0.013,
-      'CNY-USD': 0.15,
+  private getFallbackRates(): Record<string, number> {
+    return {
+      'USD_EUR': 0.85,
+      'USD_GBP': 0.73,
+      'USD_JPY': 110.0,
+      'USD_CAD': 1.25,
+      'USD_AUD': 1.35,
+      'USD_INR': 75.0,
+      'USD_CNY': 6.5
     };
-
-    return rates[`${from}-${to}`] || 1;
   }
 
-  async convertAmount(amount: number, from: string, to: string): Promise<number> {
-    const rate = await this.getExchangeRate(from, to);
-    return amount * rate;
-  }
+  async convertAmount(amount: number, fromCurrency: string, toCurrency: string): Promise<number> {
+    if (fromCurrency === toCurrency) {
+      return amount;
+    }
 
-  async updateExchangeRates(): Promise<void> {
     try {
-      // This would normally call a real exchange rate API
-      // For now, we'll just update with mock data
-      const rates = [
-        { base_currency: 'USD', target_currency: 'EUR', rate: 0.85 },
-        { base_currency: 'USD', target_currency: 'GBP', rate: 0.73 },
-        { base_currency: 'USD', target_currency: 'JPY', rate: 110.0 },
-        { base_currency: 'USD', target_currency: 'CAD', rate: 1.25 },
-        { base_currency: 'USD', target_currency: 'AUD', rate: 1.35 },
-        { base_currency: 'USD', target_currency: 'INR', rate: 75.0 },
-        { base_currency: 'USD', target_currency: 'CNY', rate: 6.5 },
-      ];
-
-      for (const rate of rates) {
-        await supabase
-          .from('exchange_rates')
-          .upsert(rate, { onConflict: 'base_currency,target_currency' });
+      const rates = await this.getExchangeRates();
+      
+      // Direct conversion
+      const directKey = `${fromCurrency}_${toCurrency}`;
+      if (rates[directKey]) {
+        return amount * rates[directKey];
       }
 
-      console.log('Exchange rates updated successfully');
+      // Reverse conversion
+      const reverseKey = `${toCurrency}_${fromCurrency}`;
+      if (rates[reverseKey]) {
+        return amount / rates[reverseKey];
+      }
+
+      // Convert via USD
+      if (fromCurrency !== 'USD') {
+        const toUsdKey = `${fromCurrency}_USD`;
+        const reverseToUsdKey = `USD_${fromCurrency}`;
+        
+        if (rates[toUsdKey]) {
+          amount = amount * rates[toUsdKey];
+        } else if (rates[reverseToUsdKey]) {
+          amount = amount / rates[reverseToUsdKey];
+        }
+      }
+
+      if (toCurrency !== 'USD') {
+        const fromUsdKey = `USD_${toCurrency}`;
+        const reverseFromUsdKey = `${toCurrency}_USD`;
+        
+        if (rates[fromUsdKey]) {
+          amount = amount * rates[fromUsdKey];
+        } else if (rates[reverseFromUsdKey]) {
+          amount = amount / rates[reverseFromUsdKey];
+        }
+      }
+
+      return Math.round(amount * 100) / 100;
     } catch (error) {
-      console.error('Error updating exchange rates:', error);
+      console.error('Error converting currency:', error);
+      return amount; // Return original amount if conversion fails
+    }
+  }
+
+  formatCurrency(amount: number, currencyCode: string): string {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch (error) {
+      console.error('Error formatting currency:', error);
+      return `${currencyCode} ${amount.toFixed(2)}`;
     }
   }
 
   getSupportedCurrencies(): string[] {
-    return ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'INR', 'CNY'];
+    return this.supportedCurrencies;
   }
 
-  formatCurrency(amount: number, currency: string): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
+  async updateExchangeRates(): Promise<void> {
+    // In a real implementation, this would fetch from an API like ExchangeRate-API
+    // For now, we'll use static rates
+    console.log('Exchange rates update would happen here');
   }
 }
 

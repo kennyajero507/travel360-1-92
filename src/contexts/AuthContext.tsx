@@ -19,6 +19,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Fetch user profile data
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('[AuthContext] Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -27,10 +29,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        
+        // If profile doesn't exist, create a fallback profile
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const fallbackProfile: UserProfile = {
+            id: userId,
+            full_name: user.email?.split('@')[0] || 'User',
+            email: user.email || '',
+            role: 'org_owner',
+            org_id: null,
+            trial_ends_at: null,
+            created_at: new Date().toISOString(),
+            preferred_currency: 'USD'
+          };
+          console.log('[AuthContext] Using fallback profile:', fallbackProfile);
+          return fallbackProfile;
+        }
         return null;
       }
 
-      return data;
+      const profile: UserProfile = {
+        id: data.id,
+        full_name: data.full_name,
+        email: data.email,
+        role: data.role || 'org_owner',
+        org_id: data.org_id,
+        trial_ends_at: data.trial_ends_at,
+        created_at: data.created_at,
+        preferred_currency: data.preferred_currency || 'USD'
+      };
+
+      console.log('[AuthContext] Profile fetched successfully:', profile);
+      return profile;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       return null;
@@ -39,23 +70,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize auth state
   useEffect(() => {
+    let isMounted = true;
+    
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('[AuthContext] Getting initial session...');
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
-        if (initialSession) {
+        if (error) {
+          console.error('[AuthContext] Error getting initial session:', error);
+          if (isMounted) {
+            setLoading(false);
+          }
+          return;
+        }
+        
+        if (initialSession && isMounted) {
+          console.log('[AuthContext] Initial session found:', initialSession.user.email);
           setSession(initialSession);
           setUser(initialSession.user);
           
           // Fetch user profile
           const profile = await fetchUserProfile(initialSession.user.id);
-          setUserProfile(profile);
+          if (isMounted) {
+            setUserProfile(profile);
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -64,7 +111,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        if (!isMounted) return;
+        
+        console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user || null);
@@ -72,7 +121,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           // Fetch user profile when user logs in
           const profile = await fetchUserProfile(session.user.id);
-          setUserProfile(profile);
+          if (isMounted) {
+            setUserProfile(profile);
+          }
         } else {
           setUserProfile(null);
         }
@@ -81,29 +132,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    return await authService.login(email, password);
+    console.log('[AuthContext] Login attempt for:', email);
+    setLoading(true);
+    
+    try {
+      const success = await authService.login(email, password);
+      console.log('[AuthContext] Login result:', success);
+      return success;
+    } catch (error) {
+      console.error('[AuthContext] Login error:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = async (): Promise<void> => {
+    console.log('[AuthContext] Logout initiated');
     await authService.logout();
   };
 
   const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
+    console.log('[AuthContext] Signup attempt for:', email);
     return await authService.signup(email, password, fullName, companyName);
   };
 
   const checkRoleAccess = (allowedRoles: string[]): boolean => {
-    if (!userProfile) return false;
+    if (!userProfile) {
+      console.log('[AuthContext] No user profile for role check');
+      return false;
+    }
     
     // System admins have access to everything
     if (userProfile.role === 'system_admin') return true;
     
     // Check if user's role is in the allowed roles
-    return allowedRoles.includes(userProfile.role);
+    const hasAccess = allowedRoles.includes(userProfile.role);
+    console.log('[AuthContext] Role access check:', userProfile.role, allowedRoles, hasAccess);
+    return hasAccess;
   };
 
   const createOrganization = async (name: string): Promise<boolean> => {

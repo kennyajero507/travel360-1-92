@@ -23,7 +23,6 @@ const Login = () => {
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [mounted, setMounted] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -34,18 +33,15 @@ const Login = () => {
   // Get the redirect path from location state, default to app dashboard
   const from = location.state?.from?.pathname || "/app/dashboard";
   
-  // Set mounted state to prevent hydration issues
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  
   // Redirect if already logged in
   useEffect(() => {
-    if (mounted && session && !authLoading) {
-      console.log("User is logged in, redirecting to:", from);
+    console.log('[Login] Auth state:', { session: !!session, authLoading });
+    
+    if (!authLoading && session) {
+      console.log('[Login] User is logged in, redirecting to:', from);
       navigate(from, { replace: true });
     }
-  }, [session, authLoading, navigate, from, mounted]);
+  }, [session, authLoading, navigate, from]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -66,11 +62,14 @@ const Login = () => {
     setLoading(true);
     
     try {
+      console.log('[Login] Attempting login for:', formData.email);
       const success = await login(formData.email, formData.password);
       
       if (success) {
-        toast.success("Login successful!");
-        // Navigation will be handled by the useEffect above
+        console.log('[Login] Login successful, navigation will be handled by useEffect');
+        // Don't navigate here - let the useEffect handle it when session updates
+      } else {
+        console.log('[Login] Login failed');
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -80,13 +79,13 @@ const Login = () => {
     }
   };
   
-  // Show loading state while checking auth or not mounted
-  if (!mounted || authLoading) {
+  // Show loading state while checking auth
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
+          <p className="text-slate-600">Checking authentication...</p>
         </div>
       </div>
     );

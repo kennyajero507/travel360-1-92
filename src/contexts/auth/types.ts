@@ -9,6 +9,7 @@ export interface UserProfile {
   org_id: string | null;
   trial_ends_at: string | null;
   created_at: string;
+  preferred_currency?: string | null;
 }
 
 export interface AuthContextType {
