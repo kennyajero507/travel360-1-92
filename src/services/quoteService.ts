@@ -1,8 +1,15 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { QuoteData, QuoteStatus, ClientQuotePreview, HotelOption } from "../types/quote.types";
 import { Hotel } from "../types/hotel.types";
 import { toast } from "sonner";
+
+// Define a compatible Hotel interface for the quote service
+interface QuoteServiceHotel {
+  id: string;
+  name: string;
+  category?: string;
+  status?: string; // Allow any string to match database
+}
 
 export const getAllQuotes = async (): Promise<QuoteData[]> => {
   try {
@@ -86,8 +93,8 @@ export const generateClientPreview = async (quoteId: string): Promise<ClientQuot
       console.error('Error fetching hotels:', hotelsError);
     }
 
-    // Transform hotels into hotel options
-    const hotelOptions: HotelOption[] = (hotels || []).map(hotel => {
+    // Transform hotels into hotel options - fix type compatibility
+    const hotelOptions: HotelOption[] = (hotels || []).map((hotel: any) => {
       // Calculate total price for this hotel from room arrangements
       const hotelRooms = quote.room_arrangements?.filter(room => room.hotel_id === hotel.id) || [];
       const totalPrice = hotelRooms.reduce((sum, room) => sum + (room.total || 0), 0);
@@ -143,7 +150,7 @@ export const generateClientPreview = async (quoteId: string): Promise<ClientQuot
       },
       tourType: quote.tour_type || 'domestic',
       createdAt: quote.created_at || new Date().toISOString(),
-      hotels: hotels || [],
+      hotels: (hotels || []).map((h: any) => ({ ...h, status: h.status as any })),
       hotelOptions,
       totalCost,
       currency: quote.currency_code || 'USD'

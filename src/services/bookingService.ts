@@ -1,292 +1,225 @@
 
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
-import { BookingStatus } from "../types/booking.types";
+import { Booking, TravelVoucher, PaymentRecord, BookingNotification } from "../types/booking.types";
 
-export interface BookingData {
-  quoteId: string;
-  client: string;
-  agentId?: string;
-  hotelId: string;
-  hotelName: string;
-  travelStart: string;
-  travelEnd: string;
-  totalPrice: number;
-  status: BookingStatus;
-  notes?: string;
-  roomArrangement: any[];
-  activities: any[];
-  transport: any[];
-  transfers: any[];
-}
-
-// Helper function to safely parse JSON fields
-const parseJsonField = (field: any): any[] => {
-  if (Array.isArray(field)) return field;
-  if (typeof field === 'string') {
-    try {
-      return JSON.parse(field);
-    } catch {
-      return [];
-    }
-  }
-  return field || [];
-};
-
-export const getAllBookings = async () => {
+// Create or get booking from quote
+export const createBookingFromQuote = async (quoteId: string, hotelId: string): Promise<Booking> => {
   try {
-    console.log('[BookingService] Fetching bookings from database');
-    
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('[BookingService] Error fetching bookings:', error);
-      throw error;
-    }
-
-    console.log('[BookingService] Fetched bookings:', data?.length || 0);
-    
-    // Transform the data to match our Booking interface
-    const transformedData = (data || []).map(booking => ({
-      ...booking,
-      room_arrangement: parseJsonField(booking.room_arrangement),
-      activities: parseJsonField(booking.activities),
-      transport: parseJsonField(booking.transport),
-      transfers: parseJsonField(booking.transfers)
-    }));
-    
-    return transformedData;
-  } catch (error) {
-    console.error('[BookingService] Error in getAllBookings:', error);
-    toast.error('Failed to load bookings');
-    return [];
-  }
-};
-
-export const getBookingById = async (id: string) => {
-  try {
-    console.log('[BookingService] Fetching booking by ID:', id);
-    
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error('[BookingService] Error fetching booking:', error);
-      throw error;
-    }
-
-    // Transform the data
-    const transformedData = {
-      ...data,
-      room_arrangement: parseJsonField(data.room_arrangement),
-      activities: parseJsonField(data.activities),
-      transport: parseJsonField(data.transport),
-      transfers: parseJsonField(data.transfers)
-    };
-
-    return transformedData;
-  } catch (error) {
-    console.error('[BookingService] Error in getBookingById:', error);
-    toast.error('Failed to load booking details');
-    return null;
-  }
-};
-
-export const createBooking = async (bookingData: BookingData) => {
-  try {
-    console.log('[BookingService] Creating booking:', bookingData);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
-    // Generate booking reference
-    const year = new Date().getFullYear();
-    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const bookingReference = `BK-${year}-${randomNum}`;
-
-    const newBooking = {
-      booking_reference: bookingReference,
-      quote_id: bookingData.quoteId,
-      client: bookingData.client,
-      agent_id: bookingData.agentId || null,
-      hotel_id: bookingData.hotelId,
-      hotel_name: bookingData.hotelName,
-      travel_start: bookingData.travelStart,
-      travel_end: bookingData.travelEnd,
-      total_price: bookingData.totalPrice,
-      status: bookingData.status,
-      notes: bookingData.notes || null,
-      room_arrangement: JSON.stringify(bookingData.roomArrangement),
-      activities: JSON.stringify(bookingData.activities),
-      transport: JSON.stringify(bookingData.transport),
-      transfers: JSON.stringify(bookingData.transfers),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert(newBooking)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[BookingService] Error creating booking:', error);
-      throw error;
-    }
-
-    console.log('[BookingService] Booking created successfully:', data.id);
-    toast.success('Booking created successfully');
-    return data;
-  } catch (error) {
-    console.error('[BookingService] Error in createBooking:', error);
-    toast.error('Failed to create booking');
-    throw error;
-  }
-};
-
-export const createBookingFromQuote = async (quoteId: string, hotelId: string) => {
-  try {
-    console.log('[BookingService] Creating booking from quote:', quoteId, hotelId);
-    
-    // Fetch quote data first
+    // Get quote data
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .select('*')
       .eq('id', quoteId)
       .single();
 
-    if (quoteError || !quote) {
-      throw new Error('Quote not found');
-    }
+    if (quoteError) throw quoteError;
 
-    const bookingData: BookingData = {
-      quoteId: quote.id,
+    // Get hotel data
+    const { data: hotel, error: hotelError } = await supabase
+      .from('hotels')
+      .select('*')
+      .eq('id', hotelId)
+      .single();
+
+    if (hotelError) throw hotelError;
+
+    // Create booking data
+    const bookingData = {
       client: quote.client,
-      agentId: quote.created_by,
-      hotelId: hotelId,
-      hotelName: quote.destination, // Fallback
-      travelStart: quote.start_date,
-      travelEnd: quote.end_date,
-      totalPrice: 0, // Calculate from quote
-      status: 'pending' as BookingStatus,
-      roomArrangement: parseJsonField(quote.room_arrangements),
-      activities: parseJsonField(quote.activities),
-      transport: parseJsonField(quote.transports),
-      transfers: parseJsonField(quote.transfers)
+      hotel_name: hotel.name,
+      hotel_id: hotelId,
+      travel_start: quote.start_date,
+      travel_end: quote.end_date,
+      room_arrangement: quote.room_arrangements || [],
+      transport: quote.transports || [],
+      activities: quote.activities || [],
+      transfers: quote.transfers || [],
+      status: 'pending' as const,
+      total_price: calculateQuoteTotal(quote),
+      quote_id: quoteId,
+      notes: quote.notes
     };
 
-    return await createBooking(bookingData);
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .insert(bookingData)
+      .select()
+      .single();
+
+    if (bookingError) throw bookingError;
+
+    toast.success('Booking created successfully');
+    return booking as Booking;
   } catch (error) {
-    console.error('[BookingService] Error in createBookingFromQuote:', error);
+    console.error('Error creating booking:', error);
+    toast.error('Failed to create booking');
     throw error;
   }
 };
 
-export const updateBookingStatus = async (id: string, status: string) => {
+// Get all bookings
+export const getAllBookings = async (): Promise<Booking[]> => {
   try {
-    console.log('[BookingService] Updating booking status:', id, status);
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
     
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    toast.error('Failed to fetch bookings');
+    return [];
+  }
+};
+
+// Get booking by ID
+export const getBookingById = async (id: string): Promise<Booking | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching booking:', error);
+    return null;
+  }
+};
+
+// Update booking status
+export const updateBookingStatus = async (bookingId: string, status: string): Promise<void> => {
+  try {
     const { error } = await supabase
       .from('bookings')
-      .update({ 
-        status: status as BookingStatus,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id);
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', bookingId);
 
-    if (error) {
-      console.error('[BookingService] Error updating booking status:', error);
-      throw error;
-    }
-
+    if (error) throw error;
+    
     toast.success(`Booking status updated to ${status}`);
-    return true;
   } catch (error) {
-    console.error('[BookingService] Error in updateBookingStatus:', error);
+    console.error('Error updating booking status:', error);
     toast.error('Failed to update booking status');
     throw error;
   }
 };
 
-export const deleteBooking = async (id: string) => {
-  try {
-    console.log('[BookingService] Deleting booking:', id);
-    
-    const { error } = await supabase
-      .from('bookings')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('[BookingService] Error deleting booking:', error);
-      throw error;
-    }
-
-    toast.success('Booking deleted successfully');
-    return true;
-  } catch (error) {
-    console.error('[BookingService] Error in deleteBooking:', error);
-    toast.error('Failed to delete booking');
-    throw error;
-  }
-};
-
-// Voucher-related functions
-export const getAllVouchers = async () => {
+// Voucher management
+export const getAllVouchers = async (): Promise<TravelVoucher[]> => {
   try {
     const { data, error } = await supabase
       .from('travel_vouchers')
-      .select('*')
+      .select(`
+        *,
+        bookings!inner (
+          booking_reference,
+          client,
+          hotel_name
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+    
     return data || [];
   } catch (error) {
     console.error('Error fetching vouchers:', error);
-    toast.error('Failed to load vouchers');
+    toast.error('Failed to fetch vouchers');
     return [];
   }
 };
 
-export const getVoucherById = async (id: string) => {
+export const getVoucherById = async (id: string): Promise<TravelVoucher | null> => {
   try {
     const { data, error } = await supabase
       .from('travel_vouchers')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    
     return data;
   } catch (error) {
     console.error('Error fetching voucher:', error);
-    toast.error('Failed to load voucher');
     return null;
   }
 };
 
-export const updateVoucherEmailStatus = async (id: string, emailSent: boolean) => {
+export const updateVoucherEmailStatus = async (voucherId: string, emailSent: boolean): Promise<void> => {
   try {
     const { error } = await supabase
       .from('travel_vouchers')
-      .update({ email_sent: emailSent })
-      .eq('id', id);
+      .update({ email_sent: emailSent, updated_at: new Date().toISOString() })
+      .eq('id', voucherId);
 
     if (error) throw error;
-    toast.success('Voucher email status updated');
-    return true;
   } catch (error) {
     console.error('Error updating voucher email status:', error);
-    toast.error('Failed to update voucher email status');
-    return false;
+    throw error;
   }
+};
+
+// Payment management
+export const getPaymentsByBooking = async (bookingId: string): Promise<PaymentRecord[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    return [];
+  }
+};
+
+export const recordPayment = async (payment: Omit<PaymentRecord, 'id' | 'created_at' | 'updated_at'>): Promise<PaymentRecord> => {
+  try {
+    const { data, error } = await supabase
+      .from('payments')
+      .insert(payment)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    toast.success('Payment recorded successfully');
+    return data;
+  } catch (error) {
+    console.error('Error recording payment:', error);
+    toast.error('Failed to record payment');
+    throw error;
+  }
+};
+
+// Helper function to calculate quote total
+const calculateQuoteTotal = (quote: any): number => {
+  const accommodationTotal = quote.room_arrangements?.reduce((sum: number, room: any) => sum + (room.total || 0), 0) || 0;
+  const transportTotal = quote.transports?.reduce((sum: number, transport: any) => sum + (transport.total_cost || 0), 0) || 0;
+  const transferTotal = quote.transfers?.reduce((sum: number, transfer: any) => sum + (transfer.total || 0), 0) || 0;
+  const activityTotal = quote.activities?.reduce((sum: number, activity: any) => sum + (activity.total_cost || 0), 0) || 0;
+  
+  const subtotal = accommodationTotal + transportTotal + transferTotal + activityTotal;
+  
+  let markupAmount = 0;
+  if (quote.markup_type === 'percentage') {
+    markupAmount = (subtotal * (quote.markup_value || 0)) / 100;
+  } else {
+    markupAmount = quote.markup_value || 0;
+  }
+  
+  return subtotal + markupAmount;
 };

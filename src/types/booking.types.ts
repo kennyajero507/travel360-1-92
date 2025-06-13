@@ -1,5 +1,6 @@
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
 export interface BookingTransport {
   mode: string;
@@ -62,4 +63,47 @@ export interface Booking {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+// Add the missing TravelVoucher interface
+export interface TravelVoucher {
+  id: string;
+  booking_id: string;
+  voucher_reference: string;
+  issued_date: string;
+  issued_by?: string;
+  notes?: string;
+  email_sent: boolean;
+  voucher_pdf_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Add payment tracking interface
+export interface PaymentRecord {
+  id: string;
+  booking_id: string;
+  amount: number;
+  payment_method?: string;
+  payment_status: PaymentStatus;
+  payment_date?: string;
+  transaction_id?: string;
+  currency_code: string;
+  notes?: string;
+  invoice_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Add notification interface
+export interface BookingNotification {
+  id: string;
+  booking_id?: string;
+  notification_type: string;
+  recipient_email: string;
+  subject: string;
+  content: string;
+  status?: string;
+  sent_at?: string;
+  created_at?: string;
 }
