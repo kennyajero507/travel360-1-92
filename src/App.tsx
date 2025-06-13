@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ResetPassword from "./pages/ResetPassword";
+import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminSettingsPage from "./pages/admin/AdminSettings";
 import Quotes from "./pages/Quotes";
@@ -61,6 +62,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/admin/login" element={<AdminLogin />} />
 
                     {/* Protected Routes */}
                     <Route
