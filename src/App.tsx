@@ -12,7 +12,6 @@ import GlobalErrorBoundary from "./components/common/GlobalErrorBoundary";
 // Auth pages
 import SignIn from "./pages/SignIn";
 import Signup from "./pages/Signup";
-import Login from "./pages/Login"; // Keep for backward compatibility
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AcceptInvitation from "./pages/AcceptInvitation";
@@ -92,10 +91,12 @@ function App() {
                       {/* Auth routes */}
                       <Route path="/signin" element={<SignIn />} />
                       <Route path="/signup" element={<Signup />} />
-                      <Route path="/login" element={<Login />} /> {/* Keep for backward compatibility */}
                       <Route path="/forgot-password" element={<ForgotPassword />} />
                       <Route path="/reset-password" element={<ResetPassword />} />
                       <Route path="/accept-invitation" element={<AcceptInvitation />} />
+
+                      {/* Legacy login redirect */}
+                      <Route path="/login" element={<Navigate to="/signin" replace />} />
 
                       {/* Admin routes */}
                       <Route path="/admin/login" element={<AdminLogin />} />
@@ -334,7 +335,7 @@ function App() {
                         }
                       />
 
-                      {/* Legacy route redirects */}
+                      {/* Legacy route redirects to /app/ prefix */}
                       <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
                       <Route path="/inquiries" element={<Navigate to="/app/inquiries" replace />} />
                       <Route path="/quotes" element={<Navigate to="/app/quotes" replace />} />

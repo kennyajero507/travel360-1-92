@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize auth state with better error handling
+  // Initialize auth state with timeout protection
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
@@ -27,14 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         console.log('[AuthContext] Getting initial session...');
         
-        // Set a timeout to prevent infinite loading
+        // Set a timeout to prevent infinite loading - reduced to 3 seconds
         timeoutId = setTimeout(() => {
           if (isMounted && loading) {
             console.log('[AuthContext] Initial session timeout, proceeding without auth');
             setLoading(false);
             setInitialized(true);
           }
-        }, 5000); // Reduced to 5 seconds
+        }, 3000);
 
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(initialSession);
           setUser(initialSession.user);
           
-          // Ensure profile exists with better error handling
+          // Get profile with timeout protection
           try {
             const profile = await profileService.ensureProfileExists(initialSession.user.id);
             if (isMounted) {
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } catch (profileError) {
             console.error('[AuthContext] Profile error during initialization:', profileError);
-            // Create a minimal profile to prevent blocking
+            // Create minimal profile on error
             if (isMounted) {
               setUserProfile({
                 id: initialSession.user.id,
@@ -106,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } catch (profileError) {
             console.error('[AuthContext] Profile error during auth change:', profileError);
-            // Create minimal profile to prevent blocking
+            // Create minimal profile on error
             if (isMounted) {
               setUserProfile({
                 id: session.user.id,
@@ -208,35 +208,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     signup,
-    checkRoleAccess: (allowedRoles: string[]) => profileService.checkRoleAccess(userProfile, allowedRoles),
-    createOrganization: async (name: string) => {
-      if (!user?.id) return false;
-      return await organizationService.createOrganization(name, user.id);
-    },
-    refreshProfile: async () => {
-      if (!user?.id) return;
-      try {
-        const profile = await profileService.ensureProfileExists(user.id);
-        setUserProfile(profile);
-      } catch (error) {
-        console.error('Error refreshing profile:', error);
-      }
-    },
-    sendInvitation: async (email: string, role: string) => {
-      return await invitationService.sendInvitation(email, role, userProfile, user?.id);
-    },
-    getInvitations: async () => {
-      return await invitationService.getInvitations(userProfile);
-    },
-    acceptInvitation: async (token: string) => {
-      return await invitationService.acceptInvitation(token);
-    },
-    resetPassword: async (email: string) => {
-      return await enhancedAuthService.resetPassword(email);
-    },
-    updatePassword: async (password: string) => {
-      return await enhancedAuthService.updatePassword(password);
-    },
+    checkRoleAccess,
+    createOrganization,
+    refreshProfile,
+    sendInvitation,
+    getInvitations,
+    acceptInvitation,
+    resetPassword,
+    updatePassword,
   };
 
   return (

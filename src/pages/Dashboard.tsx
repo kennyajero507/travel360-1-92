@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { 
@@ -16,10 +15,23 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import AdminSetup from "../components/admin/AdminSetup";
+import OrganizationSetupModal from "../components/auth/OrganizationSetupModal";
 
 const Dashboard = () => {
   const { userProfile } = useAuth();
   const [showAdminSetup, setShowAdminSetup] = useState(false);
+  const [showOrgSetup, setShowOrgSetup] = useState(false);
+
+  // Check if user needs to set up organization
+  useEffect(() => {
+    if (userProfile && userProfile.role === 'org_owner' && !userProfile.org_id) {
+      setShowOrgSetup(true);
+    }
+  }, [userProfile]);
+
+  const handleOrgSetupClose = () => {
+    setShowOrgSetup(false);
+  };
 
   const stats = [
     { title: "Total Quotes", value: "24", icon: FileText, change: "+12%", color: "text-blue-600" },
@@ -38,7 +50,7 @@ const Dashboard = () => {
   const isAdmin = userProfile?.role === 'system_admin';
 
   return (
-    <div className="space-y-6">
+    <>
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -182,7 +194,13 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+
+      {/* Organization Setup Modal */}
+      <OrganizationSetupModal
+        isOpen={showOrgSetup}
+        onClose={handleOrgSetupClose}
+      />
+    </>
   );
 };
 
