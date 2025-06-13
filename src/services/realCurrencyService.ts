@@ -7,7 +7,7 @@ interface ExchangeRate {
   base_currency: string;
   target_currency: string;
   rate: number;
-  last_updated: string;
+  updated_at: string; // Changed from last_updated to match database schema
 }
 
 class RealCurrencyService {
@@ -32,7 +32,7 @@ class RealCurrencyService {
       const { data, error } = await supabase
         .from('exchange_rates')
         .select('*')
-        .order('last_updated', { ascending: false });
+        .order('updated_at', { ascending: false }); // Changed from last_updated
 
       if (error) {
         console.error('Error fetching exchange rates:', error);
@@ -158,7 +158,7 @@ class RealCurrencyService {
           base_currency: base,
           target_currency: target,
           rate,
-          last_updated: new Date().toISOString()
+          updated_at: new Date().toISOString() // Changed from last_updated
         };
       });
 
