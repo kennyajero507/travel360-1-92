@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
-import { authService } from './auth/authService';
+import { enhancedAuthService } from './auth/enhancedAuthService';
 import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
 import { profileService } from './auth/profileService';
@@ -18,14 +18,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize auth state
+  // Initialize auth state with timeout protection
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
     
     // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('[AuthContext] Getting initial session...');
+        
+        // Set a timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          if (isMounted && loading) {
+            console.log('[AuthContext] Initial session timeout, proceeding without auth');
+            setLoading(false);
+            setInitialized(true);
+          }
+        }, 8000);
+
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -42,15 +53,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(initialSession);
           setUser(initialSession.user);
           
-          // Ensure profile exists and fetch it
-          const profile = await profileService.ensureProfileExists(initialSession.user.id);
-          if (isMounted) {
-            setUserProfile(profile);
+          // Ensure profile exists and fetch it with timeout protection
+          try {
+            const profile = await profileService.ensureProfileExists(initialSession.user.id);
+            if (isMounted) {
+              setUserProfile(profile);
+            }
+          } catch (profileError) {
+            console.error('[AuthContext] Profile error during initialization:', profileError);
+            // Continue without profile rather than blocking
           }
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
       } finally {
+        if (timeoutId) clearTimeout(timeoutId);
         if (isMounted) {
           setLoading(false);
           setInitialized(true);
@@ -72,9 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           // Ensure profile exists when user logs in
-          const profile = await profileService.ensureProfileExists(session.user.id);
-          if (isMounted) {
-            setUserProfile(profile);
+          try {
+            const profile = await profileService.ensureProfileExists(session.user.id);
+            if (isMounted) {
+              setUserProfile(profile);
+            }
+          } catch (profileError) {
+            console.error('[AuthContext] Profile error during auth change:', profileError);
+            // Continue without profile rather than blocking
+            setUserProfile(null);
           }
         } else {
           setUserProfile(null);
@@ -88,15 +111,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, [initialized, loading]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('[AuthContext] Login attempt for:', email);
     
     try {
-      const success = await authService.login(email, password);
+      const success = await enhancedAuthService.login(email, password);
       console.log('[AuthContext] Login result:', success);
       return success;
     } catch (error) {
@@ -107,12 +131,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async (): Promise<void> => {
     console.log('[AuthContext] Logout initiated');
-    await authService.logout();
+    await enhancedAuthService.logout();
   };
 
   const signup = async (email: string, password: string, fullName: string, companyName: string): Promise<boolean> => {
     console.log('[AuthContext] Signup attempt for:', email);
-    return await authService.signup(email, password, fullName, companyName);
+    return await enhancedAuthService.signup(email, password, fullName, companyName);
   };
 
   const checkRoleAccess = (allowedRoles: string[]): boolean => {
@@ -148,35 +172,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetPassword = async (email: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) {
-        toast.error(error.message);
-        return false;
-      }
-      toast.success('Password reset email sent');
-      return true;
-    } catch (error) {
-      console.error('Reset password error:', error);
-      toast.error('Failed to send reset email');
-      return false;
-    }
+    return await enhancedAuthService.resetPassword(email);
   };
 
   const updatePassword = async (password: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) {
-        toast.error(error.message);
-        return false;
-      }
-      toast.success('Password updated successfully');
-      return true;
-    } catch (error) {
-      console.error('Update password error:', error);
-      toast.error('Failed to update password');
-      return false;
-    }
+    return await enhancedAuthService.updatePassword(password);
   };
 
   const value: AuthContextType = {

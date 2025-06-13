@@ -23,6 +23,7 @@ const Login = () => {
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [redirectTimeout, setRedirectTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -33,12 +34,29 @@ const Login = () => {
   // Get the redirect path from location state, default to app dashboard
   const from = location.state?.from?.pathname || "/app/dashboard";
   
-  // Redirect if already logged in
+  // Redirect if already logged in with timeout protection
   useEffect(() => {
     if (!authLoading && session && userProfile) {
       console.log('[Login] User is logged in with profile, redirecting to:', from);
-      navigate(from, { replace: true });
+      
+      // Clear any existing timeout
+      if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+      }
+      
+      // Set timeout for redirect to prevent immediate navigation issues
+      const timeout = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
+      
+      setRedirectTimeout(timeout);
     }
+    
+    return () => {
+      if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+      }
+    };
   }, [session, userProfile, authLoading, navigate, from]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +83,7 @@ const Login = () => {
       
       if (success) {
         console.log('[Login] Login successful');
+        toast.success("Login successful! Redirecting...");
         // Navigation will be handled by useEffect when session/profile updates
       } else {
         console.log('[Login] Login failed');
@@ -78,13 +97,14 @@ const Login = () => {
     }
   };
   
-  // Show loading state while checking auth
+  // Show loading state while checking auth with timeout protection
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Checking authentication...</p>
+          <p className="text-slate-400 text-sm mt-2">This should only take a moment</p>
         </div>
       </div>
     );
@@ -96,7 +116,7 @@ const Login = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Redirecting...</p>
+          <p className="text-slate-600">Redirecting to dashboard...</p>
         </div>
       </div>
     );
@@ -144,6 +164,7 @@ const Login = () => {
                   onChange={handleInputChange}
                   required
                   className="w-full"
+                  disabled={loading}
                 />
               </div>
               <div className="space-y-2">
@@ -158,11 +179,13 @@ const Login = () => {
                     onChange={handleInputChange}
                     required
                     className="w-full"
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    disabled={loading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
