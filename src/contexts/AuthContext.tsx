@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -27,14 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         console.log('[AuthContext] Getting initial session...');
         
-        // Set a timeout to prevent infinite loading - reduced to 3 seconds
+        // Set a timeout to prevent infinite loading - reduced to 2 seconds
         timeoutId = setTimeout(() => {
           if (isMounted && loading) {
             console.log('[AuthContext] Initial session timeout, proceeding without auth');
             setLoading(false);
             setInitialized(true);
           }
-        }, 3000);
+        }, 2000);
 
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         

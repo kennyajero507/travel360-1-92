@@ -16,6 +16,13 @@ export const profileService = {
       
       if (error) {
         console.error('[ProfileService] Error fetching profile:', error);
+        
+        // Check if it's an RLS permission issue
+        if (error.message.includes('row-level security') || error.message.includes('permission denied')) {
+          console.log('[ProfileService] RLS blocking profile access, creating new profile');
+          return await this.createNewProfile(userId);
+        }
+        
         return await this.createFallbackProfile(userId);
       }
       
@@ -68,14 +75,30 @@ export const profileService = {
         created_at: new Date().toISOString()
       };
 
+      // Try to insert with proper error handling for RLS
       const { data, error } = await supabase
         .from('profiles')
         .insert(profileData)
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('[ProfileService] Error creating profile:', error);
+        
+        // If RLS blocks creation, return fallback profile
+        if (error.message.includes('row-level security') || error.message.includes('permission denied')) {
+          console.log('[ProfileService] RLS prevented profile creation, using fallback');
+        }
+        
+        return {
+          ...profileData,
+          org_id: null,
+          trial_ends_at: null
+        };
+      }
+      
+      if (!data) {
+        console.log('[ProfileService] No data returned from profile creation');
         return {
           ...profileData,
           org_id: null,
@@ -144,10 +167,16 @@ export const profileService = {
         .update(updates)
         .eq('id', userId)
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('[ProfileService] Error updating profile:', error);
+        toast.error('Failed to update profile');
+        return null;
+      }
+      
+      if (!data) {
+        console.error('[ProfileService] No data returned from profile update');
         toast.error('Failed to update profile');
         return null;
       }

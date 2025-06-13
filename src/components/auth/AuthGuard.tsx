@@ -18,6 +18,7 @@ export const AuthGuard = ({
   const { session, userProfile, loading, checkRoleAccess } = useAuth();
   const location = useLocation();
   const [timeoutReached, setTimeoutReached] = useState(false);
+  const [initializationComplete, setInitializationComplete] = useState(false);
 
   console.log('[AuthGuard] State:', { 
     loading, 
@@ -25,23 +26,35 @@ export const AuthGuard = ({
     hasProfile: !!userProfile,
     currentPath: location.pathname,
     userRole: userProfile?.role,
-    timeoutReached
+    timeoutReached,
+    initializationComplete
   });
 
-  // Set timeout to prevent infinite loading - reduced to 3 seconds
+  // Set timeout to prevent infinite loading - reduced to 2 seconds
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (loading) {
+      if (loading && !initializationComplete) {
         console.log('[AuthGuard] Loading timeout reached, forcing continuation');
         setTimeoutReached(true);
+        setInitializationComplete(true);
       }
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timeout);
-  }, [loading]);
+  }, [loading, initializationComplete]);
+
+  // Mark initialization complete when we have auth data or confirmed no auth
+  useEffect(() => {
+    if (!loading || (session !== null && userProfile !== null) || timeoutReached) {
+      if (!initializationComplete) {
+        console.log('[AuthGuard] Marking initialization complete');
+        setInitializationComplete(true);
+      }
+    }
+  }, [loading, session, userProfile, timeoutReached, initializationComplete]);
 
   // Show loading while auth is being determined (with timeout)
-  if (loading && !timeoutReached) {
+  if (loading && !initializationComplete && !timeoutReached) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
@@ -53,8 +66,8 @@ export const AuthGuard = ({
   }
 
   // Handle timeout case - treat as not authenticated
-  if (timeoutReached && loading) {
-    console.log('[AuthGuard] Timeout reached, treating as not authenticated');
+  if (timeoutReached && !session) {
+    console.log('[AuthGuard] Timeout reached with no session, treating as not authenticated');
     if (requireAuth) {
       return <Navigate to="/signin" state={{ from: location }} replace />;
     }
