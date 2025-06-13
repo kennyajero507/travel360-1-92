@@ -24,6 +24,7 @@ class EnhancedAuthService {
           severity: 'medium'
         });
 
+        // Don't show toast here, let the calling component handle it
         return false;
       }
 
@@ -31,13 +32,16 @@ class EnhancedAuthService {
         console.log('[EnhancedAuthService] Login successful');
         
         // Log successful authentication
-        await auditService.logUserActivity(
-          'user_login',
-          'User successfully logged in',
-          { email, loginTime: new Date().toISOString() }
-        );
+        try {
+          await auditService.logUserActivity(
+            'user_login',
+            'User successfully logged in',
+            { email, loginTime: new Date().toISOString() }
+          );
+        } catch (auditError) {
+          console.warn('[EnhancedAuthService] Audit logging failed:', auditError);
+        }
 
-        toast.success('Successfully signed in');
         return true;
       }
 
@@ -64,9 +68,11 @@ class EnhancedAuthService {
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/signin`,
           data: {
             full_name: fullName,
-            company_name: companyName
+            company_name: companyName,
+            role: 'org_owner'
           }
         }
       });
@@ -88,17 +94,16 @@ class EnhancedAuthService {
         console.log('[EnhancedAuthService] Signup successful');
         
         // Log successful signup
-        await auditService.logUserActivity(
-          'user_signup',
-          'User successfully signed up',
-          { email, fullName, companyName, signupTime: new Date().toISOString() }
-        );
-
-        if (data.user.email_confirmed_at) {
-          toast.success('Account created successfully!');
-        } else {
-          toast.success('Account created! Please check your email to confirm your account.');
+        try {
+          await auditService.logUserActivity(
+            'user_signup',
+            'User successfully signed up',
+            { email, fullName, companyName, signupTime: new Date().toISOString() }
+          );
+        } catch (auditError) {
+          console.warn('[EnhancedAuthService] Audit logging failed:', auditError);
         }
+
         return true;
       }
 
@@ -122,11 +127,15 @@ class EnhancedAuthService {
       console.log('[EnhancedAuthService] Starting logout process');
       
       // Log logout activity before signing out
-      await auditService.logUserActivity(
-        'user_logout',
-        'User logged out',
-        { logoutTime: new Date().toISOString() }
-      );
+      try {
+        await auditService.logUserActivity(
+          'user_logout',
+          'User logged out',
+          { logoutTime: new Date().toISOString() }
+        );
+      } catch (auditError) {
+        console.warn('[EnhancedAuthService] Audit logging failed:', auditError);
+      }
 
       const { error } = await supabase.auth.signOut();
       

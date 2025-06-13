@@ -18,12 +18,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize auth state with timeout protection
+  // Initialize auth state with better error handling
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
     
-    // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('[AuthContext] Getting initial session...');
@@ -35,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
             setInitialized(true);
           }
-        }, 8000);
+        }, 5000); // Reduced to 5 seconds
 
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
@@ -53,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(initialSession);
           setUser(initialSession.user);
           
-          // Ensure profile exists and fetch it with timeout protection
+          // Ensure profile exists with better error handling
           try {
             const profile = await profileService.ensureProfileExists(initialSession.user.id);
             if (isMounted) {
@@ -61,7 +60,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } catch (profileError) {
             console.error('[AuthContext] Profile error during initialization:', profileError);
-            // Continue without profile rather than blocking
+            // Create a minimal profile to prevent blocking
+            if (isMounted) {
+              setUserProfile({
+                id: initialSession.user.id,
+                full_name: initialSession.user.email?.split('@')[0] || 'User',
+                email: initialSession.user.email || '',
+                role: 'org_owner',
+                org_id: null,
+                trial_ends_at: null,
+                created_at: new Date().toISOString(),
+                preferred_currency: 'USD'
+              });
+            }
           }
         }
       } catch (error) {
@@ -88,7 +99,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user || null);
         
         if (session?.user) {
-          // Ensure profile exists when user logs in
           try {
             const profile = await profileService.ensureProfileExists(session.user.id);
             if (isMounted) {
@@ -96,8 +106,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } catch (profileError) {
             console.error('[AuthContext] Profile error during auth change:', profileError);
-            // Continue without profile rather than blocking
-            setUserProfile(null);
+            // Create minimal profile to prevent blocking
+            if (isMounted) {
+              setUserProfile({
+                id: session.user.id,
+                full_name: session.user.email?.split('@')[0] || 'User',
+                email: session.user.email || '',
+                role: 'org_owner',
+                org_id: null,
+                trial_ends_at: null,
+                created_at: new Date().toISOString(),
+                preferred_currency: 'USD'
+              });
+            }
           }
         } else {
           setUserProfile(null);
@@ -187,14 +208,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     signup,
-    checkRoleAccess,
-    createOrganization,
-    refreshProfile,
-    sendInvitation,
-    getInvitations,
-    acceptInvitation,
-    resetPassword,
-    updatePassword,
+    checkRoleAccess: (allowedRoles: string[]) => profileService.checkRoleAccess(userProfile, allowedRoles),
+    createOrganization: async (name: string) => {
+      if (!user?.id) return false;
+      return await organizationService.createOrganization(name, user.id);
+    },
+    refreshProfile: async () => {
+      if (!user?.id) return;
+      try {
+        const profile = await profileService.ensureProfileExists(user.id);
+        setUserProfile(profile);
+      } catch (error) {
+        console.error('Error refreshing profile:', error);
+      }
+    },
+    sendInvitation: async (email: string, role: string) => {
+      return await invitationService.sendInvitation(email, role, userProfile, user?.id);
+    },
+    getInvitations: async () => {
+      return await invitationService.getInvitations(userProfile);
+    },
+    acceptInvitation: async (token: string) => {
+      return await invitationService.acceptInvitation(token);
+    },
+    resetPassword: async (email: string) => {
+      return await enhancedAuthService.resetPassword(email);
+    },
+    updatePassword: async (password: string) => {
+      return await enhancedAuthService.updatePassword(password);
+    },
   };
 
   return (
