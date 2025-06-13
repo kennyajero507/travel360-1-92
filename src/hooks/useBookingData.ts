@@ -31,7 +31,13 @@ export const useBookingData = () => {
     try {
       console.log('[useBookingData] Updating booking status:', bookingId, status);
       
-      await updateBookingStatus(bookingId, status);
+      // Validate status type
+      const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+      if (!validStatuses.includes(status)) {
+        throw new Error(`Invalid booking status: ${status}`);
+      }
+      
+      await updateBookingStatus(bookingId, status as any);
       
       // Invalidate and refetch bookings
       queryClient.invalidateQueries({ queryKey: ['bookings'] });

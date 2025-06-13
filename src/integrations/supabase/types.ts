@@ -663,6 +663,7 @@ export type Database = {
           full_name: string | null
           id: string
           org_id: string | null
+          preferred_currency: string | null
           role: string | null
           trial_ends_at: string | null
         }
@@ -672,6 +673,7 @@ export type Database = {
           full_name?: string | null
           id: string
           org_id?: string | null
+          preferred_currency?: string | null
           role?: string | null
           trial_ends_at?: string | null
         }
@@ -681,6 +683,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           org_id?: string | null
+          preferred_currency?: string | null
           role?: string | null
           trial_ends_at?: string | null
         }

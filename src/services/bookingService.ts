@@ -1,7 +1,42 @@
 
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
-import { Booking, TravelVoucher, PaymentRecord, BookingNotification } from "../types/booking.types";
+import { Booking, TravelVoucher, PaymentRecord, BookingNotification, BookingStatus, PaymentStatus } from "../types/booking.types";
+
+// Type transformation utilities
+const transformDatabaseBooking = (dbBooking: any): Booking => {
+  return {
+    ...dbBooking,
+    room_arrangement: Array.isArray(dbBooking.room_arrangement) 
+      ? dbBooking.room_arrangement 
+      : (typeof dbBooking.room_arrangement === 'string' 
+          ? JSON.parse(dbBooking.room_arrangement) 
+          : []),
+    transport: Array.isArray(dbBooking.transport) 
+      ? dbBooking.transport 
+      : (typeof dbBooking.transport === 'string' 
+          ? JSON.parse(dbBooking.transport) 
+          : []),
+    activities: Array.isArray(dbBooking.activities) 
+      ? dbBooking.activities 
+      : (typeof dbBooking.activities === 'string' 
+          ? JSON.parse(dbBooking.activities) 
+          : []),
+    transfers: Array.isArray(dbBooking.transfers) 
+      ? dbBooking.transfers 
+      : (typeof dbBooking.transfers === 'string' 
+          ? JSON.parse(dbBooking.transfers) 
+          : []),
+    status: dbBooking.status as BookingStatus
+  };
+};
+
+const transformDatabasePayment = (dbPayment: any): PaymentRecord => {
+  return {
+    ...dbPayment,
+    payment_status: dbPayment.payment_status as PaymentStatus
+  };
+};
 
 // Create or get booking from quote
 export const createBookingFromQuote = async (quoteId: string, hotelId: string): Promise<Booking> => {
@@ -24,7 +59,7 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
 
     if (hotelError) throw hotelError;
 
-    // Create booking data
+    // Create booking data - don't include booking_reference as it's auto-generated
     const bookingData = {
       client: quote.client,
       hotel_name: hotel.name,
@@ -38,7 +73,7 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
       status: 'pending' as const,
       total_price: calculateQuoteTotal(quote),
       quote_id: quoteId,
-      notes: quote.notes
+      notes: quote.notes || ''
     };
 
     const { data: booking, error: bookingError } = await supabase
@@ -50,13 +85,16 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
     if (bookingError) throw bookingError;
 
     toast.success('Booking created successfully');
-    return booking as Booking;
+    return transformDatabaseBooking(booking);
   } catch (error) {
     console.error('Error creating booking:', error);
     toast.error('Failed to create booking');
     throw error;
   }
 };
+
+// Export the createBooking alias for backward compatibility
+export const createBooking = createBookingFromQuote;
 
 // Get all bookings
 export const getAllBookings = async (): Promise<Booking[]> => {
@@ -68,7 +106,7 @@ export const getAllBookings = async (): Promise<Booking[]> => {
 
     if (error) throw error;
     
-    return data || [];
+    return (data || []).map(transformDatabaseBooking);
   } catch (error) {
     console.error('Error fetching bookings:', error);
     toast.error('Failed to fetch bookings');
@@ -87,7 +125,7 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
 
     if (error) throw error;
     
-    return data;
+    return data ? transformDatabaseBooking(data) : null;
   } catch (error) {
     console.error('Error fetching booking:', error);
     return null;
@@ -95,7 +133,7 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
 };
 
 // Update booking status
-export const updateBookingStatus = async (bookingId: string, status: string): Promise<void> => {
+export const updateBookingStatus = async (bookingId: string, status: BookingStatus): Promise<void> => {
   try {
     const { error } = await supabase
       .from('bookings')
@@ -179,7 +217,7 @@ export const getPaymentsByBooking = async (bookingId: string): Promise<PaymentRe
 
     if (error) throw error;
     
-    return data || [];
+    return (data || []).map(transformDatabasePayment);
   } catch (error) {
     console.error('Error fetching payments:', error);
     return [];
@@ -197,7 +235,7 @@ export const recordPayment = async (payment: Omit<PaymentRecord, 'id' | 'created
     if (error) throw error;
     
     toast.success('Payment recorded successfully');
-    return data;
+    return transformDatabasePayment(data);
   } catch (error) {
     console.error('Error recording payment:', error);
     toast.error('Failed to record payment');

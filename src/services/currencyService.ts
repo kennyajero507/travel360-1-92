@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 
 export interface CurrencyRate {
@@ -113,30 +114,40 @@ export class CurrencyService {
     }
   }
 
-  // Save user's preferred currency
-  async saveUserCurrencyPreference(userId: string, currencyCode: string): Promise<void> {
+  // Save user's preferred currency - now compatible with database schema
+  async saveUserCurrencyPreference(userId: string, currencyCode: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ preferred_currency: currencyCode })
+        .update({ 
+          preferred_currency: currencyCode,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving currency preference:', error);
+        throw error;
+      }
     } catch (error) {
       console.error('Failed to save currency preference:', error);
+      throw error;
     }
   }
 
-  // Get user's preferred currency
+  // Get user's preferred currency - now compatible with database schema
   async getUserCurrencyPreference(userId: string): Promise<string> {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('preferred_currency')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching currency preference:', error);
+        return 'USD';
+      }
       
       return data?.preferred_currency || 'USD';
     } catch (error) {
