@@ -23,6 +23,7 @@ const Login = () => {
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -33,15 +34,14 @@ const Login = () => {
   // Get the redirect path from location state, default to app dashboard
   const from = location.state?.from?.pathname || "/app/dashboard";
   
-  // Redirect if already logged in
+  // Redirect if already logged in - only once per session
   useEffect(() => {
-    console.log('[Login] Auth state:', { session: !!session, authLoading });
-    
-    if (!authLoading && session) {
+    if (!authLoading && session && !hasRedirected) {
       console.log('[Login] User is logged in, redirecting to:', from);
+      setHasRedirected(true);
       navigate(from, { replace: true });
     }
-  }, [session, authLoading, navigate, from]);
+  }, [session, authLoading, navigate, from, hasRedirected]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -66,10 +66,11 @@ const Login = () => {
       const success = await login(formData.email, formData.password);
       
       if (success) {
-        console.log('[Login] Login successful, navigation will be handled by useEffect');
+        console.log('[Login] Login successful');
         // Don't navigate here - let the useEffect handle it when session updates
       } else {
         console.log('[Login] Login failed');
+        toast.error("Login failed. Please check your credentials.");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -91,8 +92,8 @@ const Login = () => {
     );
   }
   
-  // Don't render login form if user is already logged in
-  if (session) {
+  // Don't render login form if user is already logged in and redirect is in progress
+  if (session && hasRedirected) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

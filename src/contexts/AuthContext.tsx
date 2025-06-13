@@ -15,6 +15,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   // Fetch user profile data
   const fetchUserProfile = async (userId: string) => {
@@ -82,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('[AuthContext] Error getting initial session:', error);
           if (isMounted) {
             setLoading(false);
+            setInitialized(true);
           }
           return;
         }
@@ -102,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } finally {
         if (isMounted) {
           setLoading(false);
+          setInitialized(true);
         }
       }
     };
@@ -128,7 +131,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserProfile(null);
         }
         
-        setLoading(false);
+        if (initialized) {
+          setLoading(false);
+        }
       }
     );
 
@@ -136,11 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initialized]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('[AuthContext] Login attempt for:', email);
-    setLoading(true);
     
     try {
       const success = await authService.login(email, password);
@@ -149,8 +153,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
