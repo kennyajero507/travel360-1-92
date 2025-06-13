@@ -6,32 +6,7 @@ import { toast } from 'sonner';
 import { authService } from './auth/authService';
 import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  role: string;
-  org_id?: string;
-  created_at: string;
-}
-
-interface AuthContextType {
-  session: Session | null;
-  user: User | null;
-  currentUser: User | null;
-  userProfile: UserProfile | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-  signup: (email: string, password: string, fullName: string, companyName: string) => Promise<boolean>;
-  checkRoleAccess: (allowedRoles: string[]) => boolean;
-  createOrganization: (name: string) => Promise<boolean>;
-  refreshProfile: () => Promise<void>;
-  sendInvitation: (email: string, role: string) => Promise<boolean>;
-  getInvitations: () => Promise<any[]>;
-  acceptInvitation: (token: string) => Promise<boolean>;
-}
+import { UserProfile, AuthContextType } from './auth/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -159,10 +134,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return await invitationService.acceptInvitation(token);
   };
 
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+      toast.success('Password reset email sent');
+      return true;
+    } catch (error) {
+      console.error('Reset password error:', error);
+      toast.error('Failed to send reset email');
+      return false;
+    }
+  };
+
+  const updatePassword = async (password: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+      toast.success('Password updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Update password error:', error);
+      toast.error('Failed to update password');
+      return false;
+    }
+  };
+
   const value: AuthContextType = {
     session,
-    user,
-    currentUser: user, // Alias for compatibility
+    currentUser: user,
     userProfile,
     loading,
     login,
@@ -174,6 +180,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sendInvitation,
     getInvitations,
     acceptInvitation,
+    resetPassword,
+    updatePassword,
   };
 
   return (
