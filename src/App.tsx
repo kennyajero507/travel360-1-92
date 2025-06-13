@@ -73,6 +73,12 @@ function App() {
                     } 
                   />
                   
+                  {/* Legacy route redirect */}
+                  <Route 
+                    path="/dashboard" 
+                    element={<Navigate to="/app/dashboard" replace />}
+                  />
+                  
                   {/* Quote Management */}
                   <Route 
                     path="/quotes" 

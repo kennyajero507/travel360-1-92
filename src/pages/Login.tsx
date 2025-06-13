@@ -19,11 +19,10 @@ import { useAuth } from "../contexts/AuthContext";
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, session, loading: authLoading } = useAuth();
+  const { login, session, userProfile, loading: authLoading } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [hasRedirected, setHasRedirected] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -34,14 +33,13 @@ const Login = () => {
   // Get the redirect path from location state, default to app dashboard
   const from = location.state?.from?.pathname || "/app/dashboard";
   
-  // Redirect if already logged in - only once per session
+  // Redirect if already logged in
   useEffect(() => {
-    if (!authLoading && session && !hasRedirected) {
-      console.log('[Login] User is logged in, redirecting to:', from);
-      setHasRedirected(true);
+    if (!authLoading && session && userProfile) {
+      console.log('[Login] User is logged in with profile, redirecting to:', from);
       navigate(from, { replace: true });
     }
-  }, [session, authLoading, navigate, from, hasRedirected]);
+  }, [session, userProfile, authLoading, navigate, from]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,7 +65,7 @@ const Login = () => {
       
       if (success) {
         console.log('[Login] Login successful');
-        // Don't navigate here - let the useEffect handle it when session updates
+        // Navigation will be handled by useEffect when session/profile updates
       } else {
         console.log('[Login] Login failed');
         toast.error("Login failed. Please check your credentials.");
@@ -92,8 +90,8 @@ const Login = () => {
     );
   }
   
-  // Don't render login form if user is already logged in and redirect is in progress
-  if (session && hasRedirected) {
+  // Don't render login form if user is already logged in
+  if (session && userProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

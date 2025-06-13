@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { authService } from './auth/authService';
 import { organizationService } from './auth/organizationService';
 import { invitationService } from './auth/invitationService';
+import { profileService } from './auth/profileService';
 import { UserProfile, AuthContextType } from './auth/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,58 +17,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
-
-  // Fetch user profile data
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      console.log('[AuthContext] Fetching profile for user:', userId);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        
-        // If profile doesn't exist, create a fallback profile
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const fallbackProfile: UserProfile = {
-            id: userId,
-            full_name: user.email?.split('@')[0] || 'User',
-            email: user.email || '',
-            role: 'org_owner',
-            org_id: null,
-            trial_ends_at: null,
-            created_at: new Date().toISOString(),
-            preferred_currency: 'USD'
-          };
-          console.log('[AuthContext] Using fallback profile:', fallbackProfile);
-          return fallbackProfile;
-        }
-        return null;
-      }
-
-      const profile: UserProfile = {
-        id: data.id,
-        full_name: data.full_name,
-        email: data.email,
-        role: data.role || 'org_owner',
-        org_id: data.org_id,
-        trial_ends_at: data.trial_ends_at,
-        created_at: data.created_at,
-        preferred_currency: data.preferred_currency || 'USD'
-      };
-
-      console.log('[AuthContext] Profile fetched successfully:', profile);
-      return profile;
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-      return null;
-    }
-  };
 
   // Initialize auth state
   useEffect(() => {
@@ -93,8 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(initialSession);
           setUser(initialSession.user);
           
-          // Fetch user profile
-          const profile = await fetchUserProfile(initialSession.user.id);
+          // Ensure profile exists and fetch it
+          const profile = await profileService.ensureProfileExists(initialSession.user.id);
           if (isMounted) {
             setUserProfile(profile);
           }
@@ -122,8 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user || null);
         
         if (session?.user) {
-          // Fetch user profile when user logs in
-          const profile = await fetchUserProfile(session.user.id);
+          // Ensure profile exists when user logs in
+          const profile = await profileService.ensureProfileExists(session.user.id);
           if (isMounted) {
             setUserProfile(profile);
           }
@@ -167,18 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkRoleAccess = (allowedRoles: string[]): boolean => {
-    if (!userProfile) {
-      console.log('[AuthContext] No user profile for role check');
-      return false;
-    }
-    
-    // System admins have access to everything
-    if (userProfile.role === 'system_admin') return true;
-    
-    // Check if user's role is in the allowed roles
-    const hasAccess = allowedRoles.includes(userProfile.role);
-    console.log('[AuthContext] Role access check:', userProfile.role, allowedRoles, hasAccess);
-    return hasAccess;
+    return profileService.checkRoleAccess(userProfile, allowedRoles);
   };
 
   const createOrganization = async (name: string): Promise<boolean> => {
@@ -190,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user?.id) return;
     
     try {
-      const profile = await fetchUserProfile(user.id);
+      const profile = await profileService.ensureProfileExists(user.id);
       setUserProfile(profile);
     } catch (error) {
       console.error('Error refreshing profile:', error);

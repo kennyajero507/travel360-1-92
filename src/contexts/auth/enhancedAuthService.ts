@@ -201,7 +201,7 @@ class EnhancedAuthService {
     }
   }
 
-  async updatePassword(password: string): Promise<boolean> => {
+  async updatePassword(password: string): Promise<boolean> {
     try {
       console.log('[EnhancedAuthService] Starting password update');
 
