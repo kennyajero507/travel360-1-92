@@ -59,10 +59,10 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const result = await login(formData.email, formData.password);
+      const success = await login(formData.email, formData.password);
       
-      if (result.error) {
-        toast.error(result.error.message);
+      if (!success) {
+        // Error message will be shown by the login function
         return;
       }
       

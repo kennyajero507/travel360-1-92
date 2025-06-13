@@ -1,27 +1,60 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Users, Building, TrendingUp, DollarSign, FileText, BookOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { adminService } from '../../services/adminService';
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Users, Building, FileText, DollarSign } from "lucide-react";
+import { supabase } from "../../integrations/supabase/client";
 
 const SystemStats = () => {
-  const { data: stats, isLoading } = useQuery({
+  // Fetch system statistics
+  const { data: stats, isLoading, error } = useQuery({
     queryKey: ['system-stats'],
-    queryFn: adminService.getSystemStats,
+    queryFn: async () => {
+      try {
+        // Get user count
+        const { count: userCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        // Get organization count
+        const { count: orgCount } = await supabase
+          .from('organizations')
+          .select('*', { count: 'exact', head: true });
+
+        // Get quote count
+        const { count: quoteCount } = await supabase
+          .from('quotes')
+          .select('*', { count: 'exact', head: true });
+
+        // Get booking count
+        const { count: bookingCount } = await supabase
+          .from('bookings')
+          .select('*', { count: 'exact', head: true });
+
+        return {
+          users: userCount || 0,
+          organizations: orgCount || 0,
+          quotes: quoteCount || 0,
+          bookings: bookingCount || 0,
+        };
+      } catch (error) {
+        console.error('Error fetching system stats:', error);
+        throw error;
+      }
+    },
   });
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader className="pb-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="animate-pulse">
+                <div className="h-8 w-8 bg-gray-200 rounded mb-2"></div>
+                <div className="h-6 bg-gray-200 rounded mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -29,88 +62,72 @@ const SystemStats = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Card className="border-red-200">
+        <CardContent className="p-6">
+          <div className="text-red-600">
+            Error loading system statistics. Please check your database connection.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const statsData = [
+    {
+      title: "Total Users",
+      value: stats?.users || 0,
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+    },
+    {
+      title: "Organizations",
+      value: stats?.organizations || 0,
+      icon: Building,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+    },
+    {
+      title: "Total Quotes",
+      value: stats?.quotes || 0,
+      icon: FileText,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+    },
+    {
+      title: "Total Bookings",
+      value: stats?.bookings || 0,
+      icon: DollarSign,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats?.total_users || 0}</div>
-          <p className="text-xs text-muted-foreground">Across all organizations</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Organizations</CardTitle>
-          <Building className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats?.total_organizations || 0}</div>
-          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-            <Badge variant="outline" className="text-green-600">
-              {stats?.active_trials || 0} trials
-            </Badge>
-            <Badge variant="outline" className="text-blue-600">
-              {stats?.paid_subscriptions || 0} paid
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Monthly Quotes</CardTitle>
-          <FileText className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats?.total_quotes_this_month || 0}</div>
-          <p className="text-xs text-muted-foreground">Generated this month</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Monthly Bookings</CardTitle>
-          <BookOpen className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats?.total_bookings_this_month || 0}</div>
-          <p className="text-xs text-muted-foreground">Created this month</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Trial Status</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span>Active:</span>
-              <span className="font-medium text-green-600">{stats?.active_trials || 0}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Expired:</span>
-              <span className="font-medium text-red-600">{stats?.expired_trials || 0}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">${stats?.revenue_this_month || 0}</div>
-          <p className="text-xs text-muted-foreground">This month</p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {statsData.map((stat) => {
+        const Icon = stat.icon;
+        return (
+          <Card key={stat.title} className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                {stat.title}
+              </CardTitle>
+              <div className={`p-2 rounded-full ${stat.bgColor}`}>
+                <Icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value.toLocaleString()}</div>
+              <p className="text-xs text-gray-500 mt-1">
+                Live database count
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };
