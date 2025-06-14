@@ -1,237 +1,241 @@
 
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "../components/ui/card";
-import { toast } from "sonner";
-import { Eye, EyeOff, Globe } from "lucide-react";
+import { Eye, EyeOff, RefreshCw, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import AuthLayout from "../components/auth/AuthLayout";
+import { getRedirectPath } from "../utils/authValidation";
 
 const Login = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { login, session, userProfile, loading: authLoading } = useAuth();
-  
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [redirectTimeout, setRedirectTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
-  // Form state
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const { login, session, userProfile, loading: authLoading, authError } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
-  // Get the redirect path from location state, default to app dashboard
-  const from = location.state?.from?.pathname || "/app/dashboard";
-  
-  // Redirect if already logged in with timeout protection
+  const invitationToken = searchParams.get('invitation');
+
+  // Handle redirect when user is authenticated and profile is loaded
   useEffect(() => {
+    console.log('[Login] Auth state:', { 
+      authLoading, 
+      session: !!session, 
+      userProfile: !!userProfile,
+      invitationToken 
+    });
+
     if (!authLoading && session && userProfile) {
-      console.log('[Login] User is logged in with profile, redirecting to:', from);
-      
-      // Clear any existing timeout
-      if (redirectTimeout) {
-        clearTimeout(redirectTimeout);
+      // Don't redirect if there's an invitation to process
+      if (invitationToken) {
+        console.log('[Login] Has invitation token, staying on login page');
+        return;
       }
       
-      // Set timeout for redirect to prevent immediate navigation issues
-      const timeout = setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 100);
+      // Use the new redirect utility
+      const redirectPath = getRedirectPath(userProfile);
+      console.log(`[Login] Redirecting ${userProfile.role} to ${redirectPath}`);
       
-      setRedirectTimeout(timeout);
+      setTimeout(() => {
+        navigate(redirectPath);
+      }, 500);
     }
-    
-    return () => {
-      if (redirectTimeout) {
-        clearTimeout(redirectTimeout);
-      }
-    };
-  }, [session, userProfile, authLoading, navigate, from]);
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  
-  const handleLogin = async (e: React.FormEvent) => {
+  }, [session, userProfile, invitationToken, authLoading, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
-    if (!formData.email || !formData.password) {
-      toast.error("Please enter email and password");
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
       return;
     }
     
     setLoading(true);
     
     try {
-      console.log('[Login] Attempting login for:', formData.email);
-      const success = await login(formData.email, formData.password);
+      const success = await login(email, password);
       
-      if (success) {
-        console.log('[Login] Login successful');
-        toast.success("Login successful! Redirecting...");
-        // Navigation will be handled by useEffect when session/profile updates
-      } else {
-        console.log('[Login] Login failed');
-        toast.error("Login failed. Please check your credentials.");
+      if (!success) {
+        setError("Login failed. Please check your credentials and try again.");
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("An error occurred during login");
+      setError("An unexpected error occurred during login. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-  
-  // Show loading state while checking auth with timeout protection
+
+  const handleRetry = () => {
+    setError(null);
+    setLoading(false);
+  };
+
+  // Show loading state during auth check
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Checking authentication...</p>
-          <p className="text-slate-400 text-sm mt-2">This should only take a moment</p>
         </div>
       </div>
     );
   }
-  
-  // Don't render login form if user is already logged in
-  if (session && userProfile) {
+
+  // Show redirecting state
+  if (session && userProfile && !invitationToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Redirecting to dashboard...</p>
+          <p className="text-slate-600">Redirecting to your dashboard...</p>
         </div>
       </div>
     );
   }
-  
-  return (
-    <div className="min-h-screen flex flex-col w-full">
-      {/* Navigation */}
-      <header className="border-b py-4 w-full">
-        <nav className="container mx-auto px-4 flex justify-between items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <Globe className="h-6 w-6 text-teal-600" />
-            <span className="text-xl font-bold text-teal-600">TravelFlow360</span>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link to="/signup" className="text-slate-600 hover:text-teal-600">
-              Sign Up
-            </Link>
-            <Link to="/admin/login" className="text-red-600 hover:text-red-700 text-sm">
-              Admin
-            </Link>
-          </div>
-        </nav>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center py-12 px-4 bg-slate-50 w-full">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
-            <CardDescription>
-              Sign in to your TravelFlow360 account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full"
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                    disabled={loading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading}
-              >
-                {loading ? "Signing In..." : "Sign In"}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4 border-t pt-4">
-            <div className="text-center">
-              <Link
-                to="/reset-password"
-                className="text-sm text-teal-600 hover:underline"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-            <div className="text-center text-sm text-slate-500">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-teal-600 hover:underline">
-                Sign up
-              </Link>
-            </div>
-          </CardFooter>
-        </Card>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t py-6 w-full">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-sm text-slate-500">
-            © 2025 TravelFlow360. All rights reserved.
-          </p>
+  // Show profile loading state for authenticated users
+  if (session && !userProfile) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 mb-4">Loading your profile...</p>
+          {authError && (
+            <Alert variant="destructive" className="mt-4 max-w-md mx-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+            className="text-sm mt-4"
+          >
+            Continue to Dashboard
+          </Button>
         </div>
-      </footer>
-    </div>
+      </div>
+    );
+  }
+
+  const displayError = error || authError;
+
+  return (
+    <AuthLayout
+      title="Welcome Back"
+      description="Sign in to your TravelFlow360 account"
+      footerText="Don't have an account?"
+      footerLink={{ text: "Sign Up", to: "/signup" }}
+      navLink={{ text: "Need an account? Sign up", to: "/signup" }}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {invitationToken && (
+          <Alert className="mb-4 bg-blue-50 border-blue-200">
+            <AlertDescription className="text-blue-800">
+              You have an invitation to join an organization. Please log in to accept it.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {displayError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{displayError}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleRetry}
+                className="ml-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={loading}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              disabled={loading}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <Link
+            to="/forgot-password"
+            className="text-sm text-teal-600 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
+        
+        <Button
+          type="submit"
+          className="w-full bg-teal-600 hover:bg-teal-700"
+          disabled={loading}
+        >
+          {loading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Signing in...
+            </div>
+          ) : (
+            "Sign In"
+          )}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 };
 

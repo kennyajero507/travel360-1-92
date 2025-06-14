@@ -38,11 +38,11 @@ const Header = () => {
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link to="/app/dashboard" className="flex items-center space-x-2">
+          <Link to="/dashboard" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TF</span>
+              <span className="text-white font-bold text-sm">TQ</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">TravelFlow360</span>
+            <span className="text-xl font-bold text-gray-900">TravelQuote</span>
           </Link>
         </div>
 
@@ -52,7 +52,7 @@ const Header = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/app/reports")}
+              onClick={() => navigate("/analytics")}
               className="flex items-center gap-2"
             >
               <BarChart3 className="h-4 w-4" />
@@ -87,7 +87,7 @@ const Header = () => {
                 </p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/app/settings")}>
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>

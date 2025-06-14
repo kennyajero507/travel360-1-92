@@ -1,26 +1,34 @@
 
 import { supabase } from "../integrations/supabase/client";
+import { errorHandler } from "./errorHandlingService";
 
 export interface AuditLog {
   id: string;
-  user_id?: string;
-  action: string;
   table_name: string;
-  record_id?: string;
-  old_data?: any;
-  new_data?: any;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE';
+  record_id: string;
+  user_id?: string;
+  old_values?: any;
+  new_values?: any;
+  created_at: string;
+}
+
+export interface UserActivity {
+  id: string;
+  user_id?: string;
+  activity_type: string;
+  description?: string;
+  metadata?: any;
   ip_address?: string;
   user_agent?: string;
   created_at: string;
 }
 
 class AuditService {
-  async logAction(
-    action: string,
-    tableName: string,
-    recordId?: string,
-    oldData?: any,
-    newData?: any
+  async logUserActivity(
+    activityType: string,
+    description?: string,
+    metadata?: any
   ): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -28,131 +36,66 @@ class AuditService {
       // Get client info
       const userAgent = navigator.userAgent;
       
-      const auditLog = {
+      // Store in localStorage as fallback since we need to create the table first
+      const activity = {
         user_id: user?.id,
-        action,
-        table_name: tableName,
-        record_id: recordId,
-        old_data: oldData,
-        new_data: newData,
+        activity_type: activityType,
+        description,
+        metadata,
         user_agent: userAgent,
+        created_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert([auditLog]);
+      // Store in localStorage until backend tables are ready
+      const activities = JSON.parse(localStorage.getItem('user_activities') || '[]');
+      activities.push(activity);
+      localStorage.setItem('user_activities', JSON.stringify(activities.slice(-100))); // Keep last 100
 
-      if (error) {
-        console.error('Error logging audit action:', error);
-      }
+      console.log('[AuditService] User activity logged:', activity);
     } catch (error) {
-      console.error('Error in audit service:', error);
-    }
-  }
-
-  async logUserActivity(
-    action: string,
-    description?: string,
-    metadata?: any
-  ): Promise<void> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const auditLog = {
-        user_id: user?.id,
-        action,
-        table_name: 'user_activity',
-        record_id: user?.id,
-        new_data: {
-          description,
-          metadata,
-          timestamp: new Date().toISOString()
-        },
-        user_agent: navigator.userAgent,
-      };
-
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert([auditLog]);
-
-      if (error) {
-        console.error('Error logging user activity:', error);
-      }
-    } catch (error) {
-      console.error('Error in logUserActivity:', error);
+      console.error('Error logging user activity:', error);
     }
   }
 
   async getAuditLogs(
     tableNames?: string[],
-    actions?: string[],
+    operations?: string[],
     limit: number = 50
   ): Promise<AuditLog[]> {
     try {
-      let query = supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (tableNames?.length) {
-        query = query.in('table_name', tableNames);
-      }
-
-      if (actions?.length) {
-        query = query.in('action', actions);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching audit logs:', error);
-        return [];
-      }
-
-      return (data || []).map(log => ({
-        ...log,
-        ip_address: log.ip_address as string
-      }));
+      // Return mock data until backend is ready
+      const mockLogs: AuditLog[] = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+      return mockLogs.slice(0, limit);
     } catch (error) {
-      console.error('Error in getAuditLogs:', error);
+      errorHandler.handleError(error, 'AuditService.getAuditLogs');
       return [];
     }
   }
 
   async getUserActivities(
-    userId?: string, 
-    actions?: string[],
+    userId?: string,
+    activityTypes?: string[],
     limit: number = 50
-  ): Promise<AuditLog[]> {
+  ): Promise<UserActivity[]> {
     try {
-      let query = supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
+      // Return from localStorage until backend is ready
+      const activities: UserActivity[] = JSON.parse(localStorage.getItem('user_activities') || '[]');
+      
+      let filteredActivities = activities;
+      
       if (userId) {
-        query = query.eq('user_id', userId);
+        filteredActivities = filteredActivities.filter(a => a.user_id === userId);
       }
-
-      if (actions?.length) {
-        query = query.in('action', actions);
+      
+      if (activityTypes?.length) {
+        filteredActivities = filteredActivities.filter(a => 
+          activityTypes.includes(a.activity_type)
+        );
       }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching user activities:', error);
-        return [];
-      }
-
-      return (data || []).map(log => ({
-        ...log,
-        ip_address: log.ip_address as string
-      }));
+      
+      return filteredActivities.slice(0, limit);
     } catch (error) {
-      console.error('Error in getUserActivities:', error);
+      errorHandler.handleError(error, 'AuditService.getUserActivities');
       return [];
     }
   }

@@ -1,164 +1,167 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { UserProfile } from './types';
 import { toast } from 'sonner';
 
 export const profileService = {
-  async fetchUserProfile(userId: string, userEmail?: string): Promise<UserProfile | null> {
+  async fetchUserProfile(userId: string, retryCount = 0): Promise<UserProfile | null> {
+    const maxRetries = 3;
+    const timeout = 10000;
+    
     try {
-      console.log(`[ProfileService] Fetching profile for user: ${userId}`);
-
-      const { data, error } = await supabase
+      console.log(`[ProfileService] Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
+      
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), timeout);
+      });
+      
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-
+      
+      const { data, error } = await Promise.race([profilePromise, timeoutPromise]);
+      
       if (error) {
-        console.error('[ProfileService] Error fetching profile:', error);
-        if (
-          error.message.includes('row-level security') ||
-          error.message.includes('permission denied')
-        ) {
-          console.log('[ProfileService] RLS blocking profile access, creating new profile');
-          return await this.createNewProfile(userId, userEmail);
+        console.error('[ProfileService] Error fetching user profile:', error);
+        
+        if (retryCount < maxRetries) {
+          const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
+          console.log(`[ProfileService] Retrying in ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          return this.fetchUserProfile(userId, retryCount + 1);
         }
-        return await this.createFallbackProfile(userId, userEmail);
+        
+        return await this.createFallbackProfile(userId);
       }
+      
       if (!data) {
-        console.log("[ProfileService] No profile found - creating new profile");
-        return await this.createNewProfile(userId, userEmail);
+        console.log("[ProfileService] No profile found - creating fallback profile");
+        return await this.createFallbackProfile(userId);
       }
-
+      
+      const { data: user } = await supabase.auth.getUser();
+      
       const profile: UserProfile = {
         id: data.id,
-        full_name: data.full_name || (userEmail ? userEmail.split('@')[0] : 'User'),
-        email: userEmail || data.email || "",
+        full_name: data.full_name || user.user?.email?.split('@')[0] || 'User',
+        email: user.user?.email || data.email || null,
         role: data.role || 'org_owner',
         org_id: data.org_id,
         trial_ends_at: data.trial_ends_at,
-        created_at: data.created_at || new Date().toISOString(),
-        preferred_currency: data.preferred_currency || 'USD'
+        created_at: data.created_at || new Date().toISOString()
       };
-
+      
       console.log("[ProfileService] Profile fetched successfully:", {
-        id: profile.id, role: profile.role, org_id: profile.org_id, has_email: !!profile.email
+        id: profile.id,
+        role: profile.role,
+        org_id: profile.org_id,
+        has_email: !!profile.email
       });
-
+      
       return profile;
     } catch (error) {
-      console.error('[ProfileService] Exception in fetchUserProfile:', error);
-      return await this.createFallbackProfile(userId, userEmail);
+      console.error(`[ProfileService] Error in fetchUserProfile (attempt ${retryCount + 1}):`, error);
+      
+      if (retryCount < maxRetries) {
+        const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
+        console.log(`[ProfileService] Retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        return this.fetchUserProfile(userId, retryCount + 1);
+      }
+      
+      console.error('[ProfileService] All retries failed - creating final fallback profile');
+      return await this.createFallbackProfile(userId);
     }
   },
 
-  async createNewProfile(userId: string, userEmail?: string): Promise<UserProfile> {
-    const safeEmail = userEmail || '';
-    const profileData = {
-      id: userId,
-      full_name: safeEmail ? safeEmail.split('@')[0] : 'User',
-      email: safeEmail,
-      role: 'org_owner',
-      preferred_currency: 'USD',
-      created_at: new Date().toISOString()
-    };
+  async createFallbackProfile(userId: string): Promise<UserProfile> {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert(profileData)
-        .select()
-        .maybeSingle();
+      const { data: user } = await supabase.auth.getUser();
+      
+      const fallbackProfile: UserProfile = {
+        id: userId,
+        full_name: user.user?.email?.split('@')[0] || 'User',
+        email: user.user?.email || '',
+        role: 'org_owner',
+        org_id: null,
+        trial_ends_at: null,
+        created_at: new Date().toISOString()
+      };
+      
+      console.log('[ProfileService] Created fallback profile:', fallbackProfile);
+      return fallbackProfile;
+    } catch (error) {
+      console.error('[ProfileService] Error creating fallback profile:', error);
+      
+      return {
+        id: userId,
+        full_name: 'User',
+        email: '',
+        role: 'org_owner',
+        org_id: null,
+        trial_ends_at: null,
+        created_at: new Date().toISOString()
+      };
+    }
+  },
 
-      if (error) {
-        console.error('[ProfileService] Error creating profile:', error);
-        if (
-          error.message.includes('row-level security') ||
-          error.message.includes('permission denied')
-        ) {
-          console.log('[ProfileService] RLS prevented profile creation, using fallback');
+  async ensureProfileExists(userId: string): Promise<UserProfile> {
+    try {
+      console.log(`[ProfileService] Ensuring profile exists for user: ${userId}`);
+      
+      // First try to fetch existing profile
+      let profile = await this.fetchUserProfile(userId);
+      
+      if (profile && profile.email) {
+        return profile;
+      }
+      
+      const { data: user } = await supabase.auth.getUser();
+      
+      if (!user.user?.email) {
+        console.error('[ProfileService] No email found for user');
+        return this.createFallbackProfile(userId);
+      }
+      
+      // Try to create or update profile
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            full_name: user.user.email.split('@')[0] || 'User',
+            email: user.user.email,
+            role: 'org_owner',
+            created_at: new Date().toISOString()
+          }, {
+            onConflict: 'id'
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('[ProfileService] Error creating/updating profile:', error);
+          return this.createFallbackProfile(userId);
         }
-        return { ...profileData, org_id: null, trial_ends_at: null };
+        
+        return {
+          id: data.id,
+          full_name: data.full_name,
+          email: data.email,
+          role: data.role,
+          org_id: data.org_id,
+          trial_ends_at: data.trial_ends_at,
+          created_at: data.created_at
+        };
+      } catch (profileError) {
+        console.error('[ProfileService] Profile creation failed, using fallback:', profileError);
+        return this.createFallbackProfile(userId);
       }
-
-      if (!data) {
-        console.log('[ProfileService] No data returned from profile creation');
-        return { ...profileData, org_id: null, trial_ends_at: null };
-      }
-
-      console.log('[ProfileService] Profile created successfully');
-      return {
-        id: data.id,
-        full_name: data.full_name,
-        email: data.email,
-        role: data.role,
-        org_id: data.org_id,
-        trial_ends_at: data.trial_ends_at,
-        created_at: data.created_at,
-        preferred_currency: data.preferred_currency || 'USD'
-      };
     } catch (error) {
-      console.error('[ProfileService] Exception in createNewProfile:', error);
-      return this.createFallbackProfile(userId, safeEmail);
-    }
-  },
-
-  async createFallbackProfile(userId: string, userEmail?: string): Promise<UserProfile> {
-    const fallbackEmail = userEmail || '';
-    return {
-      id: userId,
-      full_name: fallbackEmail ? fallbackEmail.split('@')[0] : 'User',
-      email: fallbackEmail,
-      role: 'org_owner',
-      org_id: null,
-      trial_ends_at: null,
-      created_at: new Date().toISOString(),
-      preferred_currency: 'USD'
-    };
-  },
-
-  async ensureProfileExists(userId: string, userEmail?: string): Promise<UserProfile> {
-    // Expose email to downstream consumers to prevent supabase.auth.getUser() recursion
-    console.log(`[ProfileService] Ensuring profile exists for user: ${userId}`);
-    return await this.fetchUserProfile(userId, userEmail);
-  },
-
-  async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
-    try {
-      console.log('[ProfileService] Updating profile:', userId, updates);
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', userId)
-        .select()
-        .maybeSingle();
-
-      if (error) {
-        console.error('[ProfileService] Error updating profile:', error);
-        toast.error('Failed to update profile');
-        return null;
-      }
-
-      if (!data) {
-        console.error('[ProfileService] No data returned from profile update');
-        toast.error('Failed to update profile');
-        return null;
-      }
-
-      console.log('[ProfileService] Profile updated successfully');
-      return {
-        id: data.id,
-        full_name: data.full_name,
-        email: data.email,
-        role: data.role,
-        org_id: data.org_id,
-        trial_ends_at: data.trial_ends_at,
-        created_at: data.created_at,
-        preferred_currency: data.preferred_currency || 'USD'
-      };
-    } catch (error) {
-      console.error('[ProfileService] Error updating profile:', error);
-      toast.error('Failed to update profile');
-      return null;
+      console.error('[ProfileService] Error in ensureProfileExists:', error);
+      return this.createFallbackProfile(userId);
     }
   },
 

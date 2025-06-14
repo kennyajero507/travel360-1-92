@@ -1,206 +1,302 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { 
-  BarChart3, 
-  Users, 
-  FileText, 
-  Calendar,
-  Plus,
-  TrendingUp,
-  DollarSign,
-  Building2,
-  Shield
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import AdminSetup from "../components/admin/AdminSetup";
-import { OrganizationSetupModal } from "../components/auth/OrganizationSetupModal";
+import OrganizationSetup from "../components/OrganizationSetup";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { FileText, Users, Calendar, ArrowUp, MessageSquare, Receipt, ClipboardList, TrendingUp } from "lucide-react";
+import { Progress } from "../components/ui/progress";
+import { useRole } from "../contexts/RoleContext";
+import { Link } from "react-router-dom";
+import { Button } from "../components/ui/button";
 
 const Dashboard = () => {
-  const { userProfile } = useAuth();
-  const [showAdminSetup, setShowAdminSetup] = useState(false);
-  const [showOrgSetup, setShowOrgSetup] = useState(false);
+  const { userProfile, loading } = useAuth();
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Check if user needs to set up organization
-  useEffect(() => {
-    if (userProfile && userProfile.role === 'org_owner' && !userProfile.org_id) {
-      setShowOrgSetup(true);
-    }
-  }, [userProfile]);
+  // Show organization setup if user doesn't have one and is org_owner
+  if (userProfile && !userProfile.org_id && userProfile.role === 'org_owner') {
+    return <OrganizationSetup />;
+  }
 
-  const handleOrgSetupClose = () => {
-    setShowOrgSetup(false);
+  const { role } = useRole();
+  const isAgent = role === 'agent';
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="container mx-auto px-6 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+            Welcome to TravelFlow360
+          </h1>
+          <p className="text-lg text-gray-600 font-medium">Your comprehensive travel management dashboard</p>
+          {userProfile && (
+            <div className="mt-2 text-sm text-gray-500">
+              <p>Role: <span className="font-medium">{userProfile.role}</span></p>
+              {userProfile.org_id && (
+                <p>Organization: <span className="font-medium">{userProfile.org_id}</span></p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard 
+            title="Active Inquiries" 
+            value="24" 
+            trend="+12%" 
+            description="vs. last month" 
+            icon={<MessageSquare className="h-6 w-6 text-blue-600" />}
+            color="blue"
+          />
+          <MetricCard 
+            title="Pending Quotes" 
+            value="18" 
+            trend="+8%" 
+            description="vs. last month" 
+            icon={<Receipt className="h-6 w-6 text-green-600" />}
+            color="green"
+          />
+          <MetricCard 
+            title="Active Bookings" 
+            value="45" 
+            trend="+15%" 
+            description="vs. last month" 
+            icon={<ClipboardList className="h-6 w-6 text-purple-600" />}
+            color="purple"
+          />
+          <MetricCard 
+            title="Revenue" 
+            value="$125K" 
+            trend="+22%" 
+            description="vs. last month" 
+            icon={<TrendingUp className="h-6 w-6 text-orange-600" />}
+            color="orange"
+          />
+        </div>
+        
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                New Inquiry
+              </CardTitle>
+              <CardDescription className="text-blue-100">
+                Start a new client inquiry
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="secondary" className="w-full bg-white text-blue-600 hover:bg-blue-50">
+                <Link to="/inquiries/create">Create Inquiry</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Receipt className="h-5 w-5" />
+                Create Quote
+              </CardTitle>
+              <CardDescription className="text-green-100">
+                Generate a new quote
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="secondary" className="w-full bg-white text-green-600 hover:bg-green-50">
+                <Link to="/quotes/create">Create Quote</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                View Bookings
+              </CardTitle>
+              <CardDescription className="text-purple-100">
+                Manage active bookings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="secondary" className="w-full bg-white text-purple-600 hover:bg-purple-50">
+                <Link to="/bookings">View Bookings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Conversion Rate */}
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-gray-800">Conversion Analytics</CardTitle>
+              <CardDescription className="text-gray-600">Last 30 days performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-3 w-3 rounded-full bg-green-500" />
+                    <span className="font-medium text-gray-700">Inquiry to Quote</span>
+                  </div>
+                  <span className="font-bold text-green-600">68%</span>
+                </div>
+                <Progress value={68} className="h-3 bg-green-100" />
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-3 w-3 rounded-full bg-blue-500" />
+                    <span className="font-medium text-gray-700">Quote to Booking</span>
+                  </div>
+                  <span className="font-bold text-blue-600">45%</span>
+                </div>
+                <Progress value={45} className="h-3 bg-blue-100" />
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-3 w-3 rounded-full bg-purple-500" />
+                    <span className="font-medium text-gray-700">Overall Conversion</span>
+                  </div>
+                  <span className="font-bold text-purple-600">31%</span>
+                </div>
+                <Progress value={31} className="h-3 bg-purple-100" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Recent Activities */}
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-gray-800">Recent Activities</CardTitle>
+              <CardDescription className="text-gray-600">Latest system activities</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <ActivityItem 
+                  action="New inquiry received" 
+                  client="Sarah Johnson" 
+                  details="Zanzibar Beach Holiday - 7 nights" 
+                  time="2 hours ago"
+                  type="inquiry"
+                />
+                <ActivityItem 
+                  action="Quote approved" 
+                  client="Michael Chen" 
+                  details="Serengeti Safari - $4,850" 
+                  time="5 hours ago"
+                  type="quote"
+                />
+                <ActivityItem 
+                  action="Booking confirmed" 
+                  client="Emily Rodriguez" 
+                  details="Nairobi City Tour - $1,200" 
+                  time="Yesterday"
+                  type="booking"
+                />
+                <ActivityItem 
+                  action="Voucher issued" 
+                  client="David Kim" 
+                  details="Mombasa Beach Resort" 
+                  time="2 days ago"
+                  type="voucher"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface MetricCardProps {
+  title: string;
+  value: string;
+  trend: string;
+  description: string;
+  icon: React.ReactNode;
+  color: 'blue' | 'green' | 'purple' | 'orange';
+}
+
+const MetricCard = ({ title, value, trend, description, icon, color }: MetricCardProps) => {
+  const colorClasses = {
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-green-500 to-green-600',
+    purple: 'from-purple-500 to-purple-600',
+    orange: 'from-orange-500 to-orange-600'
   };
 
-  const stats = [
-    { title: "Total Quotes", value: "24", icon: FileText, change: "+12%", color: "text-blue-600" },
-    { title: "Active Bookings", value: "8", icon: Calendar, change: "+5%", color: "text-green-600" },
-    { title: "Revenue", value: "$45,231", icon: DollarSign, change: "+18%", color: "text-purple-600" },
-    { title: "Clients", value: "156", icon: Users, change: "+7%", color: "text-orange-600" },
-  ];
+  return (
+    <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`p-3 rounded-lg bg-gradient-to-r ${colorClasses[color]} shadow-lg`}>
+            {icon}
+          </div>
+          <div className="flex items-center text-sm text-green-600 font-medium">
+            <ArrowUp className="h-3 w-3 mr-1" />
+            {trend}
+          </div>
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-1">{value}</h3>
+          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+          <p className="text-xs text-gray-500">{description}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
-  const quickActions = [
-    { title: "Create Quote", description: "Generate a new travel quote", href: "/app/quotes/create", icon: FileText },
-    { title: "New Inquiry", description: "Add a new client inquiry", href: "/app/inquiries/create", icon: Users },
-    { title: "Add Hotel", description: "Register a new hotel", href: "/app/hotels/create", icon: Building2 },
-    { title: "View Reports", description: "Check analytics and reports", href: "/app/reports", icon: BarChart3 },
-  ];
+interface ActivityItemProps {
+  action: string;
+  client: string;
+  details: string;
+  time: string;
+  type: 'inquiry' | 'quote' | 'booking' | 'voucher';
+}
 
-  const isAdmin = userProfile?.role === 'system_admin';
+const ActivityItem = ({ action, client, details, time, type }: ActivityItemProps) => {
+  const iconMap = {
+    inquiry: <MessageSquare className="h-4 w-4 text-blue-600" />,
+    quote: <Receipt className="h-4 w-4 text-green-600" />,
+    booking: <ClipboardList className="h-4 w-4 text-purple-600" />,
+    voucher: <FileText className="h-4 w-4 text-orange-600" />
+  };
+
+  const bgMap = {
+    inquiry: 'bg-blue-100',
+    quote: 'bg-green-100', 
+    booking: 'bg-purple-100',
+    voucher: 'bg-orange-100'
+  };
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">
-            Welcome back, {userProfile?.full_name || 'User'}!
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with your travel business today.
-          </p>
-        </div>
-        {isAdmin && (
-          <Button 
-            variant="outline" 
-            onClick={() => setShowAdminSetup(!showAdminSetup)}
-            className="border-red-200 text-red-600 hover:bg-red-50"
-          >
-            <Shield className="h-4 w-4 mr-2" />
-            Admin Setup
-          </Button>
-        )}
+    <div className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+      <div className={`h-8 w-8 rounded-full ${bgMap[type]} flex items-center justify-center`}>
+        {iconMap[type]}
       </div>
-
-      {/* Admin Setup Panel */}
-      {showAdminSetup && isAdmin && (
-        <div className="mb-6">
-          <AdminSetup />
-        </div>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="flex items-center text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  {stat.change} from last month
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-800">{action}</p>
+        <p className="text-sm text-gray-600">{client} - {details}</p>
+        <p className="text-xs text-gray-400 mt-1">{time}</p>
       </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {quickActions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <Card key={action.title} className="hover:shadow-md transition-shadow cursor-pointer">
-              <Link to={action.href}>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Icon className="h-5 w-5" />
-                    <span>{action.title}</span>
-                  </CardTitle>
-                  <CardDescription>{action.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button size="sm" className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Get Started
-                  </Button>
-                </CardContent>
-              </Link>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Quotes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-2 border rounded">
-                <div>
-                  <div className="font-medium">Safari Adventure - Kenya</div>
-                  <div className="text-sm text-gray-500">John Smith</div>
-                </div>
-                <div className="text-sm text-gray-400">2 hours ago</div>
-              </div>
-              <div className="flex justify-between items-center p-2 border rounded">
-                <div>
-                  <div className="font-medium">Beach Resort - Maldives</div>
-                  <div className="text-sm text-gray-500">Jane Doe</div>
-                </div>
-                <div className="text-sm text-gray-400">5 hours ago</div>
-              </div>
-              <div className="flex justify-between items-center p-2 border rounded">
-                <div>
-                  <div className="font-medium">Cultural Tour - Morocco</div>
-                  <div className="text-sm text-gray-500">Mike Johnson</div>
-                </div>
-                <div className="text-sm text-gray-400">1 day ago</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Bookings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-2 border rounded">
-                <div>
-                  <div className="font-medium">Mount Kilimanjaro Trek</div>
-                  <div className="text-sm text-gray-500">Starts March 15</div>
-                </div>
-                <div className="text-sm text-green-600">Confirmed</div>
-              </div>
-              <div className="flex justify-between items-center p-2 border rounded">
-                <div>
-                  <div className="font-medium">Serengeti Safari</div>
-                  <div className="text-sm text-gray-500">Starts March 20</div>
-                </div>
-                <div className="text-sm text-yellow-600">Pending</div>
-              </div>
-              <div className="flex justify-between items-center p-2 border rounded">
-                <div>
-                  <div className="font-medium">Zanzibar Beach Holiday</div>
-                  <div className="text-sm text-gray-500">Starts March 25</div>
-                </div>
-                <div className="text-sm text-green-600">Confirmed</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Organization Setup Modal */}
-      <OrganizationSetupModal
-        isOpen={showOrgSetup}
-        onClose={handleOrgSetupClose}
-      />
-    </>
+    </div>
   );
 };
 

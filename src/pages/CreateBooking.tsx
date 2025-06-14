@@ -8,7 +8,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
-import { createBookingFromQuote } from "../services/bookingService";
+import { createBooking } from "../services/bookingService";
 import { BookingStatus } from "../types/booking.types";
 
 const CreateBooking = () => {
@@ -56,11 +56,24 @@ const CreateBooking = () => {
     setLoading(true);
     
     try {
-      // Use the correct function signature with quoteId and hotelId
-      const newBooking = await createBookingFromQuote(
-        selectedQuote.id, 
-        selectedQuote.approved_hotel_id
-      );
+      const bookingData = {
+        quoteId: selectedQuote.id,
+        client: selectedQuote.client,
+        agentId: formData.agentId,
+        hotelId: selectedQuote.approved_hotel_id,
+        hotelName: selectedQuote.hotel_name || "Hotel Name",
+        travelStart: selectedQuote.start_date,
+        travelEnd: selectedQuote.end_date,
+        totalPrice: calculateTotalPrice(selectedQuote),
+        status: formData.status,
+        notes: formData.notes,
+        roomArrangement: selectedQuote.room_arrangements || [],
+        activities: selectedQuote.activities || [],
+        transport: selectedQuote.transports || [],
+        transfers: selectedQuote.transfers || []
+      };
+
+      const newBooking = await createBooking(bookingData);
       
       if (newBooking) {
         toast.success("Booking created successfully");

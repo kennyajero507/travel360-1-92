@@ -1,120 +1,149 @@
+import { supabase } from "../integrations/supabase/client";
 
-import { supabase } from '../integrations/supabase/client';
+export interface CurrencyRate {
+  code: string;
+  name: string;
+  symbol: string;
+  rate: number; // Rate relative to USD
+}
 
-class CurrencyService {
-  private supportedCurrencies = [
-    'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'INR', 'CNY'
-  ];
+export interface CurrencyConversion {
+  amount: number;
+  fromCurrency: string;
+  toCurrency: string;
+  convertedAmount: number;
+  rate: number;
+}
 
-  async getExchangeRates(): Promise<Record<string, number>> {
-    try {
-      const { data, error } = await supabase
-        .from('exchange_rates')
-        .select('*');
+// Static currency data - in production, this would come from an API
+const SUPPORTED_CURRENCIES: CurrencyRate[] = [
+  { code: 'USD', name: 'US Dollar', symbol: '$', rate: 1 },
+  { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.85 },
+  { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.73 },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', rate: 1.25 },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rate: 1.35 },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', rate: 110 },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹', rate: 75 },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', rate: 6.5 },
+];
 
-      if (error) {
-        console.error('Error fetching exchange rates:', error);
-        return this.getFallbackRates();
-      }
+export class CurrencyService {
+  private static instance: CurrencyService;
+  private rates: Map<string, CurrencyRate> = new Map();
 
-      const rates: Record<string, number> = {};
-      data?.forEach(rate => {
-        const key = `${rate.base_currency}_${rate.target_currency}`;
-        rates[key] = rate.rate;
-      });
-
-      return rates;
-    } catch (error) {
-      console.error('Error in getExchangeRates:', error);
-      return this.getFallbackRates();
-    }
+  private constructor() {
+    // Initialize with static rates
+    SUPPORTED_CURRENCIES.forEach(currency => {
+      this.rates.set(currency.code, currency);
+    });
   }
 
-  private getFallbackRates(): Record<string, number> {
+  public static getInstance(): CurrencyService {
+    if (!CurrencyService.instance) {
+      CurrencyService.instance = new CurrencyService();
+    }
+    return CurrencyService.instance;
+  }
+
+  // Get all supported currencies
+  getSupportedCurrencies(): CurrencyRate[] {
+    return Array.from(this.rates.values());
+  }
+
+  // Get currency by code
+  getCurrency(code: string): CurrencyRate | null {
+    return this.rates.get(code) || null;
+  }
+
+  // Convert amount between currencies
+  convertCurrency(amount: number, fromCurrency: string, toCurrency: string): CurrencyConversion {
+    const fromRate = this.rates.get(fromCurrency);
+    const toRate = this.rates.get(toCurrency);
+
+    if (!fromRate || !toRate) {
+      throw new Error(`Unsupported currency conversion: ${fromCurrency} to ${toCurrency}`);
+    }
+
+    // Convert to USD first, then to target currency
+    const usdAmount = amount / fromRate.rate;
+    const convertedAmount = usdAmount * toRate.rate;
+    const conversionRate = toRate.rate / fromRate.rate;
+
     return {
-      'USD_EUR': 0.85,
-      'USD_GBP': 0.73,
-      'USD_JPY': 110.0,
-      'USD_CAD': 1.25,
-      'USD_AUD': 1.35,
-      'USD_INR': 75.0,
-      'USD_CNY': 6.5
+      amount,
+      fromCurrency,
+      toCurrency,
+      convertedAmount: Math.round(convertedAmount * 100) / 100,
+      rate: Math.round(conversionRate * 10000) / 10000
     };
   }
 
-  async convertAmount(amount: number, fromCurrency: string, toCurrency: string): Promise<number> {
-    if (fromCurrency === toCurrency) {
-      return amount;
+  // Format amount with currency symbol
+  formatAmount(amount: number, currencyCode: string): string {
+    const currency = this.getCurrency(currencyCode);
+    if (!currency) return `${amount}`;
+
+    // Format with appropriate decimal places
+    const decimals = currencyCode === 'JPY' ? 0 : 2;
+    const formattedAmount = amount.toFixed(decimals);
+
+    return `${currency.symbol}${formattedAmount}`;
+  }
+
+  // Get exchange rate between two currencies
+  getExchangeRate(fromCurrency: string, toCurrency: string): number {
+    const fromRate = this.rates.get(fromCurrency);
+    const toRate = this.rates.get(toCurrency);
+
+    if (!fromRate || !toRate) {
+      return 1; // Default to 1:1 if currencies not found
     }
 
+    return toRate.rate / fromRate.rate;
+  }
+
+  // Update currency rates (for future API integration)
+  async updateRates(): Promise<void> {
     try {
-      const rates = await this.getExchangeRates();
+      // In production, this would fetch from a currency API
+      // For now, we'll keep static rates
+      console.log('Currency rates updated');
+    } catch (error) {
+      console.error('Failed to update currency rates:', error);
+    }
+  }
+
+  // Save user's preferred currency
+  async saveUserCurrencyPreference(userId: string, currencyCode: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ preferred_currency: currencyCode })
+        .eq('id', userId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to save currency preference:', error);
+    }
+  }
+
+  // Get user's preferred currency
+  async getUserCurrencyPreference(userId: string): Promise<string> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('preferred_currency')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
       
-      // Direct conversion
-      const directKey = `${fromCurrency}_${toCurrency}`;
-      if (rates[directKey]) {
-        return amount * rates[directKey];
-      }
-
-      // Reverse conversion
-      const reverseKey = `${toCurrency}_${fromCurrency}`;
-      if (rates[reverseKey]) {
-        return amount / rates[reverseKey];
-      }
-
-      // Convert via USD
-      if (fromCurrency !== 'USD') {
-        const toUsdKey = `${fromCurrency}_USD`;
-        const reverseToUsdKey = `USD_${fromCurrency}`;
-        
-        if (rates[toUsdKey]) {
-          amount = amount * rates[toUsdKey];
-        } else if (rates[reverseToUsdKey]) {
-          amount = amount / rates[reverseToUsdKey];
-        }
-      }
-
-      if (toCurrency !== 'USD') {
-        const fromUsdKey = `USD_${toCurrency}`;
-        const reverseFromUsdKey = `${toCurrency}_USD`;
-        
-        if (rates[fromUsdKey]) {
-          amount = amount * rates[fromUsdKey];
-        } else if (rates[reverseFromUsdKey]) {
-          amount = amount / rates[reverseFromUsdKey];
-        }
-      }
-
-      return Math.round(amount * 100) / 100;
+      return data?.preferred_currency || 'USD';
     } catch (error) {
-      console.error('Error converting currency:', error);
-      return amount; // Return original amount if conversion fails
+      console.error('Failed to get currency preference:', error);
+      return 'USD';
     }
-  }
-
-  formatCurrency(amount: number, currencyCode: string): string {
-    try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currencyCode,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amount);
-    } catch (error) {
-      console.error('Error formatting currency:', error);
-      return `${currencyCode} ${amount.toFixed(2)}`;
-    }
-  }
-
-  getSupportedCurrencies(): string[] {
-    return this.supportedCurrencies;
-  }
-
-  async updateExchangeRates(): Promise<void> {
-    // In a real implementation, this would fetch from an API like ExchangeRate-API
-    // For now, we'll use static rates
-    console.log('Exchange rates update would happen here');
   }
 }
 
-export const currencyService = new CurrencyService();
+export const currencyService = CurrencyService.getInstance();

@@ -116,7 +116,7 @@ const Quotes = () => {
   };
 
   if (isLoading) {
-    return <PageLoading message="Loading quotes..." />;
+    return <PageLoading title="Loading quotes..." description="Fetching your quote data" />;
   }
 
   if (error) {
@@ -203,15 +203,15 @@ const Quotes = () => {
                 ? "No quotes match your search criteria" 
                 : "No quotes created yet"
               }
-              message={search || filter !== "all" 
+              description={search || filter !== "all" 
                 ? "Try adjusting your search or filter criteria"
                 : "Create your first quote to get started"
               }
-              action={permissions.canCreateQuotes && (!search && filter === "all") ? (
-                <Button onClick={() => navigate('/quotes/create')}>
-                  Create First Quote
-                </Button>
-              ) : undefined}
+              action={permissions.canCreateQuotes && (!search && filter === "all") ? {
+                label: "Create First Quote",
+                onClick: () => navigate('/quotes/create')
+              } : undefined}
+              icon={<FileText className="h-12 w-12 text-gray-400" />}
             />
           ) : (
             <div className="border rounded-md">

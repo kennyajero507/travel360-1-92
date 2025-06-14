@@ -2,7 +2,7 @@
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 import { auditService } from '../../services/auditService';
-import { systemErrorHandler } from '../../services/systemErrorHandler';
+import { enhancedErrorService } from '../../services/enhancedErrorService';
 
 class EnhancedAuthService {
   async login(email: string, password: string): Promise<boolean> {
@@ -17,14 +17,22 @@ class EnhancedAuthService {
       if (error) {
         console.error('[EnhancedAuthService] Login error:', error);
         
-        await systemErrorHandler.handleError({
-          code: 'AUTH_FAILED',
+        // Log authentication failure
+        await enhancedErrorService.logError({
+          type: 'authentication_failure',
           message: `Login failed: ${error.message}`,
           context: { email, errorCode: error.status },
           severity: 'medium'
         });
 
-        // Don't show toast here, let the calling component handle it
+        // Show user-friendly error messages
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password');
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Please confirm your email address before signing in');
+        } else {
+          toast.error('Failed to sign in. Please try again.');
+        }
         return false;
       }
 
@@ -32,16 +40,13 @@ class EnhancedAuthService {
         console.log('[EnhancedAuthService] Login successful');
         
         // Log successful authentication
-        try {
-          await auditService.logUserActivity(
-            'user_login',
-            'User successfully logged in',
-            { email, loginTime: new Date().toISOString() }
-          );
-        } catch (auditError) {
-          console.warn('[EnhancedAuthService] Audit logging failed:', auditError);
-        }
+        await auditService.logUserActivity(
+          'user_login',
+          'User successfully logged in',
+          { email, loginTime: new Date().toISOString() }
+        );
 
+        toast.success('Successfully signed in');
         return true;
       }
 
@@ -49,13 +54,15 @@ class EnhancedAuthService {
     } catch (error) {
       console.error('[EnhancedAuthService] Unexpected login error:', error);
       
-      await systemErrorHandler.handleError({
-        code: 'AUTH_FAILED',
+      await enhancedErrorService.logError({
+        type: 'authentication_error',
         message: error instanceof Error ? error.message : 'Unknown login error',
+        stack: error instanceof Error ? error.stack : undefined,
         context: { email },
         severity: 'high'
       });
 
+      toast.error('An unexpected error occurred during sign in');
       return false;
     }
   }
@@ -68,11 +75,9 @@ class EnhancedAuthService {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/signin`,
           data: {
             full_name: fullName,
-            company_name: companyName,
-            role: 'org_owner'
+            company_name: companyName
           }
         }
       });
@@ -80,13 +85,18 @@ class EnhancedAuthService {
       if (error) {
         console.error('[EnhancedAuthService] Signup error:', error);
         
-        await systemErrorHandler.handleError({
-          code: 'SIGNUP_FAILED',
+        await enhancedErrorService.logError({
+          type: 'signup_failure',
           message: `Signup failed: ${error.message}`,
           context: { email, errorCode: error.status },
           severity: 'medium'
         });
 
+        if (error.message.includes('already registered')) {
+          toast.error('An account with this email already exists');
+        } else {
+          toast.error('Failed to create account. Please try again.');
+        }
         return false;
       }
 
@@ -94,16 +104,17 @@ class EnhancedAuthService {
         console.log('[EnhancedAuthService] Signup successful');
         
         // Log successful signup
-        try {
-          await auditService.logUserActivity(
-            'user_signup',
-            'User successfully signed up',
-            { email, fullName, companyName, signupTime: new Date().toISOString() }
-          );
-        } catch (auditError) {
-          console.warn('[EnhancedAuthService] Audit logging failed:', auditError);
-        }
+        await auditService.logUserActivity(
+          'user_signup',
+          'User successfully signed up',
+          { email, fullName, companyName, signupTime: new Date().toISOString() }
+        );
 
+        if (data.user.email_confirmed_at) {
+          toast.success('Account created successfully!');
+        } else {
+          toast.success('Account created! Please check your email to confirm your account.');
+        }
         return true;
       }
 
@@ -111,13 +122,15 @@ class EnhancedAuthService {
     } catch (error) {
       console.error('[EnhancedAuthService] Unexpected signup error:', error);
       
-      await systemErrorHandler.handleError({
-        code: 'SIGNUP_FAILED',
+      await enhancedErrorService.logError({
+        type: 'signup_error',
         message: error instanceof Error ? error.message : 'Unknown signup error',
+        stack: error instanceof Error ? error.stack : undefined,
         context: { email, fullName, companyName },
         severity: 'high'
       });
 
+      toast.error('An unexpected error occurred during signup');
       return false;
     }
   }
@@ -127,23 +140,19 @@ class EnhancedAuthService {
       console.log('[EnhancedAuthService] Starting logout process');
       
       // Log logout activity before signing out
-      try {
-        await auditService.logUserActivity(
-          'user_logout',
-          'User logged out',
-          { logoutTime: new Date().toISOString() }
-        );
-      } catch (auditError) {
-        console.warn('[EnhancedAuthService] Audit logging failed:', auditError);
-      }
+      await auditService.logUserActivity(
+        'user_logout',
+        'User logged out',
+        { logoutTime: new Date().toISOString() }
+      );
 
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('[EnhancedAuthService] Logout error:', error);
         
-        await systemErrorHandler.handleError({
-          code: 'LOGOUT_FAILED',
+        await enhancedErrorService.logError({
+          type: 'logout_error',
           message: `Logout failed: ${error.message}`,
           severity: 'low'
         });
@@ -156,9 +165,10 @@ class EnhancedAuthService {
     } catch (error) {
       console.error('[EnhancedAuthService] Unexpected logout error:', error);
       
-      await systemErrorHandler.handleError({
-        code: 'LOGOUT_FAILED',
+      await enhancedErrorService.logError({
+        type: 'logout_error',
         message: error instanceof Error ? error.message : 'Unknown logout error',
+        stack: error instanceof Error ? error.stack : undefined,
         severity: 'medium'
       });
 
@@ -177,13 +187,14 @@ class EnhancedAuthService {
       if (error) {
         console.error('[EnhancedAuthService] Password reset error:', error);
         
-        await systemErrorHandler.handleError({
-          code: 'PASSWORD_RESET_FAILED',
+        await enhancedErrorService.logError({
+          type: 'password_reset_error',
           message: `Password reset failed: ${error.message}`,
           context: { email },
           severity: 'medium'
         });
 
+        toast.error('Failed to send password reset email');
         return false;
       }
 
@@ -199,13 +210,15 @@ class EnhancedAuthService {
     } catch (error) {
       console.error('[EnhancedAuthService] Unexpected password reset error:', error);
       
-      await systemErrorHandler.handleError({
-        code: 'PASSWORD_RESET_FAILED',
+      await enhancedErrorService.logError({
+        type: 'password_reset_error',
         message: error instanceof Error ? error.message : 'Unknown password reset error',
+        stack: error instanceof Error ? error.stack : undefined,
         context: { email },
         severity: 'high'
       });
 
+      toast.error('An unexpected error occurred');
       return false;
     }
   }
@@ -221,12 +234,13 @@ class EnhancedAuthService {
       if (error) {
         console.error('[EnhancedAuthService] Password update error:', error);
         
-        await systemErrorHandler.handleError({
-          code: 'PASSWORD_UPDATE_FAILED',
+        await enhancedErrorService.logError({
+          type: 'password_update_error',
           message: `Password update failed: ${error.message}`,
           severity: 'medium'
         });
 
+        toast.error('Failed to update password');
         return false;
       }
 
@@ -242,12 +256,14 @@ class EnhancedAuthService {
     } catch (error) {
       console.error('[EnhancedAuthService] Unexpected password update error:', error);
       
-      await systemErrorHandler.handleError({
-        code: 'PASSWORD_UPDATE_FAILED',
+      await enhancedErrorService.logError({
+        type: 'password_update_error',
         message: error instanceof Error ? error.message : 'Unknown password update error',
+        stack: error instanceof Error ? error.stack : undefined,
         severity: 'high'
       });
 
+      toast.error('An unexpected error occurred');
       return false;
     }
   }
@@ -278,8 +294,8 @@ class EnhancedAuthService {
         accountAge
       };
     } catch (error) {
-      await systemErrorHandler.handleError({
-        code: 'SECURITY_CHECK_FAILED',
+      await enhancedErrorService.logError({
+        type: 'security_check_error',
         message: error instanceof Error ? error.message : 'Failed to check account security',
         severity: 'low'
       });
