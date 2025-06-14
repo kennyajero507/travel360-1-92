@@ -15,7 +15,11 @@ export const profileService = {
 
       if (error) {
         // Log forbidden error explicitly
-        if (error.code === '42501' || error.status === 401 || error.status === 403) {
+        if (
+          error.code === '42501' ||
+          error.code === '401' ||
+          error.code === '403'
+        ) {
           console.error('[ProfileService] RLS Forbidden: Cannot access profile. This is likely a policy or database access error.', error);
           return { __forbidden: true } as any;
         }
@@ -50,7 +54,11 @@ export const profileService = {
       return profile;
     } catch (error: any) {
       // Log forbidden error explicitly
-      if (error?.code === '42501' || error?.status === 401 || error?.status === 403) {
+      if (
+        error?.code === '42501' ||
+        error?.code === '401' ||
+        error?.code === '403'
+      ) {
         console.error('[ProfileService] RLS Forbidden: Cannot access profile. (CATCH BLOCK)');
         return { __forbidden: true } as any;
       }
