@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -15,8 +14,6 @@ import {
   SelectValue 
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
-import { useAuth } from "../../contexts/AuthContext";
-import { agentService } from "../../services/agentService";
 import { Loader2 } from "lucide-react";
 
 interface Agent {
@@ -31,6 +28,8 @@ interface AgentAssignmentDialogProps {
   handleAssignInquiry: () => void;
   selectedAgent: string;
   setSelectedAgent: (agent: string) => void;
+  agents: Agent[];
+  isAssigning: boolean;
 }
 
 export const AgentAssignmentDialog = ({ 
@@ -39,33 +38,10 @@ export const AgentAssignmentDialog = ({
   selectedInquiry,
   handleAssignInquiry,
   selectedAgent,
-  setSelectedAgent
+  setSelectedAgent,
+  agents,
+  isAssigning,
 }: AgentAssignmentDialogProps) => {
-  const { profile } = useAuth();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const loadAgents = async () => {
-      if (!dialogOpen || !profile?.org_id) return;
-
-      try {
-        setLoading(true);
-        const agentData = await agentService.getAgents(profile.org_id);
-        setAgents(agentData.map(agent => ({
-          id: agent.id,
-          name: agent.name
-        })));
-      } catch (error) {
-        console.error('Error loading agents:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadAgents();
-  }, [dialogOpen, profile?.org_id]);
-
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="sm:max-w-[425px] bg-white">
@@ -76,23 +52,23 @@ export const AgentAssignmentDialog = ({
           <label className="text-sm font-medium mb-2 block">
             Select Agent
           </label>
-          {loading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Loading agents...
-            </div>
-          ) : (
-            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-              <SelectTrigger className="w-full bg-white text-black">
-                <SelectValue placeholder="Select an agent" />
-              </SelectTrigger>
-              <SelectContent>
-                {agents.map((agent) => (
+          <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+            <SelectTrigger className="w-full bg-white text-black">
+              <SelectValue placeholder="Select an agent" />
+            </SelectTrigger>
+            <SelectContent>
+              {agents.length === 0 ? (
+                <div className="flex items-center justify-center py-4 text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading agents...
+                </div>
+              ) : (
+                agents.map((agent) => (
                   <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+                ))
+              )}
+            </SelectContent>
+          </Select>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -101,7 +77,7 @@ export const AgentAssignmentDialog = ({
           <Button 
             onClick={handleAssignInquiry} 
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={!selectedAgent || loading}
+            disabled={!selectedAgent || isAssigning}
           >
             Assign
           </Button>
