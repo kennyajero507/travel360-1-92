@@ -349,6 +349,7 @@ export type Database = {
           lead_source: string | null
           nights_count: number | null
           num_rooms: number | null
+          org_id: string | null
           package_name: string | null
           priority: string | null
           status: string
@@ -379,6 +380,7 @@ export type Database = {
           lead_source?: string | null
           nights_count?: number | null
           num_rooms?: number | null
+          org_id?: string | null
           package_name?: string | null
           priority?: string | null
           status?: string
@@ -409,6 +411,7 @@ export type Database = {
           lead_source?: string | null
           nights_count?: number | null
           num_rooms?: number | null
+          org_id?: string | null
           package_name?: string | null
           priority?: string | null
           status?: string
@@ -416,7 +419,15 @@ export type Database = {
           tour_type?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_inquiries_org"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invitations: {
         Row: {

@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
-import { createInquiry, InquiryValidationError } from "../services/inquiryService";
 import { agentService } from "../services/agentService";
 import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inquiry.types";
+import { useCreateInquiry } from "./useInquiryData";
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
-  const { profile, loading } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
+  const createInquiryMutation = useCreateInquiry();
   
   const [activeTab, setActiveTab] = useState<'domestic' | 'international'>('domestic');
   const [formData, setFormData] = useState<InquiryFormData>({
@@ -35,7 +36,6 @@ export const useInquiryForm = () => {
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableAgents, setAvailableAgents] = useState<AvailableAgent[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(false);
 
@@ -54,20 +54,17 @@ export const useInquiryForm = () => {
   // Load available agents for assignment
   useEffect(() => {
     const loadAgents = async () => {
-      if (!profile?.org_id || isAgent || loading) {
-        console.log('Skipping agent load - no org, user is agent, or still loading');
+      if (!profile?.org_id || isAgent || authLoading) {
         return;
       }
 
       try {
         setLoadingAgents(true);
-        console.log('Loading agents for org:', profile.org_id);
         const agents = await agentService.getAgents(profile.org_id);
         setAvailableAgents(agents.map(agent => ({
           id: agent.id,
           name: agent.name
         })));
-        console.log('Loaded agents:', agents.length);
       } catch (error) {
         console.error('Error loading agents:', error);
         toast.error('Failed to load available agents');
@@ -76,11 +73,10 @@ export const useInquiryForm = () => {
       }
     };
 
-    // Only load agents if user profile is ready and user has an org
-    if (profile?.id && profile?.org_id && !loading) {
+    if (profile?.id && profile?.org_id && !authLoading) {
       loadAgents();
     }
-  }, [profile?.org_id, profile?.id, isAgent, loading]);
+  }, [profile?.org_id, profile?.id, isAgent, authLoading]);
 
   const handleTabChange = (value: string) => {
     const tourType = value as 'domestic' | 'international';
@@ -155,6 +151,7 @@ export const useInquiryForm = () => {
     
     const inquiryData: InquiryInsertData = {
       id: crypto.randomUUID(),
+      org_id: profile?.org_id || null,
       tour_type: formData.tour_type,
       lead_source: formData.lead_source || null,
       tour_consultant: formData.tour_consultant || null,
@@ -184,9 +181,8 @@ export const useInquiryForm = () => {
   };
 
   const saveDraft = async () => {
-    if (isSubmitting) return;
+    if (createInquiryMutation.isPending) return;
     
-    // Don't validate for drafts, just check basic requirements
     if (!profile?.id) {
       toast.error("Authentication required");
       return;
@@ -197,44 +193,27 @@ export const useInquiryForm = () => {
       return;
     }
 
-    // Check if user belongs to an organization (unless system admin)
     if (!profile.org_id && profile.role !== 'system_admin') {
       toast.error("You must belong to an organization to create inquiries");
       return;
     }
     
-    try {
-      setIsSubmitting(true);
-      const draftData = prepareInquiryData('Draft');
-      
-      console.log("Saving draft inquiry data:", draftData);
-      await createInquiry(draftData);
-      
-      navigate("/inquiries");
-    } catch (error) {
-      console.error("Error saving draft:", error);
-      
-      if (error instanceof InquiryValidationError) {
-        return;
-      }
-      
-      // Error toast is handled by createInquiry
-    } finally {
-      setIsSubmitting(false);
-    }
+    const draftData = prepareInquiryData('Draft');
+    createInquiryMutation.mutate(draftData, {
+      onSuccess: () => navigate("/inquiries"),
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isSubmitting) return;
+    if (createInquiryMutation.isPending) return;
 
     if (!profile?.id) {
       toast.error("You must be logged in to create inquiries");
       return;
     }
 
-    // Check if user belongs to an organization (unless system admin)
     if (!profile.org_id && profile.role !== 'system_admin') {
       toast.error("You must belong to an organization to create inquiries");
       return;
@@ -245,26 +224,10 @@ export const useInquiryForm = () => {
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      const submittedFormData = prepareInquiryData('New');
-      
-      console.log("Submitting inquiry data:", submittedFormData);
-      await createInquiry(submittedFormData);
-      
-      navigate("/inquiries");
-      
-    } catch (error) {
-      console.error("Error creating inquiry:", error);
-      
-      if (error instanceof InquiryValidationError) {
-        return;
-      }
-      
-      // Error toast is handled by createInquiry
-    } finally {
-      setIsSubmitting(false);
-    }
+    const submittedFormData = prepareInquiryData('New');
+    createInquiryMutation.mutate(submittedFormData, {
+      onSuccess: () => navigate("/inquiries"),
+    });
   };
 
   return {
@@ -274,7 +237,7 @@ export const useInquiryForm = () => {
     validationErrors,
     availableAgents,
     isAgent,
-    isSubmitting,
+    isSubmitting: createInquiryMutation.isPending,
     loadingAgents,
     handleTabChange,
     saveDraft,

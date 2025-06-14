@@ -1,95 +1,77 @@
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import * as inquiryService from '../services/inquiryService';
+import { InquiryInsertData, InquiryData } from '../types/inquiry.types';
 
-export const useInquiryData = () => {
-  const queryClient = useQueryClient();
-
-  const { data: inquiries, isLoading, error } = useQuery({
+export const useInquiries = () => {
+  return useQuery({
     queryKey: ['inquiries'],
-    queryFn: async () => {
-      console.log('[useInquiryData] Fetching inquiries from database');
-      
-      const { data, error } = await supabase
-        .from('inquiries')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[useInquiryData] Error fetching inquiries:', error);
-        throw error;
-      }
-
-      console.log('[useInquiryData] Fetched inquiries:', data?.length || 0);
-      return data || [];
+    queryFn: () => {
+      console.log('[useInquiries] Fetching all inquiries');
+      return inquiryService.getAllInquiries();
+    },
+    onError: (error: Error) => {
+      console.error('[useInquiries] Error fetching inquiries:', error);
+      toast.error(`Failed to fetch inquiries: ${error.message}`);
     },
   });
+};
 
-  const createInquiry = async (inquiryData: any) => {
-    try {
-      console.log('[useInquiryData] Creating inquiry:', inquiryData);
-      
-      const { data, error } = await supabase
-        .from('inquiries')
-        .insert([inquiryData])
-        .select()
-        .single();
+export const useCreateInquiry = () => {
+  const queryClient = useQueryClient();
 
-      if (error) {
-        console.error('[useInquiryData] Error creating inquiry:', error);
-        toast.error('Failed to create inquiry');
-        throw error;
-      }
-
-      console.log('[useInquiryData] Inquiry created successfully:', data);
+  return useMutation({
+    mutationFn: (inquiryData: InquiryInsertData) => {
+      console.log('[useCreateInquiry] Creating inquiry:', inquiryData);
+      return inquiryService.createInquiry(inquiryData);
+    },
+    onSuccess: () => {
+      console.log('[useCreateInquiry] Inquiry created successfully');
       toast.success('Inquiry created successfully');
-      
-      // Invalidate and refetch inquiries
       queryClient.invalidateQueries({ queryKey: ['inquiries'] });
-      
-      return data;
-    } catch (error) {
-      console.error('[useInquiryData] Error in createInquiry:', error);
-      throw error;
-    }
-  };
+    },
+    onError: (error: Error) => {
+      console.error('[useCreateInquiry] Error creating inquiry:', error);
+      toast.error(`Failed to create inquiry: ${error.message}`);
+    },
+  });
+};
 
-  const updateInquiry = async (inquiryId: string, updates: any) => {
-    try {
-      console.log('[useInquiryData] Updating inquiry:', inquiryId, updates);
-      
-      const { data, error } = await supabase
-        .from('inquiries')
-        .update(updates)
-        .eq('id', inquiryId)
-        .select()
-        .single();
+export const useUpdateInquiry = () => {
+  const queryClient = useQueryClient();
 
-      if (error) {
-        console.error('[useInquiryData] Error updating inquiry:', error);
-        toast.error('Failed to update inquiry');
-        throw error;
-      }
-
-      console.log('[useInquiryData] Inquiry updated successfully:', data);
+  return useMutation({
+    mutationFn: ({ inquiryId, updates }: { inquiryId: string, updates: Partial<InquiryData> }) => {
+      console.log('[useUpdateInquiry] Updating inquiry:', inquiryId, updates);
+      return inquiryService.updateInquiry(inquiryId, updates);
+    },
+    onSuccess: (data) => {
+      console.log('[useUpdateInquiry] Inquiry updated successfully:', data);
       toast.success('Inquiry updated successfully');
-      
-      // Invalidate and refetch inquiries
       queryClient.invalidateQueries({ queryKey: ['inquiries'] });
-      
-      return data;
-    } catch (error) {
-      console.error('[useInquiryData] Error in updateInquiry:', error);
-      throw error;
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ['inquiry', data.id] });
+    },
+    onError: (error: Error) => {
+      console.error('[useUpdateInquiry] Error updating inquiry:', error);
+      toast.error(`Failed to update inquiry: ${error.message}`);
+    },
+  });
+};
 
-  return {
-    inquiries: inquiries || [],
-    isLoading,
-    error,
-    createInquiry,
-    updateInquiry
-  };
+export const useAssignInquiry = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ inquiryId, agentId, agentName }: { inquiryId: string, agentId: string, agentName: string }) => {
+      return inquiryService.assignInquiryToAgent(inquiryId, agentId, agentName);
+    },
+    onSuccess: (data) => {
+      toast.success(`Inquiry assigned to ${data.assigned_agent_name} successfully`);
+      queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to assign inquiry: ${error.message}`);
+    }
+  });
 };

@@ -7,49 +7,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Plus, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { getInquiriesByTourType, assignInquiryToAgent } from "../services/inquiryService";
 import { agentService } from "../services/agentService";
 import { InquiryFilters } from "../components/inquiry/InquiryFilters";
 import { InquiryTable } from "../components/inquiry/InquiryTable";
 import { AgentAssignmentDialog } from "../components/inquiry/AgentAssignmentDialog";
-import { debugRLSStatus } from "../utils/debugRLS";
-import { testRLSAccess } from "../utils/fixRLSPolicies";
+import { useInquiries, useAssignInquiry } from "../hooks/useInquiryData";
+import { InquiryData } from "../types/inquiry.types";
 
 const Inquiries = () => {
   const navigate = useNavigate();
-  const { profile, checkRoleAccess, createOrganization } = useAuth();
+  const { profile, checkRoleAccess } = useAuth();
   
-  // Allow agents to access inquiries as well
   const canAccessInquiries = checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']);
   
-  // Redirect if user doesn't have permission
+  const { data: allInquiries = [], isLoading, isRefetching, refetch } = useInquiries();
+  const assignInquiryMutation = useAssignInquiry();
+  
   useEffect(() => {
-    if (!canAccessInquiries) {
+    if (!isLoading && !canAccessInquiries) {
       toast.error("You don't have permission to access inquiries");
       navigate("/");
     }
-  }, [canAccessInquiries, navigate]);
+  }, [canAccessInquiries, navigate, isLoading]);
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [domesticInquiries, setDomesticInquiries] = useState([]);
-  const [internationalInquiries, setInternationalInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("domestic");
   const [agents, setAgents] = useState<any[]>([]);
-
-  // Debug RLS on component mount
-  useEffect(() => {
-    if (profile?.id) {
-      console.log("Running RLS debug and tests...");
-      debugRLSStatus();
-      testRLSAccess();
-    }
-  }, [profile?.id]);
 
   // Load agents for assignment
   useEffect(() => {
@@ -66,97 +53,30 @@ const Inquiries = () => {
       }
     };
 
-    loadAgents();
+    if (profile?.org_id) {
+      loadAgents();
+    }
   }, [profile?.org_id, profile?.role]);
-
-  // Function to ensure user has organization
-  const ensureUserHasOrganization = async () => {
-    if (!profile?.org_id && profile?.role === 'org_owner') {
-      console.log("User needs organization setup");
-      toast.info("Please complete your organization setup to continue.");
-      return false;
-    }
-    return true;
-  };
-
-  const fetchInquiries = async (showRefreshToast = false) => {
-    try {
-      if (showRefreshToast) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      
-      console.log("Fetching inquiries for user role:", profile?.role);
-      console.log("User org_id:", profile?.org_id);
-      
-      // Check if user has organization before fetching
-      if (!profile?.org_id && profile?.role !== 'system_admin') {
-        console.log("User has no organization");
-        const hasOrg = await ensureUserHasOrganization();
-        if (!hasOrg) {
-          return;
-        }
-      }
-
-      const [domesticData, internationalData] = await Promise.all([
-        getInquiriesByTourType('domestic'),
-        getInquiriesByTourType('international')
-      ]);
-      
-      console.log("Fetched domestic inquiries:", domesticData?.length || 0);
-      console.log("Fetched international inquiries:", internationalData?.length || 0);
-      
-      setDomesticInquiries(domesticData || []);
-      setInternationalInquiries(internationalData || []);
-      
-      if (showRefreshToast) {
-        toast.success("Inquiries refreshed successfully");
-      }
-    } catch (error) {
-      console.error("Error fetching inquiries:", error);
-      
-      // Handle specific RLS errors
-      if (error instanceof Error && error.message.includes('row-level security')) {
-        toast.error("You don't have permission to view inquiries. Please ensure you belong to an organization.");
-      } else if (error instanceof Error && error.message.includes('infinite recursion')) {
-        toast.error("Database configuration issue detected. Please contact support.");
-      } else {
-        toast.error("Failed to load inquiries");
-      }
-      
-      setDomesticInquiries([]);
-      setInternationalInquiries([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    if (canAccessInquiries && profile?.id) {
-      fetchInquiries();
-    }
-  }, [canAccessInquiries, profile?.id]);
-
-  // Filter inquiries based on current filter and search
-  const filterInquiries = (inquiries: any[]) => {
+  
+  // Filter inquiries based on current filter, search, and tab
+  const filterInquiries = (inquiries: InquiryData[], tourType: 'domestic' | 'international') => {
     if (!Array.isArray(inquiries)) {
       return [];
     }
 
     return inquiries.filter(inquiry => {
+      const matchesTourType = inquiry.tour_type === tourType;
       const matchesFilter = filter === "all" || inquiry.status?.toLowerCase() === filter.toLowerCase();
       const matchesSearch = inquiry.client_name?.toLowerCase().includes(search.toLowerCase()) ||
                            inquiry.destination?.toLowerCase().includes(search.toLowerCase()) ||
                            inquiry.enquiry_number?.toLowerCase().includes(search.toLowerCase());
       
-      return matchesFilter && matchesSearch;
+      return matchesTourType && matchesFilter && matchesSearch;
     });
   };
 
-  const filteredDomesticInquiries = filterInquiries(domesticInquiries);
-  const filteredInternationalInquiries = filterInquiries(internationalInquiries);
+  const filteredDomesticInquiries = filterInquiries(allInquiries, 'domestic');
+  const filteredInternationalInquiries = filterInquiries(allInquiries, 'international');
 
   const openAssignDialog = (inquiryId: string) => {
     setSelectedInquiry(inquiryId);
@@ -170,29 +90,24 @@ const Inquiries = () => {
       return;
     }
 
-    try {
-      // Find the selected agent
-      const agent = agents.find(a => a.id === selectedAgent);
-      if (!agent) {
-        toast.error("Selected agent not found");
-        return;
-      }
-
-      // Call the actual assignment function
-      await assignInquiryToAgent(selectedInquiry, agent.id, agent.name);
-      
-      // Refresh the inquiries list
-      await fetchInquiries();
-      
-      setDialogOpen(false);
-    } catch (error) {
-      console.error("Error assigning inquiry:", error);
-      // Error is already handled by the service
+    const agent = agents.find(a => a.id === selectedAgent);
+    if (!agent) {
+      toast.error("Selected agent not found");
+      return;
     }
+    
+    assignInquiryMutation.mutate(
+      { inquiryId: selectedInquiry, agentId: agent.id, agentName: agent.name },
+      {
+        onSuccess: () => {
+          setDialogOpen(false);
+        }
+      }
+    );
   };
 
   const handleRefresh = () => {
-    fetchInquiries(true);
+    refetch();
   };
   
   // Get title based on role
@@ -206,17 +121,17 @@ const Inquiries = () => {
     }
   };
 
-  if (!canAccessInquiries) {
-    return null;
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
         <span className="ml-2">Loading inquiries...</span>
       </div>
     );
+  }
+  
+  if (!canAccessInquiries) {
+    return null;
   }
 
   return (
@@ -236,10 +151,10 @@ const Inquiries = () => {
           <Button 
             variant="outline" 
             onClick={handleRefresh}
-            disabled={refreshing}
+            disabled={isRefetching}
             className="self-start"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button asChild className="self-start">
@@ -317,6 +232,8 @@ const Inquiries = () => {
         handleAssignInquiry={handleAssignInquiry}
         selectedAgent={selectedAgent}
         setSelectedAgent={setSelectedAgent}
+        agents={agents}
+        isAssigning={assignInquiryMutation.isPending}
       />
     </div>
   );

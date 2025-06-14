@@ -1,3 +1,4 @@
+
 export interface InquiryFormData {
   tour_type: 'domestic' | 'international';
   lead_source: string;
@@ -24,6 +25,7 @@ export interface InquiryFormData {
 // Only includes fields that can be explicitly set during insert
 export interface InquiryInsertData {
   id: string; // We generate this manually
+  org_id: string | null;
   tour_type: string;
   lead_source?: string | null;
   tour_consultant?: string | null;
@@ -52,6 +54,7 @@ export interface InquiryInsertData {
 // Full inquiry data type - includes all database fields including auto-generated ones
 export interface InquiryData {
   id: string;
+  org_id: string | null;
   enquiry_number: string;
   tour_type: string;
   lead_source?: string | null;
