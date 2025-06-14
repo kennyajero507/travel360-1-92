@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
@@ -6,11 +5,10 @@ import { Separator } from "../ui/separator";
 import { useRole, UserRole } from "../../contexts/RoleContext";
 
 const AccountSettings = () => {
-  const { role, setRole, permissions } = useRole();
+  const { role, permissions } = useRole();
 
   const handleRoleChange = (selectedRole: UserRole) => {
-    setRole(selectedRole);
-    toast.success(`Role changed to ${selectedRole}`);
+    toast.info("Your role is set in your profile and cannot be changed here.");
   };
 
   // Helper function to format role display text
@@ -33,7 +31,7 @@ const AccountSettings = () => {
       <CardContent>
         <div className="space-y-2">
           <label className="font-medium">Current Role</label>
-          <Select value={role} onValueChange={handleRoleChange}>
+          <Select value={role} onValueChange={handleRoleChange} disabled>
             <SelectTrigger className="w-full md:w-72 bg-white text-black">
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
@@ -46,7 +44,7 @@ const AccountSettings = () => {
             </SelectContent>
           </Select>
           <p className="text-sm text-gray-500">
-            Your role determines what actions you can perform in the system.
+            Your role is determined by your user profile. System admins can switch roles for debugging using the switcher in the header.
           </p>
 
           <div className="mt-4 border rounded p-4">

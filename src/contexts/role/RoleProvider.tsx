@@ -1,7 +1,7 @@
-
 import React, { createContext, useState, useEffect } from 'react';
 import { UserRole, SubscriptionTier, RoleContextType, User, Permissions, Organization } from './types';
 import { getPermissionsForRole } from './defaultPermissions';
+import { useAuth } from '../AuthContext';
 
 // Create the context with a default undefined value and proper type
 export const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -10,18 +10,30 @@ export const RoleContext = createContext<RoleContextType | undefined>(undefined)
  * Provider component for role-based functionality and permissions
  */
 export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [role, setRole] = useState<UserRole>('agent');
-  const [tier, setTier] = useState<SubscriptionTier>('starter');
-  const [permissions, setPermissions] = useState<Permissions>(getPermissionsForRole('agent'));
-  const [currentUser, setCurrentUser] = useState<User>({
-    id: 'usr-123',
-    name: 'James Smith',
-    email: 'james.smith@example.com'
-  });
-  const [organization, setOrganization] = useState<Organization | undefined>();
+  const { profile, loading: authLoading } = useAuth();
+  
+  const role = profile?.role as UserRole;
+
+  // Tier is still locally managed for now. This should ideally come from organization subscription data.
+  const [tier, setTier] = useState<SubscriptionTier>('starter'); 
+  const [permissions, setPermissions] = useState<Permissions>(getPermissionsForRole(role || 'agent'));
+
+  const currentUser: User | undefined = profile ? {
+    id: profile.id,
+    name: profile.full_name || 'Anonymous',
+    email: profile.email || ''
+  } : undefined;
+
+  const organization: Organization | undefined = profile?.org_id 
+    ? { id: profile.org_id, name: 'Organization' /* Placeholder name */ } 
+    : undefined;
 
   // Update permissions when role or tier changes
   useEffect(() => {
+    if (!role) {
+      setPermissions(getPermissionsForRole('agent')); // default permissions if no role (e.g. logged out)
+      return;
+    }
     // Start with default permissions for the role
     let updatedPermissions = {...getPermissionsForRole(role)};
     
@@ -66,6 +78,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [role, tier]);
 
   const hasPermission = (requiredRole: UserRole | UserRole[]): boolean => {
+    if (!role) return false;
     if (role === 'system_admin') return true; // System admin has all permissions
     
     if (Array.isArray(requiredRole)) {
@@ -76,17 +89,17 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const contextValue: RoleContextType = {
-    role,
-    setRole,
+    role: role || 'agent',
+    setRole: () => console.warn("Cannot set role directly. It is derived from authentication state."),
     tier,
     setTier,
     hasPermission,
     permissions,
-    currentUser,
-    setCurrentUser,
+    currentUser: currentUser || { id: '', name: 'Guest', email: '' },
+    setCurrentUser: () => console.warn("Cannot set user directly."),
     organization,
-    setOrganization,
-    loading: false
+    setOrganization: () => console.warn("Cannot set organization directly."),
+    loading: authLoading
   };
 
   return (
