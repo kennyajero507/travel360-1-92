@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useAuth } from "../contexts/AuthContext";
-import { useRole } from "../contexts/RoleContext";
 import { LogOut, User, Settings, BarChart3 } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,8 +16,7 @@ import NotificationCenter from "./notifications/NotificationCenter";
 
 const Header = () => {
   const navigate = useNavigate();
-  const { logout, profile } = useAuth();
-  const { role, permissions } = useRole();
+  const { logout, profile, role, permissions } = useAuth();
 
   const handleSignOut = async () => {
     await logout();

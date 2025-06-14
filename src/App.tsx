@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { RoleProvider } from "./contexts/RoleContext";
 import Layout from "./components/Layout";
 import AuthGuard from "./components/auth/AuthGuard";
 import GlobalErrorBoundary from "./components/common/GlobalErrorBoundary";
@@ -53,82 +52,80 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>
-            <RoleProvider>
-              <BrowserRouter>
-                <div className="min-h-screen bg-background font-sans antialiased w-full">
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
+            <BrowserRouter>
+              <div className="min-h-screen bg-background font-sans antialiased w-full">
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
-                    {/* Protected Routes */}
-                    <Route
-                      path="/"
-                      element={
-                        <AuthGuard>
-                          <Layout />
-                        </AuthGuard>
-                      }
-                    >
-                      <Route index element={<Dashboard />} />
-                      <Route path="dashboard" element={<Dashboard />} />
+                  {/* Protected Routes */}
+                  <Route
+                    path="/"
+                    element={
+                      <AuthGuard>
+                        <Layout />
+                      </AuthGuard>
+                    }
+                  >
+                    <Route index element={<Dashboard />} />
+                    <Route path="dashboard" element={<Dashboard />} />
 
-                      {/* Hotels */}
-                      <Route path="hotels" element={<Hotels />} />
-                      <Route path="hotels/create" element={<CreateHotel />} />
-                      <Route path="hotels/:hotelId" element={<EditHotel />} />
+                    {/* Hotels */}
+                    <Route path="hotels" element={<Hotels />} />
+                    <Route path="hotels/create" element={<CreateHotel />} />
+                    <Route path="hotels/:hotelId" element={<EditHotel />} />
 
-                      {/* Quotes */}
-                      <Route path="quotes" element={<Quotes />} />
-                      <Route path="quotes/create" element={<CreateQuote />} />
-                      <Route path="quotes/:quoteId" element={<EditQuote />} />
+                    {/* Quotes */}
+                    <Route path="quotes" element={<Quotes />} />
+                    <Route path="quotes/create" element={<CreateQuote />} />
+                    <Route path="quotes/:quoteId" element={<EditQuote />} />
 
-                      {/* Inquiries */}
-                      <Route path="inquiries" element={<Inquiries />} />
-                      <Route path="inquiries/create" element={<CreateInquiry />} />
-                      <Route path="inquiries/:inquiryId" element={<EditInquiry />} />
+                    {/* Inquiries */}
+                    <Route path="inquiries" element={<Inquiries />} />
+                    <Route path="inquiries/create" element={<CreateInquiry />} />
+                    <Route path="inquiries/:inquiryId" element={<EditInquiry />} />
 
-                      {/* Bookings */}
-                      <Route path="bookings" element={<Bookings />} />
-                      <Route path="bookings/:id" element={<BookingDetails />} />
+                    {/* Bookings */}
+                    <Route path="bookings" element={<Bookings />} />
+                    <Route path="bookings/:id" element={<BookingDetails />} />
 
-                      {/* Vouchers */}
-                      <Route path="vouchers" element={<Vouchers />} />
+                    {/* Vouchers */}
+                    <Route path="vouchers" element={<Vouchers />} />
 
-                      {/* Clients */}
-                      <Route path="clients" element={<Clients />} />
+                    {/* Clients */}
+                    <Route path="clients" element={<Clients />} />
 
-                      {/* Reports */}
-                      <Route path="reports" element={<Reports />} />
+                    {/* Reports */}
+                    <Route path="reports" element={<Reports />} />
 
-                      {/* Team Management */}
-                      <Route path="team" element={<TeamManagementPage />} />
+                    {/* Team Management */}
+                    <Route path="team" element={<TeamManagementPage />} />
 
-                      {/* Settings */}
-                      <Route path="settings" element={<Settings />} />
-                    </Route>
+                    {/* Settings */}
+                    <Route path="settings" element={<Settings />} />
+                  </Route>
 
-                    {/* Admin Routes */}
-                    <Route
-                      path="/admin"
-                      element={
-                        <AuthGuard allowedRoles={['system_admin']}>
-                          <Layout />
-                        </AuthGuard>
-                      }
-                    >
-                      <Route path="dashboard" element={<AdminDashboard />} />
-                      <Route path="settings" element={<AdminSettings />} />
-                    </Route>
+                  {/* Admin Routes */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <AuthGuard allowedRoles={['system_admin']}>
+                        <Layout />
+                      </AuthGuard>
+                    }
+                  >
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                  </Route>
 
-                    {/* 404 Route - Must be last */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <Toaster />
-                </div>
-              </BrowserRouter>
-            </RoleProvider>
+                  {/* 404 Route - Must be last */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <Toaster />
+              </div>
+            </BrowserRouter>
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>

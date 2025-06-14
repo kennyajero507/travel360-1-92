@@ -1,17 +1,16 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
-import { Separator } from "../ui/separator";
-import { useRole, UserRole } from "../../contexts/RoleContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const AccountSettings = () => {
-  const { role, permissions } = useRole();
+  const { role, permissions } = useAuth();
 
-  const handleRoleChange = (selectedRole: UserRole) => {
+  const handleRoleChange = () => {
     toast.info("Your role is set in your profile and cannot be changed here.");
   };
 
-  // Helper function to format role display text
   const formatRoleDisplay = (role: string): string => {
     switch (role) {
       case 'system_admin': return 'System Administrator';

@@ -2,7 +2,6 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList, BarChart3, UserCog } from "lucide-react";
-import { useRole } from "../contexts/role/useRole";
 import { useAuth } from "../contexts/AuthContext";
 
 interface VerticalNavProps {
@@ -11,8 +10,7 @@ interface VerticalNavProps {
 }
 
 const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
-  const { role, hasPermission } = useRole();
-  const { profile, checkRoleAccess } = useAuth();
+  const { role, hasPermission, profile, checkRoleAccess } = useAuth();
   
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
