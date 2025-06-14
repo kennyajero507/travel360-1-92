@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { Booking, TravelVoucher, PaymentRecord, BookingNotification } from "../types/booking.types";
@@ -24,7 +23,7 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
 
     if (hotelError) throw hotelError;
 
-    // Create booking data
+    // Create booking data (only send the fields required by schema, and only those not auto-generated)
     const bookingData = {
       client: quote.client,
       hotel_name: hotel.name,
@@ -35,10 +34,11 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
       transport: quote.transports || [],
       activities: quote.activities || [],
       transfers: quote.transfers || [],
-      status: 'pending' as const,
+      status: "pending",
       total_price: calculateQuoteTotal(quote),
       quote_id: quoteId,
-      notes: quote.notes
+      notes: quote.notes,
+      // booking_reference is generated in DB, not in insert payload!
     };
 
     const { data: booking, error: bookingError } = await supabase
@@ -50,7 +50,15 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
     if (bookingError) throw bookingError;
 
     toast.success('Booking created successfully');
-    return booking as Booking;
+    // Convert fields (JSONB array → TypeScript array) and status to Booking type.
+    return {
+      ...(booking as Booking),
+      status: (booking.status || "pending") as Booking["status"],
+      room_arrangement: Array.isArray(booking.room_arrangement) ? booking.room_arrangement : [],
+      transport: Array.isArray(booking.transport) ? booking.transport : [],
+      activities: Array.isArray(booking.activities) ? booking.activities : [],
+      transfers: Array.isArray(booking.transfers) ? booking.transfers : [],
+    };
   } catch (error) {
     console.error('Error creating booking:', error);
     toast.error('Failed to create booking');

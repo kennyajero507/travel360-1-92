@@ -8,8 +8,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
-import { createBooking } from "../services/bookingService";
-import { BookingStatus } from "../types/booking.types";
+import { createBookingFromQuote } from "../services/bookingService";
 
 const CreateBooking = () => {
   const navigate = useNavigate();
@@ -21,8 +20,7 @@ const CreateBooking = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     agentId: "",
-    notes: "",
-    status: "pending" as BookingStatus
+    notes: ""
   });
 
   useEffect(() => {
@@ -56,24 +54,8 @@ const CreateBooking = () => {
     setLoading(true);
     
     try {
-      const bookingData = {
-        quoteId: selectedQuote.id,
-        client: selectedQuote.client,
-        agentId: formData.agentId,
-        hotelId: selectedQuote.approved_hotel_id,
-        hotelName: selectedQuote.hotel_name || "Hotel Name",
-        travelStart: selectedQuote.start_date,
-        travelEnd: selectedQuote.end_date,
-        totalPrice: calculateTotalPrice(selectedQuote),
-        status: formData.status,
-        notes: formData.notes,
-        roomArrangement: selectedQuote.room_arrangements || [],
-        activities: selectedQuote.activities || [],
-        transport: selectedQuote.transports || [],
-        transfers: selectedQuote.transfers || []
-      };
-
-      const newBooking = await createBooking(bookingData);
+      // Only pass quoteId and hotelId - all other booking data is generated in the service/backend
+      const newBooking = await createBookingFromQuote(selectedQuote.id, selectedQuote.approved_hotel_id);
       
       if (newBooking) {
         toast.success("Booking created successfully");
@@ -204,21 +186,7 @@ const CreateBooking = () => {
                   placeholder="Enter agent ID (optional)"
                 />
               </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value: BookingStatus) => setFormData({ ...formData, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
-            
             <div>
               <Label htmlFor="notes">Notes</Label>
               <Textarea

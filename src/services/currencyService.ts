@@ -112,38 +112,6 @@ export class CurrencyService {
       console.error('Failed to update currency rates:', error);
     }
   }
-
-  // Save user's preferred currency
-  async saveUserCurrencyPreference(userId: string, currencyCode: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ preferred_currency: currencyCode })
-        .eq('id', userId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Failed to save currency preference:', error);
-    }
-  }
-
-  // Get user's preferred currency
-  async getUserCurrencyPreference(userId: string): Promise<string> {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('preferred_currency')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      
-      return data?.preferred_currency || 'USD';
-    } catch (error) {
-      console.error('Failed to get currency preference:', error);
-      return 'USD';
-    }
-  }
 }
 
 export const currencyService = CurrencyService.getInstance();
