@@ -62,7 +62,10 @@ export const useAnalytics = () => {
       const totalBookings = bookings?.length || 0;
       const totalInvoices = invoices?.length || 0;
       
-      const totalRevenue = bookings?.reduce((sum, booking) => sum + (booking.total_price || 0), 0) || 0;
+      const totalRevenue = bookings?.reduce((sum, booking) => {
+        const price = Number(booking.total_price) || 0;
+        return sum + price;
+      }, 0) || 0;
       
       const monthlyQuotes = quotes?.filter(q => 
         new Date(q.created_at) >= startOfMonth && new Date(q.created_at) <= endOfMonth
@@ -74,17 +77,20 @@ export const useAnalytics = () => {
       
       const monthlyRevenue = bookings?.filter(b => 
         new Date(b.created_at) >= startOfMonth && new Date(b.created_at) <= endOfMonth
-      ).reduce((sum, booking) => sum + (booking.total_price || 0), 0) || 0;
+      ).reduce((sum, booking) => {
+        const price = Number(booking.total_price) || 0;
+        return sum + price;
+      }, 0) || 0;
       
       const conversionRate = totalQuotes > 0 ? (totalBookings / totalQuotes) * 100 : 0;
       const averageQuoteValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
 
-      // Get top destinations
-      const destinationCounts = bookings?.reduce((acc, booking) => {
+      // Get top destinations with proper typing
+      const destinationCounts: Record<string, number> = {};
+      bookings?.forEach(booking => {
         const dest = booking.hotel_name || 'Unknown';
-        acc[dest] = (acc[dest] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>) || {};
+        destinationCounts[dest] = (destinationCounts[dest] || 0) + 1;
+      });
       
       const topDestinations = Object.entries(destinationCounts)
         .map(([destination, count]) => ({ destination, count }))
@@ -104,14 +110,14 @@ export const useAnalytics = () => {
           type: 'booking' as const,
           description: `Booking confirmed for ${b.client}`,
           created_at: b.created_at,
-          amount: b.total_price
+          amount: Number(b.total_price) || 0
         })) || []),
         ...(invoices?.slice(-5).map(i => ({
           id: i.id,
           type: 'invoice' as const,
           description: `Invoice ${i.invoice_number} created`,
           created_at: i.created_at,
-          amount: i.amount
+          amount: Number(i.amount) || 0
         })) || [])
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10);
 
