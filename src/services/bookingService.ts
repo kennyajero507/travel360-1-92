@@ -38,6 +38,19 @@ export const createBookingFromQuote = async (
 
     if (hotelError) throw hotelError;
 
+    // Fetch the profile of the quote creator to get org_id
+    let orgId: string | null = null;
+    if (quote.created_by) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', quote.created_by)
+        .maybeSingle();
+      if (!profileError && profile && profile.org_id) {
+        orgId = profile.org_id;
+      }
+    }
+
     // Create booking data - ensure correct types
     const bookingData = {
       client: quote.client,
@@ -54,6 +67,7 @@ export const createBookingFromQuote = async (
       quote_id: quoteId,
       notes: quote.notes,
       booking_reference: "", // Required, will be set by DB trigger
+      org_id: orgId // New: associate the booking with the correct org!
     };
 
     const { data: booking, error: bookingError } = await supabase
@@ -80,20 +94,6 @@ export const createBookingFromQuote = async (
     toast.error('Failed to create booking');
     throw error;
   }
-};
-
-// Helper: parse "JSON" field if typeof is string
-function parseJsonArray<T>(val: any): T[] {
-  if (Array.isArray(val)) return val as T[];
-  if (typeof val === "string") {
-    try {
-      const arr = JSON.parse(val);
-      return Array.isArray(arr) ? arr as T[] : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
 }
 
 // Get all bookings

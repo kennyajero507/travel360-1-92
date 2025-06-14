@@ -113,6 +113,7 @@ export type Database = {
           hotel_name: string
           id: string
           notes: string | null
+          org_id: string | null
           quote_id: string
           room_arrangement: Json
           status: Database["public"]["Enums"]["booking_status"]
@@ -133,6 +134,7 @@ export type Database = {
           hotel_name: string
           id?: string
           notes?: string | null
+          org_id?: string | null
           quote_id: string
           room_arrangement?: Json
           status?: Database["public"]["Enums"]["booking_status"]
@@ -153,6 +155,7 @@ export type Database = {
           hotel_name?: string
           id?: string
           notes?: string | null
+          org_id?: string | null
           quote_id?: string
           room_arrangement?: Json
           status?: Database["public"]["Enums"]["booking_status"]
@@ -169,6 +172,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_org"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
