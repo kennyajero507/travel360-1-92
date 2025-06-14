@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 const ProfileDropdown = () => {
-  const { currentUser, userProfile, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
 
   const getInitials = (name: string) => {
     return name
@@ -39,15 +39,15 @@ const ProfileDropdown = () => {
         <Button variant="ghost" className="flex items-center gap-2 h-auto p-2">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-              {getInitials(userProfile?.full_name || currentUser?.email || "U")}
+              {getInitials(profile?.full_name || user?.email || "U")}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col items-start">
             <span className="text-sm font-medium">
-              {userProfile?.full_name || currentUser?.email}
+              {profile?.full_name || user?.email}
             </span>
             <span className="text-xs text-muted-foreground capitalize">
-              {userProfile?.role?.replace('_', ' ') || 'User'}
+              {profile?.role?.replace('_', ' ') || 'User'}
             </span>
           </div>
           <ChevronDown className="h-4 w-4" />

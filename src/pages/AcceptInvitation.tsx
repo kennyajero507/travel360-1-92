@@ -11,7 +11,7 @@ import { Users, Building2 } from 'lucide-react';
 const AcceptInvitation = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { acceptInvitation, session, userProfile, loading } = useAuth();
+  const { acceptInvitation, session, profile, loading } = useAuth();
   
   const [accepting, setAccepting] = useState(false);
   const [invitationData, setInvitationData] = useState<any>(null);
@@ -32,12 +32,12 @@ const AcceptInvitation = () => {
     }
 
     // If user has profile and is already part of an org, redirect to dashboard
-    if (userProfile && userProfile.org_id) {
+    if (profile && profile.org_id) {
       toast.info('You are already part of an organization');
       navigate('/dashboard');
       return;
     }
-  }, [token, session, userProfile, navigate]);
+  }, [token, session, profile, navigate]);
 
   const handleAcceptInvitation = async () => {
     if (!token) {

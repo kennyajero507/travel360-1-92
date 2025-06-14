@@ -17,7 +17,7 @@ import NotificationCenter from "./notifications/NotificationCenter";
 
 const Header = () => {
   const navigate = useNavigate();
-  const { logout, userProfile } = useAuth();
+  const { logout, profile } = useAuth();
   const { role, permissions } = useRole();
 
   const handleSignOut = async () => {
@@ -69,7 +69,7 @@ const Header = () => {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-teal-100 text-teal-600">
-                    {userProfile?.full_name ? getInitials(userProfile.full_name) : "U"}
+                    {profile?.full_name ? getInitials(profile.full_name) : "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -77,10 +77,10 @@ const Header = () => {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex flex-col space-y-1 p-2">
                 <p className="text-sm font-medium leading-none">
-                  {userProfile?.full_name || "User"}
+                  {profile?.full_name || "User"}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {userProfile?.email}
+                  {profile?.email}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground capitalize">
                   {role?.replace('_', ' ')}

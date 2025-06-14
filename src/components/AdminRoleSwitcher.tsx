@@ -16,15 +16,15 @@ import { supabase } from "../integrations/supabase/client";
 type Role = 'system_admin' | 'org_owner' | 'tour_operator' | 'agent' | 'client';
 
 const AdminRoleSwitcher = () => {
-  const { userProfile, currentUser } = useAuth();
+  const { profile, user } = useAuth();
   
-  if (!userProfile || userProfile.role !== 'system_admin') return null;
+  if (!profile || profile.role !== 'system_admin') return null;
   
   const roles: Role[] = ['system_admin', 'org_owner', 'tour_operator', 'agent', 'client'];
   
   const handleRoleChange = async (role: Role) => {
     try {
-      if (!currentUser) {
+      if (!user) {
         toast.error("No authenticated user found");
         return;
       }
@@ -32,7 +32,7 @@ const AdminRoleSwitcher = () => {
       const { error } = await supabase
         .from('profiles')
         .update({ role })
-        .eq('id', currentUser.id);
+        .eq('id', user.id);
       
       if (error) {
         throw error;
@@ -56,7 +56,7 @@ const AdminRoleSwitcher = () => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="h-7 bg-amber-50 border-amber-300 text-amber-800">
-            <span>Role: {userProfile.role}</span>
+            <span>Role: {profile.role}</span>
             <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -66,7 +66,7 @@ const AdminRoleSwitcher = () => {
             <DropdownMenuItem 
               key={role} 
               onClick={() => handleRoleChange(role)}
-              className={`${userProfile.role === role ? 'bg-amber-50 font-semibold' : ''}`}
+              className={`${profile.role === role ? 'bg-amber-50 font-semibold' : ''}`}
             >
               {role}
             </DropdownMenuItem>

@@ -9,7 +9,7 @@ import { Building, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 
 const OrganizationSetup = () => {
-  const { createOrganization, userProfile, refreshProfile } = useAuth();
+  const { createOrganization, profile, refreshProfile } = useAuth();
   const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,14 +51,14 @@ const OrganizationSetup = () => {
   };
 
   // Don't show if user already has an organization
-  if (userProfile?.org_id) {
+  if (profile?.org_id) {
     console.log('[OrgSetup] User already has organization, redirecting to dashboard');
     window.location.href = '/dashboard';
     return null;
   }
 
   // Only show for org_owner role
-  if (userProfile?.role !== 'org_owner') {
+  if (profile?.role !== 'org_owner') {
     console.log('[OrgSetup] User is not org_owner, redirecting to dashboard');
     window.location.href = '/dashboard';
     return null;

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
-  const { userProfile, checkRoleAccess } = useAuth();
+  const { profile, checkRoleAccess } = useAuth();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const toggleMenu = (menu: string) => {
@@ -107,7 +106,7 @@ export function Sidebar({ className }: SidebarProps) {
     }
   ];
 
-  if (!userProfile) {
+  if (!profile) {
     return null;
   }
 

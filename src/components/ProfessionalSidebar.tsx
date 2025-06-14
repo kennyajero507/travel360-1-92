@@ -31,7 +31,7 @@ interface ProfessionalSidebarProps {
 const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
-  const { userProfile, checkRoleAccess, logout } = useAuth();
+  const { profile, checkRoleAccess, logout } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -126,7 +126,7 @@ const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
     }
   };
 
-  if (!userProfile) {
+  if (!profile) {
     return null;
   }
 
@@ -251,15 +251,15 @@ const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-government-500 flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
-                    {userProfile.full_name?.charAt(0) || 'U'}
+                    {profile.full_name?.charAt(0) || 'U'}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 truncate">
-                    {userProfile.full_name || 'User'}
+                    {profile.full_name || 'User'}
                   </p>
                   <p className="text-xs text-slate-500 capitalize">
-                    {userProfile.role?.replace('_', ' ')}
+                    {profile.role?.replace('_', ' ')}
                   </p>
                 </div>
               </div>

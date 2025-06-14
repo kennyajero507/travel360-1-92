@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import OrganizationSetup from "../components/OrganizationSetup";
@@ -9,7 +10,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 
 const Dashboard = () => {
-  const { userProfile, loading } = useAuth();
+  const { profile, loading } = useAuth();
   
   // Show loading state
   if (loading) {
@@ -24,7 +25,7 @@ const Dashboard = () => {
   }
 
   // Show organization setup if user doesn't have one and is org_owner
-  if (userProfile && !userProfile.org_id && userProfile.role === 'org_owner') {
+  if (profile && !profile.org_id && profile.role === 'org_owner') {
     return <OrganizationSetup />;
   }
 
@@ -40,11 +41,11 @@ const Dashboard = () => {
             Welcome to TravelFlow360
           </h1>
           <p className="text-lg text-gray-600 font-medium">Your comprehensive travel management dashboard</p>
-          {userProfile && (
+          {profile && (
             <div className="mt-2 text-sm text-gray-500">
-              <p>Role: <span className="font-medium">{userProfile.role}</span></p>
-              {userProfile.org_id && (
-                <p>Organization: <span className="font-medium">{userProfile.org_id}</span></p>
+              <p>Role: <span className="font-medium">{profile.role}</span></p>
+              {profile.org_id && (
+                <p>Organization: <span className="font-medium">{profile.org_id}</span></p>
               )}
             </div>
           )}

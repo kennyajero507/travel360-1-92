@@ -1,3 +1,4 @@
+
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList, BarChart3, UserCog } from "lucide-react";
@@ -11,13 +12,13 @@ interface VerticalNavProps {
 
 const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
   const { role, hasPermission } = useRole();
-  const { userProfile, checkRoleAccess } = useAuth();
+  const { profile, checkRoleAccess } = useAuth();
   
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
   };
 
-  const currentRole = userProfile?.role || role;
+  const currentRole = profile?.role || role;
 
   return (
     <nav
@@ -96,16 +97,16 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         )}
       </div>
       
-      {!collapsed && userProfile && (
+      {!collapsed && profile && (
         <div className="absolute bottom-4 left-0 right-0 px-4">
           <div className="bg-slate-800/50 rounded-lg p-3 text-center text-xs border border-slate-600">
             <div className="font-medium text-slate-300">Current Role:</div>
             <div className="uppercase mt-1 text-blue-400 font-semibold">
-              {userProfile.role === 'agent' && 'Travel Agent'}
-              {userProfile.role === 'tour_operator' && 'Tour Operator'}
-              {userProfile.role === 'org_owner' && 'Organization Owner'}
-              {userProfile.role === 'system_admin' && 'System Admin'}
-              {userProfile.role === 'client' && 'Client'}
+              {profile.role === 'agent' && 'Travel Agent'}
+              {profile.role === 'tour_operator' && 'Tour Operator'}
+              {profile.role === 'org_owner' && 'Organization Owner'}
+              {profile.role === 'system_admin' && 'System Admin'}
+              {profile.role === 'client' && 'Client'}
             </div>
           </div>
         </div>

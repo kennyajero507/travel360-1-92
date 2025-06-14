@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import SystemSettings from '../../components/admin/SystemSettings';
 
 const AdminSettings = () => {
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   
-  if (!userProfile || userProfile.role !== 'system_admin') {
+  if (!profile || profile.role !== 'system_admin') {
     return (
       <div className="flex justify-center items-center h-full">
         <Card className="w-full max-w-md">

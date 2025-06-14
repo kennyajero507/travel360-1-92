@@ -15,7 +15,7 @@ import { User, LogOut, Settings } from 'lucide-react';
 import AdminRoleSwitcher from './AdminRoleSwitcher';
 
 const AdminHeader = () => {
-  const { userProfile, logout } = useAuth();
+  const { profile, logout } = useAuth();
   
   return (
     <header className="bg-white border-b border-gray-200">
@@ -27,7 +27,7 @@ const AdminHeader = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          {userProfile && userProfile.role === 'system_admin' && (
+          {profile && profile.role === 'system_admin' && (
             <AdminRoleSwitcher />
           )}
           

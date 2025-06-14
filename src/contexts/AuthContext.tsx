@@ -5,6 +5,7 @@ import { supabase } from '../integrations/supabase/client';
 import { authService } from './auth/authService';
 import { profileService } from './auth/profileService';
 import { UserProfile } from './auth/types';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   session: Session | null;
@@ -16,6 +17,11 @@ interface AuthContextType {
   signup: typeof authService.signup;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  createOrganization: (name: string) => Promise<boolean>;
+  sendInvitation: (email: string, role: string) => Promise<boolean>;
+  getInvitations: () => Promise<any[]>;
+  acceptInvitation: (token: string) => Promise<boolean>;
+  checkRoleAccess: (roles: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,6 +89,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
       await authService.logout();
   };
+  
+  const refreshProfile = useCallback(async () => {
+      if (user) {
+          setLoading(true);
+          await fetchProfile(user);
+          setLoading(false);
+      }
+  }, [user, fetchProfile]);
+
+  const checkRoleAccess = useCallback((roles: string[]) => {
+    if (!profile) return false;
+    if (profile.role === 'system_admin') return true;
+    return roles.includes(profile.role);
+  }, [profile]);
+
+  const createOrganization = async (name: string) => {
+    const success = await authService.createOrganization(name);
+    if (success) {
+      await refreshProfile();
+    }
+    return success;
+  };
+  
+  const sendInvitation = async (email: string, role: string) => {
+    if (!profile?.org_id) {
+        toast.error("You must belong to an organization to send invitations.");
+        return false;
+    }
+    return await authService.sendInvitation(email, role, profile.org_id);
+  };
+
+  const getInvitations = async (): Promise<any[]> => {
+    if (!profile?.org_id) {
+        return [];
+    }
+    return await authService.getInvitations(profile.org_id);
+  };
+
+  const acceptInvitation = async (token: string) => {
+    const success = await authService.acceptInvitation(token);
+    if (success) {
+      await refreshProfile();
+    }
+    return success;
+  };
 
   const value: AuthContextType = {
     session,
@@ -93,13 +144,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login: authService.login,
     signup: authService.signup,
     logout,
-    refreshProfile: async () => {
-        if (user) {
-            setLoading(true);
-            await fetchProfile(user);
-            setLoading(false);
-        }
-    }
+    refreshProfile,
+    createOrganization,
+    sendInvitation,
+    getInvitations,
+    acceptInvitation,
+    checkRoleAccess
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

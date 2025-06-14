@@ -11,7 +11,7 @@ import { Badge } from './ui/badge';
 import { Trash2, Send, Copy } from 'lucide-react';
 
 const InvitationManager = () => {
-  const { sendInvitation, getInvitations, userProfile } = useAuth();
+  const { sendInvitation, getInvitations, profile } = useAuth();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('agent');
   const [invitations, setInvitations] = useState<any[]>([]);
@@ -78,7 +78,7 @@ const InvitationManager = () => {
   };
 
   // Only show to organization owners
-  if (userProfile?.role !== 'org_owner') {
+  if (profile?.role !== 'org_owner') {
     return null;
   }
 

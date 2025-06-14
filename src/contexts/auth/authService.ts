@@ -1,3 +1,4 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -46,6 +47,62 @@ export const authService = {
     }
 
     return false;
+  },
+
+  async createOrganization(orgName: string): Promise<boolean> {
+    const { error } = await supabase.rpc('create_organization', { org_name: orgName });
+    if (error) {
+      console.error('Error creating organization:', error);
+      toast.error(error.message);
+      return false;
+    }
+    toast.success('Organization created successfully! Reloading...');
+    return true;
+  },
+
+  async sendInvitation(email: string, role: string, orgId: string): Promise<boolean> {
+    // This function assumes an 'invitations' table exists with columns:
+    // email, role, org_id, and that appropriate RLS policies are in place.
+    const { error } = await supabase.from('invitations').insert({
+        email,
+        role,
+        org_id: orgId,
+    });
+    if (error) {
+        console.error("Invitation error:", error);
+        toast.error(error.message);
+        return false;
+    }
+    toast.success('Invitation sent successfully!');
+    return true;
+  },
+
+  async getInvitations(orgId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('invitations')
+      .select('*')
+      .eq('org_id', orgId);
+
+    if (error) {
+        console.error("Error fetching invitations:", error);
+        toast.error(error.message);
+        return [];
+    }
+    return data || [];
+  },
+
+  async acceptInvitation(token: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('accept_invitation', { invitation_token: token });
+    
+    if (error || (data && (data as any).success === false)) {
+      const errorMessage = error?.message || (data as any)?.error || 'Failed to accept invitation.';
+      console.error('Error accepting invitation:', errorMessage);
+      toast.error(errorMessage);
+      return false;
+    }
+
+    toast.success('Invitation accepted! Welcome to the team.');
+    return true;
   },
 
   async logout(): Promise<void> {

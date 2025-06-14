@@ -4,11 +4,11 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  // allowedRoles will be re-implemented in a future step
+  allowedRoles?: string[];
 }
 
-export const AuthGuard = ({ children }: AuthGuardProps) => {
-  const { session, loading } = useAuth();
+export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
+  const { session, loading, checkRoleAccess } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -22,12 +22,14 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     );
   }
 
-  // If authentication is required but user is not logged in
   if (!session) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
-  // Role-based access will be added back later once the core auth is solid.
+  if (allowedRoles && !checkRoleAccess(allowedRoles)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 };
 
