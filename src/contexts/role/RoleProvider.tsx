@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { UserRole, SubscriptionTier, RoleContextType, User, Permissions, Organization } from './types';
 import { getPermissionsForRole } from './defaultPermissions';
@@ -25,7 +26,12 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } : undefined;
 
   const organization: Organization | undefined = profile?.org_id 
-    ? { id: profile.org_id, name: 'Organization' /* Placeholder name */ } 
+    ? { 
+        id: profile.org_id, 
+        name: 'Organization', /* Placeholder name */
+        ownerId: '', // TODO: This should be fetched from organization data
+        subscriptionTier: 'starter' // TODO: This should be fetched from organization data
+      } 
     : undefined;
 
   // Update permissions when role or tier changes
