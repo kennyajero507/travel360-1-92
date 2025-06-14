@@ -15,126 +15,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Initialize auth state with timeout protection
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: NodeJS.Timeout;
-    
-    const getInitialSession = async () => {
+    let timeoutId: NodeJS.Timeout | undefined;
+
+    async function initialize() {
+      setLoading(true);
+      setAuthError(null);
+
+      // Listen for auth state changes FIRST
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, sess) => {
+          if (!isMounted) return;
+          setSession(sess);
+          setUser(sess?.user ?? null);
+          if (!sess) {
+            setUserProfile(null);
+            setLoading(false);
+          }
+        }
+      );
+
       try {
-        console.log('[AuthContext] Getting initial session...');
-        
-        // Set a timeout to prevent infinite loading - reduced to 2 seconds
         timeoutId = setTimeout(() => {
           if (isMounted && loading) {
-            console.log('[AuthContext] Initial session timeout, proceeding without auth');
             setLoading(false);
-            setInitialized(true);
+            setAuthError("Authentication is taking too long. Please try signing in again.");
           }
-        }, 2000);
+        }, 3000);
 
+        // Get initial session
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
-          console.error('[AuthContext] Error getting initial session:', error);
-          if (isMounted) {
-            setLoading(false);
-            setInitialized(true);
-          }
-          return;
+          setAuthError("Could not check authentication session.");
+          setLoading(false);
         }
-        
-        if (initialSession && isMounted) {
-          console.log('[AuthContext] Initial session found:', initialSession.user.email);
+        if (initialSession) {
           setSession(initialSession);
           setUser(initialSession.user);
-          
-          // Get profile with timeout protection
           try {
-            const profile = await profileService.ensureProfileExists(initialSession.user.id);
-            if (isMounted) {
-              setUserProfile(profile);
-            }
-          } catch (profileError) {
-            console.error('[AuthContext] Profile error during initialization:', profileError);
-            // Create minimal profile on error
-            if (isMounted) {
-              setUserProfile({
-                id: initialSession.user.id,
-                full_name: initialSession.user.email?.split('@')[0] || 'User',
-                email: initialSession.user.email || '',
-                role: 'org_owner',
-                org_id: null,
-                trial_ends_at: null,
-                created_at: new Date().toISOString(),
-                preferred_currency: 'USD'
-              });
-            }
+            const profile = await profileService.ensureProfileExists(
+              initialSession.user.id,
+              initialSession.user.email || ""
+            );
+            setUserProfile(profile);
+          } catch (err) {
+            setAuthError('Failed to fetch user profile.');
+            setUserProfile(null);
           }
         }
-      } catch (error) {
-        console.error('Error getting initial session:', error);
+      } catch (err) {
+        setAuthError('Unexpected error during auth initialization.');
+        setLoading(false);
       } finally {
         if (timeoutId) clearTimeout(timeoutId);
-        if (isMounted) {
-          setLoading(false);
-          setInitialized(true);
-        }
+        setLoading(false);
       }
-    };
 
-    getInitialSession();
+      return () => {
+        isMounted = false;
+        if (timeoutId) clearTimeout(timeoutId);
+        subscription.unsubscribe();
+      };
+    }
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted) return;
-        
-        console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
-        
-        setSession(session);
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          try {
-            const profile = await profileService.ensureProfileExists(session.user.id);
-            if (isMounted) {
-              setUserProfile(profile);
-            }
-          } catch (profileError) {
-            console.error('[AuthContext] Profile error during auth change:', profileError);
-            // Create minimal profile on error
-            if (isMounted) {
-              setUserProfile({
-                id: session.user.id,
-                full_name: session.user.email?.split('@')[0] || 'User',
-                email: session.user.email || '',
-                role: 'org_owner',
-                org_id: null,
-                trial_ends_at: null,
-                created_at: new Date().toISOString(),
-                preferred_currency: 'USD'
-              });
-            }
-          }
-        } else {
-          setUserProfile(null);
-        }
-        
-        if (initialized) {
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => {
-      isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
-      subscription.unsubscribe();
-    };
-  }, [initialized, loading]);
+    initialize();
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('[AuthContext] Login attempt for:', email);
@@ -170,12 +119,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async (): Promise<void> => {
     if (!user?.id) return;
-    
     try {
-      const profile = await profileService.ensureProfileExists(user.id);
+      const profile = await profileService.ensureProfileExists(user.id, user.email ?? undefined);
       setUserProfile(profile);
-    } catch (error) {
-      console.error('Error refreshing profile:', error);
+      setAuthError(null);
+    } catch (err) {
+      setAuthError('Could not refresh profile.');
     }
   };
 
@@ -204,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentUser: user,
     userProfile,
     loading,
+    authError,
     login,
     logout,
     signup,
@@ -217,9 +167,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updatePassword,
   };
 
+  // Basic fatal error boundary
+  if (authError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-red-50 text-red-700">
+        <h2 className="text-2xl font-bold mb-4">Authentication Error</h2>
+        <p>{authError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-6 bg-red-600 text-white px-4 py-2 rounded"
+        >
+          Reload Page
+        </button>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen bg-slate-50">
+          <span className="text-slate-500 text-lg">Loading authentication...</span>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

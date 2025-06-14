@@ -1,4 +1,3 @@
-
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { LoadingSpinner } from '../common/LoadingStates';
@@ -10,51 +9,16 @@ interface AuthGuardProps {
   requireAuth?: boolean;
 }
 
-export const AuthGuard = ({ 
-  children, 
-  allowedRoles = [], 
-  requireAuth = true 
+export const AuthGuard = ({
+  children,
+  allowedRoles = [],
+  requireAuth = true
 }: AuthGuardProps) => {
   const { session, userProfile, loading, checkRoleAccess } = useAuth();
   const location = useLocation();
-  const [timeoutReached, setTimeoutReached] = useState(false);
-  const [initializationComplete, setInitializationComplete] = useState(false);
 
-  console.log('[AuthGuard] State:', { 
-    loading, 
-    hasSession: !!session, 
-    hasProfile: !!userProfile,
-    currentPath: location.pathname,
-    userRole: userProfile?.role,
-    timeoutReached,
-    initializationComplete
-  });
-
-  // Set timeout to prevent infinite loading - reduced to 2 seconds
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading && !initializationComplete) {
-        console.log('[AuthGuard] Loading timeout reached, forcing continuation');
-        setTimeoutReached(true);
-        setInitializationComplete(true);
-      }
-    }, 2000);
-
-    return () => clearTimeout(timeout);
-  }, [loading, initializationComplete]);
-
-  // Mark initialization complete when we have auth data or confirmed no auth
-  useEffect(() => {
-    if (!loading || (session !== null && userProfile !== null) || timeoutReached) {
-      if (!initializationComplete) {
-        console.log('[AuthGuard] Marking initialization complete');
-        setInitializationComplete(true);
-      }
-    }
-  }, [loading, session, userProfile, timeoutReached, initializationComplete]);
-
-  // Show loading while auth is being determined (with timeout)
-  if (loading && !initializationComplete && !timeoutReached) {
+  // Show loading while auth is being determined (no fancy timeouts)
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
@@ -65,44 +29,36 @@ export const AuthGuard = ({
     );
   }
 
-  // Handle timeout case - treat as not authenticated
-  if (timeoutReached && !session) {
-    console.log('[AuthGuard] Timeout reached with no session, treating as not authenticated');
-    if (requireAuth) {
-      return <Navigate to="/signin" state={{ from: location }} replace />;
-    }
-    return <>{children}</>;
-  }
-
   // If authentication is required but user is not logged in
   if (requireAuth && !session) {
-    console.log('[AuthGuard] No session, redirecting to signin');
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
-  // If user is authenticated but profile is missing - redirect to signin
+  // Profile not present
   if (requireAuth && session && !userProfile) {
-    console.log('[AuthGuard] Session exists but no profile, redirecting to signin');
-    return <Navigate to="/signin" state={{ from: location }} replace />;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-yellow-50">
+        <div className="text-xl font-semibold text-yellow-800 mb-3">Account setup issue</div>
+        <p className="mb-3">Profile could not be loaded. Please contact support if this keeps happening.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-yellow-600 text-white px-4 py-2 rounded"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   // Check role access if roles are specified
   if (requireAuth && session && userProfile && allowedRoles.length > 0) {
     const hasAccess = checkRoleAccess(allowedRoles);
-    console.log('[AuthGuard] Role check:', { 
-      userRole: userProfile.role, 
-      allowedRoles, 
-      hasAccess 
-    });
-    
     if (!hasAccess) {
       const redirectPath = userProfile.role === 'system_admin' ? '/admin/dashboard' : '/app/dashboard';
-      console.log('[AuthGuard] Access denied, redirecting to:', redirectPath);
       return <Navigate to={redirectPath} replace />;
     }
   }
 
-  console.log('[AuthGuard] Access granted, rendering children');
   return <>{children}</>;
 };
 
