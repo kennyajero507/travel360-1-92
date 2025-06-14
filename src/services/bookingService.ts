@@ -1,10 +1,24 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
-import { Booking, TravelVoucher, PaymentRecord, BookingNotification } from "../types/booking.types";
+import {
+  Booking,
+  RoomArrangement,
+  BookingTransport,
+  BookingActivity,
+  BookingTransfer,
+  TravelVoucher,
+  PaymentRecord,
+  BookingNotification,
+  BookingStatus,
+} from "../types/booking.types";
 import { isValidBookingStatus, isValidPaymentStatus } from "../utils/typeHelpers";
 
 // Create or get booking from quote
-export const createBookingFromQuote = async (quoteId: string, hotelId: string): Promise<Booking> => {
+export const createBookingFromQuote = async (
+  quoteId: string,
+  hotelId: string
+): Promise<Booking> => {
   try {
     // Get quote data
     const { data: quote, error: quoteError } = await supabase
@@ -24,22 +38,22 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
 
     if (hotelError) throw hotelError;
 
-    // Create booking data - include required booking_reference as '' (the DB trigger will set)
+    // Create booking data - ensure correct types
     const bookingData = {
       client: quote.client,
       hotel_name: hotel.name,
       hotel_id: hotelId,
       travel_start: quote.start_date,
       travel_end: quote.end_date,
-      room_arrangement: quote.room_arrangements || [],
-      transport: quote.transports || [],
-      activities: quote.activities || [],
-      transfers: quote.transfers || [],
-      status: "pending",
+      room_arrangement: JSON.stringify(quote.room_arrangements || []),
+      transport: JSON.stringify(quote.transports || []),
+      activities: JSON.stringify(quote.activities || []),
+      transfers: JSON.stringify(quote.transfers || []),
+      status: "pending" as BookingStatus,
       total_price: calculateQuoteTotal(quote),
       quote_id: quoteId,
       notes: quote.notes,
-      booking_reference: "", // NEW: required, DB will set via trigger
+      booking_reference: "", // Required, will be set by DB trigger
     };
 
     const { data: booking, error: bookingError } = await supabase
@@ -52,22 +66,14 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
 
     toast.success('Booking created successfully');
 
-    // Normalize arrays and status types
+    // Normalize arrays and status types from DB result (parse JSON fields)
     return {
       ...booking,
       status: isValidBookingStatus(booking.status) ? booking.status : "pending",
-      room_arrangement: Array.isArray(booking.room_arrangement)
-        ? (booking.room_arrangement as RoomArrangement[])
-        : [],
-      transport: Array.isArray(booking.transport)
-        ? (booking.transport as BookingTransport[])
-        : [],
-      activities: Array.isArray(booking.activities)
-        ? (booking.activities as BookingActivity[])
-        : [],
-      transfers: Array.isArray(booking.transfers)
-        ? (booking.transfers as BookingTransfer[])
-        : [],
+      room_arrangement: parseJsonArray<RoomArrangement>(booking.room_arrangement),
+      transport: parseJsonArray<BookingTransport>(booking.transport),
+      activities: parseJsonArray<BookingActivity>(booking.activities),
+      transfers: parseJsonArray<BookingTransfer>(booking.transfers),
     };
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -75,6 +81,20 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
     throw error;
   }
 };
+
+// Helper: parse "JSON" field if typeof is string
+function parseJsonArray<T>(val: any): T[] {
+  if (Array.isArray(val)) return val as T[];
+  if (typeof val === "string") {
+    try {
+      const arr = JSON.parse(val);
+      return Array.isArray(arr) ? arr as T[] : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 // Get all bookings
 export const getAllBookings = async (): Promise<Booking[]> => {
@@ -90,18 +110,10 @@ export const getAllBookings = async (): Promise<Booking[]> => {
     return (data || []).map((booking: any): Booking => ({
       ...booking,
       status: isValidBookingStatus(booking.status) ? booking.status : "pending",
-      room_arrangement: Array.isArray(booking.room_arrangement)
-        ? (booking.room_arrangement as RoomArrangement[])
-        : [],
-      transport: Array.isArray(booking.transport)
-        ? (booking.transport as BookingTransport[])
-        : [],
-      activities: Array.isArray(booking.activities)
-        ? (booking.activities as BookingActivity[])
-        : [],
-      transfers: Array.isArray(booking.transfers)
-        ? (booking.transfers as BookingTransfer[])
-        : [],
+      room_arrangement: parseJsonArray<RoomArrangement>(booking.room_arrangement),
+      transport: parseJsonArray<BookingTransport>(booking.transport),
+      activities: parseJsonArray<BookingActivity>(booking.activities),
+      transfers: parseJsonArray<BookingTransfer>(booking.transfers),
     }));
   } catch (error) {
     console.error('Error fetching bookings:', error);
@@ -120,24 +132,15 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
       .maybeSingle();
 
     if (error) throw error;
-
     if (!data) return null;
 
     return {
       ...data,
       status: isValidBookingStatus(data.status) ? data.status : "pending",
-      room_arrangement: Array.isArray(data.room_arrangement)
-        ? (data.room_arrangement as RoomArrangement[])
-        : [],
-      transport: Array.isArray(data.transport)
-        ? (data.transport as BookingTransport[])
-        : [],
-      activities: Array.isArray(data.activities)
-        ? (data.activities as BookingActivity[])
-        : [],
-      transfers: Array.isArray(data.transfers)
-        ? (data.transfers as BookingTransfer[])
-        : [],
+      room_arrangement: parseJsonArray<RoomArrangement>(data.room_arrangement),
+      transport: parseJsonArray<BookingTransport>(data.transport),
+      activities: parseJsonArray<BookingActivity>(data.activities),
+      transfers: parseJsonArray<BookingTransfer>(data.transfers),
     };
   } catch (error) {
     console.error('Error fetching booking:', error);
@@ -146,7 +149,7 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
 };
 
 // Update booking status
-export const updateBookingStatus = async (bookingId: string, status: string): Promise<void> => {
+export const updateBookingStatus = async (bookingId: string, status: BookingStatus): Promise<void> => {
   try {
     const { error } = await supabase
       .from('bookings')
@@ -274,15 +277,15 @@ const calculateQuoteTotal = (quote: any): number => {
   const transportTotal = quote.transports?.reduce((sum: number, transport: any) => sum + (transport.total_cost || 0), 0) || 0;
   const transferTotal = quote.transfers?.reduce((sum: number, transfer: any) => sum + (transfer.total || 0), 0) || 0;
   const activityTotal = quote.activities?.reduce((sum: number, activity: any) => sum + (activity.total_cost || 0), 0) || 0;
-  
+
   const subtotal = accommodationTotal + transportTotal + transferTotal + activityTotal;
-  
+
   let markupAmount = 0;
   if (quote.markup_type === 'percentage') {
     markupAmount = (subtotal * (quote.markup_value || 0)) / 100;
   } else {
     markupAmount = quote.markup_value || 0;
   }
-  
+
   return subtotal + markupAmount;
 };
