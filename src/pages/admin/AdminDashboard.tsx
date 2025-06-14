@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { useAuth } from "../../contexts/AuthContext";
@@ -48,7 +47,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle>Organization Management</CardTitle>
             <CardDescription>Manage all organizations</CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent>
             <p>Coming soon...</p>
           </CardContent>
