@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -19,7 +18,7 @@ interface OrganizationSettings {
 }
 
 export const LogoSettings = () => {
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   const [settings, setSettings] = useState<OrganizationSettings>({});
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -27,10 +26,10 @@ export const LogoSettings = () => {
 
   useEffect(() => {
     loadOrganizationSettings();
-  }, [userProfile?.org_id]);
+  }, [profile?.org_id]);
 
   const loadOrganizationSettings = async () => {
-    if (!userProfile?.org_id) {
+    if (!profile?.org_id) {
       setLoadingSettings(false);
       return;
     }
@@ -40,7 +39,7 @@ export const LogoSettings = () => {
       const { data, error } = await supabase
         .from('organizations')
         .select('logo_url, company_name, tagline')
-        .eq('id', userProfile.org_id)
+        .eq('id', profile.org_id)
         .single();
 
       if (error) {
@@ -60,7 +59,7 @@ export const LogoSettings = () => {
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !userProfile?.org_id) {
+    if (!file || !profile?.org_id) {
       toast.error('Please select a file and ensure you are logged in');
       return;
     }
@@ -81,7 +80,7 @@ export const LogoSettings = () => {
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userProfile.org_id}/logo-${Date.now()}.${fileExt}`;
+      const fileName = `${profile.org_id}/logo-${Date.now()}.${fileExt}`;
 
       console.log('Uploading file:', fileName);
 
@@ -109,7 +108,7 @@ export const LogoSettings = () => {
       const { error: updateError } = await supabase
         .from('organizations')
         .update({ logo_url: newLogoUrl })
-        .eq('id', userProfile.org_id);
+        .eq('id', profile.org_id);
 
       if (updateError) {
         console.error('Update error:', updateError);
@@ -130,7 +129,7 @@ export const LogoSettings = () => {
   };
 
   const handleRemoveLogo = async () => {
-    if (!userProfile?.org_id) return;
+    if (!profile?.org_id) return;
 
     setLoading(true);
     try {
@@ -140,14 +139,14 @@ export const LogoSettings = () => {
         if (fileName) {
           await supabase.storage
             .from('organization-logos')
-            .remove([`${userProfile.org_id}/${fileName}`]);
+            .remove([`${profile.org_id}/${fileName}`]);
         }
       }
 
       const { error } = await supabase
         .from('organizations')
         .update({ logo_url: null })
-        .eq('id', userProfile.org_id);
+        .eq('id', profile.org_id);
 
       if (error) {
         console.error('Error removing logo:', error);
@@ -166,7 +165,7 @@ export const LogoSettings = () => {
   };
 
   const handleSaveSettings = async () => {
-    if (!userProfile?.org_id) {
+    if (!profile?.org_id) {
       toast.error('Organization information missing');
       return;
     }
@@ -179,7 +178,7 @@ export const LogoSettings = () => {
           company_name: settings.company_name,
           tagline: settings.tagline
         })
-        .eq('id', userProfile.org_id);
+        .eq('id', profile.org_id);
 
       if (error) {
         console.error('Error saving settings:', error);
@@ -209,7 +208,7 @@ export const LogoSettings = () => {
     );
   }
 
-  if (!userProfile?.org_id) {
+  if (!profile?.org_id) {
     return (
       <Card>
         <CardContent className="p-6">

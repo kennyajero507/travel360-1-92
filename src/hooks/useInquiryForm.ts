@@ -9,7 +9,7 @@ import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inq
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
-  const { userProfile, loading } = useAuth();
+  const { profile, loading } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'domestic' | 'international'>('domestic');
   const [formData, setFormData] = useState<InquiryFormData>({
@@ -39,30 +39,30 @@ export const useInquiryForm = () => {
   const [availableAgents, setAvailableAgents] = useState<AvailableAgent[]>([]);
   const [loadingAgents, setLoadingAgents] = useState(false);
 
-  const isAgent = userProfile?.role === 'agent';
+  const isAgent = profile?.role === 'agent';
 
   // Update tour consultant when userProfile changes
   useEffect(() => {
-    if (userProfile?.full_name && !formData.tour_consultant) {
+    if (profile?.full_name && !formData.tour_consultant) {
       setFormData(prev => ({
         ...prev,
-        tour_consultant: userProfile.full_name || ''
+        tour_consultant: profile.full_name || ''
       }));
     }
-  }, [userProfile?.full_name, formData.tour_consultant]);
+  }, [profile?.full_name, formData.tour_consultant]);
 
   // Load available agents for assignment
   useEffect(() => {
     const loadAgents = async () => {
-      if (!userProfile?.org_id || isAgent || loading) {
+      if (!profile?.org_id || isAgent || loading) {
         console.log('Skipping agent load - no org, user is agent, or still loading');
         return;
       }
 
       try {
         setLoadingAgents(true);
-        console.log('Loading agents for org:', userProfile.org_id);
-        const agents = await agentService.getAgents(userProfile.org_id);
+        console.log('Loading agents for org:', profile.org_id);
+        const agents = await agentService.getAgents(profile.org_id);
         setAvailableAgents(agents.map(agent => ({
           id: agent.id,
           name: agent.name
@@ -77,10 +77,10 @@ export const useInquiryForm = () => {
     };
 
     // Only load agents if user profile is ready and user has an org
-    if (userProfile?.id && userProfile?.org_id && !loading) {
+    if (profile?.id && profile?.org_id && !loading) {
       loadAgents();
     }
-  }, [userProfile?.org_id, userProfile?.id, isAgent, loading]);
+  }, [profile?.org_id, profile?.id, isAgent, loading]);
 
   const handleTabChange = (value: string) => {
     const tourType = value as 'domestic' | 'international';
@@ -138,7 +138,7 @@ export const useInquiryForm = () => {
     }
 
     // Validation for organization membership
-    if (!userProfile?.org_id && userProfile?.role !== 'system_admin') {
+    if (!profile?.org_id && profile?.role !== 'system_admin') {
       errors.push("You must belong to an organization to create inquiries");
     }
     
@@ -150,8 +150,8 @@ export const useInquiryForm = () => {
     const selectedAgent = availableAgents.find(a => a.id === formData.assigned_agent);
     
     // For agents, auto-assign to themselves
-    const assignedTo = isAgent ? userProfile?.id : formData.assigned_agent || null;
-    const assignedAgentName = isAgent ? userProfile?.full_name : selectedAgent?.name || null;
+    const assignedTo = isAgent ? profile?.id : formData.assigned_agent || null;
+    const assignedAgentName = isAgent ? profile?.full_name : selectedAgent?.name || null;
     
     const inquiryData: InquiryInsertData = {
       id: crypto.randomUUID(),
@@ -175,7 +175,7 @@ export const useInquiryForm = () => {
       priority: formData.priority,
       assigned_to: assignedTo,
       assigned_agent_name: assignedAgentName,
-      created_by: userProfile?.id || null,
+      created_by: profile?.id || null,
       status: status
     };
 
@@ -187,7 +187,7 @@ export const useInquiryForm = () => {
     if (isSubmitting) return;
     
     // Don't validate for drafts, just check basic requirements
-    if (!userProfile?.id) {
+    if (!profile?.id) {
       toast.error("Authentication required");
       return;
     }
@@ -198,7 +198,7 @@ export const useInquiryForm = () => {
     }
 
     // Check if user belongs to an organization (unless system admin)
-    if (!userProfile.org_id && userProfile.role !== 'system_admin') {
+    if (!profile.org_id && profile.role !== 'system_admin') {
       toast.error("You must belong to an organization to create inquiries");
       return;
     }
@@ -229,13 +229,13 @@ export const useInquiryForm = () => {
     
     if (isSubmitting) return;
 
-    if (!userProfile?.id) {
+    if (!profile?.id) {
       toast.error("You must be logged in to create inquiries");
       return;
     }
 
     // Check if user belongs to an organization (unless system admin)
-    if (!userProfile.org_id && userProfile.role !== 'system_admin') {
+    if (!profile.org_id && profile.role !== 'system_admin') {
       toast.error("You must belong to an organization to create inquiries");
       return;
     }

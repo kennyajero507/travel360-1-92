@@ -10,11 +10,11 @@ import { useAuth } from "../../contexts/AuthContext";
 import { toast } from "sonner";
 
 export const ProfileSettings = () => {
-  const { userProfile, currentUser } = useAuth();
+  const { profile, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: userProfile?.full_name || '',
-    email: currentUser?.email || '',
+    full_name: profile?.full_name || '',
+    email: user?.email || '',
     phone: '',
     currency: 'USD',
     emailNotifications: true,

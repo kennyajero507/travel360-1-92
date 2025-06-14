@@ -12,11 +12,11 @@ import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import { useAuth } from "../contexts/AuthContext";
 
 const Settings = () => {
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   
-  const isOrgOwner = userProfile?.role === 'org_owner';
-  const isTourOperator = userProfile?.role === 'tour_operator';
-  const isSystemAdmin = userProfile?.role === 'system_admin';
+  const isOrgOwner = profile?.role === 'org_owner';
+  const isTourOperator = profile?.role === 'tour_operator';
+  const isSystemAdmin = profile?.role === 'system_admin';
   
   // Check if user can manage business settings
   const canManageBusinessSettings = isOrgOwner || isTourOperator || isSystemAdmin;

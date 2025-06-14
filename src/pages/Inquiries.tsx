@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -16,7 +17,7 @@ import { testRLSAccess } from "../utils/fixRLSPolicies";
 
 const Inquiries = () => {
   const navigate = useNavigate();
-  const { userProfile, checkRoleAccess, createOrganization } = useAuth();
+  const { profile, checkRoleAccess, createOrganization } = useAuth();
   
   // Allow agents to access inquiries as well
   const canAccessInquiries = checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']);
@@ -43,22 +44,22 @@ const Inquiries = () => {
 
   // Debug RLS on component mount
   useEffect(() => {
-    if (userProfile?.id) {
+    if (profile?.id) {
       console.log("Running RLS debug and tests...");
       debugRLSStatus();
       testRLSAccess();
     }
-  }, [userProfile?.id]);
+  }, [profile?.id]);
 
   // Load agents for assignment
   useEffect(() => {
     const loadAgents = async () => {
-      if (!userProfile?.org_id || userProfile.role === 'agent') {
+      if (!profile?.org_id || profile.role === 'agent') {
         return; // Agents can't assign to others
       }
 
       try {
-        const agentData = await agentService.getAgents(userProfile.org_id);
+        const agentData = await agentService.getAgents(profile.org_id);
         setAgents(agentData);
       } catch (error) {
         console.error('Error loading agents:', error);
@@ -66,11 +67,11 @@ const Inquiries = () => {
     };
 
     loadAgents();
-  }, [userProfile?.org_id, userProfile?.role]);
+  }, [profile?.org_id, profile?.role]);
 
   // Function to ensure user has organization
   const ensureUserHasOrganization = async () => {
-    if (!userProfile?.org_id && userProfile?.role === 'org_owner') {
+    if (!profile?.org_id && profile?.role === 'org_owner') {
       console.log("User needs organization setup");
       toast.info("Please complete your organization setup to continue.");
       return false;
@@ -86,11 +87,11 @@ const Inquiries = () => {
         setLoading(true);
       }
       
-      console.log("Fetching inquiries for user role:", userProfile?.role);
-      console.log("User org_id:", userProfile?.org_id);
+      console.log("Fetching inquiries for user role:", profile?.role);
+      console.log("User org_id:", profile?.org_id);
       
       // Check if user has organization before fetching
-      if (!userProfile?.org_id && userProfile?.role !== 'system_admin') {
+      if (!profile?.org_id && profile?.role !== 'system_admin') {
         console.log("User has no organization");
         const hasOrg = await ensureUserHasOrganization();
         if (!hasOrg) {
@@ -133,10 +134,10 @@ const Inquiries = () => {
   };
 
   useEffect(() => {
-    if (canAccessInquiries && userProfile?.id) {
+    if (canAccessInquiries && profile?.id) {
       fetchInquiries();
     }
-  }, [canAccessInquiries, userProfile?.id]);
+  }, [canAccessInquiries, profile?.id]);
 
   // Filter inquiries based on current filter and search
   const filterInquiries = (inquiries: any[]) => {
@@ -196,7 +197,7 @@ const Inquiries = () => {
   
   // Get title based on role
   const getPageTitle = () => {
-    switch(userProfile?.role) {
+    switch(profile?.role) {
       case 'system_admin': return 'All System Inquiries';
       case 'org_owner': return 'Organization Inquiries';
       case 'tour_operator': return 'Tour Assignment';
@@ -224,10 +225,10 @@ const Inquiries = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-blue-600">{getPageTitle()}</h1>
           <p className="text-gray-500 mt-2">Manage all your travel inquiries in one place</p>
-          {userProfile?.org_id && (
-            <p className="text-sm text-gray-400">Organization: {userProfile.org_id}</p>
+          {profile?.org_id && (
+            <p className="text-sm text-gray-400">Organization: {profile.org_id}</p>
           )}
-          {!userProfile?.org_id && userProfile?.role !== 'system_admin' && (
+          {!profile?.org_id && profile?.role !== 'system_admin' && (
             <p className="text-sm text-amber-600">⚠️ No organization assigned - some features may be limited</p>
           )}
         </div>
@@ -276,9 +277,9 @@ const Inquiries = () => {
               <InquiryTable 
                 filteredInquiries={filteredDomesticInquiries}
                 openAssignDialog={openAssignDialog}
-                permissions={{ canAssign: userProfile?.role !== 'agent' }}
-                role={userProfile?.role || ''}
-                currentUser={userProfile}
+                permissions={{ canAssign: profile?.role !== 'agent' }}
+                role={profile?.role || ''}
+                currentUser={profile}
               />
             </CardContent>
           </Card>
@@ -300,9 +301,9 @@ const Inquiries = () => {
               <InquiryTable 
                 filteredInquiries={filteredInternationalInquiries}
                 openAssignDialog={openAssignDialog}
-                permissions={{ canAssign: userProfile?.role !== 'agent' }}
-                role={userProfile?.role || ''}
-                currentUser={userProfile}
+                permissions={{ canAssign: profile?.role !== 'agent' }}
+                role={profile?.role || ''}
+                currentUser={profile}
               />
             </CardContent>
           </Card>

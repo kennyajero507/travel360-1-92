@@ -25,7 +25,7 @@ const HotelForm: React.FC<HotelFormProps> = ({
   onCancel,
   isEditing = false
 }) => {
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   const [formData, setFormData] = useState<Partial<Hotel>>({
     name: "",
     destination: "",
@@ -98,7 +98,7 @@ const HotelForm: React.FC<HotelFormProps> = ({
       toast.error("Category is required");
       return false;
     }
-    if (!userProfile?.org_id) {
+    if (!profile?.org_id) {
       toast.error("Organization information missing");
       return false;
     }
@@ -115,8 +115,8 @@ const HotelForm: React.FC<HotelFormProps> = ({
       // Ensure org_id is set for new hotels
       const submissionData = {
         ...formData,
-        org_id: userProfile?.org_id,
-        created_by: userProfile?.id
+        org_id: profile?.org_id,
+        created_by: profile?.id
       };
 
       await onSubmit(submissionData);

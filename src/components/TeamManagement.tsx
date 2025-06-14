@@ -35,7 +35,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { teamService, TeamMember } from "../services/teamService";
 
 const TeamManagement = () => {
-  const { userProfile, sendInvitation, getInvitations, checkRoleAccess } = useAuth();
+  const { profile, sendInvitation, getInvitations, checkRoleAccess } = useAuth();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -54,10 +54,10 @@ const TeamManagement = () => {
 
   useEffect(() => {
     fetchTeamData();
-  }, [userProfile?.org_id]);
+  }, [profile?.org_id]);
 
   const fetchTeamData = async () => {
-    if (!userProfile?.org_id || !canManageTeam) {
+    if (!profile?.org_id || !canManageTeam) {
       setFetchingData(false);
       return;
     }
@@ -67,7 +67,7 @@ const TeamManagement = () => {
       
       // Fetch team members and invitations in parallel
       const [members, invitationData] = await Promise.all([
-        teamService.getTeamMembers(userProfile.org_id),
+        teamService.getTeamMembers(profile.org_id),
         getInvitations()
       ]);
       
@@ -159,13 +159,13 @@ const TeamManagement = () => {
   };
 
   const canManageRole = (memberRole: string) => {
-    if (userProfile?.role === 'system_admin') return true;
-    if (userProfile?.role === 'org_owner') return true;
-    if (userProfile?.role === 'tour_operator' && memberRole === 'agent') return true;
+    if (profile?.role === 'system_admin') return true;
+    if (profile?.role === 'org_owner') return true;
+    if (profile?.role === 'tour_operator' && memberRole === 'agent') return true;
     return false;
   };
 
-  const availableRoles = userProfile?.role === 'org_owner' 
+  const availableRoles = profile?.role === 'org_owner' 
     ? [
         { value: 'tour_operator', label: 'Tour Operator' },
         { value: 'agent', label: 'Travel Agent' }
@@ -327,7 +327,7 @@ const TeamManagement = () => {
                     {new Date(member.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    {canManageRole(member.role) && member.id !== userProfile?.id && (
+                    {canManageRole(member.role) && member.id !== profile?.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">

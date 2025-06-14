@@ -6,10 +6,10 @@ import { Home, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const NotFound = () => {
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
 
   const getDefaultRoute = () => {
-    if (!userProfile) return "/login";
+    if (!profile) return "/login";
     return "/dashboard";
   };
 

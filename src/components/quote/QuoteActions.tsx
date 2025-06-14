@@ -22,10 +22,10 @@ const QuoteActions = ({
   onDownloadQuote 
 }: QuoteActionsProps) => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   
-  const canCreateBooking = userProfile && 
-    ['agent', 'tour_operator', 'org_owner'].includes(userProfile.role) &&
+  const canCreateBooking = profile && 
+    ['agent', 'tour_operator', 'org_owner'].includes(profile.role) &&
     quote.status === 'approved';
 
   const handleCreateBooking = () => {
