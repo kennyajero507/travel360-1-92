@@ -45,27 +45,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Only this simple method, no more retries/ensure/exotic fallback
   const refreshProfile = useCallback(async () => {
     if (!session?.user?.id) {
       setUserProfile(null);
       return;
     }
-
     try {
       setAuthError(null);
-      const profile = await profileService.ensureProfileExists(session.user.id);
+      setLoading(true);
+      // Fetch the profile or fallback, but ONLY ONCE per auth change
+      const profile = await profileService.fetchUserProfile(session.user.id);
       setUserProfile(profile);
     } catch (error) {
       console.error('[AuthContext] Error refreshing profile:', error);
       setAuthError('Failed to load user profile');
+      setUserProfile(null);
+    } finally {
+      setLoading(false);
     }
   }, [session?.user?.id]);
 
+  // Auth state and session management
   useEffect(() => {
+    let ignore = false;
+
     const getInitialSession = async () => {
       try {
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
         if (error) {
           console.error('[AuthContext] Error getting initial session:', error);
           setAuthError(error.message);
@@ -76,45 +83,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('[AuthContext] Error in getInitialSession:', error);
         setAuthError('Failed to initialize authentication');
-      } finally {
-        setLoading(false);
       }
     };
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
-        
+      (event, session) => {
+        if (ignore) return; // avoid state after unmount
         setSession(session);
         setCurrentUser(session?.user || null);
-        
         if (event === 'SIGNED_OUT') {
           setUserProfile(null);
           setAuthError(null);
+        } else if (session?.user) {
+          // Fresh login/session: reset profile, will refetch below
+          setUserProfile(null);
         }
       }
     );
-
-    return () => subscription.unsubscribe();
+    return () => {
+      ignore = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
+  // Profile loads only on session user change, or when refresh explicitly called
   useEffect(() => {
-    if (session?.user?.id && !userProfile) {
+    if (session?.user?.id && !userProfile && !loading) {
       refreshProfile();
     }
-  }, [session?.user?.id, userProfile, refreshProfile]);
+    // If logged out, clear profile
+    if (!session?.user?.id) {
+      setUserProfile(null);
+    }
+    // eslint-disable-next-line
+  }, [session?.user?.id]);
 
+  // Simplified login/signup/logout etc.
   const login = async (email: string, password: string): Promise<boolean> => {
     setAuthError(null);
     const success = await authService.login(email, password);
-    
     if (success) {
-      // Profile will be refreshed by the useEffect when session changes
+      setAuthError(null);
+      // profile will reload due to session change
       return true;
+    } else {
+      setAuthError('Invalid login credentials');
     }
-    
     return false;
   };
 
@@ -141,14 +157,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createOrganization = async (name: string): Promise<boolean> => {
     if (!session?.user?.id) return false;
-    
     setAuthError(null);
     const success = await organizationService.createOrganization(name, session.user.id);
-    
     if (success) {
       await refreshProfile();
     }
-    
     return success;
   };
 
@@ -160,11 +173,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const acceptInvitation = async (token: string): Promise<boolean> => {
     setAuthError(null);
     const success = await invitationService.acceptInvitation(token);
-    
     if (success) {
       await refreshProfile();
     }
-    
     return success;
   };
 
