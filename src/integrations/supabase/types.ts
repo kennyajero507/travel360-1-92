@@ -1692,6 +1692,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_quote_package_with_items: {
         Args: { package_id_param: string }
         Returns: Json
