@@ -1,103 +1,59 @@
-
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const authService = {
   async login(email: string, password: string): Promise<boolean> {
-    try {
-      console.log("Attempting login for:", email);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password
-      });
-      
-      if (error) {
-        console.error("Login error:", error);
-        toast.error(error.message);
-        return false;
-      }
-      
-      if (data.user) {
-        console.log("Login successful");
-        toast.success('Logged in successfully');
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error('An error occurred during login');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error("Login error:", error);
+      toast.error(error.message);
       return false;
     }
+    toast.success('Logged in successfully!');
+    return true;
   },
 
-  async signup(email: string, password: string, fullName: string, companyName: string): Promise<boolean> {
-    try {
-      console.log("Starting signup process for organization owner:", email);
-      
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        toast.error("Please enter a valid email address");
-        return false;
-      }
-      
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: fullName,
-            company_name: companyName,
-            role: 'org_owner'
-          }
-        }
-      });
-      
-      if (error) {
-        console.error("Signup error:", error);
-        
-        if (error.message.includes('already registered') || 
-            error.message.includes('User already registered')) {
-          toast.error("This email is already registered. Please use a different email or try signing in.");
-          return false;
-        }
-        
-        toast.error(error.message);
-        return false;
-      }
-      
-      if (data.user) {
-        if (data.user.email_confirmed_at) {
-          toast.success("Organization account created successfully! You can now sign in as the organization owner.");
-        } else {
-          toast.success("Please check your email to confirm your account before signing in.");
-        }
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Signup error:', error);
-      toast.error('An error occurred during signup');
+  async signup(
+    email: string,
+    password: string,
+    fullName: string,
+    role: 'org_owner' | 'tour_operator',
+    companyName?: string,
+  ): Promise<boolean> {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+        data: {
+          full_name: fullName,
+          company_name: role === 'org_owner' ? companyName : null,
+          role: role,
+        },
+      },
+    });
+
+    if (error) {
+      console.error("Signup error:", error);
+      toast.error(error.message);
       return false;
     }
+
+    if (data.user) {
+      toast.success('Account created! Please check your email to verify your account.');
+      // NOTE: Organization is not created here. That should happen after the user's first login.
+      return true;
+    }
+
+    return false;
   },
 
   async logout(): Promise<void> {
-    try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message);
+    } else {
       toast.success('Logged out successfully');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('An error occurred during logout');
     }
   },
 

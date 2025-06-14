@@ -4,16 +4,11 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  allowedRoles?: string[];
-  requireAuth?: boolean;
+  // allowedRoles will be re-implemented in a future step
 }
 
-export const AuthGuard = ({ 
-  children, 
-  allowedRoles = [], 
-  requireAuth = true 
-}: AuthGuardProps) => {
-  const { session, userProfile, loading, checkRoleAccess } = useAuth();
+export const AuthGuard = ({ children }: AuthGuardProps) => {
+  const { session, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -21,40 +16,18 @@ export const AuthGuard = ({
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Verifying access...</p>
+          <p className="text-slate-600">Loading...</p>
         </div>
       </div>
     );
   }
 
   // If authentication is required but user is not logged in
-  if (requireAuth && !session) {
+  if (!session) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-
-  // If user is authenticated but profile is still loading, show loading state
-  if (requireAuth && session && !userProfile) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 mb-4">Loading your profile...</p>
-          <p className="text-sm text-slate-500">This should only take a moment</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is authenticated but doesn't have required role
-  if (requireAuth && session && userProfile && allowedRoles.length > 0) {
-    const hasAccess = checkRoleAccess(allowedRoles);
-    if (!hasAccess) {
-      // Redirect based on user role with fallback
-      const redirectPath = userProfile.role === 'system_admin' ? '/admin/dashboard' : '/dashboard';
-      return <Navigate to={redirectPath} replace />;
-    }
-  }
-
+  
+  // Role-based access will be added back later once the core auth is solid.
   return <>{children}</>;
 };
 

@@ -8,44 +8,21 @@ import SignupForm from "../components/auth/SignupForm";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, session, userProfile, loading: authLoading } = useAuth();
+  const { signup, session, profile, loading: authLoading } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (!authLoading && session && userProfile) {
-      console.log('[Signup] User already authenticated, redirecting...');
-      
-      if (userProfile.role === 'system_admin') {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+    if (!authLoading && session && profile) {
+      navigate("/dashboard");
     }
-  }, [session, userProfile, navigate, authLoading]);
+  }, [session, profile, navigate, authLoading]);
 
-  // Show loading state during auth check
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show redirecting state
-  if (session && userProfile) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Redirecting...</p>
-        </div>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -54,74 +31,30 @@ const Signup = () => {
     fullName: string;
     email: string;
     password: string;
-    companyName: string;
-    selectedPlan: string;
-    paymentMethod: string;
-    agreeToTerms: boolean;
+    companyName?: string;
+    role: 'org_owner' | 'tour_operator';
   }) => {
     setError(null);
-    
-    // Validation
-    if (!formData.email || !formData.password || !formData.fullName || !formData.companyName) {
-      setError("Please fill in all required fields");
-      return;
-    }
-    
-    if (!formData.agreeToTerms) {
-      setError("You must agree to the Terms of Service and Privacy Policy");
-      return;
-    }
-    
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
-
-    if (formData.email.includes('@example.com')) {
-      setError("Please use a real email address, not an example email");
-      return;
-    }
-    
     setLoading(true);
     
     try {
-      console.log("[Signup] Starting organization owner signup process for:", formData.email);
-      
       const signupSuccess = await signup(
         formData.email, 
         formData.password, 
         formData.fullName, 
-        formData.companyName
+        formData.role,
+        formData.companyName,
       );
       
-      if (!signupSuccess) {
-        setError("Registration failed. The email might already be in use or there was an error creating the account.");
-        return;
+      if (signupSuccess) {
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else {
+        setError("Registration failed. The email might already be in use.");
       }
-      
-      console.log("[Signup] Organization owner account created successfully");
-      
-      // Show success message and redirect to login
-      toast.success("Account created successfully! Please check your email to verify your account before signing in.");
-      
-      setTimeout(() => {
-        navigate("/login", { 
-          state: { 
-            message: "Account created! Please check your email to verify your account, then sign in to access your dashboard.",
-            email: formData.email 
-          }
-        });
-      }, 2000);
-      
-    } catch (error) {
-      console.error("[Signup] Signup error:", error);
-      setError("An unexpected error occurred during registration. Please try again.");
+    } catch (error: any) {
+      setError(error.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -129,8 +62,8 @@ const Signup = () => {
   
   return (
     <AuthLayout
-      title="Create Your Organization"
-      description="Set up your travel business on TravelFlow360 as the organization owner. You'll be able to invite and manage tour operators and agents after registration."
+      title="Create Your Account"
+      description="Join TravelFlow360 to streamline your travel business operations."
       footerText="Already have an account?"
       footerLink={{ text: "Sign In", to: "/login" }}
       navLink={{ text: "Already have an account? Sign in", to: "/login" }}
