@@ -13,7 +13,7 @@ export const testAuthenticationFlow = async () => {
 
     console.log("Testing user:", user.id, user.email);
 
-    // Test profile access with improved error handling
+    // Test profile access
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id, role, org_id, full_name, email')
@@ -23,14 +23,6 @@ export const testAuthenticationFlow = async () => {
     console.log("Profile result:", profile);
     if (profileError) {
       console.error("Profile error:", profileError);
-      
-      // If it's an RLS error, the policies are working correctly
-      if (profileError.message.includes('row-level security') || 
-          profileError.message.includes('permission denied')) {
-        console.log("RLS policies are active and working correctly");
-        return true;
-      }
-      
       return false;
     }
 

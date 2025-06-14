@@ -3,11 +3,12 @@ import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import OrganizationForm from "./auth/OrganizationForm";
-import { Building, CheckCircle, Clock } from "lucide-react";
+import { Building, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
+import { Button } from "./ui/button";
 
 const OrganizationSetup = () => {
-  const { createOrganization, profile, loading: authLoading } = useAuth();
+  const { createOrganization, profile, loading: authLoading, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -25,9 +26,10 @@ const OrganizationSetup = () => {
       const success = await createOrganization(organizationName);
       if (success) {
         setSuccess(true);
-        // Auto-redirect after success
-        setTimeout(() => {
-          window.location.reload();
+        // Wait a bit then refresh
+        setTimeout(async () => {
+          await refreshProfile();
+          window.location.href = '/dashboard';
         }, 2000);
       } else {
         setError("Failed to create organization. Please try again.");
@@ -37,6 +39,11 @@ const OrganizationSetup = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkipForNow = () => {
+    // Allow user to skip organization setup and go to dashboard
+    window.location.href = '/dashboard';
   };
 
   if (authLoading) {
@@ -83,22 +90,47 @@ const OrganizationSetup = () => {
           </CardDescription>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="space-y-4">
           {profile?.role !== 'org_owner' && (
             <Alert className="mb-6">
               <Clock className="h-4 w-4" />
               <AlertDescription>
-                It looks like you're joining as a {profile?.role}. Please contact your organization owner to get added to their team.
+                It looks like you're joining as a {profile?.role}. You can skip this step for now.
               </AlertDescription>
             </Alert>
           )}
           
           {profile?.role === 'org_owner' && (
-            <OrganizationForm
-              onSubmit={handleCreateOrganization}
-              loading={loading}
-              error={error}
-            />
+            <>
+              <OrganizationForm
+                onSubmit={handleCreateOrganization}
+                loading={loading}
+                error={error}
+              />
+              
+              <div className="pt-4 border-t">
+                <Button
+                  variant="ghost"
+                  onClick={handleSkipForNow}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                  disabled={loading}
+                >
+                  Skip for now - I'll set this up later
+                </Button>
+              </div>
+            </>
+          )}
+          
+          {profile?.role !== 'org_owner' && (
+            <div className="pt-4">
+              <Button
+                onClick={handleSkipForNow}
+                className="w-full"
+                variant="outline"
+              >
+                Continue to Dashboard
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

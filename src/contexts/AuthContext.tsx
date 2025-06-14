@@ -73,22 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [permissions, setPermissions] = useState<Permissions>(getPermissionsForRole('agent'));
 
   const fetchProfile = useCallback(async (user: User, retryCount = 0): Promise<void> => {
-    const maxRetries = 3;
-    const timeoutDuration = 5000; // 5 seconds
+    const maxRetries = 2;
     
     try {
       console.log(`[AuthContext] Fetching profile for user: ${user.id}, attempt: ${retryCount + 1}`);
       
-      // Create a timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), timeoutDuration);
-      });
-      
-      // Race between profile fetch and timeout
-      const userProfileData = await Promise.race([
-        profileService.fetchUserProfile(user.id),
-        timeoutPromise
-      ]);
+      const userProfileData = await profileService.fetchUserProfile(user.id);
       
       if (userProfileData) {
         console.log('[AuthContext] Profile fetched successfully:', userProfileData);
@@ -97,26 +87,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // If profile is null, try to repair it
-      console.log('[AuthContext] Profile is null, attempting repair...');
-      await repairProfile();
-      
-    } catch (e: any) {
-      console.error(`[AuthContext] Profile fetch error (attempt ${retryCount + 1}):`, e);
-      
+      // If profile is null and we haven't exceeded retries, try repair
       if (retryCount < maxRetries) {
-        // Exponential backoff: 1s, 2s, 4s
-        const delay = Math.pow(2, retryCount) * 1000;
-        console.log(`[AuthContext] Retrying profile fetch in ${delay}ms...`);
+        console.log('[AuthContext] Profile is null, attempting repair...');
+        await repairProfile();
         
+        // Wait a bit and retry
         setTimeout(() => {
           fetchProfile(user, retryCount + 1);
-        }, delay);
+        }, 1000);
         return;
       }
       
-      // All retries exhausted, create fallback profile
-      console.log('[AuthContext] All retries exhausted, creating fallback profile');
+      // Create fallback profile after retries
+      console.log('[AuthContext] Creating fallback profile after retries');
       const fallbackProfile: UserProfile = {
         id: user.id,
         full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
@@ -128,10 +112,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       setProfile(fallbackProfile);
-      setError('Profile could not be loaded. Using temporary profile.');
+      setError('Profile setup in progress. Please refresh if you encounter issues.');
       
-      // Try to repair profile in background
-      repairProfile();
+    } catch (e: any) {
+      console.error(`[AuthContext] Profile fetch error (attempt ${retryCount + 1}):`, e);
+      
+      if (retryCount < maxRetries) {
+        setTimeout(() => {
+          fetchProfile(user, retryCount + 1);
+        }, 2000);
+        return;
+      }
+      
+      setError('Unable to load profile. Please try logging in again.');
     }
   }, []);
 
@@ -149,16 +142,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      console.log('[AuthContext] Profile repair successful, refetching...');
-      // Wait a bit for the repair to complete
-      setTimeout(() => {
-        fetchProfile(user);
-      }, 1000);
+      console.log('[AuthContext] Profile repair successful');
       
     } catch (error) {
       console.error('[AuthContext] Profile repair error:', error);
     }
-  }, [user, fetchProfile]);
+  }, [user]);
   
   // Derived role data
   const role = (profile?.role as UserRole) || 'agent';
@@ -239,12 +228,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('[AuthContext] Auth initialization error:', e);
         setError(e.message);
       } finally {
-        // Set a maximum loading time of 10 seconds
-        setTimeout(() => {
-          console.log('[AuthContext] Forcing loading to false after timeout');
-          setLoading(false);
-        }, 10000);
-        
         setLoading(false);
       }
     };
