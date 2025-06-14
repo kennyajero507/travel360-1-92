@@ -1,6 +1,7 @@
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { Booking, TravelVoucher, PaymentRecord, BookingNotification } from "../types/booking.types";
+import { isValidBookingStatus, isValidPaymentStatus } from "../utils/typeHelpers";
 
 // Create or get booking from quote
 export const createBookingFromQuote = async (quoteId: string, hotelId: string): Promise<Booking> => {
@@ -23,7 +24,7 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
 
     if (hotelError) throw hotelError;
 
-    // Create booking data (only send the fields required by schema, and only those not auto-generated)
+    // Create booking data - include required booking_reference as '' (the DB trigger will set)
     const bookingData = {
       client: quote.client,
       hotel_name: hotel.name,
@@ -38,7 +39,7 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
       total_price: calculateQuoteTotal(quote),
       quote_id: quoteId,
       notes: quote.notes,
-      // booking_reference is generated in DB, not in insert payload!
+      booking_reference: "", // NEW: required, DB will set via trigger
     };
 
     const { data: booking, error: bookingError } = await supabase
@@ -50,14 +51,23 @@ export const createBookingFromQuote = async (quoteId: string, hotelId: string): 
     if (bookingError) throw bookingError;
 
     toast.success('Booking created successfully');
-    // Convert fields (JSONB array → TypeScript array) and status to Booking type.
+
+    // Normalize arrays and status types
     return {
-      ...(booking as Booking),
-      status: (booking.status || "pending") as Booking["status"],
-      room_arrangement: Array.isArray(booking.room_arrangement) ? booking.room_arrangement : [],
-      transport: Array.isArray(booking.transport) ? booking.transport : [],
-      activities: Array.isArray(booking.activities) ? booking.activities : [],
-      transfers: Array.isArray(booking.transfers) ? booking.transfers : [],
+      ...booking,
+      status: isValidBookingStatus(booking.status) ? booking.status : "pending",
+      room_arrangement: Array.isArray(booking.room_arrangement)
+        ? (booking.room_arrangement as RoomArrangement[])
+        : [],
+      transport: Array.isArray(booking.transport)
+        ? (booking.transport as BookingTransport[])
+        : [],
+      activities: Array.isArray(booking.activities)
+        ? (booking.activities as BookingActivity[])
+        : [],
+      transfers: Array.isArray(booking.transfers)
+        ? (booking.transfers as BookingTransfer[])
+        : [],
     };
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -75,8 +85,24 @@ export const getAllBookings = async (): Promise<Booking[]> => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
-    return data || [];
+
+    // Normalize each booking to match Booking type
+    return (data || []).map((booking: any): Booking => ({
+      ...booking,
+      status: isValidBookingStatus(booking.status) ? booking.status : "pending",
+      room_arrangement: Array.isArray(booking.room_arrangement)
+        ? (booking.room_arrangement as RoomArrangement[])
+        : [],
+      transport: Array.isArray(booking.transport)
+        ? (booking.transport as BookingTransport[])
+        : [],
+      activities: Array.isArray(booking.activities)
+        ? (booking.activities as BookingActivity[])
+        : [],
+      transfers: Array.isArray(booking.transfers)
+        ? (booking.transfers as BookingTransfer[])
+        : [],
+    }));
   } catch (error) {
     console.error('Error fetching bookings:', error);
     toast.error('Failed to fetch bookings');
@@ -94,8 +120,25 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
       .maybeSingle();
 
     if (error) throw error;
-    
-    return data;
+
+    if (!data) return null;
+
+    return {
+      ...data,
+      status: isValidBookingStatus(data.status) ? data.status : "pending",
+      room_arrangement: Array.isArray(data.room_arrangement)
+        ? (data.room_arrangement as RoomArrangement[])
+        : [],
+      transport: Array.isArray(data.transport)
+        ? (data.transport as BookingTransport[])
+        : [],
+      activities: Array.isArray(data.activities)
+        ? (data.activities as BookingActivity[])
+        : [],
+      transfers: Array.isArray(data.transfers)
+        ? (data.transfers as BookingTransfer[])
+        : [],
+    };
   } catch (error) {
     console.error('Error fetching booking:', error);
     return null;
@@ -111,7 +154,7 @@ export const updateBookingStatus = async (bookingId: string, status: string): Pr
       .eq('id', bookingId);
 
     if (error) throw error;
-    
+
     toast.success(`Booking status updated to ${status}`);
   } catch (error) {
     console.error('Error updating booking status:', error);
@@ -186,15 +229,22 @@ export const getPaymentsByBooking = async (bookingId: string): Promise<PaymentRe
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
-    return data || [];
+
+    return (data || []).map((payment: any) => ({
+      ...payment,
+      payment_status: isValidPaymentStatus(payment.payment_status)
+        ? payment.payment_status
+        : "pending",
+    }));
   } catch (error) {
     console.error('Error fetching payments:', error);
     return [];
   }
 };
 
-export const recordPayment = async (payment: Omit<PaymentRecord, 'id' | 'created_at' | 'updated_at'>): Promise<PaymentRecord> => {
+export const recordPayment = async (
+  payment: Omit<PaymentRecord, 'id' | 'created_at' | 'updated_at'>
+): Promise<PaymentRecord> => {
   try {
     const { data, error } = await supabase
       .from('payments')
@@ -203,9 +253,14 @@ export const recordPayment = async (payment: Omit<PaymentRecord, 'id' | 'created
       .single();
 
     if (error) throw error;
-    
+
     toast.success('Payment recorded successfully');
-    return data;
+    return {
+      ...data,
+      payment_status: isValidPaymentStatus(data.payment_status)
+        ? data.payment_status
+        : "pending",
+    };
   } catch (error) {
     console.error('Error recording payment:', error);
     toast.error('Failed to record payment');
