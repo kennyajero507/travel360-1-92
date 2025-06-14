@@ -1,3 +1,4 @@
+
 import { supabase } from '../../integrations/supabase/client';
 import { UserProfile } from './types';
 import { toast } from 'sonner';
@@ -6,13 +7,18 @@ export const profileService = {
   async fetchUserProfile(userId: string): Promise<UserProfile | null> {
     try {
       console.log(`[ProfileService] Fetching profile for user: ${userId}`);
-      const { data, error } = await supabase
+      const { data, error, status } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
       if (error) {
+        // Log forbidden error explicitly
+        if (error.code === '42501' || error.status === 401 || error.status === 403) {
+          console.error('[ProfileService] RLS Forbidden: Cannot access profile. This is likely a policy or database access error.', error);
+          return { __forbidden: true } as any;
+        }
         console.error('[ProfileService] Error fetching user profile:', error);
         return await this.createFallbackProfile(userId);
       }
@@ -42,7 +48,12 @@ export const profileService = {
       });
 
       return profile;
-    } catch (error) {
+    } catch (error: any) {
+      // Log forbidden error explicitly
+      if (error?.code === '42501' || error?.status === 401 || error?.status === 403) {
+        console.error('[ProfileService] RLS Forbidden: Cannot access profile. (CATCH BLOCK)');
+        return { __forbidden: true } as any;
+      }
       console.error(`[ProfileService] Error in fetchUserProfile:`, error);
       return await this.createFallbackProfile(userId);
     }

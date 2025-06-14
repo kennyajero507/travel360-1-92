@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -45,24 +44,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Only this simple method, no more retries/ensure/exotic fallback
+  // Improved refreshProfile logic to never deadlock loading state
   const refreshProfile = useCallback(async () => {
     if (!session?.user?.id) {
       setUserProfile(null);
+      setLoading(false);
       return;
     }
     try {
       setAuthError(null);
       setLoading(true);
-      // Fetch the profile or fallback, but ONLY ONCE per auth change
+      console.log('[AuthContext] [refreshProfile] Fetching profile for:', session.user.id);
       const profile = await profileService.fetchUserProfile(session.user.id);
+
+      // If "forbidden" sentinel, display an explicit error
+      if (profile && (profile as any).__forbidden) {
+        throw new Error('Profile fetch forbidden by RLS policy');
+      }
       setUserProfile(profile);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AuthContext] Error refreshing profile:', error);
-      setAuthError('Failed to load user profile');
+      setAuthError(typeof error === 'string' ? error : error?.message || 'Failed to load user profile');
       setUserProfile(null);
     } finally {
       setLoading(false);
+      console.log('[AuthContext] [refreshProfile] Loading set to FALSE');
     }
   }, [session?.user?.id]);
 
@@ -72,6 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const getInitialSession = async () => {
       try {
+        setLoading(true);
+        console.log('[AuthContext] [getInitialSession] Checking for existing session');
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('[AuthContext] Error getting initial session:', error);
@@ -83,6 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('[AuthContext] Error in getInitialSession:', error);
         setAuthError('Failed to initialize authentication');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -90,14 +100,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (ignore) return; // avoid state after unmount
+        if (ignore) return;
+        console.log('[AuthContext] [onAuthStateChange]', { event, session });
         setSession(session);
         setCurrentUser(session?.user || null);
         if (event === 'SIGNED_OUT') {
           setUserProfile(null);
           setAuthError(null);
         } else if (session?.user) {
-          // Fresh login/session: reset profile, will refetch below
+          // Reset profile - will refetch below
           setUserProfile(null);
         }
       }
@@ -108,14 +119,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Profile loads only on session user change, or when refresh explicitly called
+  // Distinguish Initial load from profile reload; break infinite loop
   useEffect(() => {
     if (session?.user?.id && !userProfile && !loading) {
+      // Only try once
+      console.log('[AuthContext] [profile loader] No profile, session user exists, loading:', loading);
       refreshProfile();
     }
-    // If logged out, clear profile
     if (!session?.user?.id) {
       setUserProfile(null);
+      setLoading(false);
     }
     // eslint-disable-next-line
   }, [session?.user?.id]);
@@ -123,10 +136,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Simplified login/signup/logout etc.
   const login = async (email: string, password: string): Promise<boolean> => {
     setAuthError(null);
+    setLoading(true);
     const success = await authService.login(email, password);
+    setLoading(false);
     if (success) {
       setAuthError(null);
-      // profile will reload due to session change
       return true;
     } else {
       setAuthError('Invalid login credentials');
