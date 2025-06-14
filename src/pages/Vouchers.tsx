@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -15,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TravelVoucher } from "../types/booking.types";
-import { getAllVouchers, updateVoucherEmailStatus } from "../services/bookingService";
+import { getAllVouchers, updateVoucherEmailStatus } from "../services/voucherService";
 
 // Helper to use search params
 function useQuery() {

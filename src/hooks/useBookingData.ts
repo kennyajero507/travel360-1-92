@@ -1,6 +1,8 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAllBookings, getBookingById, updateBookingStatus, createBookingFromQuote } from '../services/bookingService';
+import { getAllBookings } from '../services/bookingReadService';
+import { updateBookingStatus } from '../services/bookingUpdateService';
+import { createBookingFromQuote } from '../services/bookingCreateService';
 import { toast } from 'sonner';
 import type { BookingStatus } from '../types/booking.types';
 

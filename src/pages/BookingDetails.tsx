@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -7,7 +6,7 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { ArrowLeft, User, MapPin, Calendar, DollarSign, FileText, CreditCard } from "lucide-react";
 import { toast } from "sonner";
-import { getBookingById } from "../services/bookingService";
+import { getBookingById } from "../services/bookingReadService";
 import { Booking } from "../types/booking.types";
 import { convertToBooking } from "../utils/typeHelpers";
 import VoucherManager from "../components/voucher/VoucherManager";

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -17,7 +16,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TravelVoucher } from "../types/booking.types";
-import { getVoucherById, getBookingById, updateVoucherEmailStatus } from "../services/bookingService";
+import { getVoucherById, updateVoucherEmailStatus } from "../services/voucherService";
+import { getBookingById } from "../services/bookingReadService";
 
 const VoucherPreview = () => {
   const { voucherId } = useParams<{ voucherId: string }>();
