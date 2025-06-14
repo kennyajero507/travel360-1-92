@@ -67,86 +67,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fetchAttempts, setFetchAttempts] = useState(0);
   
   // Role state
   const [tier, setTier] = useState<SubscriptionTier>('starter');
   const [permissions, setPermissions] = useState<Permissions>(getPermissionsForRole('agent'));
 
-  const MAX_FETCH_ATTEMPTS = 3;
-  const FETCH_TIMEOUT = 10000; // 10 seconds
-
   const fetchProfile = useCallback(async (user: User): Promise<void> => {
-    if (fetchAttempts >= MAX_FETCH_ATTEMPTS) {
-      console.log('[AuthContext] Max fetch attempts reached, stopping retries');
-      setError('Unable to load profile after multiple attempts');
-      setLoading(false);
-      return;
-    }
-
     try {
-      console.log(`[AuthContext] Fetching profile for user: ${user.id}, attempt: ${fetchAttempts + 1}`);
+      console.log(`[AuthContext] Fetching profile for user: ${user.id}`);
+      setError(null);
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), FETCH_TIMEOUT);
-      });
-      
-      const fetchPromise = profileService.fetchUserProfile(user.id);
-      const userProfileData = await Promise.race([fetchPromise, timeoutPromise]);
+      const userProfileData = await profileService.fetchUserProfile(user.id);
       
       if (userProfileData) {
         console.log('[AuthContext] Profile fetched successfully:', userProfileData);
         setProfile(userProfileData);
-        setError(null);
-        setFetchAttempts(0);
         return;
       }
       
-      // Profile is null, try repair if this is the first attempt
-      if (fetchAttempts === 0) {
-        console.log('[AuthContext] Profile is null, attempting repair...');
-        await repairProfile();
-        setFetchAttempts(prev => prev + 1);
-        
-        // Wait a bit and retry
-        setTimeout(() => {
-          fetchProfile(user);
-        }, 2000);
-        return;
-      }
+      // If profile is null, it might be a new user or there was an issue
+      console.log('[AuthContext] No profile found, checking if this is a new user...');
       
-      // Create fallback profile after first retry
-      console.log('[AuthContext] Creating fallback profile');
-      const fallbackProfile: UserProfile = {
-        id: user.id,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-        email: user.email || '',
-        role: 'org_owner',
-        created_at: new Date().toISOString(),
-        org_id: null,
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-      };
-      
-      setProfile(fallbackProfile);
-      setError('Profile setup in progress. Please refresh if you encounter issues.');
-      setFetchAttempts(0);
+      // For new users, the trigger should have created the profile
+      // If we still don't have one after a short delay, something is wrong
+      setTimeout(async () => {
+        const retryProfile = await profileService.fetchUserProfile(user.id);
+        if (retryProfile) {
+          setProfile(retryProfile);
+        } else {
+          console.error('[AuthContext] Profile still not found after retry');
+          setError('Profile not found. Please try logging out and back in.');
+        }
+      }, 2000);
       
     } catch (e: any) {
-      console.error(`[AuthContext] Profile fetch error (attempt ${fetchAttempts + 1}):`, e);
-      
-      if (fetchAttempts < MAX_FETCH_ATTEMPTS - 1) {
-        setFetchAttempts(prev => prev + 1);
-        setTimeout(() => {
-          fetchProfile(user);
-        }, 3000);
-        return;
-      }
-      
-      setError('Unable to load profile. Please try logging in again.');
-      setFetchAttempts(0);
+      console.error(`[AuthContext] Profile fetch error:`, e);
+      setError('Unable to load profile. Please try refreshing the page.');
     }
-  }, [fetchAttempts]);
+  }, []);
 
   const repairProfile = useCallback(async (): Promise<void> => {
     if (!user) return;
@@ -164,10 +122,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('[AuthContext] Profile repair successful');
       
+      // Retry fetching the profile
+      await fetchProfile(user);
+      
     } catch (error) {
       console.error('[AuthContext] Profile repair error:', error);
     }
-  }, [user]);
+  }, [user, fetchProfile]);
   
   // Derived role data
   const role = (profile?.role as UserRole) || 'agent';
@@ -232,7 +193,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       console.log('[AuthContext] Initializing auth...');
       setLoading(true);
-      setFetchAttempts(0);
       
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -261,7 +221,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(newSession);
         const newUser = newSession?.user ?? null;
         setUser(newUser);
-        setFetchAttempts(0);
         
         if (event === 'SIGNED_IN' && newUser) {
           setLoading(true);
@@ -270,7 +229,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setError(null);
-          setFetchAttempts(0);
         }
       }
     );
@@ -287,7 +245,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = useCallback(async () => {
     if (user) {
       setLoading(true);
-      setFetchAttempts(0);
       await fetchProfile(user);
       setLoading(false);
     }

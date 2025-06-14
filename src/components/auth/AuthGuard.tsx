@@ -26,7 +26,7 @@ export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2 text-orange-600">
                     <AlertCircle className="h-4 w-4" />
-                    Authentication Issue
+                    Loading Issue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
