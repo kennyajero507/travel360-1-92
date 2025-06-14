@@ -41,17 +41,17 @@ export const AgentAssignmentDialog = ({
   selectedAgent,
   setSelectedAgent
 }: AgentAssignmentDialogProps) => {
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadAgents = async () => {
-      if (!dialogOpen || !userProfile?.org_id) return;
+      if (!dialogOpen || !profile?.org_id) return;
 
       try {
         setLoading(true);
-        const agentData = await agentService.getAgents(userProfile.org_id);
+        const agentData = await agentService.getAgents(profile.org_id);
         setAgents(agentData.map(agent => ({
           id: agent.id,
           name: agent.name
@@ -64,7 +64,7 @@ export const AgentAssignmentDialog = ({
     };
 
     loadAgents();
-  }, [dialogOpen, userProfile?.org_id]);
+  }, [dialogOpen, profile?.org_id]);
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

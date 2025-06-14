@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -43,14 +42,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = useCallback(async (user: User) => {
     try {
-      const userProfile = await profileService.fetchUserProfile(user.id);
-      setProfile(userProfile);
+      const userProfileData = await profileService.fetchUserProfile(user.id);
+      setProfile(userProfileData);
     } catch (e: any) {
       setError(e.message);
       setProfile(null);
     }
   }, []);
-
+  
   useEffect(() => {
     const initializeAuth = async () => {
       setLoading(true);

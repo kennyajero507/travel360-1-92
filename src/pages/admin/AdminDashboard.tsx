@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { useAuth } from "../../contexts/AuthContext";
 
 const AdminDashboard = () => {
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   
-  if (!userProfile || userProfile.role !== 'system_admin') {
+  if (!profile || profile.role !== 'system_admin') {
     return (
       <div className="flex justify-center items-center h-full">
         <Card className="w-full max-w-md">
@@ -48,7 +48,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <CardTitle>Organization Management</CardTitle>
             <CardDescription>Manage all organizations</CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent>
             <p>Coming soon...</p>
           </CardContent>

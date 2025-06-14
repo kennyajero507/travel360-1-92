@@ -31,7 +31,7 @@ export const InquiryActions = ({
   onDelete
 }: InquiryActionsProps) => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { profile } = useAuth();
   
   const handleCreateQuote = () => {
     if (!inquiry.id) {
@@ -65,16 +65,16 @@ export const InquiryActions = ({
   
   // Check if user can modify this inquiry based on role
   const canModify = () => {
-    if (!userProfile) return false;
+    if (!profile) return false;
     
     // System admins can modify anything
-    if (userProfile.role === 'system_admin') return true;
+    if (profile.role === 'system_admin') return true;
     
     // Organization owners and tour operators can modify anything within their org
-    if (['org_owner', 'tour_operator'].includes(userProfile.role)) return true;
+    if (['org_owner', 'tour_operator'].includes(profile.role)) return true;
     
     // Agents can only modify their assigned inquiries
-    if (userProfile.role === 'agent') {
+    if (profile.role === 'agent') {
       return inquiry.assigned_to === currentUserId;
     }
     
@@ -83,16 +83,16 @@ export const InquiryActions = ({
   
   // Check if user can create quote based on role and assignment
   const canCreateQuote = () => {
-    if (!userProfile) return false;
+    if (!profile) return false;
     
     // System admins can create quotes for any inquiry
-    if (userProfile.role === 'system_admin') return true;
+    if (profile.role === 'system_admin') return true;
     
     // Organization owners and tour operators can create quotes for any inquiry in their org
-    if (['org_owner', 'tour_operator'].includes(userProfile.role)) return true;
+    if (['org_owner', 'tour_operator'].includes(profile.role)) return true;
     
     // Agents can only create quotes for inquiries assigned to them
-    if (userProfile.role === 'agent') {
+    if (profile.role === 'agent') {
       return inquiry.assigned_to === currentUserId;
     }
     
@@ -139,7 +139,7 @@ export const InquiryActions = ({
         )}
         
         {/* Only tour operators and above can assign inquiries */}
-        {userProfile && ['system_admin', 'org_owner', 'tour_operator'].includes(userProfile.role) && (
+        {profile && ['system_admin', 'org_owner', 'tour_operator'].includes(profile.role) && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
@@ -153,7 +153,7 @@ export const InquiryActions = ({
         )}
         
         {/* Only system admins, org owners and tour operators can delete inquiries */}
-        {userProfile && ['system_admin', 'org_owner', 'tour_operator'].includes(userProfile.role) && (
+        {profile && ['system_admin', 'org_owner', 'tour_operator'].includes(profile.role) && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
