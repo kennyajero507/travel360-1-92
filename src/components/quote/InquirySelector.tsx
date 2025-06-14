@@ -5,13 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { FileText, Calendar, Users, MapPin } from "lucide-react";
-import { Inquiry } from "../../services/inquiryService";
+import { InquiryData } from "../../types/inquiry.types";
 import { format } from "date-fns";
 
 interface InquirySelectorProps {
-  inquiries: Inquiry[];
-  selectedInquiry: Inquiry | null;
-  onInquirySelect: (inquiry: Inquiry | null) => void;
+  inquiries: InquiryData[];
+  selectedInquiry: InquiryData | null;
+  onInquirySelect: (inquiry: InquiryData | null) => void;
   loading?: boolean;
 }
 
@@ -31,7 +31,7 @@ const InquirySelector: React.FC<InquirySelectorProps> = ({
     onInquirySelect(inquiry || null);
   };
 
-  const formatTravelerCount = (inquiry: Inquiry) => {
+  const formatTravelerCount = (inquiry: InquiryData) => {
     const parts = [];
     if (inquiry.adults > 0) parts.push(`${inquiry.adults} Adult${inquiry.adults > 1 ? 's' : ''}`);
     if (inquiry.children > 0) parts.push(`${inquiry.children} Child${inquiry.children > 1 ? 'ren' : ''}`);

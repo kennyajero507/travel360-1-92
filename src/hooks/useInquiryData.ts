@@ -1,7 +1,6 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import * as inquiryService from '../services/inquiryService';
+import * as inquiryService from '../services/inquiry';
 import { InquiryInsertData, InquiryData } from '../types/inquiry.types';
 
 export const useInquiries = () => {
@@ -10,10 +9,6 @@ export const useInquiries = () => {
     queryFn: () => {
       console.log('[useInquiries] Fetching all inquiries');
       return inquiryService.getAllInquiries();
-    },
-    onError: (error: Error) => {
-      console.error('[useInquiries] Error fetching inquiries:', error);
-      toast.error(`Failed to fetch inquiries: ${error.message}`);
     },
   });
 };

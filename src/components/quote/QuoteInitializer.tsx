@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -12,7 +11,7 @@ import { Calendar } from "../ui/calendar";
 import { format } from "date-fns";
 import { cn } from "../../lib/utils";
 import { QuoteData } from "../../types/quote.types";
-import { Inquiry } from "../../services/inquiryService";
+import { InquiryData as Inquiry } from "../../types/inquiry.types";
 
 interface QuoteInitializerProps {
   onInitializeQuote: (quote: QuoteData) => void;

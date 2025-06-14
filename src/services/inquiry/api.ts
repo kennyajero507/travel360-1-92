@@ -1,13 +1,7 @@
 
-import { supabase } from "../integrations/supabase/client";
-import { InquiryData, InquiryInsertData } from "../types/inquiry.types";
-
-export class InquiryValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'InquiryValidationError';
-  }
-}
+import { supabase } from "../../../integrations/supabase/client";
+import { InquiryData, InquiryInsertData } from "../../../types/inquiry.types";
+import { InquiryValidationError } from "./errors";
 
 export const createInquiry = async (inquiryData: InquiryInsertData) => {
   console.log('[InquiryService] Creating inquiry:', inquiryData);
@@ -135,25 +129,19 @@ export const assignInquiryToAgent = async (inquiryId: string, agentId: string, a
   return data;
 };
 
-export const inquiryService = {
-  async getAvailableInquiries(): Promise<InquiryData[]> {
-    console.log('[InquiryService] Fetching available inquiries for quotes');
-    
-    const { data, error } = await supabase
-      .from('inquiries')
-      .select('*')
-      .in('status', ['New', 'Assigned'])
-      .order('created_at', { ascending: false });
+export const getAvailableInquiries = async (): Promise<InquiryData[]> => {
+  console.log('[InquiryService] Fetching available inquiries for quotes');
+  
+  const { data, error } = await supabase
+    .from('inquiries')
+    .select('*')
+    .in('status', ['New', 'Assigned'])
+    .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('[InquiryService] Error fetching inquiries:', error);
-      throw error;
-    }
-
-    return data || [];
-  },
-
-  async getInquiryById(id: string): Promise<InquiryData | null> {
-    return getInquiryById(id);
+  if (error) {
+    console.error('[InquiryService] Error fetching inquiries:', error);
+    throw error;
   }
+
+  return data || [];
 };

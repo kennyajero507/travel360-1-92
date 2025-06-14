@@ -1,22 +1,21 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { useQuoteData } from "../hooks/useQuoteData";
-import { inquiryService, Inquiry } from "../services/inquiryService";
-import QuoteInitializer from "../components/quote/QuoteInitializer";
+import { inquiryService } from "../services/inquiry";
 import InquirySelector from "../components/quote/InquirySelector";
 import { QuoteData } from "../types/quote.types";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { FileText, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
+import { InquiryData } from "../types/inquiry.types";
 
 const CreateQuote = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { createQuote } = useQuoteData();
-  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
+  const [selectedInquiry, setSelectedInquiry] = useState<InquiryData | null>(null);
   const [quotesForInquiry, setQuotesForInquiry] = useState<any[]>([]);
 
   // Check if inquiry ID is provided in URL params
