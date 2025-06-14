@@ -1,131 +1,105 @@
 
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Building, Loader2, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from './ui/alert';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import OrganizationForm from "./auth/OrganizationForm";
+import { Building, CheckCircle, Clock } from "lucide-react";
+import { Alert, AlertDescription } from "./ui/alert";
 
 const OrganizationSetup = () => {
-  const { createOrganization, profile, refreshProfile } = useAuth();
-  const [organizationName, setOrganizationName] = useState('');
+  const { createOrganization, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleCreateOrganization = async (organizationName: string) => {
     if (!organizationName.trim()) {
       setError("Organization name is required");
       return;
     }
 
-    setLoading(true);
     setError(null);
+    setLoading(true);
     
     try {
-      console.log('[OrgSetup] Creating organization:', organizationName.trim());
-      
-      const success = await createOrganization(organizationName.trim());
-      
+      const success = await createOrganization(organizationName);
       if (success) {
-        console.log('[OrgSetup] Organization created successfully');
-        
-        // Wait a moment and refresh the profile
-        setTimeout(async () => {
-          await refreshProfile();
-          // Force a page reload to ensure the new org is reflected throughout the app
-          window.location.href = '/dashboard';
-        }, 1500);
+        setSuccess(true);
+        // Auto-redirect after success
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else {
         setError("Failed to create organization. Please try again.");
       }
-    } catch (error) {
-      console.error('[OrgSetup] Error creating organization:', error);
-      setError("An error occurred while creating the organization. Please try again.");
+    } catch (error: any) {
+      setError(error.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
 
-  // Don't show if user already has an organization
-  if (profile?.org_id) {
-    console.log('[OrgSetup] User already has organization, redirecting to dashboard');
-    window.location.href = '/dashboard';
-    return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Setting up your account...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Only show for org_owner role
-  if (profile?.role !== 'org_owner') {
-    console.log('[OrgSetup] User is not org_owner, redirecting to dashboard');
-    window.location.href = '/dashboard';
-    return null;
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <CardTitle className="text-green-800">Organization Created!</CardTitle>
+            <CardDescription>
+              Your organization has been set up successfully. Redirecting you to the dashboard...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mb-4">
-            <Building className="w-6 h-6 text-teal-600" />
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-teal-100 flex items-center justify-center">
+            <Building className="h-8 w-8 text-teal-600" />
           </div>
-          <CardTitle className="text-2xl">Setup Your Organization</CardTitle>
-          <p className="text-slate-600">
-            Create your organization to start managing your travel business
-          </p>
+          <CardTitle className="text-2xl font-bold text-gray-800">
+            Set Up Your Organization
+          </CardTitle>
+          <CardDescription className="text-gray-600">
+            Welcome {profile?.full_name}! Let's create your travel business organization.
+          </CardDescription>
         </CardHeader>
+        
         <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+          {profile?.role !== 'org_owner' && (
+            <Alert className="mb-6">
+              <Clock className="h-4 w-4" />
+              <AlertDescription>
+                It looks like you're joining as a {profile?.role}. Please contact your organization owner to get added to their team.
+              </AlertDescription>
             </Alert>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="organizationName">Organization Name</Label>
-              <Input
-                id="organizationName"
-                type="text"
-                placeholder="e.g., Acme Travel Agency"
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                required
-                disabled={loading}
-              />
-              <p className="text-xs text-gray-500">
-                This will be the name of your travel business in TravelFlow360
-              </p>
-            </div>
-            
-            <div className="bg-blue-50 p-4 rounded-md border border-blue-200 text-sm">
-              <p className="font-semibold text-blue-700">What happens next:</p>
-              <ul className="list-disc ml-5 mt-2 text-blue-700">
-                <li>2-week free trial automatically included</li>
-                <li>Access to your organization dashboard</li>
-                <li>Ability to invite team members</li>
-                <li>Manage hotels and create quotes</li>
-              </ul>
-            </div>
-            
-            <Button
-              type="submit"
-              className="w-full bg-teal-600 hover:bg-teal-700"
-              disabled={loading || !organizationName.trim()}
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Organization...
-                </div>
-              ) : (
-                'Create Organization'
-              )}
-            </Button>
-          </form>
+          {profile?.role === 'org_owner' && (
+            <OrganizationForm
+              onSubmit={handleCreateOrganization}
+              loading={loading}
+              error={error}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

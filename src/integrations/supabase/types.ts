@@ -1712,6 +1712,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      repair_user_profile: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
       reset_monthly_counters: {
         Args: Record<PropertyKey, never>
         Returns: undefined
