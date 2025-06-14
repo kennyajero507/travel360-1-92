@@ -2,6 +2,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllBookings, getBookingById, updateBookingStatus, createBookingFromQuote } from '../services/bookingService';
 import { toast } from 'sonner';
+import type { BookingStatus } from '../types/booking.types';
 
 export const useBookingData = () => {
   const queryClient = useQueryClient();
@@ -27,7 +28,7 @@ export const useBookingData = () => {
     }
   };
 
-  const updateStatus = async (bookingId: string, status: string) => {
+  const updateStatus = async (bookingId: string, status: BookingStatus) => {
     try {
       console.log('[useBookingData] Updating booking status:', bookingId, status);
       
