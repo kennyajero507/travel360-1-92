@@ -29,6 +29,7 @@ import BookingDetails from "./pages/BookingDetails";
 import Vouchers from "./pages/Vouchers";
 import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
+import Analytics from "./pages/Analytics";
 import TeamManagementPage from "./pages/TeamManagement";
 
 const queryClient = new QueryClient({
@@ -99,6 +100,9 @@ function App() {
 
                     {/* Reports */}
                     <Route path="reports" element={<Reports />} />
+
+                    {/* Analytics */}
+                    <Route path="analytics" element={<Analytics />} />
 
                     {/* Team Management */}
                     <Route path="team" element={<TeamManagementPage />} />

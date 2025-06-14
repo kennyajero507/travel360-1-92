@@ -5,12 +5,11 @@ import OrganizationSetup from "../components/OrganizationSetup";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { FileText, Users, Calendar, ArrowUp, MessageSquare, Receipt, ClipboardList, TrendingUp } from "lucide-react";
 import { Progress } from "../components/ui/progress";
-import { useRole } from "../contexts/RoleContext";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 
 const Dashboard = () => {
-  const { profile, loading } = useAuth();
+  const { profile, loading, role } = useAuth();
   
   // Show loading state
   if (loading) {
@@ -29,7 +28,6 @@ const Dashboard = () => {
     return <OrganizationSetup />;
   }
 
-  const { role } = useRole();
   const isAgent = role === 'agent';
   
   return (
