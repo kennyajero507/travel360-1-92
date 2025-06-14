@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import * as inquiryService from '../services/inquiry';
-import { InquiryInsertData, InquiryData } from '../types/inquiry.types';
+import * as inquiryService from '@/services/inquiry';
+import { InquiryInsertData, InquiryData } from '@/types/inquiry.types';
 
 export const useInquiries = () => {
   return useQuery({

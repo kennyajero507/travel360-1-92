@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { FileText, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { InquiryData } from "../types/inquiry.types";
+import QuoteInitializer from "../components/quote/QuoteInitializer";
 
 const CreateQuote = () => {
   const navigate = useNavigate();

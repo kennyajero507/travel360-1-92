@@ -1,6 +1,6 @@
 
-import { supabase } from "../../../integrations/supabase/client";
-import { InquiryData, InquiryInsertData } from "../../../types/inquiry.types";
+import { supabase } from "@/integrations/supabase/client";
+import { InquiryData, InquiryInsertData } from "@/types/inquiry.types";
 import { InquiryValidationError } from "./errors";
 
 export const createInquiry = async (inquiryData: InquiryInsertData) => {

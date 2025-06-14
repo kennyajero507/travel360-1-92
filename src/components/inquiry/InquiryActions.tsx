@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { 
   DropdownMenu,
@@ -10,7 +9,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { FileText, MoreHorizontal, MessageSquare, UserCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { deleteInquiry } from "../../services/inquiryService";
+import { deleteInquiry } from "@/services/inquiry";
 import { useAuth } from "../../contexts/AuthContext";
 
 interface InquiryActionsProps {

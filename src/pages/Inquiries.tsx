@@ -231,7 +231,7 @@ const Inquiries = () => {
         handleAssignInquiry={handleAssignInquiry}
         selectedAgent={selectedAgent}
         setSelectedAgent={setSelectedAgent}
-        agents={agents}
+        agentList={agents}
         isAssigning={assignInquiryMutation.isPending}
       />
     </div>
