@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -13,6 +12,20 @@ import {
   BookingStatus,
 } from "../types/booking.types";
 import { isValidBookingStatus, isValidPaymentStatus } from "../utils/typeHelpers";
+
+// Helper: parse "JSON" field if typeof is string
+function parseJsonArray<T>(val: any): T[] {
+  if (Array.isArray(val)) return val as T[];
+  if (typeof val === "string") {
+    try {
+      const arr = JSON.parse(val);
+      return Array.isArray(arr) ? arr as T[] : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 // Create or get booking from quote
 export const createBookingFromQuote = async (
