@@ -1,7 +1,6 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
-import { TravelVoucher } from "../types/booking.types";
+import { TravelVoucher, Booking } from "../types/booking.types";
 
 // Voucher management
 export const getAllVouchers = async (): Promise<TravelVoucher[]> => {
@@ -57,4 +56,31 @@ export const updateVoucherEmailStatus = async (voucherId: string, emailSent: boo
     console.error('Error updating voucher email status:', error);
     throw error;
   }
+};
+
+export const createVoucher = async (booking: Booking): Promise<TravelVoucher> => {
+  const voucherReference = `V-${booking.booking_reference}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+  const newVoucher: Omit<TravelVoucher, 'id' | 'created_at' | 'updated_at'> = {
+    booking_id: booking.id,
+    voucher_reference: voucherReference,
+    issued_date: new Date().toISOString(),
+    email_sent: false,
+    notes: 'Voucher generated from system.',
+    voucher_pdf_url: '',
+  };
+
+  const { data, error } = await supabase
+    .from('travel_vouchers')
+    .insert(newVoucher)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating voucher:', error);
+    toast.error('Failed to create voucher');
+    throw error;
+  }
+  
+  return data;
 };

@@ -12,6 +12,7 @@ import BookingAnalyticsDashboard from "../components/booking/BookingAnalyticsDas
 import BookingFilters from "../components/booking/BookingFilters";
 import { BookingFilters as FilterType } from "../types/enhanced-booking.types";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Bookings = () => {
   const {
@@ -22,8 +23,10 @@ const Bookings = () => {
     setSelectedBookings,
     updateBookingStatus,
     bulkUpdateStatus,
-    bulkDelete
+    bulkDelete,
+    createVoucher,
   } = useBookingData();
+  const navigate = useNavigate();
   
   const [filters, setFilters] = useState<FilterType>({});
 
@@ -46,14 +49,26 @@ const Bookings = () => {
   };
   
   const handleView = (id: string) => {
-    toast.info(`Navigating to view booking: ${id.substring(0,8)}...`);
-    // In a real app, you would use react-router-dom's navigate function here
-    // e.g., navigate(`/bookings/${id}`);
+    navigate(`/bookings/${id}`);
   };
   
   const handleVoucher = (id: string) => {
-    toast.info(`Generating voucher for booking: ${id.substring(0,8)}...`);
-    // Logic to open voucher generation modal or navigate to a voucher page
+    const booking = bookings.find((b) => b.id === id);
+    if (!booking) {
+      toast.error("Booking not found.");
+      return;
+    }
+
+    toast.info(`Generating voucher for ${booking.booking_reference}...`);
+
+    createVoucher(booking)
+      .then((newVoucher) => {
+        navigate(`/vouchers?bookingId=${newVoucher.booking_id}`);
+      })
+      .catch((error) => {
+        // Error toast is handled in useBookingData mutation's onError
+        console.error("Voucher creation failed", error);
+      });
   };
   
   const handleBulkUpdate = (status: BookingStatus) => {

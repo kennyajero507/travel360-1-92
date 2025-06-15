@@ -1,12 +1,12 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getAllBookings } from '../services/bookingReadService';
 import { updateBookingStatus as apiUpdateStatus } from '../services/bookingUpdateService';
 import { bookingCreateService } from '../services/bookingCreateService';
 import { enhancedBookingService } from '../services/enhancedBookingService';
-import { Booking, BookingStatus } from '../types/booking.types';
+import { Booking, BookingStatus, TravelVoucher } from '../types/booking.types';
 import { useState } from 'react';
+import { createVoucher as apiCreateVoucher } from '../services/voucherService';
 
 export const useBookingData = () => {
   const queryClient = useQueryClient();
@@ -42,6 +42,18 @@ export const useBookingData = () => {
     },
     onError: (err: any) => {
       toast.error(`Failed to create booking: ${err.message}`);
+    },
+  });
+
+  // Mutation for creating a voucher
+  const createVoucherMutation = useMutation({
+    mutationFn: (booking: Booking): Promise<TravelVoucher> => apiCreateVoucher(booking),
+    onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ['vouchers'] });
+        toast.success(`Voucher ${data.voucher_reference} created!`);
+    },
+    onError: (err: any) => {
+        toast.error(`Failed to create voucher: ${err.message}`);
     },
   });
 
@@ -85,6 +97,7 @@ export const useBookingData = () => {
     error,
     updateBookingStatus: updateStatusMutation.mutate,
     createBooking: createBookingMutation.mutateAsync,
+    createVoucher: createVoucherMutation.mutateAsync,
     bulkUpdateStatus: bulkUpdateStatusMutation.mutateAsync,
     bulkDelete: bulkDeleteMutation.mutateAsync,
     selectedBookings,

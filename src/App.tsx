@@ -18,6 +18,7 @@ import Hotels from "./pages/Hotels";
 import Inquiries from "./pages/Inquiries";
 import Quotes from "./pages/Quotes";
 import Bookings from "./pages/Bookings";
+import BookingDetails from "./pages/BookingDetails";
 import CreateInquiry from "./pages/CreateInquiry";
 import CreateQuote from "./pages/CreateQuote";
 import EditQuote from "./pages/EditQuote";
@@ -82,6 +83,7 @@ function App() {
                 <Route path="/quotes/create" element={<CreateQuote />} />
                 <Route path="/quotes/:quoteId" element={<EditQuote />} />
                 <Route path="/bookings" element={<Bookings />} />
+                <Route path="/bookings/:id" element={<BookingDetails />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/clients" element={<Clients />} />
