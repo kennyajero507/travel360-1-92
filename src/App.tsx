@@ -28,6 +28,7 @@ import Vouchers from "./pages/Vouchers";
 import CreateHotel from "./pages/CreateHotel";
 import HotelDetails from "./pages/HotelDetails";
 import EditHotel from "./pages/EditHotel";
+import EditInquiry from "./pages/EditInquiry";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ function App() {
                 <Route path="/hotels/:hotelId/edit" element={<EditHotel />} />
                 <Route path="/inquiries" element={<Inquiries />} />
                 <Route path="/inquiries/create" element={<CreateInquiry />} />
+                <Route path="/inquiries/edit/:inquiryId" element={<EditInquiry />} />
                 <Route path="/quotes" element={<Quotes />} />
                 <Route path="/quotes/create" element={<CreateQuote />} />
                 <Route path="/quotes/:quoteId" element={<EditQuote />} />
