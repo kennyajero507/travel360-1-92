@@ -26,94 +26,106 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, FileText } from "lucide-react";
-import { toast } from "sonner";
-
-// Mock client data
-const mockClients = [
-  {
-    id: "C-001",
-    name: "Sarah Johnson",
-    email: "sarah.johnson@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, USA",
-    activeQuotes: 1,
-    totalQuotes: 5,
-  },
-  {
-    id: "C-002",
-    name: "Michael Chen",
-    email: "michael.chen@example.com",
-    phone: "+1 (555) 987-6543",
-    location: "Toronto, Canada",
-    activeQuotes: 2,
-    totalQuotes: 3,
-  },
-  {
-    id: "C-003",
-    name: "Emily Rodriguez",
-    email: "emily.rodriguez@example.com",
-    phone: "+1 (555) 567-8901",
-    location: "Chicago, USA",
-    activeQuotes: 0,
-    totalQuotes: 2,
-  },
-  {
-    id: "C-004",
-    name: "David Kim",
-    email: "david.kim@example.com",
-    phone: "+1 (555) 234-5678",
-    location: "Los Angeles, USA",
-    activeQuotes: 1,
-    totalQuotes: 1,
-  },
-  {
-    id: "C-005",
-    name: "Maria Garcia",
-    email: "maria.garcia@example.com",
-    phone: "+1 (555) 345-6789",
-    location: "Miami, USA",
-    activeQuotes: 0,
-    totalQuotes: 4,
-  },
-];
+import { Plus, MoreHorizontal, FileText, Loader2 } from "lucide-react";
+import { useClientsData } from "../hooks/useClientsData";
+import { NewClient } from "../types/client.types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Clients = () => {
-  const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newClient, setNewClient] = useState({
+  const [newClient, setNewClient] = useState<NewClient>({
     name: "",
     email: "",
     phone: "",
     location: ""
   });
+  
+  const { clients, isLoading, isError, search, setSearch, createClient } = useClientsData();
 
-  // Filter clients based on search term
-  const filteredClients = mockClients.filter(client => {
-    const searchLower = search.toLowerCase();
-    return (
-      client.name.toLowerCase().includes(searchLower) ||
-      client.email.toLowerCase().includes(searchLower) ||
-      client.location.toLowerCase().includes(searchLower) ||
-      client.id.toLowerCase().includes(searchLower)
-    );
-  });
-
-  // Handle add client form submission
-  const handleAddClient = (e: React.FormEvent) => {
+  const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real app, you would add the client to the database via an API call
-    console.log("New client:", newClient);
-    
-    toast.success("Client added successfully!");
+    await createClient(newClient);
     setIsDialogOpen(false);
-    setNewClient({
-      name: "",
-      email: "",
-      phone: "",
-      location: ""
-    });
+    setNewClient({ name: "", email: "", phone: "", location: "" });
+  };
+  
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center space-x-4 p-4">
+              <Skeleton className="h-10 w-1/6" />
+              <Skeleton className="h-10 w-1/6" />
+              <Skeleton className="h-10 w-1/6" />
+              <Skeleton className="h-10 w-1/6" />
+              <Skeleton className="h-10 w-1/6" />
+              <Skeleton className="h-10 w-1/6" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    if (isError) {
+      return (
+        <div className="text-center py-10 text-red-500">
+          <p>Failed to load clients. Please try again later.</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Client ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {clients.map((client) => (
+              <TableRow key={client.id}>
+                <TableCell className="font-medium">{client.id.substring(0, 8)}...</TableCell>
+                <TableCell>{client.name}</TableCell>
+                <TableCell>{client.email}</TableCell>
+                <TableCell>{client.phone}</TableCell>
+                <TableCell>{client.location}</TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Client Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Create New Quote
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Client Quotes
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
   };
 
   return (
@@ -169,7 +181,7 @@ const Clients = () => {
                 </label>
                 <Input
                   id="phone"
-                  value={newClient.phone}
+                  value={newClient.phone || ''}
                   onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
                   placeholder="Enter phone number"
                 />
@@ -180,7 +192,7 @@ const Clients = () => {
                 </label>
                 <Input
                   id="location"
-                  value={newClient.location}
+                  value={newClient.location || ''}
                   onChange={(e) => setNewClient({...newClient, location: e.target.value})}
                   placeholder="City, Country"
                 />
@@ -207,59 +219,7 @@ const Clients = () => {
             />
           </div>
 
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Active Quotes</TableHead>
-                  <TableHead>Total Quotes</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.id}</TableCell>
-                    <TableCell>{client.name}</TableCell>
-                    <TableCell>{client.email}</TableCell>
-                    <TableCell>{client.phone}</TableCell>
-                    <TableCell>{client.location}</TableCell>
-                    <TableCell>{client.activeQuotes}</TableCell>
-                    <TableCell>{client.totalQuotes}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <FileText className="mr-2 h-4 w-4" />
-                            View Client Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <FileText className="mr-2 h-4 w-4" />
-                            Create New Quote
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <FileText className="mr-2 h-4 w-4" />
-                            View Client Quotes
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {renderContent()}
         </CardContent>
       </Card>
     </div>

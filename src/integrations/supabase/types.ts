@@ -113,6 +113,50 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string
+          id: string
+          location: string | null
+          name: string
+          org_id: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          id?: string
+          location?: string | null
+          name: string
+          org_id?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          id?: string
+          location?: string | null
+          name?: string
+          org_id?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           content: string
@@ -1101,6 +1145,10 @@ export type Database = {
       calculate_quote_summary: {
         Args: { quote_id_param: string }
         Returns: Json
+      }
+      get_user_org_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
     }
     Enums: {
