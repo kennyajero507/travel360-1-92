@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -43,7 +44,7 @@ const ClientQuotePreviewComponent: React.FC<ClientQuotePreviewProps> = ({
               </p>
             </div>
             <Badge variant="outline" className="text-lg px-4 py-2">
-              {formatAmount(quote.totalCost, quote.currency)}
+              {formatAmount(quote.totalCost)}
             </Badge>
           </div>
           {isApproved && approvedHotel && (
@@ -97,10 +98,10 @@ const ClientQuotePreviewComponent: React.FC<ClientQuotePreviewProps> = ({
                         )}
                       </div>
                       <div className="mt-1 text-muted-foreground text-sm">
-                        Price per night: {formatAmount(option.pricePerNight, option.currencyCode)}
+                        Price per night: {formatAmount(option.pricePerNight)}
                       </div>
                       <div className="text-muted-foreground text-sm">
-                        Total: <b>{formatAmount(option.totalPrice, option.currencyCode)}</b>
+                        Total: <b>{formatAmount(option.totalPrice)}</b>
                       </div>
                     </div>
                     <div>
@@ -114,7 +115,7 @@ const ClientQuotePreviewComponent: React.FC<ClientQuotePreviewProps> = ({
                         )
                       ) : (
                         <Button
-                          variant="success"
+                          variant="default"
                           disabled={approving}
                           onClick={() => onChoosePackage(option.id)}
                         >
