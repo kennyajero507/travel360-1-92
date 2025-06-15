@@ -50,13 +50,15 @@ export const BrandingSettings = () => {
         return;
       }
 
-      setSettings({
-        company_name: data.name || '',
-        logo_url: data.logo_url || '',
-        tagline: data.tagline || '',
-        primary_color: data.primary_color || '#0d9488',
-        secondary_color: data.secondary_color || '#64748b'
-      });
+      if (data) {
+        setSettings({
+          company_name: data.name || '',
+          logo_url: data.logo_url || '',
+          tagline: data.tagline || '',
+          primary_color: data.primary_color || '#0d9488',
+          secondary_color: data.secondary_color || '#64748b'
+        });
+      }
     } catch (error) {
       console.error('Error in loadBrandingSettings:', error);
       errorHandler.handleError(error, 'BrandingSettings.loadBrandingSettings');

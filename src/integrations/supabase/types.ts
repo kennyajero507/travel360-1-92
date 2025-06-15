@@ -601,23 +601,35 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          logo_url: string | null
           name: string
           owner_id: string | null
+          primary_color: string | null
+          secondary_color: string | null
           subscription_tier: string | null
+          tagline: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          logo_url?: string | null
           name: string
           owner_id?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
           subscription_tier?: string | null
+          tagline?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
           owner_id?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
           subscription_tier?: string | null
+          tagline?: string | null
         }
         Relationships: []
       }
