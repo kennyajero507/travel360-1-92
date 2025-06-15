@@ -10,17 +10,52 @@ import { BrandingSettings } from "../components/settings/BrandingSettings";
 import InvitationManager from "../components/InvitationManager";
 import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import { useAuth } from "../contexts/AuthContext";
+import { AlertCircle } from "lucide-react";
+import { Card, CardContent } from "../components/ui/card";
+import { useRLSGuard } from "../hooks/useRLSGuard";
 
 const Settings = () => {
-  const { profile } = useAuth();
-  
+  const { profile, error } = useAuth();
+  const { rlsError } = useRLSGuard();
+
   const isOrgOwner = profile?.role === 'org_owner';
   const isTourOperator = profile?.role === 'tour_operator';
   const isSystemAdmin = profile?.role === 'system_admin';
-  
+
+  // If user's org_id is unset or forbidden by RLS, show a warning
+  const orgDataForbidden = (!profile?.org_id && !isSystemAdmin);
+
   // Check if user can manage business settings
   const canManageBusinessSettings = isOrgOwner || isTourOperator || isSystemAdmin;
-  
+
+  // If user is forbidden by RLS or has critical error
+  if (orgDataForbidden || rlsError || error) {
+    return (
+      <div className="p-8 max-w-xl mx-auto">
+        <Card>
+          <CardContent className="flex flex-col items-center text-center gap-3 py-8">
+            <AlertCircle className="h-8 w-8 text-red-500 mb-1" />
+            <span className="font-semibold text-lg text-red-700">
+              {rlsError
+                ? "Access Denied"
+                : "Organization Setup Required"
+              }
+            </span>
+            <p className="text-sm text-gray-600 mb-3">
+              {rlsError
+                ? rlsError
+                : "You must be part of an organization to access these settings. Please contact your administrator, or create a new organization from your account."
+              }
+            </p>
+            {error && (
+              <div className="text-xs text-gray-400">System message: {error}</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6">
@@ -102,3 +137,4 @@ const Settings = () => {
 };
 
 export default Settings;
+
