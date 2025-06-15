@@ -1,4 +1,3 @@
-
 export interface RoomType {
   id: string;
   name: string;
@@ -8,6 +7,7 @@ export interface RoomType {
   ratePerPersonPerNight?: number;
   amenities: string[];
   totalUnits: number;
+  isOutOfOrder?: boolean; // <--- Added for maintenance/out of order state
 }
 
 export interface HotelAdditionalDetails {

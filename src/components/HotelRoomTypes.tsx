@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "../components/ui/button";
 import { 
@@ -11,7 +10,7 @@ import {
 } from "../components/ui/table";
 import { Input } from "../components/ui/input";
 import { RoomType } from "../types/hotel.types";
-import { BedDouble, Edit, Trash } from "lucide-react";
+import { BedDouble, Edit, Trash, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface HotelRoomTypesProps {
@@ -48,6 +47,7 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
     totalUnits: 1
   });
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: keyof Omit<RoomType, 'id'>) => {
     const value = field === 'maxOccupancy' || field === 'ratePerNight' || field === 'ratePerPersonPerNight' || field === 'totalUnits'
@@ -137,12 +137,32 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
     });
   };
 
+  // Open dialog for room type deletion
   const handleDeleteRoomType = (roomId: string) => {
+    setShowDeleteDialog(roomId);
+  };
+
+  // Actually confirm deletion
+  const confirmDeleteRoomType = (roomId: string) => {
     if (onRemoveRoomType) {
       onRemoveRoomType(roomId);
     } else {
       setRoomTypes(roomTypes.filter(room => room.id !== roomId));
     }
+    toast.success("Room type deleted.");
+    setShowDeleteDialog(null);
+  };
+
+  // Maintenance/out-of-order toggle
+  const toggleOutOfOrder = (roomId: string) => {
+    if (onUpdateRoomType) {
+      onUpdateRoomType(roomId, "isOutOfOrder", !(roomTypes.find(r => r.id === roomId)?.isOutOfOrder));
+    } else {
+      setRoomTypes(roomTypes.map(room => 
+        room.id === roomId ? { ...room, isOutOfOrder: !room.isOutOfOrder } : room
+      ));
+    }
+    toast.info("Room maintenance state updated.");
   };
 
   const handleSave = () => {
@@ -244,6 +264,7 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
             <TableHead>Rate per Night</TableHead>
             <TableHead>Per Person Rate</TableHead>
             <TableHead>Units</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -256,15 +277,41 @@ const HotelRoomTypes: React.FC<HotelRoomTypesProps> = ({
               <TableCell>${room.ratePerNight.toFixed(2)}</TableCell>
               <TableCell>${(room.ratePerPersonPerNight || 0).toFixed(2)}</TableCell>
               <TableCell>{room.totalUnits}</TableCell>
-              <TableCell className="text-right">
+              <TableCell>
+                {room.isOutOfOrder ? (
+                  <span className="inline-flex items-center text-orange-500">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    Out of Order
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center text-green-700">
+                    Available
+                  </span>
+                )}
+              </TableCell>
+              <TableCell className="text-right flex gap-1 justify-end">
                 <Button variant="ghost" size="sm" onClick={() => handleEditRoomType(room.id)}>
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => toggleOutOfOrder(room.id)}>
+                  {room.isOutOfOrder ? "Unmark" : "Mark OOO"}
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => handleDeleteRoomType(room.id)}>
-                  <Trash className="h-4 w-4 mr-2" />
+                  <Trash className="h-4 w-4 mr-1" />
                   Delete
                 </Button>
+                {/* Delete confirmation dialog */}
+                {showDeleteDialog === room.id && (
+                  <div className="absolute z-10 bg-white border p-4 rounded shadow-md right-0 top-12">
+                    <div className="font-semibold mb-2">Delete room type?</div>
+                    <div className="text-sm text-gray-600 mb-4">Are you sure you want to delete "{room.name}"? This cannot be undone.</div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(null)}>Cancel</Button>
+                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteRoomType(room.id)}>Delete</Button>
+                    </div>
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           ))}

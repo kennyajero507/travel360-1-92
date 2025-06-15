@@ -123,7 +123,15 @@ export const hotelService = {
   async updateHotel(id: string, updates: Partial<Hotel>): Promise<Hotel | null> {
     try {
       console.log('[HotelService] Updating hotel:', id, updates);
-      
+
+      // Ensure isOutOfOrder is preserved for all room types
+      if (updates.room_types && Array.isArray(updates.room_types)) {
+        updates.room_types = updates.room_types.map(rt => ({
+          ...rt,
+          isOutOfOrder: rt.isOutOfOrder || false
+        }));
+      }
+
       const { data, error } = await supabase
         .from('hotels')
         .update({
