@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,6 +11,7 @@ import OrganizationSetup from "./components/OrganizationSetup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import DashboardPage from "./pages/DashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -27,21 +27,22 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route 
-                path="/dashboard" 
+                path="/"
                 element={
                   <AuthGuard>
-                    <Dashboard />
+                    <DashboardPage />
                   </AuthGuard>
-                } 
+                }
               />
               <Route 
-                path="/organization-setup" 
+                path="/dashboard"
                 element={
                   <AuthGuard>
-                    <OrganizationSetup />
+                    <DashboardPage />
                   </AuthGuard>
-                } 
+                }
               />
+              {/* Admin dashboard route stays for now */}
               <Route 
                 path="/admin/dashboard" 
                 element={
