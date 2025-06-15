@@ -13,7 +13,7 @@ interface AuthContextType {
   permissions: ReturnType<typeof getPermissionsForRole>;
   tier: string;
   loading: boolean;
-  isLoading: boolean; // for backward compat
+  isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -37,7 +37,7 @@ interface AuthContextType {
   setTier: (tier: string) => void;
 }
 
-// Default stub permissions + method impls for first render
+// Default permissions and stub methods
 const initialPermissions = defaultPermissions["org_owner"];
 const initialContext: AuthContextType = {
   session: null,
@@ -78,7 +78,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper: load organization by org_id
+  // Helper: load organization (null if not found)
   const loadOrganization = useCallback(async (org_id: string | null) => {
     if (!org_id) {
       setOrganization(null);
@@ -96,7 +96,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     setOrganization(data);
   }, []);
 
-  // Fetch active profile from DB
+  // Fetch profile + set org/role/permissions
   const fetchProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
     try {
       const profile = await profileService.fetchUserProfile(uid);
@@ -129,13 +129,14 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     await refreshProfile();
   }, [refreshProfile]);
 
+  // Auth state listener (no async logic here to avoid deadlocks)
   useEffect(() => {
     let ignore = false;
     setLoading(true);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user || null);
-      // Important: Don't fetchProfile directly here, but with setTimeout to avoid deadlocks
       if (session?.user) {
         setLoading(true);
         setTimeout(async () => {
@@ -150,6 +151,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         setLoading(false);
       }
     });
+
     // Initial session load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -164,7 +166,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     return () => { ignore = true; subscription.unsubscribe(); };
   }, [fetchProfile]);
 
-  // Login handler
+  // Login
   const login = async (email: string, password: string) => {
     setError(null);
     setLoading(true);
@@ -180,7 +182,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     return true;
   };
 
-  // Logout handler
+  // Logout
   const logout = async () => {
     setLoading(true);
     await supabase.auth.signOut();
@@ -193,7 +195,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     setLoading(false);
   };
 
-  // Signup handler (with profile upsert on onboarding)
+  // Signup (with required redirect URL)
   const signup = async (
     email: string,
     password: string,
@@ -217,20 +219,22 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       },
     });
     setLoading(false);
-    if (signUpError || !data.user) {
+    if (signUpError) {
       setError(signUpError?.message || "Signup failed.");
       return false;
     }
-    setSession(data.session || null);
-    setUser(data.user);
-    // Profile will be created via trigger
-    setTimeout(async () => {
-      await fetchProfile(data.user!.id);
-    }, 0);
+    // If email confirmation required, user is null here
+    if (data.user) {
+      setSession(data.session || null);
+      setUser(data.user);
+      setTimeout(async () => {
+        await fetchProfile(data.user!.id);
+      }, 0);
+    }
     return true;
   };
 
-  // Profile updater
+  // Profile update
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) {
       setError("Not logged in.");
@@ -249,26 +253,19 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     }
   };
 
-  // Role-based access check
+  // Check role and permissions
   const checkRoleAccess = useCallback(
-    (roles: string[]) => {
-      if (!role) return false;
-      return roles.includes(role);
-    },
+    (roles: string[]) => (role ? roles.includes(role) : false),
     [role]
   );
-
-  // Permission check
   const hasPermission = useCallback(
-    (perm: string) => {
-      return permissions?.[perm] ?? false;
-    },
+    (perm: string) => Boolean(permissions?.[perm]),
     [permissions]
   );
 
-  // ---- Organization and Invitation logic ----
+  // ---- Org/invitations ----
 
-  // Org creation (FIXED: set org_id on profile after org creation)
+  // Organization creation
   const createOrganization = async (orgName: string) => {
     setLoading(true);
     setError(null);
@@ -277,7 +274,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setError("Not logged in");
       return false;
     }
-    // Insert org
+    // Create org
     const { data, error: orgError } = await supabase
       .from("organizations")
       .insert([{ name: orgName, owner_id: user.id }])
@@ -290,7 +287,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     }
     setOrganization(data);
 
-    // PATCH profile with new org_id immediately to avoid setup loop
+    // Link profile with new org_id
     const { error: profileUpdateError } = await supabase
       .from("profiles")
       .update({
@@ -304,13 +301,12 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       return false;
     }
 
-    // Refresh profile (already will reload page in org setup component)
     await refreshProfile();
     setLoading(false);
     return true;
   };
 
-  // Send invitation (stub)
+  // Invitation & org helpers (unchanged, only relevant when extending team)
   const sendInvitation = async (email: string, invitedRole: string) => {
     setLoading(true);
     setError(null);
@@ -319,7 +315,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setLoading(false);
       return false;
     }
-    // Insert into invitations table
     const { error: inviteError } = await supabase
       .from("invitations")
       .insert({
@@ -335,7 +330,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     return true;
   };
 
-  // Get invitations (stub)
   const getInvitations = async () => {
     if (!organization || !organization.id) return [];
     const { data, error: invError } = await supabase
@@ -347,11 +341,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     return data || [];
   };
 
-  // Accept invitation (stub)
   const acceptInvitation = async (token: string) => {
-    // Here you would call an edge function or backend RPC to accept invite
     setLoading(true);
-    // (Stub implementation here; integrate real logic as needed.)
     setLoading(false);
     return true;
   };
