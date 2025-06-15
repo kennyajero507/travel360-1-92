@@ -63,22 +63,25 @@ class EnhancedQuoteService {
   // Enhanced save with validation and error handling
   async saveQuote(quote: QuoteData): Promise<QuoteData> {
     try {
-      console.log('[EnhancedQuoteService] Saving quote:', quote.id);
+      console.log('[EnhancedQuoteService] Attempting to save quote:', quote);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        toast.error('You must be logged in to save a quote.');
         throw new Error('User not authenticated');
       }
 
       // Validate quote before saving
       const validation = this.validateQuote(quote);
       if (!validation.isValid && validation.errors.length > 0) {
-        console.warn('[EnhancedQuoteService] Quote validation warnings:', validation.warnings);
+        console.warn('[EnhancedQuoteService] Quote has validation warnings:', validation.warnings);
       }
 
+      const isNewQuote = !quote.id || quote.id.startsWith('quote-');
+      console.log('[EnhancedQuoteService] Is new quote?', isNewQuote);
+
       // Prepare data for database with proper JSON serialization
-      const dbQuoteData = {
-        id: quote.id.startsWith('quote-') ? crypto.randomUUID() : quote.id,
+      const dbQuoteData: any = {
         inquiry_id: quote.inquiry_id || null,
         client: quote.client,
         mobile: quote.mobile,
@@ -108,30 +111,29 @@ class EnhancedQuoteService {
 
       let data, error;
 
-      if (quote.id && !quote.id.startsWith('quote-')) {
+      if (isNewQuote) {
+        // Create new quote, letting the DB generate the ID
+        console.log('[EnhancedQuoteService] Creating new quote in DB with data:', dbQuoteData);
+        dbQuoteData.created_at = new Date().toISOString();
+        
+        ({ data, error } = await supabase
+          .from('quotes')
+          .insert([dbQuoteData])
+          .select()
+          .single());
+      } else {
         // Update existing quote
+        console.log(`[EnhancedQuoteService] Updating quote ${quote.id} with data:`, dbQuoteData);
         ({ data, error } = await supabase
           .from('quotes')
           .update(dbQuoteData)
           .eq('id', quote.id)
           .select()
           .single());
-      } else {
-        // Create new quote
-        const newQuote = {
-          ...dbQuoteData,
-          created_at: new Date().toISOString()
-        };
-        
-        ({ data, error } = await supabase
-          .from('quotes')
-          .insert([newQuote])
-          .select()
-          .single());
       }
 
       if (error) {
-        console.error('[EnhancedQuoteService] Error saving quote:', error);
+        console.error('[EnhancedQuoteService] Error saving quote to Supabase:', error);
         toast.error('Failed to save quote: ' + error.message);
         throw error;
       }
@@ -140,10 +142,14 @@ class EnhancedQuoteService {
       this.pendingChanges.delete(quote.id);
       
       const savedQuote = this.transformQuoteData(data);
-      console.log('[EnhancedQuoteService] Quote saved successfully:', savedQuote.id);
+      console.log('[EnhancedQuoteService] Quote saved successfully:', savedQuote);
       return savedQuote;
     } catch (error) {
-      console.error('[EnhancedQuoteService] Error in saveQuote:', error);
+      console.error('[EnhancedQuoteService] Critical error in saveQuote:', error);
+      // Avoid re-toasting if already handled by specific logic
+      if (!(error instanceof Error && (error.message.includes('User not authenticated') || error.message.includes('Failed to save quote')))) {
+        toast.error('An unexpected error occurred while saving the quote.');
+      }
       throw error;
     }
   }

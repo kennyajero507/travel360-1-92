@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreHorizontal, Eye, Trash2, Edit, FileText } from "lucide-react";
@@ -12,7 +11,7 @@ import { toast } from "sonner";
 
 interface QuoteTableProps {
   quotes: QuoteData[];
-  onDelete: (quoteId: string) => Promise<void>;
+  onDelete: (quoteId: string) => void;
 }
 
 const statusVariant: { [key in QuoteStatus]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -30,12 +29,8 @@ export const QuoteTable = ({ quotes, onDelete }: QuoteTableProps) => {
     navigate(`/quotes/${quoteId}`);
   };
 
-  const handleDelete = async (quoteId: string) => {
-    try {
-      await onDelete(quoteId);
-    } catch (error) {
-        // error is handled by the hook
-    }
+  const handleDelete = (quoteId: string) => {
+    onDelete(quoteId);
   }
 
   const handleViewInquiry = (inquiryId: string) => {

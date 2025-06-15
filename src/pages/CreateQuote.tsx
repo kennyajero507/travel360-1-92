@@ -13,10 +13,12 @@ const CreateQuote = () => {
     const handleQuoteCreate = async (quote: QuoteData) => {
         try {
             const savedQuote = await createQuote(quote);
-            toast.success("Quote created successfully! Redirecting to editor...");
+            // The success toast is now handled consistently in the useQuoteData hook.
+            // A toast with "Redirecting..." could be added here if desired.
             navigate(`/quotes/${savedQuote.id}`);
         } catch (error) {
-            // error is already toasted by the hook
+            // error is already toasted by the hook, so no action needed here.
+            console.error("Quote creation failed:", error);
         }
     };
 
