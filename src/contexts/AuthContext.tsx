@@ -257,6 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error("You must belong to an organization to send invitations.");
       return false;
     }
+    // Just support role/organization invitations as defined in DB
     return await authService.sendInvitation(email, role, profile.org_id);
   };
 
@@ -264,6 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!profile?.org_id) {
       return [];
     }
+    // Only fetch from invitations (table exists)
     return await authService.getInvitations(profile.org_id);
   };
 
