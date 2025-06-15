@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -31,29 +32,35 @@ const Vouchers = () => {
   const query = useQuery();
   const bookingIdFilter = query.get('bookingId');
   
+  const loadVouchers = useCallback(async () => {
+    try {
+      const data = await getAllVouchers();
+      setVouchers(data);
+      
+      // Apply filter if bookingId is provided
+      if (bookingIdFilter) {
+        setFilteredVouchers(data.filter(v => v.booking_id === bookingIdFilter));
+      } else {
+        setFilteredVouchers(data);
+      }
+    } catch (error) {
+      console.error("Error loading vouchers:", error);
+      toast.error("Failed to load vouchers data");
+    }
+  }, [bookingIdFilter]);
+  
   // Load vouchers data
   useEffect(() => {
-    const loadVouchers = async () => {
+    const initialLoad = async () => {
+      setLoading(true);
       try {
-        const data = await getAllVouchers();
-        setVouchers(data);
-        
-        // Apply filter if bookingId is provided
-        if (bookingIdFilter) {
-          setFilteredVouchers(data.filter(v => v.booking_id === bookingIdFilter));
-        } else {
-          setFilteredVouchers(data);
-        }
-      } catch (error) {
-        console.error("Error loading vouchers:", error);
-        toast.error("Failed to load vouchers data");
+        await loadVouchers();
       } finally {
         setLoading(false);
       }
     };
-    
-    loadVouchers();
-  }, [bookingIdFilter]);
+    initialLoad();
+  }, [loadVouchers]);
   
   // Handle email sending
   const handleSendEmail = async (voucher: any) => {
