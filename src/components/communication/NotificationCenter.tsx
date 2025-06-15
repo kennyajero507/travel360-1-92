@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -68,6 +67,16 @@ const NotificationCenter = ({ bookingId }: NotificationCenterProps) => {
     } catch (error) {
       console.error('Error sending notification:', error);
       toast.error('Failed to send notification');
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    try {
+      // This previously had a parameter; updated so it's .sendNotification() with no arguments.
+      await enhancedBookingService.sendNotification();
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      toast.error('Failed to send test notification');
     }
   };
 

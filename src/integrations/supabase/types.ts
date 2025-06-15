@@ -513,6 +513,241 @@ export type Database = {
           },
         ]
       }
+      quote_accommodations: {
+        Row: {
+          created_at: string | null
+          hotel_name: string
+          id: string
+          nights: number
+          num_rooms: number
+          quote_id: string | null
+          rate_per_night: number
+          room_type: string
+          subtotal: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          hotel_name: string
+          id?: string
+          nights?: number
+          num_rooms?: number
+          quote_id?: string | null
+          rate_per_night?: number
+          room_type: string
+          subtotal?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          hotel_name?: string
+          id?: string
+          nights?: number
+          num_rooms?: number
+          quote_id?: string | null
+          rate_per_night?: number
+          room_type?: string
+          subtotal?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_accommodations_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_excursions: {
+        Row: {
+          activity_type: string
+          adult_cost: number | null
+          child_cost: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          number_of_children: number | null
+          number_of_people: number | null
+          quote_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          activity_type: string
+          adult_cost?: number | null
+          child_cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          number_of_children?: number | null
+          number_of_people?: number | null
+          quote_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          activity_type?: string
+          adult_cost?: number | null
+          child_cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          number_of_children?: number | null
+          number_of_people?: number | null
+          quote_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_excursions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_markup: {
+        Row: {
+          created_at: string | null
+          id: string
+          markup_type: string
+          quote_id: string | null
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          markup_type?: string
+          quote_id?: string | null
+          updated_at?: string | null
+          value?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          markup_type?: string
+          quote_id?: string | null
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_markup_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_transfers_new: {
+        Row: {
+          adult_cost: number | null
+          child_cost: number | null
+          created_at: string | null
+          id: string
+          no_adults: number | null
+          no_children: number | null
+          quote_id: string | null
+          ticket_type: string | null
+          transfer_operator: string | null
+          transfer_type: string
+          travel_route: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          adult_cost?: number | null
+          child_cost?: number | null
+          created_at?: string | null
+          id?: string
+          no_adults?: number | null
+          no_children?: number | null
+          quote_id?: string | null
+          ticket_type?: string | null
+          transfer_operator?: string | null
+          transfer_type: string
+          travel_route?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          adult_cost?: number | null
+          child_cost?: number | null
+          created_at?: string | null
+          id?: string
+          no_adults?: number | null
+          no_children?: number | null
+          quote_id?: string | null
+          ticket_type?: string | null
+          transfer_operator?: string | null
+          transfer_type?: string
+          travel_route?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_transfers_new_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_transport: {
+        Row: {
+          cost_per_person: number
+          created_at: string | null
+          description: string | null
+          id: string
+          mode: string | null
+          num_passengers: number
+          operator: string | null
+          quote_id: string | null
+          route: string | null
+          total_cost: number
+          transport_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          cost_per_person?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          mode?: string | null
+          num_passengers?: number
+          operator?: string | null
+          quote_id?: string | null
+          route?: string | null
+          total_cost?: number
+          transport_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          cost_per_person?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          mode?: string | null
+          num_passengers?: number
+          operator?: string | null
+          quote_id?: string | null
+          route?: string | null
+          total_cost?: number
+          transport_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_transport_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           activities: Json | null
@@ -664,7 +899,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_quote_summary: {
+        Args: { quote_id_param: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
