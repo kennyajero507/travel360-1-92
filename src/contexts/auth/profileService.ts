@@ -3,31 +3,38 @@ import { supabase } from '../../integrations/supabase/client';
 import { UserProfile } from './types';
 
 export const profileService = {
-  async fetchUserProfile(userId: string): Promise<UserProfile | null> {
-    console.log(`[ProfileService] Fetching profile for user: ${userId}`);
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+  // Retry-aware profile fetch with improved error surfacing
+  async fetchUserProfile(userId: string, maxRetries = 2): Promise<UserProfile | null> {
+    let lastError: any = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
 
-      if (error) {
-        console.error('[ProfileService] Error fetching user profile:', error.message);
-        return null;
+        if (error) {
+          lastError = error;
+          console.error(`[ProfileService] Error fetching user profile (attempt ${attempt + 1}):`, error.message);
+          if (error.code === 'PGRST116' /* Not found */) continue;
+        }
+
+        if (!data) {
+          lastError = '[ProfileService] No profile found';
+          continue;
+        }
+
+        return data as UserProfile;
+      } catch (err) {
+        lastError = err;
+        console.error(`[ProfileService] Unexpected error fetching profile (attempt ${attempt + 1}):`, err);
       }
-
-      if (!data) {
-        console.log('[ProfileService] No profile found for user:', userId);
-        return null;
-      }
-
-      console.log("[ProfileService] Profile fetched successfully:", data);
-      return data as UserProfile;
-    } catch (err) {
-      console.error('[ProfileService] Unexpected error:', err);
-      return null;
+      // Exponential backoff
+      if (attempt < maxRetries) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
     }
+    // All retries failed
+    if (lastError) console.error('[ProfileService] Profile fetch ultimately failed:', lastError);
+    return null;
   },
 };

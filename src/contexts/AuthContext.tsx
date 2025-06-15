@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -72,64 +71,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tier, setTier] = useState<SubscriptionTier>('starter');
   const [permissions, setPermissions] = useState<Permissions>(getPermissionsForRole('agent'));
 
-  const fetchProfile = useCallback(async (user: User): Promise<void> => {
+  // Robust profile fetching with extra retry & logging
+  const fetchProfile = useCallback(async (user: User, retries = 3): Promise<void> => {
     try {
-      console.log(`[AuthContext] Fetching profile for user: ${user.id}`);
       setError(null);
-      
       const userProfileData = await profileService.fetchUserProfile(user.id);
-      
+
       if (userProfileData) {
-        console.log('[AuthContext] Profile fetched successfully:', userProfileData);
         setProfile(userProfileData);
         return;
       }
-      
-      // If profile is null, it might be a new user or there was an issue
-      console.log('[AuthContext] No profile found, checking if this is a new user...');
-      
-      // For new users, the trigger should have created the profile
-      // If we still don't have one after a short delay, something is wrong
-      setTimeout(async () => {
-        const retryProfile = await profileService.fetchUserProfile(user.id);
-        if (retryProfile) {
-          setProfile(retryProfile);
-        } else {
-          console.error('[AuthContext] Profile still not found after retry');
-          setError('Profile not found. Please try logging out and back in.');
-        }
-      }, 2000);
-      
+
+      // Profile not found — retry with backoff
+      if (retries > 0) {
+        setTimeout(() => fetchProfile(user, retries - 1), 1000 * (4 - retries)); // 1s, 2s, 3s
+      } else {
+        setError('Profile not found after several retries. Please contact support or try logging out and in.');
+      }
     } catch (e: any) {
-      console.error(`[AuthContext] Profile fetch error:`, e);
-      setError('Unable to load profile. Please try refreshing the page.');
+      setError('Unable to load profile. ' + (e?.message || 'Please try refreshing the page.'));
+      console.error("[AuthContext] Profile fetch error:", e);
     }
   }, []);
 
+  // Profile repair now attempts a fetch again if profile missing
   const repairProfile = useCallback(async (): Promise<void> => {
     if (!user) return;
-    
     try {
-      console.log('[AuthContext] Attempting to repair profile...');
-      const { error } = await supabase.rpc('repair_user_profile', { 
-        user_id_param: user.id 
-      });
-      
+      setError(null);
+      const { error } = await supabase.rpc('repair_user_profile', { user_id_param: user.id });
       if (error) {
+        setError('Failed to repair profile. Please contact support.');
         console.error('[AuthContext] Profile repair failed:', error);
         return;
       }
-      
-      console.log('[AuthContext] Profile repair successful');
-      
-      // Retry fetching the profile
       await fetchProfile(user);
-      
     } catch (error) {
+      setError('Critical error repairing profile. Please refresh or contact support.');
       console.error('[AuthContext] Profile repair error:', error);
     }
   }, [user, fetchProfile]);
-  
+
   // Derived role data
   const role = (profile?.role as UserRole) || 'agent';
 
@@ -190,50 +172,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [role, tier]);
   
   useEffect(() => {
-    const initializeAuth = async () => {
-      console.log('[AuthContext] Initializing auth...');
-      setLoading(true);
-      
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log('[AuthContext] Session retrieved:', !!currentSession);
-        
-        setSession(currentSession);
-        const currentUser = currentSession?.user ?? null;
-        setUser(currentUser);
-        
-        if (currentUser) {
-          await fetchProfile(currentUser);
-        }
-      } catch (e: any) {
-        console.error('[AuthContext] Auth initialization error:', e);
-        setError(e.message);
-      } finally {
+    let didCancel = false;
+
+    setLoading(true);
+
+    // Set up RLS-safe auth state listener (NO async in callback)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      setSession(newSession);
+      const newUser = newSession?.user ?? null;
+      setUser(newUser);
+
+      // Defer async fetch to outside synchronous callback
+      if (event === 'SIGNED_IN' && newUser) {
+        setLoading(true);
+        setTimeout(() => {
+          if (!didCancel) fetchProfile(newUser);
+          setLoading(false);
+        }, 0);
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setError(null);
+      }
+    });
+
+    // Initial session load (also defer fetch so logic is same as auth callback)
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      const currentUser = currentSession?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        setTimeout(() => {
+          if (!didCancel) fetchProfile(currentUser);
+          setLoading(false);
+        }, 0);
+      } else {
         setLoading(false);
       }
-    };
+    });
 
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('[AuthContext] Auth state changed:', event);
-        setSession(newSession);
-        const newUser = newSession?.user ?? null;
-        setUser(newUser);
-        
-        if (event === 'SIGNED_IN' && newUser) {
-          setLoading(true);
-          await fetchProfile(newUser);
-          setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setError(null);
-        }
-      }
-    );
-    
     return () => {
+      didCancel = true;
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
@@ -298,11 +276,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return success;
   };
 
+  // Adjusted loading logic: loading or profile not loaded
+  const isAppLoading = loading || (session && !profile && !error);
+
   const value: AuthContextType = {
     session,
     user,
     profile,
-    loading,
+    loading: isAppLoading,
     error,
     login: authService.login,
     signup: authService.signup,
