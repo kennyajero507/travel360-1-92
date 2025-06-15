@@ -1,17 +1,16 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
 import { QuoteData } from "../types/quote.types";
 import { useBookingData } from "../hooks/useBookingData";
 import { useHotelsData } from "../hooks/useHotelsData";
 import { Booking, RoomArrangement, BookingTransport, BookingActivity, BookingTransfer } from "../types/booking.types";
+import QuoteSummaryCard from "../components/booking/QuoteSummaryCard";
+import BookingDetailsForm from "../components/booking/BookingDetailsForm";
+import BookingLoading from "../components/booking/BookingLoading";
 
 const CreateBooking = () => {
   const navigate = useNavigate();
@@ -141,12 +140,7 @@ const CreateBooking = () => {
   };
 
   if (!selectedQuote) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Loading Quote...</h2>
-        <p className="text-gray-600">Please wait while we load the quote details.</p>
-      </div>
-    );
+    return <BookingLoading />;
   }
 
   return (
@@ -162,96 +156,17 @@ const CreateBooking = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Quote Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quote Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Client</Label>
-                <p className="text-gray-900">{selectedQuote.client}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Destination</Label>
-                <p className="text-gray-900">{selectedQuote.destination}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Travel Dates</Label>
-                <p className="text-gray-900">
-                  {new Date(selectedQuote.start_date).toLocaleDateString()} - {new Date(selectedQuote.end_date).toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Duration</Label>
-                <p className="text-gray-900">{selectedQuote.duration_nights} nights, {selectedQuote.duration_days} days</p>
-              </div>
-            </div>
+        <QuoteSummaryCard 
+          quote={selectedQuote}
+          totalPrice={calculateTotalPrice(selectedQuote)}
+        />
+        
+        <BookingDetailsForm 
+          formData={formData}
+          onFormChange={setFormData}
+          loading={loading}
+        />
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Adults</Label>
-                <p className="text-gray-900">{selectedQuote.adults}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Children with Bed</Label>
-                <p className="text-gray-900">{selectedQuote.children_with_bed}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Children no Bed</Label>
-                <p className="text-gray-900">{selectedQuote.children_no_bed}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Infants</Label>
-                <p className="text-gray-900">{selectedQuote.infants}</p>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-medium">Total Amount</span>
-                <span className="text-xl font-bold text-teal-600">
-                  ${calculateTotalPrice(selectedQuote).toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Booking Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Booking Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="agentId">Assigned Agent</Label>
-                <Input
-                  id="agentId"
-                  value={formData.agentId}
-                  onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
-                  placeholder="Enter agent ID (optional)"
-                  disabled
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Add any additional notes for this booking..."
-                rows={4}
-                disabled={loading}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Submit Button */}
         <div className="flex justify-end space-x-4">
           <Button type="button" variant="outline" onClick={() => navigate('/quotes')} disabled={loading}>
             Cancel
