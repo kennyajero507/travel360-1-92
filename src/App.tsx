@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -29,6 +28,7 @@ import Vouchers from "./pages/Vouchers";
 import CreateHotel from "./pages/CreateHotel";
 import HotelDetails from "./pages/HotelDetails";
 import EditHotel from "./pages/EditHotel";
+import InquiryDetails from "./pages/InquiryDetails";
 import EditInquiry from "./pages/EditInquiry";
 import TeamManagementPage from "./pages/TeamManagement";
 import AgentManagement from "./pages/AgentManagement";
@@ -84,6 +84,7 @@ function App() {
                 <Route path="/hotels/:hotelId/edit" element={<EditHotel />} />
                 <Route path="/inquiries" element={<Inquiries />} />
                 <Route path="/inquiries/create" element={<CreateInquiry />} />
+                <Route path="/inquiries/:inquiryId" element={<InquiryDetails />} />
                 <Route path="/inquiries/edit/:inquiryId" element={<EditInquiry />} />
                 <Route path="/quotes" element={<Quotes />} />
                 <Route path="/quotes/create" element={<CreateQuote />} />
