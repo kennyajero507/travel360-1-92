@@ -53,6 +53,7 @@ export type Database = {
           hotel_name: string
           id: string
           notes: string | null
+          org_id: string | null
           quote_id: string | null
           room_arrangement: Json | null
           status: string
@@ -73,6 +74,7 @@ export type Database = {
           hotel_name: string
           id?: string
           notes?: string | null
+          org_id?: string | null
           quote_id?: string | null
           room_arrangement?: Json | null
           status?: string
@@ -93,6 +95,7 @@ export type Database = {
           hotel_name?: string
           id?: string
           notes?: string | null
+          org_id?: string | null
           quote_id?: string | null
           room_arrangement?: Json | null
           status?: string
