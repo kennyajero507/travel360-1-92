@@ -38,7 +38,7 @@ interface AuthContextType {
 }
 
 // Default stub permissions + method impls for first render
-const initialPermissions = defaultPermissions["org_owner"] ?? {};
+const initialPermissions = defaultPermissions["org_owner"];
 const initialContext: AuthContextType = {
   session: null,
   user: null,
@@ -103,9 +103,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       if (profile) {
         setRole(profile.role || null);
         setTier("basic");
-        // Use as string because UserRole enum/type is likely string union,
-        // if you have UserRole type adjust as needed
-        setPermissions(getPermissionsForRole((profile.role || "org_owner") as string));
+        setPermissions(getPermissionsForRole((profile.role || "org_owner") as any));
         if (profile.org_id) await loadOrganization(profile.org_id);
         else setOrganization(null);
       }

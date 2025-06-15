@@ -1,16 +1,14 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-import { QuoteHotelOption } from '../../services/quoteHotelOptionsService';
 import { MapPin, Check, DollarSign } from 'lucide-react';
 
 interface ClientQuoteSelectionProps {
   quoteId: string;
-  hotelOptions: QuoteHotelOption[];
+  hotelOptions: any[]; // Change type from QuoteHotelOption[] to any[]
   onOptionSelect: (optionId: string, feedback?: string) => void;
   selectedOptionId?: string;
   isReadOnly?: boolean;

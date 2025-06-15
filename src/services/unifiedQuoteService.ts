@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
@@ -97,95 +96,14 @@ export class UnifiedQuoteService {
     }
   }
 
-  // Quote package operations using proper database tables
-  async createQuotePackage(quotes: QuoteData[], packageName: string): Promise<string> {
-    try {
-      console.log('[UnifiedQuoteService] Creating quote package with proper database tables');
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        const authError = new Error('User not authenticated');
-        authError.name = 'AuthenticationError';
-        throw authError;
-      }
-
-      // Create the quote package
-      const { data: packageData, error: packageError } = await supabase
-        .from('quote_packages')
-        .insert([{
-          package_name: packageName,
-          client_name: quotes[0]?.client || 'Unknown Client',
-          created_by: user.id,
-          status: 'draft'
-        }])
-        .select()
-        .single();
-
-      if (packageError) throw packageError;
-
-      // Create package items for each quote
-      const packageItems = quotes.map((quote, index) => ({
-        package_id: packageData.id,
-        quote_id: quote.id,
-        option_name: `Option ${index + 1}`
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('quote_package_items')
-        .insert(packageItems);
-
-      if (itemsError) throw itemsError;
-
-      toast.success('Quote package created successfully');
-      return packageData.id;
-    } catch (error) {
-      console.error('[UnifiedQuoteService] Error creating quote package:', error);
-      errorHandler.handleError(error, 'createQuotePackage');
-      throw error;
-    }
-  }
-
-  async getQuotePackage(packageId: string) {
-    try {
-      console.log('[UnifiedQuoteService] Fetching quote package:', packageId);
-      
-      // Get package data
-      const { data: packageData, error: packageError } = await supabase
-        .from('quote_packages')
-        .select('*')
-        .eq('id', packageId)
-        .single();
-
-      if (packageError) throw packageError;
-
-      // Get package items with quote details
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('quote_package_items')
-        .select(`
-          *,
-          quotes (*)
-        `)
-        .eq('package_id', packageId);
-
-      if (itemsError) throw itemsError;
-
-      return {
-        id: packageData.id,
-        package_name: packageData.package_name,
-        client_name: packageData.client_name,
-        status: packageData.status,
-        quotes: itemsData?.map(item => ({
-          ...this.transformQuoteData(item.quotes),
-          isSelected: item.is_selected,
-          option_name: item.option_name
-        })) || []
-      };
-    } catch (error) {
-      console.error('[UnifiedQuoteService] Error fetching quote package:', error);
-      errorHandler.handleError(error, 'getQuotePackage');
-      throw error;
-    }
-  }
+  // --- Disabled quote package logic due to missing tables ---
+  // async createQuotePackage(quotes: QuoteData[], packageName: string): Promise<string> {
+  //   throw new Error("Quote package feature is not available: missing database tables.");
+  // }
+  // async getQuotePackage(packageId: string) {
+  //   throw new Error("Quote package feature is not available: missing database tables.");
+  // }
+  // --- End disabled logic ---
 
   // Real-time summary calculation
   async calculateQuoteSummary(quoteId: string): Promise<QuoteSummaryData> {
