@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import LogoSettings from './LogoSettings';
+import { BrandingSettings } from '../settings/BrandingSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 
 const SystemSettings = () => {
@@ -18,7 +18,7 @@ const SystemSettings = () => {
         </TabsList>
         
         <TabsContent value="branding" className="mt-6">
-          <LogoSettings />
+          <BrandingSettings />
         </TabsContent>
         
         <TabsContent value="platform" className="mt-6">

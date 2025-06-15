@@ -6,7 +6,7 @@ import { DestinationManagement } from "../components/settings/DestinationManagem
 import { PackageTemplates } from "../components/settings/PackageTemplates";
 import { QuoteSettings } from "../components/settings/QuoteSettings";
 import { TransferSettings } from "../components/settings/TransferSettings";
-import { LogoSettings } from "../components/settings/LogoSettings";
+import { BrandingSettings } from "../components/settings/BrandingSettings";
 import InvitationManager from "../components/InvitationManager";
 import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import { useAuth } from "../contexts/AuthContext";
@@ -61,7 +61,7 @@ const Settings = () => {
 
         {(isOrgOwner || isSystemAdmin) && (
           <TabsContent value="branding" className="space-y-6">
-            <LogoSettings />
+            <BrandingSettings />
           </TabsContent>
         )}
 
