@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -48,6 +49,7 @@ import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminAccessControl from "./pages/admin/AdminAccessControl";
 import AdminEmailTemplates from "./pages/admin/AdminEmailTemplates";
 import AdminMaintenance from "./pages/admin/AdminMaintenance";
+import AdminLayout from "./components/admin/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -69,7 +71,33 @@ function App() {
                 element={<AdminLogin />}
               />
 
-              {/* Protected Routes with Sidebar Layout */}
+              {/* Admin Portal: ALL /admin* routes get wrapped in AdminLayout */}
+              <Route
+                path="/admin"
+                element={
+                  <AuthGuard allowedRoles={['system_admin']}>
+                    <AdminLayout />
+                  </AuthGuard>
+                }
+              >
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="health" element={<AdminSystemHealth />} />
+                <Route path="analytics" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUserManagement />} />
+                <Route path="organizations" element={<AdminOrganizationManagement />} />
+                <Route path="roles" element={<AdminRoles />} />
+                <Route path="database" element={<AdminDatabase />} />
+                <Route path="logs" element={<AdminLogs />} />
+                <Route path="monitoring" element={<AdminMonitoring />} />
+                <Route path="security" element={<AdminDashboard />} />
+                <Route path="audit" element={<AdminAuditLogs />} />
+                <Route path="access" element={<AdminAccessControl />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="templates" element={<AdminEmailTemplates />} />
+                <Route path="maintenance" element={<AdminMaintenance />} />
+              </Route>
+
+              {/* User Portal: All non-admin features go here */}
               <Route
                 element={
                   <AuthGuard>
@@ -79,14 +107,6 @@ function App() {
               >
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route
-                  path="/admin/dashboard"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminDashboard />
-                    </AuthGuard>
-                  }
-                />
                 <Route 
                   path="/organization/setup"
                   element={<OrganizationSetup />}
@@ -113,120 +133,6 @@ function App() {
                 <Route path="/vouchers/:voucherId" element={<VoucherDetailsPage />} />
                 <Route path="/team" element={<TeamManagementPage />} />
                 <Route path="/agent-management" element={<AgentManagement />} />
-                <Route
-                  path="/admin/health"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminSystemHealth />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/analytics"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      {/* Reuse AdminDashboard for now */}
-                      <AdminDashboard />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/users"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminUserManagement />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/organizations"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminOrganizationManagement />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/roles"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminRoles />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/database"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminDatabase />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/logs"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminLogs />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/monitoring"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminMonitoring />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/security"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      {/* Reuse AdminDashboard for now */}
-                      <AdminDashboard />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/audit"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminAuditLogs />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/access"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminAccessControl />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/settings"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminSettings />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/templates"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminEmailTemplates />
-                    </AuthGuard>
-                  }
-                />
-                <Route
-                  path="/admin/maintenance"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminMaintenance />
-                    </AuthGuard>
-                  }
-                />
               </Route>
             </Routes>
           </BrowserRouter>
@@ -245,3 +151,4 @@ function App() {
 }
 
 export default App;
+
