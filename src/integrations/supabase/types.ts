@@ -323,7 +323,11 @@ export type Database = {
           days_count: number | null
           description: string | null
           destination: string
+          document_checklist: Json | null
           enquiry_number: string | null
+          estimated_budget_range: string | null
+          flight_preference: string | null
+          guide_language_preference: string | null
           id: string
           infants: number
           lead_source: string | null
@@ -331,11 +335,19 @@ export type Database = {
           num_rooms: number | null
           org_id: string | null
           package_name: string | null
+          passport_expiry_date: string | null
+          preferred_currency: string | null
           priority: string | null
+          regional_preference: string | null
+          special_requirements: string | null
           status: string
           tour_consultant: string | null
           tour_type: string
+          transport_mode_preference: string | null
+          travel_insurance_required: boolean | null
           updated_at: string | null
+          visa_required: boolean | null
+          workflow_stage: string | null
         }
         Insert: {
           adults: number
@@ -354,7 +366,11 @@ export type Database = {
           days_count?: number | null
           description?: string | null
           destination: string
+          document_checklist?: Json | null
           enquiry_number?: string | null
+          estimated_budget_range?: string | null
+          flight_preference?: string | null
+          guide_language_preference?: string | null
           id: string
           infants: number
           lead_source?: string | null
@@ -362,11 +378,19 @@ export type Database = {
           num_rooms?: number | null
           org_id?: string | null
           package_name?: string | null
+          passport_expiry_date?: string | null
+          preferred_currency?: string | null
           priority?: string | null
+          regional_preference?: string | null
+          special_requirements?: string | null
           status?: string
           tour_consultant?: string | null
           tour_type: string
+          transport_mode_preference?: string | null
+          travel_insurance_required?: boolean | null
           updated_at?: string | null
+          visa_required?: boolean | null
+          workflow_stage?: string | null
         }
         Update: {
           adults?: number
@@ -385,7 +409,11 @@ export type Database = {
           days_count?: number | null
           description?: string | null
           destination?: string
+          document_checklist?: Json | null
           enquiry_number?: string | null
+          estimated_budget_range?: string | null
+          flight_preference?: string | null
+          guide_language_preference?: string | null
           id?: string
           infants?: number
           lead_source?: string | null
@@ -393,11 +421,19 @@ export type Database = {
           num_rooms?: number | null
           org_id?: string | null
           package_name?: string | null
+          passport_expiry_date?: string | null
+          preferred_currency?: string | null
           priority?: string | null
+          regional_preference?: string | null
+          special_requirements?: string | null
           status?: string
           tour_consultant?: string | null
           tour_type?: string
+          transport_mode_preference?: string | null
+          travel_insurance_required?: boolean | null
           updated_at?: string | null
+          visa_required?: boolean | null
+          workflow_stage?: string | null
         }
         Relationships: []
       }

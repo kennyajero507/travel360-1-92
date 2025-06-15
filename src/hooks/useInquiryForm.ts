@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -31,7 +32,22 @@ export const useInquiryForm = () => {
     infants: 0,
     num_rooms: 1,
     priority: 'Normal',
-    assigned_agent: ''
+    assigned_agent: '',
+    // International specific fields
+    visa_required: false,
+    passport_expiry_date: '',
+    preferred_currency: 'USD',
+    flight_preference: '',
+    travel_insurance_required: false,
+    // Domestic specific fields
+    regional_preference: '',
+    transport_mode_preference: '',
+    guide_language_preference: '',
+    // Common enhanced fields
+    estimated_budget_range: '',
+    special_requirements: '',
+    document_checklist: [],
+    workflow_stage: 'initial'
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -84,7 +100,16 @@ export const useInquiryForm = () => {
       ...prev,
       tour_type: tourType,
       destination: '',
-      package_name: ''
+      package_name: '',
+      // Reset type-specific fields when switching
+      visa_required: tourType === 'international' ? false : prev.visa_required,
+      passport_expiry_date: tourType === 'international' ? '' : prev.passport_expiry_date,
+      preferred_currency: tourType === 'international' ? 'USD' : prev.preferred_currency,
+      flight_preference: tourType === 'international' ? '' : prev.flight_preference,
+      travel_insurance_required: tourType === 'international' ? false : prev.travel_insurance_required,
+      regional_preference: tourType === 'domestic' ? '' : prev.regional_preference,
+      transport_mode_preference: tourType === 'domestic' ? '' : prev.transport_mode_preference,
+      guide_language_preference: tourType === 'domestic' ? '' : prev.guide_language_preference
     }));
   };
 
@@ -132,6 +157,19 @@ export const useInquiryForm = () => {
       errors.push("At least 1 room is required");
     }
 
+    // International tour specific validations
+    if (formData.tour_type === 'international') {
+      if (formData.passport_expiry_date) {
+        const passportExpiry = new Date(formData.passport_expiry_date);
+        const sixMonthsFromNow = new Date();
+        sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+        
+        if (passportExpiry <= sixMonthsFromNow) {
+          errors.push("Passport should be valid for at least 6 months from travel date");
+        }
+      }
+    }
+
     // Validation for organization membership
     if (!profile?.org_id && profile?.role !== 'system_admin') {
       errors.push("You must belong to an organization to create inquiries");
@@ -172,7 +210,20 @@ export const useInquiryForm = () => {
       assigned_to: assignedTo,
       assigned_agent_name: assignedAgentName,
       created_by: profile?.id || null,
-      status: status
+      status: status,
+      // New enhanced fields
+      visa_required: formData.tour_type === 'international' ? formData.visa_required : null,
+      passport_expiry_date: formData.tour_type === 'international' && formData.passport_expiry_date ? formData.passport_expiry_date : null,
+      preferred_currency: formData.tour_type === 'international' ? formData.preferred_currency : null,
+      flight_preference: formData.tour_type === 'international' ? formData.flight_preference || null : null,
+      travel_insurance_required: formData.tour_type === 'international' ? formData.travel_insurance_required : null,
+      regional_preference: formData.tour_type === 'domestic' ? formData.regional_preference || null : null,
+      transport_mode_preference: formData.tour_type === 'domestic' ? formData.transport_mode_preference || null : null,
+      guide_language_preference: formData.tour_type === 'domestic' ? formData.guide_language_preference || null : null,
+      estimated_budget_range: formData.estimated_budget_range || null,
+      special_requirements: formData.special_requirements || null,
+      document_checklist: formData.document_checklist.length > 0 ? formData.document_checklist : null,
+      workflow_stage: formData.workflow_stage || 'initial'
     };
 
     console.log('Prepared inquiry data:', inquiryData);

@@ -8,6 +8,9 @@ import { TravelDatesCard } from "./TravelDatesCard";
 import { GroupInformationCard } from "./GroupInformationCard";
 import { AgentAssignmentCard } from "./AgentAssignmentCard";
 import { ValidationErrorsCard } from "./ValidationErrorsCard";
+import { InternationalSpecificCard } from "./InternationalSpecificCard";
+import { DomesticSpecificCard } from "./DomesticSpecificCard";
+import { EnhancedFieldsCard } from "./EnhancedFieldsCard";
 import { useInquiryForm } from "../../hooks/useInquiryForm";
 
 export const CreateInquiryForm = () => {
@@ -69,6 +72,20 @@ export const CreateInquiryForm = () => {
             validationErrors={validationErrors}
             activeTab={activeTab}
           />
+
+          <DomesticSpecificCard 
+            formData={formData} 
+            setFormData={setFormData} 
+            validationErrors={validationErrors}
+            activeTab={activeTab}
+          />
+
+          <EnhancedFieldsCard 
+            formData={formData} 
+            setFormData={setFormData} 
+            validationErrors={validationErrors}
+            activeTab={activeTab}
+          />
           
           {!isAgent && availableAgents.length > 0 && (
             <AgentAssignmentCard 
@@ -112,6 +129,20 @@ export const CreateInquiryForm = () => {
           />
           
           <GroupInformationCard 
+            formData={formData} 
+            setFormData={setFormData} 
+            validationErrors={validationErrors}
+            activeTab={activeTab}
+          />
+
+          <InternationalSpecificCard 
+            formData={formData} 
+            setFormData={setFormData} 
+            validationErrors={validationErrors}
+            activeTab={activeTab}
+          />
+
+          <EnhancedFieldsCard 
             formData={formData} 
             setFormData={setFormData} 
             validationErrors={validationErrors}
