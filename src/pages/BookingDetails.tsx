@@ -251,7 +251,7 @@ const BookingDetails = () => {
         </TabsContent>
 
         <TabsContent value="communications">
-          <NotificationCenter bookingId={booking.id} />
+          <NotificationCenter />
         </TabsContent>
       </Tabs>
     </div>
