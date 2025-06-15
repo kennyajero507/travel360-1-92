@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -24,6 +23,13 @@ const MarkupManagementSection: React.FC<MarkupManagementSectionProps> = ({ quote
     queryFn: () => quoteMarkupService.getByQuoteId(quoteId),
     enabled: !!quoteId
   });
+  // guard for unavailable data or fallback any
+  let markupPercentageValue = 0;
+  let notesValue = '';
+  if (markup && typeof markup === 'object' && 'markup_percentage' in markup) {
+    markupPercentageValue = (markup as any).markup_percentage ?? 0;
+    notesValue = (markup as any).notes ?? '';
+  }
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => quoteMarkupService.createOrUpdate(quoteId, data),
@@ -38,10 +44,9 @@ const MarkupManagementSection: React.FC<MarkupManagementSectionProps> = ({ quote
   });
 
   useEffect(() => {
-    if (markup) {
-      setMarkupPercentage(markup.markup_percentage || 0);
-      setNotes(markup.notes || '');
-    }
+    setMarkupPercentage(markupPercentageValue);
+    setNotes(notesValue);
+    // eslint-disable-next-line
   }, [markup]);
 
   const handleSave = () => {

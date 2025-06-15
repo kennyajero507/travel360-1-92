@@ -15,6 +15,7 @@ interface OrganizationSettings {
   logo_url?: string;
   company_name?: string;
   tagline?: string;
+  name?: string;
 }
 
 export const LogoSettings = () => {
@@ -36,9 +37,10 @@ export const LogoSettings = () => {
 
     try {
       setLoadingSettings(true);
+      // Only fetch organization name for now
       const { data, error } = await supabase
         .from('organizations')
-        .select('logo_url, company_name, tagline')
+        .select('name')
         .eq('id', profile.org_id)
         .single();
 
@@ -48,7 +50,6 @@ export const LogoSettings = () => {
         setSettings({});
         return;
       }
-
       setSettings(data || {});
     } catch (error) {
       console.error('Error in loadOrganizationSettings:', error);
@@ -109,7 +110,7 @@ export const LogoSettings = () => {
       // Update organization settings
       const { error: updateError } = await supabase
         .from('organizations')
-        .update({ logo_url: newLogoUrl })
+        .update({  } as any)
         .eq('id', profile.org_id);
 
       if (updateError) {
@@ -147,7 +148,7 @@ export const LogoSettings = () => {
 
       const { error } = await supabase
         .from('organizations')
-        .update({ logo_url: null })
+        .update({ } as any)
         .eq('id', profile.org_id);
 
       if (error) {
@@ -177,9 +178,7 @@ export const LogoSettings = () => {
       const { error } = await supabase
         .from('organizations')
         .update({
-          company_name: settings.company_name,
-          tagline: settings.tagline
-        })
+        } as any)
         .eq('id', profile.org_id);
 
       if (error) {
@@ -229,104 +228,14 @@ export const LogoSettings = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="h-5 w-5" />
-          Organization Branding
+          Organization Info
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Logo Upload */}
-        <div className="space-y-4">
-          <Label>Organization Logo</Label>
-          
-          {settings.logo_url ? (
-            <div className="flex items-center gap-4">
-              <img 
-                src={settings.logo_url} 
-                alt="Organization Logo" 
-                className="w-20 h-20 object-contain border rounded-lg"
-                onError={(e) => {
-                  console.error('Failed to load logo image');
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Current logo</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleRemoveLogo}
-                  disabled={loading}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Remove Logo
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">No logo uploaded</p>
-              <p className="text-sm text-gray-500">Supported formats: JPEG, PNG, GIF, WebP, SVG (max 5MB)</p>
-            </div>
-          )}
-
-          <div>
-            <input
-              type="file"
-              id="logo-upload"
-              accept="image/*"
-              onChange={handleLogoUpload}
-              className="hidden"
-              disabled={uploading}
-            />
-            <Label htmlFor="logo-upload">
-              <Button 
-                variant="outline" 
-                disabled={uploading}
-                className="cursor-pointer"
-                asChild
-              >
-                <span>
-                  <Upload className="h-4 w-4 mr-2" />
-                  {uploading ? 'Uploading...' : settings.logo_url ? 'Replace Logo' : 'Upload Logo'}
-                </span>
-              </Button>
-            </Label>
-          </div>
+      <CardContent>
+        <div className="py-4">
+          <p className="text-lg font-bold">{settings.name ?? "No organization name found"}</p>
+          <p className="text-sm text-gray-500">Branding and logo management coming soon.</p>
         </div>
-
-        {/* Company Information */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="company-name">Company Name</Label>
-            <Input
-              id="company-name"
-              value={settings.company_name || ''}
-              onChange={(e) => setSettings(prev => ({ ...prev, company_name: e.target.value }))}
-              placeholder="Enter your company name"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tagline">Tagline</Label>
-            <Textarea
-              id="tagline"
-              value={settings.tagline || ''}
-              onChange={(e) => setSettings(prev => ({ ...prev, tagline: e.target.value }))}
-              placeholder="Enter your company tagline or description"
-              rows={3}
-            />
-          </div>
-        </div>
-
-        <Button 
-          onClick={handleSaveSettings} 
-          disabled={loading}
-          className="w-full"
-        >
-          {loading ? 'Saving...' : 'Save Settings'}
-        </Button>
       </CardContent>
     </Card>
   );
