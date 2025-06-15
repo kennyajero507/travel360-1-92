@@ -1,75 +1,76 @@
 
-// EnhancedBookingService is not implemented because bookings table is missing.
-class EnhancedBookingServiceStub {
-  async getFilteredBookings() {
-    return [];
+import { supabase } from "../integrations/supabase/client";
+
+// EnhancedBookingService with actual DB implementations
+class EnhancedBookingService {
+  async getFilteredBookings(filters = {}) {
+    // Basic example: add more filters as needed
+    let query = supabase.from("bookings").select("*").order("created_at", { ascending: false });
+    // Example simple filters
+    // if (filters.status) query = query.eq("status", filters.status);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   }
-  async getBookingAnalytics() {
+
+  async bulkUpdateStatus(ids: string[], status: string) {
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status })
+      .in("id", ids);
+
     return {
-      totalBookings: 0,
-      totalRevenue: 0,
-      conversionRate: 0,
-      averageBookingValue: 0,
-      statusBreakdown: {},
-      monthlyTrends: [],
-      revenueBySource: [],
+      success: !error,
+      processedCount: error ? 0 : ids.length,
+      failedIds: error ? ids : [],
+      error: error ? error.message : null,
     };
   }
-  async getRevenueMetrics() {
+
+  async bulkDelete(ids: string[]) {
+    const { error } = await supabase.from("bookings").delete().in("id", ids);
     return {
-      totalRevenue: 0,
-      totalBookings: 0,
-      averageProfitMargin: 0,
-      monthlyRevenue: [],
+      success: !error,
+      processedCount: error ? 0 : ids.length,
+      failedIds: error ? ids : [],
+      error: error ? error.message : null,
     };
   }
-  async bulkUpdateStatus() {
-    return {
-      success: false,
-      processedCount: 0,
-      failedIds: [],
-      error: "Bookings functionality not implemented.",
-    };
-  }
-  async bulkUpdateBookingStatus() {
-    return {
-      success: false,
-      processedCount: 0,
-      failedIds: [],
-      error: "Bookings functionality not implemented.",
-    };
-  }
-  async bulkDelete() {
-    return {
-      success: false,
-      processedCount: 0,
-      failedIds: [],
-      error: "Bookings functionality not implemented.",
-    };
-  }
+
   async exportBookings() {
-    throw new Error("Bookings functionality not available.");
+    // Implement export as needed
+    throw new Error("Not yet implemented.");
   }
-  async getPayments() {
-    return [];
+
+  async getPaymentsByBooking(bookingId: string) {
+    // Fetch payments for a booking
+    const { data, error } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("booking_id", bookingId);
+    if (error) throw error;
+    return data || [];
   }
-  async getPaymentsByBooking() {
-    return [];
+
+  async recordPayment(payment: any) {
+    const { error } = await supabase.from("payments").insert([payment]);
+    if (error) throw error;
   }
-  async recordPayment() {
-    throw new Error("Payments functionality not implemented (table missing).");
+
+  async updatePaymentStatus(paymentId: string, status: string) {
+    const { error } = await supabase
+      .from("payments")
+      .update({ payment_status: status })
+      .eq("id", paymentId);
+    if (error) throw error;
+    return true;
   }
-  async updatePaymentStatus() {
-    throw new Error("Payments functionality not implemented (table missing).");
-  }
-  async sendNotification() {
-    return false;
-  }
-  async getVoucherTemplates() {
-    return [];
-  }
-  async generateVoucherPDF() {
-    throw new Error("Vouchers functionality not available.");
-  }
+
+  // ... stub for getBookingAnalytics, getRevenueMetrics etc as before (not error-raising)
+  async getBookingAnalytics() { return { totalBookings: 0, totalRevenue: 0 }; }
+  async getRevenueMetrics() { return { totalRevenue: 0, totalBookings: 0 }; }
+  async sendNotification() { return false; }
+  async getVoucherTemplates() { return []; }
+  async generateVoucherPDF() { throw new Error("Not yet implemented."); }
 }
-export const enhancedBookingService = new EnhancedBookingServiceStub();
+export const enhancedBookingService = new EnhancedBookingService();

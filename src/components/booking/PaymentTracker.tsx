@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -22,7 +21,7 @@ interface PaymentTrackerProps {
 }
 
 const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,11 +37,9 @@ const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
     }
   };
 
-  const handleStatusUpdate = async (paymentId: string, status: Payment['payment_status']) => {
-    const success = await enhancedBookingService.updatePaymentStatus(paymentId, status);
-    if (success) {
-      await loadPayments();
-    }
+  const handleStatusUpdate = async (paymentId: string, status: string) => {
+    await enhancedBookingService.updatePaymentStatus(paymentId, status);
+    await loadPayments();
   };
 
   const getStatusBadge = (status: Payment['payment_status']) => {

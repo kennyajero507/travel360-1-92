@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Button } from "../ui/button";
@@ -37,22 +36,21 @@ const RecordPaymentDialog = ({ bookingId, onPaymentRecorded }: RecordPaymentDial
         currency_code: formData.currency_code,
         payment_method: formData.payment_method || undefined,
         payment_status: formData.payment_status,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
       });
 
-      toast.success('Payment recorded successfully');
+      toast.success("Payment recorded successfully");
       setOpen(false);
       setFormData({
-        amount: '',
-        currency_code: 'USD',
-        payment_method: '',
-        payment_status: 'pending',
-        notes: ''
+        amount: "",
+        currency_code: "USD",
+        payment_method: "",
+        payment_status: "pending",
+        notes: "",
       });
       onPaymentRecorded();
     } catch (error) {
-      console.error('Error recording payment:', error);
-      toast.error('Failed to record payment');
+      toast.error("Failed to record payment");
     } finally {
       setLoading(false);
     }

@@ -42,6 +42,77 @@ export type Database = {
         }
         Relationships: []
       }
+      bookings: {
+        Row: {
+          activities: Json | null
+          agent_id: string | null
+          booking_reference: string
+          client: string
+          created_at: string | null
+          hotel_id: string | null
+          hotel_name: string
+          id: string
+          notes: string | null
+          quote_id: string | null
+          room_arrangement: Json | null
+          status: string
+          total_price: number
+          transfers: Json | null
+          transport: Json | null
+          travel_end: string
+          travel_start: string
+          updated_at: string | null
+        }
+        Insert: {
+          activities?: Json | null
+          agent_id?: string | null
+          booking_reference: string
+          client: string
+          created_at?: string | null
+          hotel_id?: string | null
+          hotel_name: string
+          id?: string
+          notes?: string | null
+          quote_id?: string | null
+          room_arrangement?: Json | null
+          status?: string
+          total_price?: number
+          transfers?: Json | null
+          transport?: Json | null
+          travel_end: string
+          travel_start: string
+          updated_at?: string | null
+        }
+        Update: {
+          activities?: Json | null
+          agent_id?: string | null
+          booking_reference?: string
+          client?: string
+          created_at?: string | null
+          hotel_id?: string | null
+          hotel_name?: string
+          id?: string
+          notes?: string | null
+          quote_id?: string | null
+          room_arrangement?: Json | null
+          status?: string
+          total_price?: number
+          transfers?: Json | null
+          transport?: Json | null
+          travel_end?: string
+          travel_start?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_quote_id"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotels: {
         Row: {
           additional_details: Json | null
@@ -242,6 +313,84 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          client_email: string | null
+          client_name: string
+          created_at: string | null
+          created_by: string | null
+          currency_code: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          line_items: Json | null
+          notes: string | null
+          organization_id: string | null
+          paid_date: string | null
+          payment_method: string | null
+          quote_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          booking_id?: string | null
+          client_email?: string | null
+          client_name: string
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          line_items?: Json | null
+          notes?: string | null
+          organization_id?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          quote_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          client_email?: string | null
+          client_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          line_items?: Json | null
+          notes?: string | null
+          organization_id?: string | null
+          paid_date?: string | null
+          payment_method?: string | null
+          quote_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_invoice_booking_id"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_invoice_quote_id"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
@@ -265,6 +414,66 @@ export type Database = {
           subscription_tier?: string | null
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          created_at: string | null
+          currency_code: string
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_status: string
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string | null
+          currency_code?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string | null
+          currency_code?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_payment_booking_id"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_payment_invoice_id"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -402,6 +611,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      travel_vouchers: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          email_sent: boolean
+          id: string
+          issued_by: string | null
+          issued_date: string
+          notes: string | null
+          updated_at: string | null
+          voucher_pdf_url: string | null
+          voucher_reference: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          email_sent?: boolean
+          id?: string
+          issued_by?: string | null
+          issued_date?: string
+          notes?: string | null
+          updated_at?: string | null
+          voucher_pdf_url?: string | null
+          voucher_reference: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          email_sent?: boolean
+          id?: string
+          issued_by?: string | null
+          issued_date?: string
+          notes?: string | null
+          updated_at?: string | null
+          voucher_pdf_url?: string | null
+          voucher_reference?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_voucher_booking_id"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

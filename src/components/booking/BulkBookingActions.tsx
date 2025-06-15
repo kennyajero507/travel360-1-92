@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -50,7 +49,7 @@ const BulkBookingActions = ({
 
     setIsUpdating(true);
     try {
-      await enhancedBookingService.bulkUpdateStatus(selectedBookings, status as any);
+      await enhancedBookingService.bulkUpdateStatus(selectedBookings, status);
       onSelectionChange([]);
       onRefresh();
       toast.success(`Updated ${selectedBookings.length} bookings to ${status}`);

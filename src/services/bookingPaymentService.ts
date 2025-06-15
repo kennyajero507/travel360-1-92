@@ -1,9 +1,19 @@
 
-// Still stub, payments table not yet created.
+import { supabase } from "../integrations/supabase/client";
+
+// Get payments by booking
 export const getPaymentsByBooking = async (bookingId: string) => {
-  return [];
+  const { data, error } = await supabase
+    .from("payments")
+    .select("*")
+    .eq("booking_id", bookingId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
-export const recordPayment = async (payment) => {
-  throw new Error("Payments functionality is not implemented (table missing).");
+export const recordPayment = async (payment: any) => {
+  const { error } = await supabase.from("payments").insert([payment]);
+  if (error) throw error;
 };

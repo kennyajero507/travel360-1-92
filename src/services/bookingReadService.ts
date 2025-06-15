@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -6,7 +7,6 @@ import {
   BookingTransport,
   BookingActivity,
   BookingTransfer,
-  BookingStatus,
 } from "../types/booking.types";
 import { isValidBookingStatus } from "../utils/typeHelpers";
 import { parseJsonArray } from "./bookingHelpers";
@@ -15,9 +15,9 @@ import { parseJsonArray } from "./bookingHelpers";
 export const getAllBookings = async (): Promise<Booking[]> => {
   try {
     const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("bookings")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
 
@@ -30,8 +30,8 @@ export const getAllBookings = async (): Promise<Booking[]> => {
       transfers: parseJsonArray<BookingTransfer>(booking.transfers),
     }));
   } catch (error) {
-    console.error('Error fetching bookings:', error);
-    toast.error('Failed to fetch bookings');
+    console.error("Error fetching bookings:", error);
+    toast.error("Failed to fetch bookings");
     return [];
   }
 };
@@ -40,9 +40,9 @@ export const getAllBookings = async (): Promise<Booking[]> => {
 export const getBookingById = async (id: string): Promise<Booking | null> => {
   try {
     const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', id)
+      .from("bookings")
+      .select("*")
+      .eq("id", id)
       .maybeSingle();
 
     if (error) throw error;
@@ -57,7 +57,7 @@ export const getBookingById = async (id: string): Promise<Booking | null> => {
       transfers: parseJsonArray<BookingTransfer>(data.transfers),
     };
   } catch (error) {
-    console.error('Error fetching booking:', error);
+    console.error("Error fetching booking:", error);
     return null;
   }
 };
