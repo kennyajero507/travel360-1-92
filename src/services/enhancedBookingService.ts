@@ -51,7 +51,7 @@ class EnhancedBookingService {
       .maybeSingle();
     
     if (error) throw error;
-    return data;
+    return data as Invoice | null;
   }
 
   async createInvoiceFromBooking(booking: Booking): Promise<Invoice> {
@@ -68,7 +68,7 @@ class EnhancedBookingService {
 
     const newInvoiceData = {
       booking_id: booking.id,
-      invoice_number: invoiceNumber,
+      invoice_number: `INV-${booking.booking_reference}-${Date.now().toString().slice(-4)}`,
       client_name: booking.client,
       amount: booking.total_price,
       currency_code: 'USD',
@@ -84,7 +84,7 @@ class EnhancedBookingService {
       .single();
 
     if (error) throw error;
-    return data as Invoice;
+    return data as unknown as Invoice;
   }
 
   async getPaymentsByBooking(bookingId: string) {
