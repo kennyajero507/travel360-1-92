@@ -5,12 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Plus, RefreshCw, FileText, Upload } from 'lucide-react';
 import { BookingTable } from '../components/booking/BookingTable';
-import BookingFilters from '../components/booking/BookingFilters';
 import { useBookingData } from '../hooks/useBookingData';
 import { toast } from 'sonner';
 
 const Bookings = () => {
-  const { bookings, isLoading, error, refetch } = useBookingData();
+  const { bookings, isLoading, error, refetch, updateBookingStatus, createVoucher, selectedBookings, setSelectedBookings } = useBookingData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
@@ -45,6 +44,37 @@ const Bookings = () => {
 
     return matchesSearch && matchesStatus && matchesDate;
   });
+
+  const handleSelectBooking = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBookings(prev => [...prev, id]);
+    } else {
+      setSelectedBookings(prev => prev.filter(bookingId => bookingId !== id));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedBookings(filteredBookings.map(booking => booking.id));
+    } else {
+      setSelectedBookings([]);
+    }
+  };
+
+  const handleView = (id: string) => {
+    window.location.href = `/bookings/${id}`;
+  };
+
+  const handleVoucher = async (id: string) => {
+    try {
+      const booking = bookings.find(b => b.id === id);
+      if (booking) {
+        await createVoucher(booking);
+      }
+    } catch (error) {
+      console.error('Error creating voucher:', error);
+    }
+  };
 
   if (error) {
     return (
@@ -171,7 +201,15 @@ const Bookings = () => {
       </div>
 
       {/* Bookings Table */}
-      <BookingTable bookings={filteredBookings} />
+      <BookingTable 
+        bookings={filteredBookings}
+        selectedBookings={selectedBookings}
+        onSelectBooking={handleSelectBooking}
+        onSelectAll={handleSelectAll}
+        onView={handleView}
+        onStatusUpdate={updateBookingStatus}
+        onVoucher={handleVoucher}
+      />
     </div>
   );
 };
