@@ -1,26 +1,59 @@
 
-// Patch this stub so it does not reference missing tables or APIs
+// Provide hooks for inquiry data against actual Supabase tables.
 
-// Provide stubs for main hooks for build
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getAllInquiries, assignInquiryToAgent } from "../services/inquiry/api";
+import { InquiryData } from "../types/inquiry.types";
+import { toast } from "sonner";
+
+// Fetch all inquiries
 export const useInquiryData = () => {
+  const {
+    data: inquiries = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["inquiries"],
+    queryFn: getAllInquiries,
+  });
+
+  return { inquiries, isLoading, error };
+};
+
+// List and refetch for inquiries (used in tables etc)
+export const useInquiries = () => {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: ["inquiries"],
+    queryFn: getAllInquiries,
+  });
+
   return {
-    inquiries: [],
-    isLoading: false,
-    error: null
+    data: query.data || [],
+    isLoading: query.isLoading,
+    isRefetching: query.isRefetching,
+    refetch: query.refetch,
   };
 };
 
-// Stubs for hooks used in Inquiries.tsx
-export const useInquiries = () => ({
-  data: [],
-  isLoading: false,
-  isRefetching: false,
-  refetch: () => {},
-});
+// Assign inquiry to agent mutation
+export const useAssignInquiry = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: ({ inquiryId, agentId, agentName }: { inquiryId: string; agentId: string; agentName: string }) =>
+      assignInquiryToAgent(inquiryId, agentId, agentName),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiries"] });
+      toast.success("Inquiry assigned successfully.");
+    },
+    onError: (err) => {
+      toast.error("Failed to assign inquiry.");
+      console.error(err);
+    }
+  });
 
-export const useAssignInquiry = () => ({
-  isPending: false,
-  mutate: (_args: any, { onSuccess }: any = {}) => {
-    if (onSuccess) onSuccess();
-  },
-});
+  return {
+    isPending: mutation.isPending,
+    mutate: mutation.mutate,
+  };
+};

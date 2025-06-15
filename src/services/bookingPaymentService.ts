@@ -1,9 +1,6 @@
 
-// Patch: remove references to "payments" table which does not exist
-// All functions here will throw or no-op
-
+// Still stub, payments table not yet created.
 export const getPaymentsByBooking = async (bookingId: string) => {
-  // Payments table not available, return empty
   return [];
 };
 

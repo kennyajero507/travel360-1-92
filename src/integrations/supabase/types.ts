@@ -42,6 +42,168 @@ export type Database = {
         }
         Relationships: []
       }
+      hotels: {
+        Row: {
+          additional_details: Json | null
+          address: string | null
+          amenities: Json | null
+          category: string
+          contact_info: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          destination: string
+          id: string
+          images: Json | null
+          location: string | null
+          name: string
+          org_id: string | null
+          policies: Json | null
+          pricing: Json | null
+          room_types: Json | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          additional_details?: Json | null
+          address?: string | null
+          amenities?: Json | null
+          category: string
+          contact_info?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          destination: string
+          id?: string
+          images?: Json | null
+          location?: string | null
+          name: string
+          org_id?: string | null
+          policies?: Json | null
+          pricing?: Json | null
+          room_types?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          additional_details?: Json | null
+          address?: string | null
+          amenities?: Json | null
+          category?: string
+          contact_info?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          destination?: string
+          id?: string
+          images?: Json | null
+          location?: string | null
+          name?: string
+          org_id?: string | null
+          policies?: Json | null
+          pricing?: Json | null
+          room_types?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      inquiries: {
+        Row: {
+          adults: number
+          assigned_agent_name: string | null
+          assigned_to: string | null
+          check_in_date: string
+          check_out_date: string
+          children: number
+          client_email: string | null
+          client_mobile: string
+          client_name: string
+          created_at: string | null
+          created_by: string | null
+          custom_destination: string | null
+          custom_package: string | null
+          days_count: number | null
+          description: string | null
+          destination: string
+          enquiry_number: string | null
+          id: string
+          infants: number
+          lead_source: string | null
+          nights_count: number | null
+          num_rooms: number | null
+          org_id: string | null
+          package_name: string | null
+          priority: string | null
+          status: string
+          tour_consultant: string | null
+          tour_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          adults: number
+          assigned_agent_name?: string | null
+          assigned_to?: string | null
+          check_in_date: string
+          check_out_date: string
+          children: number
+          client_email?: string | null
+          client_mobile: string
+          client_name: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_destination?: string | null
+          custom_package?: string | null
+          days_count?: number | null
+          description?: string | null
+          destination: string
+          enquiry_number?: string | null
+          id: string
+          infants: number
+          lead_source?: string | null
+          nights_count?: number | null
+          num_rooms?: number | null
+          org_id?: string | null
+          package_name?: string | null
+          priority?: string | null
+          status?: string
+          tour_consultant?: string | null
+          tour_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          adults?: number
+          assigned_agent_name?: string | null
+          assigned_to?: string | null
+          check_in_date?: string
+          check_out_date?: string
+          children?: number
+          client_email?: string | null
+          client_mobile?: string
+          client_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_destination?: string | null
+          custom_package?: string | null
+          days_count?: number | null
+          description?: string | null
+          destination?: string
+          enquiry_number?: string | null
+          id?: string
+          infants?: number
+          lead_source?: string | null
+          nights_count?: number | null
+          num_rooms?: number | null
+          org_id?: string | null
+          package_name?: string | null
+          priority?: string | null
+          status?: string
+          tour_consultant?: string | null
+          tour_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string | null
@@ -141,6 +303,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quotes: {
+        Row: {
+          activities: Json | null
+          adults: number | null
+          approved_hotel_id: string | null
+          children_no_bed: number | null
+          children_with_bed: number | null
+          client: string | null
+          created_at: string | null
+          created_by: string | null
+          currency_code: string | null
+          destination: string
+          duration_days: number | null
+          duration_nights: number | null
+          end_date: string | null
+          hotel_id: string | null
+          id: string
+          infants: number | null
+          inquiry_id: string | null
+          lead_source: string | null
+          markup_type: string | null
+          markup_value: number | null
+          package_name: string | null
+          room_arrangements: Json | null
+          sectionmarkups: Json | null
+          start_date: string | null
+          status: string
+          summary_data: Json | null
+          tour_type: string | null
+          transfers: Json | null
+          transports: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          activities?: Json | null
+          adults?: number | null
+          approved_hotel_id?: string | null
+          children_no_bed?: number | null
+          children_with_bed?: number | null
+          client?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string | null
+          destination: string
+          duration_days?: number | null
+          duration_nights?: number | null
+          end_date?: string | null
+          hotel_id?: string | null
+          id?: string
+          infants?: number | null
+          inquiry_id?: string | null
+          lead_source?: string | null
+          markup_type?: string | null
+          markup_value?: number | null
+          package_name?: string | null
+          room_arrangements?: Json | null
+          sectionmarkups?: Json | null
+          start_date?: string | null
+          status?: string
+          summary_data?: Json | null
+          tour_type?: string | null
+          transfers?: Json | null
+          transports?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          activities?: Json | null
+          adults?: number | null
+          approved_hotel_id?: string | null
+          children_no_bed?: number | null
+          children_with_bed?: number | null
+          client?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string | null
+          destination?: string
+          duration_days?: number | null
+          duration_nights?: number | null
+          end_date?: string | null
+          hotel_id?: string | null
+          id?: string
+          infants?: number | null
+          inquiry_id?: string | null
+          lead_source?: string | null
+          markup_type?: string | null
+          markup_value?: number | null
+          package_name?: string | null
+          room_arrangements?: Json | null
+          sectionmarkups?: Json | null
+          start_date?: string | null
+          status?: string
+          summary_data?: Json | null
+          tour_type?: string | null
+          transfers?: Json | null
+          transports?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

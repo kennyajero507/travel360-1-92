@@ -1,5 +1,5 @@
 
-// Patch this hook so it does not reference missing tables, for build only
+// Real analytics can now be implemented, but for now, return safe zeroes.
 export const useAnalytics = () => {
   return {
     quoteCount: 0,

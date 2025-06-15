@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
@@ -30,7 +31,6 @@ const AnalyticsDashboard = () => {
       <p>Total Invoices: {invoiceCount}</p>
       <p>Booking Revenue: {bookingRevenue}</p>
       <p>Invoice Revenue: {invoiceRevenue}</p>
-      {/* Other analytics info as needed */}
     </div>
   );
 };
