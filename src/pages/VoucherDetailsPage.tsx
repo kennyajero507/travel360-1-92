@@ -5,26 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../compone
 import { Separator } from "../components/ui/separator";
 import { 
   ArrowLeft, 
-  CalendarDays, 
   Download, 
-  FileText, 
-  Hotel, 
   Mail, 
-  MapPin, 
-  Phone, 
-  UserRound 
+  Hotel, 
+  UserRound,
+  Phone,
+  FileText,
+  CalendarDays,
+  MapPin
 } from "lucide-react";
 import { toast } from "sonner";
-import { TravelVoucher } from "../types/booking.types";
+import { TravelVoucher, Booking } from "../types/booking.types";
 import { getVoucherById, updateVoucherEmailStatus } from "../services/voucherService";
 import { getBookingById } from "../services/bookingReadService";
+import { convertToBooking } from "../utils/typeHelpers";
+import { generateVoucherPDF } from "../services/pdfVoucherGenerator";
 
-const VoucherPreview = () => {
+const VoucherDetailsPage = () => {
   const { voucherId } = useParams<{ voucherId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [voucher, setVoucher] = useState<TravelVoucher | null>(null);
-  const [booking, setBooking] = useState<any | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   
   // Load voucher data
   useEffect(() => {
@@ -37,7 +39,9 @@ const VoucherPreview = () => {
         
         if (voucherData) {
           const bookingData = await getBookingById(voucherData.booking_id);
-          setBooking(bookingData);
+          if (bookingData) {
+            setBooking(convertToBooking(bookingData));
+          }
         }
       } catch (error) {
         console.error("Error loading voucher data:", error);
@@ -55,13 +59,13 @@ const VoucherPreview = () => {
     if (!voucher) return;
     
     try {
-      // In a real app, this would call an API to send the email
+      // For now, we'll just update the email_sent status
       await updateVoucherEmailStatus(voucher.id, true);
       
       // Update local state
       setVoucher(prev => prev ? { ...prev, email_sent: true } : null);
       
-      toast.success("Voucher sent to client via email");
+      toast.success("Voucher marked as sent via email");
     } catch (error) {
       console.error("Error sending voucher email:", error);
       toast.error("Failed to send voucher email");
@@ -70,8 +74,11 @@ const VoucherPreview = () => {
   
   // Handle download
   const handleDownload = () => {
-    // In a real app, this would download the voucher PDF
-    toast.success("Voucher downloaded successfully");
+    if (voucher && booking) {
+      generateVoucherPDF(voucher, booking);
+    } else {
+      toast.error("Voucher or booking data not available for download.");
+    }
   };
   
   if (loading) {
@@ -178,20 +185,20 @@ const VoucherPreview = () => {
               
               <div>
                 <p className="text-sm font-medium text-gray-500 mb-2">Room Details</p>
-                {Array.isArray(booking.room_arrangement) && booking.room_arrangement.map((room: any, index: number) => (
+                {booking.room_arrangement && Array.isArray(booking.room_arrangement) && booking.room_arrangement.map((room: any, index: number) => (
                   <div key={index} className="mb-2 last:mb-0">
                     <p>
-                      {room.numRooms} x {room.roomType} - 
+                      {room.numRooms || 1} x {room.room_type || 'Room'} - 
                       {room.adults} {room.adults === 1 ? 'Adult' : 'Adults'}
-                      {room.childrenWithBed > 0 && `, ${room.childrenWithBed} ${room.childrenWithBed === 1 ? 'Child' : 'Children'} with bed`}
-                      {room.childrenNoBed > 0 && `, ${room.childrenNoBed} ${room.childrenNoBed === 1 ? 'Child' : 'Children'} no bed`}
+                      {room.children_with_bed > 0 && `, ${room.children_with_bed} ${room.children_with_bed === 1 ? 'Child' : 'Children'} with bed`}
+                      {room.children_no_bed > 0 && `, ${room.children_no_bed} ${room.children_no_bed === 1 ? 'Child' : 'Children'} no bed`}
                       {room.infants > 0 && `, ${room.infants} ${room.infants === 1 ? 'Infant' : 'Infants'}`}
                     </p>
                   </div>
                 ))}
               </div>
               
-              {Array.isArray(booking.transfers) && booking.transfers.length > 0 && (
+              {booking.transfers && Array.isArray(booking.transfers) && booking.transfers.length > 0 && (
                 <>
                   <Separator className="my-4" />
                   
@@ -212,7 +219,7 @@ const VoucherPreview = () => {
                 </>
               )}
               
-              {Array.isArray(booking.activities) && booking.activities.length > 0 && (
+              {booking.activities && Array.isArray(booking.activities) && booking.activities.length > 0 && (
                 <>
                   <Separator className="my-4" />
                   
@@ -273,4 +280,4 @@ const VoucherPreview = () => {
   );
 };
 
-export default VoucherPreview;
+export default VoucherDetailsPage;

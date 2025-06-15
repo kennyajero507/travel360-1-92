@@ -247,7 +247,7 @@ const BookingDetails = () => {
         </TabsContent>
 
         <TabsContent value="vouchers">
-          <VoucherManager />
+          <VoucherManager booking={booking} />
         </TabsContent>
 
         <TabsContent value="communications">

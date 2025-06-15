@@ -44,6 +44,22 @@ export const getVoucherById = async (id: string): Promise<TravelVoucher | null> 
   }
 };
 
+export const getVouchersByBookingId = async (bookingId: string): Promise<TravelVoucher[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('travel_vouchers')
+      .select('*')
+      .eq('booking_id', bookingId);
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error(`Error fetching vouchers for booking ${bookingId}:`, error);
+    toast.error('Failed to fetch vouchers.');
+    return [];
+  }
+};
+
 export const updateVoucherEmailStatus = async (voucherId: string, emailSent: boolean): Promise<void> => {
   try {
     const { error } = await supabase
