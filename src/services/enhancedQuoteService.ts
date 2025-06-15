@@ -44,7 +44,10 @@ class EnhancedQuoteService {
       activities: this.parseJsonField(dbRow.activities, []),
       transports: this.parseJsonField(dbRow.transports, []),
       transfers: this.parseJsonField(dbRow.transfers, []),
-      sectionMarkups: this.parseJsonField(dbRow.sectionmarkups, {})
+      sectionMarkups: this.parseJsonField(dbRow.sectionmarkups, {}),
+      visa_documentation: this.parseJsonField(dbRow.visa_documentation, []),
+      document_checklist: this.parseJsonField(dbRow.document_checklist, []),
+      itinerary: this.parseJsonField(dbRow.itinerary, [])
     };
   }
 
@@ -66,8 +69,9 @@ class EnhancedQuoteService {
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('You must be logged in to save a quote.');
-        throw new Error('User not authenticated');
+        const authError = new Error('User not authenticated');
+        authError.name = 'AuthenticationError';
+        throw authError;
       }
 
       // Validate quote before saving
@@ -107,6 +111,20 @@ class EnhancedQuoteService {
         transports: JSON.stringify(quote.transports || []),
         transfers: JSON.stringify(quote.transfers || []),
         sectionmarkups: JSON.stringify(quote.sectionMarkups || {}),
+        visa_required: quote.visa_required || null,
+        passport_expiry_date: quote.passport_expiry_date || null,
+        preferred_currency: quote.preferred_currency || null,
+        flight_preference: quote.flight_preference || null,
+        travel_insurance_required: quote.travel_insurance_required || null,
+        regional_preference: quote.regional_preference || null,
+        transport_mode_preference: quote.transport_mode_preference || null,
+        guide_language_preference: quote.guide_language_preference || null,
+        estimated_budget_range: quote.estimated_budget_range || null,
+        special_requirements: quote.special_requirements || null,
+        document_checklist: JSON.stringify(quote.document_checklist || []),
+        workflow_stage: quote.workflow_stage || null,
+        visa_documentation: JSON.stringify(quote.visa_documentation || []),
+        itinerary: JSON.stringify(quote.itinerary || []),
         updated_at: new Date().toISOString()
       };
 
@@ -189,7 +207,7 @@ class EnhancedQuoteService {
     const errors: string[] = [];
     const warnings: string[] = [];
     let completionPercentage = 0;
-    const totalSections = 6;
+    const totalSections = quote.tour_type === 'international' ? 8 : 7;
     let completedSections = 0;
 
     // Basic information validation
@@ -216,20 +234,25 @@ class EnhancedQuoteService {
       }
     }
 
-    if (quote.transports && quote.transports.length > 0) {
-      completedSections++;
-    }
+    if (quote.transports && quote.transports.length > 0) completedSections++;
+    if (quote.transfers && quote.transfers.length > 0) completedSections++;
+    if (quote.activities && quote.activities.length > 0) completedSections++;
+    if (quote.itinerary && quote.itinerary.length > 0) completedSections++;
+    if (quote.sectionMarkups && Object.keys(quote.sectionMarkups).length > 0) completedSections++;
 
-    if (quote.transfers && quote.transfers.length > 0) {
-      completedSections++;
-    }
-
-    if (quote.activities && quote.activities.length > 0) {
-      completedSections++;
-    }
-
-    if (quote.sectionMarkups && Object.keys(quote.sectionMarkups).length > 0) {
-      completedSections++;
+    // International-specific validations
+    if (quote.tour_type === 'international') {
+      if (quote.visa_documentation && quote.visa_documentation.length > 0) {
+        completedSections++;
+      }
+      
+      if (quote.visa_required && !quote.passport_expiry_date) {
+        warnings.push('Passport expiry date is recommended when visa is required');
+      }
+      
+      if (!quote.travel_insurance_required) {
+        warnings.push('Consider recommending travel insurance for international tours');
+      }
     }
 
     // Summary section is always available
@@ -251,8 +274,9 @@ class EnhancedQuoteService {
     const transport_subtotal = quote.transports?.reduce((sum, transport) => sum + (transport.total_cost || 0), 0) || 0;
     const transfer_subtotal = quote.transfers?.reduce((sum, transfer) => sum + (transfer.total || 0), 0) || 0;
     const excursion_subtotal = quote.activities?.reduce((sum, activity) => sum + (activity.total_cost || 0), 0) || 0;
+    const visa_documentation_subtotal = quote.visa_documentation?.reduce((sum, doc) => sum + (doc.cost || 0), 0) || 0;
 
-    const subtotal = accommodation_subtotal + transport_subtotal + transfer_subtotal + excursion_subtotal;
+    const subtotal = accommodation_subtotal + transport_subtotal + transfer_subtotal + excursion_subtotal + visa_documentation_subtotal;
 
     // Calculate markup
     let markup_amount = 0;
@@ -269,7 +293,8 @@ class EnhancedQuoteService {
         const sectionSubtotal = section === 'accommodation' ? accommodation_subtotal :
                                section === 'transport' ? transport_subtotal :
                                section === 'transfer' ? transfer_subtotal :
-                               section === 'excursion' ? excursion_subtotal : 0;
+                               section === 'excursion' ? excursion_subtotal :
+                               section === 'visa_documentation' ? visa_documentation_subtotal : 0;
         
         if (markup.type === 'percentage') {
           section_markups[section] = (sectionSubtotal * markup.value) / 100;
@@ -290,6 +315,7 @@ class EnhancedQuoteService {
       transport_subtotal,
       transfer_subtotal,
       excursion_subtotal,
+      visa_documentation_subtotal,
       subtotal,
       markup_amount: total_markup,
       total_amount,

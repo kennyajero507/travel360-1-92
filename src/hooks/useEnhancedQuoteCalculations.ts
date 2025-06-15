@@ -1,7 +1,6 @@
 
 import { useMemo } from "react";
 import { QuoteData, QuoteCalculations, QuoteValidation } from "../types/quote.types";
-import { ReverseMarkupCalculator } from "../utils/reverseMarkupCalculator";
 
 export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
   const calculations = useMemo((): QuoteCalculations => {
@@ -11,6 +10,7 @@ export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
         transport_subtotal: 0,
         transfer_subtotal: 0,
         excursion_subtotal: 0,
+        visa_documentation_subtotal: 0,
         subtotal: 0,
         markup_amount: 0,
         total_amount: 0,
@@ -23,10 +23,11 @@ export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
     const transport_subtotal = quote.transports?.reduce((sum, transport) => sum + (transport.total_cost || 0), 0) || 0;
     const transfer_subtotal = quote.transfers?.reduce((sum, transfer) => sum + (transfer.total || 0), 0) || 0;
     const excursion_subtotal = quote.activities?.reduce((sum, activity) => sum + (activity.total_cost || 0), 0) || 0;
+    const visa_documentation_subtotal = quote.visa_documentation?.reduce((sum, doc) => sum + (doc.cost || 0), 0) || 0;
 
-    const subtotal = accommodation_subtotal + transport_subtotal + transfer_subtotal + excursion_subtotal;
+    const subtotal = accommodation_subtotal + transport_subtotal + transfer_subtotal + excursion_subtotal + visa_documentation_subtotal;
 
-    // Calculate markup using reverse percentage formula
+    // Calculate markup using percentage formula
     let markup_amount = 0;
     if (quote.markup_type === 'percentage') {
       markup_amount = (subtotal * (quote.markup_value || 0)) / 100;
@@ -43,6 +44,7 @@ export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
       transport_subtotal,
       transfer_subtotal,
       excursion_subtotal,
+      visa_documentation_subtotal,
       subtotal,
       markup_amount,
       total_amount,
@@ -64,14 +66,14 @@ export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
     const errors: string[] = [];
     const warnings: string[] = [];
     let completedSections = 0;
-    const totalSections = 6;
+    const totalSections = quote.tour_type === 'international' ? 8 : 7; // More sections for international
 
     // Basic validation
     if (!quote.client?.trim()) errors.push('Client name required');
     if (!quote.mobile?.trim()) errors.push('Client mobile required');
     if (!quote.destination?.trim()) errors.push('Destination required');
 
-    // Hotel selection validation (must have exactly 2 hotels for comparison)
+    // Hotel selection validation
     const uniqueHotels = new Set();
     quote.room_arrangements?.forEach(arr => {
       if (arr.hotel_id) uniqueHotels.add(arr.hotel_id);
@@ -82,10 +84,7 @@ export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
     } else if (uniqueHotels.size === 1) {
       warnings.push('Single hotel selected. Consider adding a second hotel for comparison.');
       completedSections += 1;
-    } else if (uniqueHotels.size === 2) {
-      completedSections += 1;
-    } else if (uniqueHotels.size > 2) {
-      warnings.push('More than 2 hotels selected. Consider limiting to 2 for optimal comparison.');
+    } else if (uniqueHotels.size >= 2) {
       completedSections += 1;
     }
 
@@ -94,7 +93,25 @@ export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
     if (quote.transports && quote.transports.length > 0) completedSections += 1;
     if (quote.transfers && quote.transfers.length > 0) completedSections += 1;
     if (quote.activities && quote.activities.length > 0) completedSections += 1;
+    if (quote.itinerary && quote.itinerary.length > 0) completedSections += 1;
     if (calculations.total_amount > 0) completedSections += 1;
+
+    // International specific validations
+    if (quote.tour_type === 'international') {
+      if (quote.visa_documentation && quote.visa_documentation.length > 0) {
+        completedSections += 1;
+      } else {
+        warnings.push('Consider adding visa/documentation requirements for international tour');
+      }
+      
+      if (quote.visa_required && !quote.passport_expiry_date) {
+        warnings.push('Passport expiry date recommended when visa is required');
+      }
+      
+      if (!quote.travel_insurance_required) {
+        warnings.push('Consider recommending travel insurance for international tours');
+      }
+    }
 
     return {
       isValid: errors.length === 0,
@@ -105,22 +122,31 @@ export const useEnhancedQuoteCalculations = (quote: QuoteData | null) => {
   }, [quote, calculations]);
 
   const progressData = useMemo(() => {
-    const sections = [
+    const baseSections = [
       { name: 'Client Details', completed: !!quote?.client },
       { name: 'Hotel Selection', completed: quote?.room_arrangements && quote.room_arrangements.length > 0 },
       { name: 'Room Arrangements', completed: calculations.accommodation_subtotal > 0 },
       { name: 'Transport', completed: calculations.transport_subtotal > 0 },
       { name: 'Transfers', completed: calculations.transfer_subtotal > 0 },
-      { name: 'Activities', completed: calculations.excursion_subtotal > 0 }
+      { name: 'Activities', completed: calculations.excursion_subtotal > 0 },
+      { name: 'Itinerary', completed: quote?.itinerary && quote.itinerary.length > 0 }
     ];
 
-    const completedCount = sections.filter(s => s.completed).length;
-    const percentage = (completedCount / sections.length) * 100;
+    // Add international-specific sections
+    if (quote?.tour_type === 'international') {
+      baseSections.push({
+        name: 'Visa & Documentation',
+        completed: calculations.visa_documentation_subtotal > 0
+      });
+    }
+
+    const completedCount = baseSections.filter(s => s.completed).length;
+    const percentage = (completedCount / baseSections.length) * 100;
 
     return {
-      sections,
+      sections: baseSections,
       completedCount,
-      totalSections: sections.length,
+      totalSections: baseSections.length,
       percentage
     };
   }, [quote, calculations]);

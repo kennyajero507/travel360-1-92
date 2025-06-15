@@ -1,3 +1,4 @@
+
 import { Hotel } from "./hotel.types";
 import { QuoteSummaryData } from "./quoteSummary.types";
 
@@ -58,7 +59,7 @@ export interface QuoteActivity {
   total_cost: number;
   group_discount?: number;
   notes?: string;
-  hotel_id?: string; // Added hotel_id for multi-hotel comparison
+  hotel_id?: string;
 }
 
 // Enhanced transfer interface with hotel_id
@@ -78,7 +79,37 @@ export interface QuoteTransfer {
   total: number;
   description?: string;
   notes?: string;
-  hotel_id?: string; // Added hotel_id for multi-hotel comparison
+  hotel_id?: string;
+}
+
+// NEW: Visa and documentation interface for international tours
+export interface VisaDocumentation {
+  id: string;
+  document_type: 'visa' | 'passport' | 'travel_insurance' | 'vaccination' | 'other';
+  required: boolean;
+  description: string;
+  cost: number;
+  processing_time_days?: number;
+  expiry_date?: string;
+  notes?: string;
+}
+
+// NEW: Itinerary item interface
+export interface ItineraryItem {
+  id: string;
+  day: number;
+  date: string;
+  title: string;
+  description: string;
+  activities: string[];
+  meals_included: string[];
+  accommodation?: string;
+  transport?: string;
+  time_slots: {
+    time: string;
+    activity: string;
+    location?: string;
+  }[];
 }
 
 // Section markup interface
@@ -88,7 +119,7 @@ export interface SectionMarkup {
   applied_to: 'accommodation' | 'transport' | 'transfer' | 'activity' | 'all';
 }
 
-// Main QuoteData interface matching database structure
+// Enhanced QuoteData interface with international/domestic specific fields
 export interface QuoteData {
   id: string;
   inquiry_id?: string;
@@ -104,7 +135,7 @@ export interface QuoteData {
   children_with_bed: number;
   children_no_bed: number;
   infants: number;
-  tour_type: string;
+  tour_type: 'domestic' | 'international';
   status: QuoteStatus;
   notes?: string;
   created_by?: string;
@@ -120,7 +151,29 @@ export interface QuoteData {
   transports: QuoteTransport[];
   transfers: QuoteTransfer[];
   sectionMarkups?: Record<string, SectionMarkup>;
-  summary_data?: QuoteSummaryData; // Added summary_data field
+  summary_data?: QuoteSummaryData;
+  
+  // NEW: International tour specific fields
+  visa_required?: boolean;
+  passport_expiry_date?: string;
+  preferred_currency?: string;
+  flight_preference?: string;
+  travel_insurance_required?: boolean;
+  visa_documentation?: VisaDocumentation[];
+  
+  // NEW: Domestic tour specific fields
+  regional_preference?: string;
+  transport_mode_preference?: string;
+  guide_language_preference?: string;
+  
+  // NEW: Enhanced common fields
+  estimated_budget_range?: string;
+  special_requirements?: string;
+  document_checklist?: string[];
+  workflow_stage?: string;
+  
+  // NEW: Itinerary planning
+  itinerary?: ItineraryItem[];
 }
 
 // Enhanced quote calculations interface
@@ -128,7 +181,8 @@ export interface QuoteCalculations {
   accommodation_subtotal: number;
   transport_subtotal: number;
   transfer_subtotal: number;
-  excursion_subtotal: number; // Keep this for backwards compatibility in calculations
+  excursion_subtotal: number;
+  visa_documentation_subtotal: number; // NEW
   subtotal: number;
   markup_amount: number;
   total_amount: number;
