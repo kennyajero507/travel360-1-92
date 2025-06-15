@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getAllBookings } from '../services/bookingReadService';
@@ -8,9 +7,22 @@ import { enhancedBookingService } from '../services/enhancedBookingService';
 import { Booking, BookingStatus, TravelVoucher } from '../types/booking.types';
 import { useState } from 'react';
 import { createVoucher as apiCreateVoucher } from '../services/voucherService';
+import { useAuth } from './useAuth';
+import { useRealtimeSync } from "./useRealtimeSync";
 
 export const useBookingData = () => {
   const queryClient = useQueryClient();
+
+  // Add real-time sync for bookings
+  const { profile } = useAuth?.() || {};
+  const orgId = profile?.org_id;
+
+  useRealtimeSync({
+    table: 'bookings',
+    orgId,
+    queryKeysInvalidate: ['bookings'],
+    queryClient,
+  });
 
   // Fetching bookings
   const { data: bookings = [], isLoading, error, refetch } = useQuery<Booking[]>({

@@ -1,6 +1,8 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from './useAuth';
+import { useRealtimeSync } from "./useRealtimeSync";
 
 interface Voucher {
   id: string;
@@ -18,6 +20,18 @@ interface Voucher {
 }
 
 export const useVoucherData = () => {
+  const queryClient = useQueryClient();
+
+  const { profile } = useAuth?.() || {};
+  const orgId = profile?.org_id;
+
+  useRealtimeSync({
+    table: 'travel_vouchers',
+    orgId,
+    queryKeysInvalidate: ['vouchers', 'travel-vouchers'],
+    queryClient,
+  });
+
   return useQuery({
     queryKey: ['vouchers'],
     queryFn: async () => {
