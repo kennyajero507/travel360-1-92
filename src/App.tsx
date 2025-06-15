@@ -81,7 +81,14 @@ function App() {
           </BrowserRouter>
         </AuthProvider>
       </AuthErrorBoundary>
-      <Toaster />
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          style: {
+            fontFamily: 'Inter, sans-serif',
+          },
+        }}
+      />
     </QueryClientProvider>
   );
 }

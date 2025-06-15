@@ -1,7 +1,6 @@
 
 import { ReactNode } from "react";
 import { Outlet } from "react-router-dom";
-import { Toaster } from "sonner";
 import ProfessionalSidebar from "./ProfessionalSidebar";
 import { CurrencyProvider } from "../contexts/CurrencyContext";
 import AuthErrorBoundary from "./common/AuthErrorBoundary";
@@ -21,14 +20,6 @@ const Layout = ({ children }: LayoutProps) => {
               {children || <Outlet />}
             </div>
           </main>
-          <Toaster 
-            position="top-right" 
-            toastOptions={{
-              style: {
-                fontFamily: 'Inter, sans-serif',
-              },
-            }}
-          />
         </div>
       </CurrencyProvider>
     </AuthErrorBoundary>
