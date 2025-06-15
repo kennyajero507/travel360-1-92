@@ -35,6 +35,7 @@ import AgentManagement from "./pages/AgentManagement";
 import VoucherDetailsPage from "./pages/VoucherDetailsPage";
 import QuotePreview from "./pages/QuotePreview";
 import ClientDetailsPage from "./pages/ClientDetailsPage";
+import CreateBookingPage from './pages/CreateBookingPage';
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,7 @@ function App() {
                 <Route path="/quotes/create" element={<CreateQuote />} />
                 <Route path="/quotes/:quoteId" element={<EditQuote />} />
                 <Route path="/bookings" element={<Bookings />} />
+                <Route path="/bookings/create" element={<CreateBookingPage />} />
                 <Route path="/bookings/:id" element={<BookingDetails />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/reports" element={<Reports />} />

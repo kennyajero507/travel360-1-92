@@ -1,178 +1,160 @@
 
-import React, { useState } from "react";
-import { useBookingData } from "../hooks/useBookingData";
-import { BookingTable } from "../components/booking/BookingTable";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Plus } from "lucide-react";
-import BulkBookingActions from "../components/booking/BulkBookingActions";
-import { BookingStatus } from "../types/booking.types";
-import { Skeleton } from "@/components/ui/skeleton";
-import BookingAnalyticsDashboard from "../components/booking/BookingAnalyticsDashboard";
-import BookingFilters from "../components/booking/BookingFilters";
-import { BookingFilters as FilterType } from "../types/enhanced-booking.types";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Plus, RefreshCw, FileText, Upload } from 'lucide-react';
+import { BookingTable } from '../components/booking/BookingTable';
+import { BookingFilters } from '../components/booking/BookingFilters';
+import { useBookingData } from '../hooks/useBookingData';
+import { toast } from 'sonner';
 
 const Bookings = () => {
-  const {
-    bookings,
-    isLoading,
-    error,
-    selectedBookings,
-    setSelectedBookings,
-    updateBookingStatus,
-    bulkUpdateStatus,
-    bulkDelete,
-    createVoucher,
-  } = useBookingData();
-  const navigate = useNavigate();
-  
-  const [filters, setFilters] = useState<FilterType>({});
+  const { data: bookings = [], isLoading, error, refetch } = useBookingData();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
 
-  const handleSelectBooking = (id: string, checked: boolean) => {
-    setSelectedBookings((prev) =>
-      checked ? [...prev, id] : prev.filter((bId) => bId !== id)
-    );
-  };
+  // Filter bookings based on search and filters
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = !searchTerm || 
+      booking.client?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.hotel_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.booking_reference?.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked && bookings) {
-      setSelectedBookings(bookings.map((b) => b.id));
-    } else {
-      setSelectedBookings([]);
-    }
-  };
-  
-  const handleStatusUpdate = (id: string, status: BookingStatus) => {
-    updateBookingStatus({ id, status });
-  };
-  
-  const handleView = (id: string) => {
-    navigate(`/bookings/${id}`);
-  };
-  
-  const handleVoucher = (id: string) => {
-    const booking = bookings.find((b) => b.id === id);
-    if (!booking) {
-      toast.error("Booking not found.");
-      return;
-    }
+    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
 
-    toast.info(`Generating voucher for ${booking.booking_reference}...`);
+    const matchesDate = dateFilter === 'all' || (() => {
+      const bookingDate = new Date(booking.travel_start);
+      const now = new Date();
+      
+      switch (dateFilter) {
+        case 'upcoming':
+          return bookingDate >= now;
+        case 'current':
+          const today = new Date();
+          const startDate = new Date(booking.travel_start);
+          const endDate = new Date(booking.travel_end);
+          return startDate <= today && endDate >= today;
+        case 'past':
+          return new Date(booking.travel_end) < now;
+        default:
+          return true;
+      }
+    })();
 
-    createVoucher(booking)
-      .then((newVoucher) => {
-        navigate(`/vouchers?bookingId=${newVoucher.booking_id}`);
-      })
-      .catch((error) => {
-        // Error toast is handled in useBookingData mutation's onError
-        console.error("Voucher creation failed", error);
-      });
-  };
-  
-  const handleBulkUpdate = (status: BookingStatus) => {
-    if (selectedBookings.length === 0) {
-      toast.warning("No bookings selected.");
-      return;
-    }
-    bulkUpdateStatus({ ids: selectedBookings, status })
-      .then(() => setSelectedBookings([]));
-  };
-  
-  const handleBulkDelete = () => {
-    if (selectedBookings.length === 0) {
-      toast.warning("No bookings selected.");
-      return;
-    }
-    bulkDelete(selectedBookings)
-      .then(() => setSelectedBookings([]));
-  };
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center space-x-4 p-4 border rounded-md">
-              <Skeleton className="h-5 w-5 rounded-sm" />
-              <Skeleton className="h-4 w-[10%]" />
-              <Skeleton className="h-4 w-[15%]" />
-              <Skeleton className="h-4 w-[15%]" />
-              <Skeleton className="h-4 w-[20%]" />
-              <Skeleton className="h-4 w-[10%]" />
-              <Skeleton className="h-4 w-[10%]" />
-              <Skeleton className="h-8 w-[15%]" />
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="text-center py-10 text-red-500">
-          <p>Failed to load bookings. Please try again later.</p>
-        </div>
-      );
-    }
-    
+  if (error) {
     return (
-      <div className="border rounded-md">
-        <BookingTable
-          bookings={bookings || []}
-          selectedBookings={selectedBookings}
-          onSelectBooking={handleSelectBooking}
-          onSelectAll={handleSelectAll}
-          onView={handleView}
-          onStatusUpdate={handleStatusUpdate}
-          onVoucher={handleVoucher}
-        />
+      <div className="container mx-auto px-6 py-8">
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-800">Error Loading Bookings</CardTitle>
+            <CardDescription className="text-red-600">
+              There was an error loading your bookings. Please try again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => refetch()} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
-  };
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="container mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Bookings</h1>
-          <p className="text-gray-500 mt-2">View and manage all your travel bookings.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bookings</h1>
+          <p className="text-gray-600">Manage and track all your bookings</p>
         </div>
-        <Button onClick={() => toast.info("Create new booking form not implemented yet.")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Booking
-        </Button>
+        <div className="flex gap-3 mt-4 md:mt-0">
+          <Button onClick={() => refetch()} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button asChild>
+            <Link to="/bookings/create">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Booking
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <BookingAnalyticsDashboard />
-      
-      <BookingFilters 
-        filters={filters}
-        onFiltersChange={setFilters}
-        onApplyFilters={() => toast.info(`Filtering not implemented yet. Filters: ${JSON.stringify(filters)}`)}
-        onClearFilters={() => setFilters({})}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{bookings.length}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
+            <FileText className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {bookings.filter(b => b.status === 'confirmed').length}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <FileText className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {bookings.filter(b => b.status === 'pending').length}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <FileText className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {bookings.filter(b => b.status === 'completed').length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <BookingFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        dateFilter={dateFilter}
+        onDateChange={setDateFilter}
+        onClearFilters={() => {
+          setSearchTerm('');
+          setStatusFilter('all');
+          setDateFilter('all');
+        }}
       />
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>All Bookings</CardTitle>
-            {bookings && bookings.length > 0 && (
-              <BulkBookingActions
-                  bookings={bookings}
-                  selectedBookings={selectedBookings}
-                  onSelectionChange={setSelectedBookings}
-                  onBulkStatusUpdate={handleBulkUpdate}
-                  onBulkDelete={handleBulkDelete}
-              />
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {renderContent()}
-        </CardContent>
-      </Card>
+      {/* Bookings Table */}
+      <BookingTable bookings={filteredBookings} isLoading={isLoading} />
     </div>
   );
 };
