@@ -600,9 +600,53 @@ export type Database = {
           },
         ]
       }
+      organization_audit_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          org_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          org_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          org_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_audit_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_audit_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           logo_url: string | null
           name: string
@@ -614,6 +658,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -625,6 +671,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           logo_url?: string | null
           name?: string
@@ -634,7 +682,15 @@ export type Database = {
           subscription_tier?: string | null
           tagline?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {

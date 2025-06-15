@@ -23,6 +23,11 @@ const sidebarItems = [
     icon: Users,
   },
   {
+    title: 'Organization Management', // <-- ADDED
+    href: '/admin/organizations',
+    icon: Database,
+  },
+  {
     title: 'System Settings',
     href: '/admin/settings',
     icon: Settings,
@@ -31,11 +36,6 @@ const sidebarItems = [
     title: 'Security',
     href: '/admin/security',
     icon: Shield,
-  },
-  {
-    title: 'Database',
-    href: '/admin/database',
-    icon: Database,
   },
   {
     title: 'Analytics',
