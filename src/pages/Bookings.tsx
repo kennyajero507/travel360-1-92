@@ -5,12 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Plus, RefreshCw, FileText, Upload } from 'lucide-react';
 import { BookingTable } from '../components/booking/BookingTable';
-import { BookingFilters } from '../components/booking/BookingFilters';
+import BookingFilters from '../components/booking/BookingFilters';
 import { useBookingData } from '../hooks/useBookingData';
 import { toast } from 'sonner';
 
 const Bookings = () => {
-  const { data: bookings = [], isLoading, error, refetch } = useBookingData();
+  const { bookings, isLoading, error, refetch } = useBookingData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
@@ -138,23 +138,40 @@ const Bookings = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <BookingFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        dateFilter={dateFilter}
-        onDateChange={setDateFilter}
-        onClearFilters={() => {
-          setSearchTerm('');
-          setStatusFilter('all');
-          setDateFilter('all');
-        }}
-      />
+      {/* Simple Filters */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search bookings..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Dates</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="current">Current</option>
+          <option value="past">Past</option>
+        </select>
+      </div>
 
       {/* Bookings Table */}
-      <BookingTable bookings={filteredBookings} isLoading={isLoading} />
+      <BookingTable bookings={filteredBookings} />
     </div>
   );
 };

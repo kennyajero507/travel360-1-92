@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getAllBookings } from '../services/bookingReadService';
@@ -12,7 +13,7 @@ export const useBookingData = () => {
   const queryClient = useQueryClient();
 
   // Fetching bookings
-  const { data: bookings = [], isLoading, error } = useQuery<Booking[]>({
+  const { data: bookings = [], isLoading, error, refetch } = useQuery<Booking[]>({
     queryKey: ['bookings'],
     queryFn: getAllBookings,
   });
@@ -95,6 +96,7 @@ export const useBookingData = () => {
     bookings,
     isLoading,
     error,
+    refetch,
     updateBookingStatus: updateStatusMutation.mutate,
     createBooking: createBookingMutation.mutateAsync,
     createVoucher: createVoucherMutation.mutateAsync,
