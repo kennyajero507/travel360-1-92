@@ -113,6 +113,47 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          org_id: string | null
+          subject: string
+          template_type: string
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          org_id?: string | null
+          subject: string
+          template_type: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          org_id?: string | null
+          subject?: string
+          template_type?: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotels: {
         Row: {
           additional_details: Json | null
@@ -391,6 +432,50 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          read: boolean
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          read?: boolean
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          read?: boolean
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
@@ -607,6 +692,57 @@ export type Database = {
           },
         ]
       }
+      quote_hotel_options: {
+        Row: {
+          created_at: string | null
+          currency_code: string | null
+          hotel_id: string | null
+          id: string
+          is_selected: boolean | null
+          option_name: string | null
+          quote_id: string
+          room_arrangements: Json | null
+          total_price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency_code?: string | null
+          hotel_id?: string | null
+          id?: string
+          is_selected?: boolean | null
+          option_name?: string | null
+          quote_id: string
+          room_arrangements?: Json | null
+          total_price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          currency_code?: string | null
+          hotel_id?: string | null
+          id?: string
+          is_selected?: boolean | null
+          option_name?: string | null
+          quote_id?: string
+          room_arrangements?: Json | null
+          total_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_hotel_options_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_hotel_options_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_markup: {
         Row: {
           created_at: string | null
@@ -638,6 +774,51 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_packages: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          package_name: string
+          quote_ids: string[]
+          status: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          package_name: string
+          quote_ids: string[]
+          status?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          package_name?: string
+          quote_ids?: string[]
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_packages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_packages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

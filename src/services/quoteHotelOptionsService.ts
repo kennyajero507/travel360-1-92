@@ -1,5 +1,5 @@
-// COMMENTED OUT: Table 'quote_hotel_options' does not exist in this project. Restore when table is created.
-/*
+
+// Restored: Quote Hotel Options database logic is now available for use.
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -169,4 +169,3 @@ export const quoteHotelOptionsService = {
     }
   }
 };
-*/

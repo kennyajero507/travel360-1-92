@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Package, AlertCircle } from 'lucide-react';
 
 const QuotePackageManager: React.FC = () => {
-  // For now, package feature is disabled until backend/table is ready.
+  // To be implemented: actual quote packages DB logic
+  // For now, keep feature stub
   return (
     <Card>
       <CardHeader>
@@ -18,7 +18,7 @@ const QuotePackageManager: React.FC = () => {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Quote package feature will be available soon. Please wait until system update is complete.
+            Quote package feature will be enabled soon. The database infrastructure is now ready; please ask to finalize the UI logic when ready to use live data!
           </AlertDescription>
         </Alert>
       </CardContent>
