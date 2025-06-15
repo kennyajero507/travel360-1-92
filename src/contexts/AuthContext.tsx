@@ -82,9 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Profile not found — retry with backoff
       if (retries > 0) {
-        setTimeout(() => fetchProfile(user, retries - 1), 1000 * (4 - retries)); // 1s, 2s, 3s
+        setTimeout(() => fetchProfile(user, retries - 1), 1000 * (4 - retries));
       } else {
         setError('Profile not found after several retries. Please contact support or try logging out and in.');
       }

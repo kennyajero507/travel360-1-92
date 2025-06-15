@@ -45,6 +45,7 @@ export const LogoSettings = () => {
       if (error) {
         console.error('Error loading organization settings:', error);
         errorHandler.handleError(error, 'LogoSettings.loadOrganizationSettings');
+        setSettings({});
         return;
       }
 
@@ -52,6 +53,7 @@ export const LogoSettings = () => {
     } catch (error) {
       console.error('Error in loadOrganizationSettings:', error);
       errorHandler.handleError(error, 'LogoSettings.loadOrganizationSettings');
+      setSettings({});
     } finally {
       setLoadingSettings(false);
     }

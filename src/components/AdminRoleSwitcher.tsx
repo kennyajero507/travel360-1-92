@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "./ui/button";
@@ -29,6 +28,7 @@ const AdminRoleSwitcher = () => {
         return;
       }
       
+      // The table "profiles" is now available in Supabase
       const { error } = await supabase
         .from('profiles')
         .update({ role })
@@ -39,8 +39,6 @@ const AdminRoleSwitcher = () => {
       }
       
       toast.success(`Role switched to ${role}`);
-      
-      // Reload page to update permissions
       window.location.reload();
     } catch (error) {
       console.error("Error switching role:", error);

@@ -1,4 +1,3 @@
-
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -71,7 +70,10 @@ export const authService = {
 
   async createOrganization(orgName: string): Promise<boolean> {
     try {
-      const { error } = await supabase.rpc('create_organization', { org_name: orgName });
+      // We'll add custom RPC or just insert for orgs
+      const { error } = await supabase
+        .from('organizations')
+        .insert({ name: orgName });
       if (error) {
         console.error('Error creating organization:', error);
         toast.error(error.message);
