@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthErrorBoundary } from "./components/auth/AuthErrorBoundary";
 import AuthGuard from "./components/auth/AuthGuard";
+import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -12,9 +13,7 @@ import OrganizationSetup from "./components/OrganizationSetup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import DashboardPage from "./pages/DashboardPage";
 import AdminLogin from "./pages/AdminLogin";
-// Newly added
 import Hotels from "./pages/Hotels";
 import Inquiries from "./pages/Inquiries";
 import Quotes from "./pages/Quotes";
@@ -31,6 +30,7 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
+              {/* Public Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -39,97 +39,36 @@ function App() {
                 path="/admin/login"
                 element={<AdminLogin />}
               />
-              {/* Core Dashboard/Home */}
-              <Route 
-                path="/"
-                element={
-                  <AuthGuard>
-                    <Dashboard />
-                  </AuthGuard>
-                }
-              />
-              {/* Profile dashboard page */}
-              <Route 
-                path="/dashboard"
-                element={
-                  <AuthGuard>
-                    <Dashboard />
-                  </AuthGuard>
-                }
-              />
-              {/* Admin dashboard route */}
-              <Route 
-                path="/admin/dashboard" 
-                element={
-                  <AuthGuard allowedRoles={['system_admin']}>
-                    <AdminDashboard />
-                  </AuthGuard>
-                } 
-              />
-              {/* Organization Setup */}
-              <Route 
-                path="/organization/setup"
-                element={
-                  <AuthGuard>
-                    <OrganizationSetup />
-                  </AuthGuard>
-                }
-              />
-              {/* Hotels */}
-              <Route 
-                path="/hotels"
-                element={
-                  <AuthGuard>
-                    <Hotels />
-                  </AuthGuard>
-                }
-              />
 
-              {/* Inquiries */}
-              <Route 
-                path="/inquiries"
+              {/* Protected Routes with Sidebar Layout */}
+              <Route
                 element={
                   <AuthGuard>
-                    <Inquiries />
+                    <Layout />
                   </AuthGuard>
                 }
-              />
-              <Route 
-                path="/inquiries/create"
-                element={
-                  <AuthGuard>
-                    <CreateInquiry />
-                  </AuthGuard>
-                }
-              />
-
-              {/* Quotes */}
-              <Route 
-                path="/quotes"
-                element={
-                  <AuthGuard>
-                    <Quotes />
-                  </AuthGuard>
-                }
-              />
-              <Route 
-                path="/quotes/create"
-                element={
-                  <AuthGuard>
-                    <CreateQuote />
-                  </AuthGuard>
-                }
-              />
-
-              {/* Bookings */}
-              <Route 
-                path="/bookings"
-                element={
-                  <AuthGuard>
-                    <Bookings />
-                  </AuthGuard>
-                }
-              />
+              >
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route
+                  path="/admin/dashboard"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminDashboard />
+                    </AuthGuard>
+                  }
+                />
+                <Route 
+                  path="/organization/setup"
+                  element={<OrganizationSetup />}
+                />
+                <Route path="/hotels" element={<Hotels />} />
+                <Route path="/inquiries" element={<Inquiries />} />
+                <Route path="/inquiries/create" element={<CreateInquiry />} />
+                <Route path="/quotes" element={<Quotes />} />
+                <Route path="/quotes/create" element={<CreateQuote />} />
+                <Route path="/bookings" element={<Bookings />} />
+              </Route>
             </Routes>
           </BrowserRouter>
         </AuthProvider>
