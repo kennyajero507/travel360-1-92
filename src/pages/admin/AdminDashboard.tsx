@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { useAuth } from "../../contexts/AuthContext";
+import AdminSystemStats from '../../components/admin/AdminSystemStats';
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
@@ -21,6 +23,12 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+
+      {/* Platform Analytics Panel */}
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Platform Stats</h2>
+        <AdminSystemStats />
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
