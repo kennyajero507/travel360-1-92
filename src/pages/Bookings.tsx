@@ -35,6 +35,7 @@ const Bookings = () => {
   const loadBookings = async () => {
     try {
       const data = await getAllBookings();
+      // Use convertToBooking to map each raw booking to Booking type
       const convertedBookings = data.map(convertToBooking);
       setBookings(convertedBookings);
       setFilteredBookings(convertedBookings);

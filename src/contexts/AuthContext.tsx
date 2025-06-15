@@ -1,9 +1,8 @@
-
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { profileService } from "./auth/profileService";
-import { defaultPermissions, calculatePermissions } from "./role/defaultPermissions";
+import defaultPermissions, { getPermissionsForRole } from "./role/defaultPermissions";
 import { UserProfile } from "./auth/types";
 
 interface AuthContextType {
@@ -103,8 +102,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       const profile = await profileService.fetchUserProfile(uid);
       if (profile) {
         setRole(profile.role || null);
-        setTier("basic"); // You could load tier from org or profile
-        setPermissions(calculatePermissions(profile.role || "org_owner")); // fallback role
+        setTier("basic");
+        setPermissions(getPermissionsForRole(profile.role || "org_owner")); // <-- Use getPermissionsForRole here
         if (profile.org_id) await loadOrganization(profile.org_id);
         else setOrganization(null);
       }
@@ -381,4 +380,3 @@ export const useAuth = () => {
 
 export { AuthContextProvider as AuthProvider };
 export default AuthContextProvider;
-
