@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -8,14 +9,14 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
-import { createBookingFromQuote } from "../services/bookingCreateService";
+// import { createBookingFromQuote } from "../services/bookingCreateService"; // bookings table not available
 
 const CreateBooking = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const quoteId = searchParams.get('quoteId');
   const { quotes } = useQuoteData();
-  
+
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -28,7 +29,6 @@ const CreateBooking = () => {
       const quote = quotes.find(q => q.id === quoteId);
       if (quote) {
         setSelectedQuote(quote);
-        
         // Check if quote has an approved hotel
         if (!quote.approved_hotel_id) {
           toast.error("Quote must have an approved hotel before creating a booking");
@@ -40,54 +40,27 @@ const CreateBooking = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedQuote) {
-      toast.error("No quote selected");
-      return;
-    }
 
-    if (!selectedQuote.approved_hotel_id) {
-      toast.error("Quote must have an approved hotel");
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      // Only pass quoteId and hotelId - all other booking data is generated in the service/backend
-      const newBooking = await createBookingFromQuote(selectedQuote.id, selectedQuote.approved_hotel_id);
-      
-      if (newBooking) {
-        toast.success("Booking created successfully");
-        navigate(`/booking-details/${newBooking.id}`);
-      }
-    } catch (error) {
-      console.error("Error creating booking:", error);
-      toast.error("Failed to create booking");
-    } finally {
-      setLoading(false);
-    }
+    toast.error("Bookings functionality is not available. The bookings table does not exist.");
+    return;
+    // All below booking creation logic is disabled until bookings table is present
   };
 
   const calculateTotalPrice = (quote: any) => {
     if (!quote) return 0;
-    
     const roomTotal = quote.room_arrangements?.reduce((sum: number, room: any) => sum + (room.total || 0), 0) || 0;
     const activitiesTotal = quote.activities?.reduce((sum: number, activity: any) => sum + (activity.cost * activity.num_people || 0), 0) || 0;
     const transportTotal = quote.transports?.reduce((sum: number, transport: any) => sum + (transport.cost || 0), 0) || 0;
     const transfersTotal = quote.transfers?.reduce((sum: number, transfer: any) => sum + (transfer.cost || 0), 0) || 0;
-    
     const subtotal = roomTotal + activitiesTotal + transportTotal + transfersTotal;
     const markupValue = quote.markup_value || 0;
     const markupType = quote.markup_type || "percentage";
-    
     let markup = 0;
     if (markupType === "percentage") {
       markup = (subtotal * markupValue) / 100;
     } else {
       markup = markupValue;
     }
-    
     return subtotal + markup;
   };
 
@@ -139,7 +112,7 @@ const CreateBooking = () => {
                 <p className="text-gray-900">{selectedQuote.duration_nights} nights, {selectedQuote.duration_days} days</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700">Adults</Label>
@@ -158,7 +131,7 @@ const CreateBooking = () => {
                 <p className="text-gray-900">{selectedQuote.infants}</p>
               </div>
             </div>
-            
+
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-medium">Total Amount</span>
@@ -184,6 +157,7 @@ const CreateBooking = () => {
                   value={formData.agentId}
                   onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
                   placeholder="Enter agent ID (optional)"
+                  disabled
                 />
               </div>
             </div>
@@ -195,7 +169,11 @@ const CreateBooking = () => {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder="Add any additional notes for this booking..."
                 rows={4}
+                disabled
               />
+            </div>
+            <div className="py-2 text-red-600">
+              Bookings functionality not implemented. Table missing.
             </div>
           </CardContent>
         </Card>
@@ -205,8 +183,8 @@ const CreateBooking = () => {
           <Button type="button" variant="outline" onClick={() => navigate('/quotes')}>
             Cancel
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Create Booking"}
+          <Button type="submit" disabled>
+            Not Available
           </Button>
         </div>
       </form>
@@ -215,3 +193,4 @@ const CreateBooking = () => {
 };
 
 export default CreateBooking;
+
