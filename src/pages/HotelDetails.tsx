@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
-import { MapPin, Phone, Mail, Star, Wifi, Car, Coffee, UtensilsCrossed, Waves, Building2, Edit, ArrowLeft } from "lucide-react";
+import { MapPin, Phone, Mail, Star, Wifi, Car, Coffee, UtensilsCrossed, Waves, Building2, Edit, ArrowLeft, DoorOpen } from "lucide-react";
 import { useHotelsData } from "../hooks/useHotelsData";
 
 const HotelDetails = () => {
@@ -60,10 +60,28 @@ const HotelDetails = () => {
     );
   }
 
+  // Room summary for header card
+  const roomSummary =
+    hotel.room_types && Array.isArray(hotel.room_types) && hotel.room_types.length > 0
+      ? (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {hotel.room_types.map((room: any, index: number) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="bg-teal-50 text-teal-800 border-teal-300"
+              >
+                {room.name} ({room.count || 1})
+              </Badge>
+            ))}
+          </div>
+        )
+      : <span className="text-muted-foreground">No room types defined</span>;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col-reverse md:flex-row md:justify-between md:items-start gap-2">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{hotel.name}</h1>
           <div className="flex items-center gap-2 mt-2">
@@ -74,8 +92,15 @@ const HotelDetails = () => {
               {hotel.status}
             </Badge>
           </div>
+          <div className="mt-2">
+            <span className="font-semibold text-sm text-teal-600">Rooms:</span> {roomSummary}
+          </div>
         </div>
         <div className="flex gap-2">
+          <Button onClick={() => navigate(`/hotels/${hotel.id}/rooms`)} variant="secondary">
+            <DoorOpen className="h-4 w-4 mr-2" />
+            Manage Rooms
+          </Button>
           <Button onClick={() => navigate(`/hotels/${hotel.id}/edit`)}>
             <Edit className="h-4 w-4 mr-2" />
             Edit Hotel

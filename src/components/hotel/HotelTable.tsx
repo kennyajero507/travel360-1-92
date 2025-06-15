@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -17,7 +16,7 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { MoreHorizontal, Star, StarOff, Eye, Edit } from "lucide-react";
+import { MoreHorizontal, Star, StarOff, Eye, Edit, DoorOpen } from "lucide-react";
 
 interface Hotel {
   id: string;
@@ -138,6 +137,13 @@ const HotelTable: React.FC<HotelTableProps> = ({
                       <Link to={`/hotels/${hotel.id}`} className="flex items-center w-full">
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
+                      <Link to={`/hotels/${hotel.id}/rooms`} className="flex items-center w-full">
+                        <DoorOpen className="mr-2 h-4 w-4" />
+                        Manage Rooms
                       </Link>
                     </DropdownMenuItem>
                     

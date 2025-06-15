@@ -50,6 +50,7 @@ import AdminEmailTemplates from "./pages/admin/AdminEmailTemplates";
 import AdminMaintenance from "./pages/admin/AdminMaintenance";
 import AdminLayout from "./components/admin/AdminLayout";
 import Landing from "./pages/Landing"; // Import the correct landing page
+import HotelRoomManagementPage from "./pages/HotelRoomManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,7 @@ function App() {
                 <Route path="/hotels/create" element={<CreateHotel />} />
                 <Route path="/hotels/:hotelId" element={<HotelDetails />} />
                 <Route path="/hotels/:hotelId/edit" element={<EditHotel />} />
+                <Route path="/hotels/:hotelId/rooms" element={<HotelRoomManagementPage />} />
                 <Route path="/inquiries" element={<Inquiries />} />
                 <Route path="/inquiries/create" element={<CreateInquiry />} />
                 <Route path="/inquiries/:inquiryId" element={<InquiryDetails />} />
