@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -16,7 +15,9 @@ const QuotePreview = () => {
   const navigate = useNavigate();
   const [clientPreview, setClientPreview] = useState<ClientQuotePreviewType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  
+  const [approvedHotelId, setApprovedHotelId] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
+
   useEffect(() => {
     const loadPreview = async () => {
       setLoading(true);
@@ -51,16 +52,31 @@ const QuotePreview = () => {
     loadPreview();
   }, [quoteId]);
   
+  useEffect(() => {
+    if (clientPreview && clientPreview.hotelOptions && clientPreview.hotelOptions.length > 0) {
+      // If preview data contains an approved hotel, store it
+      const approved = clientPreview.hotelOptions.find(opt => opt.selected);
+      setApprovedHotelId(approved ? approved.id : null);
+    }
+  }, [clientPreview]);
+
   const handleChoosePackage = async (hotelId: string) => {
     if (!quoteId) return;
-    
+    setApproving(true);
     try {
       await updateQuoteStatus(quoteId, "approved", hotelId);
       toast.success(`Package selected successfully!`);
-      // In a real app, this might redirect to a booking page or confirmation
+      setApprovedHotelId(hotelId);
+      // Refetch preview to update client UI
+      const updatedPreview = await generateClientPreview(quoteId);
+      if (updatedPreview) {
+        setClientPreview(updatedPreview);
+      }
     } catch (error) {
       console.error("Error selecting package:", error);
       toast.error("Failed to select package");
+    } finally {
+      setApproving(false);
     }
   };
   
@@ -93,6 +109,8 @@ const QuotePreview = () => {
         quote={clientPreview}
         onChoosePackage={handleChoosePackage}
         onRequestChanges={handleRequestChanges}
+        approvedHotelId={approvedHotelId || undefined}
+        approving={approving}
       />
     </div>
   );
