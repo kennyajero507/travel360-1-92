@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -50,6 +49,7 @@ import AdminAccessControl from "./pages/admin/AdminAccessControl";
 import AdminEmailTemplates from "./pages/admin/AdminEmailTemplates";
 import AdminMaintenance from "./pages/admin/AdminMaintenance";
 import AdminLayout from "./components/admin/AdminLayout";
+import Landing from "./pages/Landing"; // Import the correct landing page
 
 const queryClient = new QueryClient();
 
@@ -61,6 +61,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               {/* Public Routes */}
+              <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -105,7 +106,6 @@ function App() {
                   </AuthGuard>
                 }
               >
-                <Route path="/" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route 
                   path="/organization/setup"
@@ -151,4 +151,3 @@ function App() {
 }
 
 export default App;
-
