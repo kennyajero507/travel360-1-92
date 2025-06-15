@@ -1,0 +1,54 @@
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { supabase } from '../integrations/supabase/client';
+
+export const useVoucherActions = () => {
+  const queryClient = useQueryClient();
+
+  const sendEmailMutation = useMutation({
+    mutationFn: async (voucherId: string) => {
+      const vouchers = queryClient.getQueryData(['vouchers']) as any[];
+      const voucher = vouchers?.find(v => v.id === voucherId);
+      if (!voucher) throw new Error('Voucher not found');
+
+      const { error } = await supabase.functions.invoke('send-voucher-email', {
+        body: { voucher, booking: voucher.bookings }
+      });
+
+      if (error) throw error;
+
+      // Update the voucher as sent
+      const { error: updateError } = await supabase
+        .from('travel_vouchers')
+        .update({ email_sent: true })
+        .eq('id', voucherId);
+
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      toast.success('Voucher email sent successfully!');
+      queryClient.invalidateQueries({ queryKey: ['vouchers'] });
+    },
+    onError: (error) => {
+      console.error('Error sending voucher email:', error);
+      toast.error('Failed to send voucher email. Please try again.');
+    }
+  });
+
+  const handleDownload = async (voucherId: string) => {
+    try {
+      // This would integrate with your PDF generation service
+      toast.info('PDF download functionality coming soon!');
+    } catch (error) {
+      console.error('Error downloading voucher:', error);
+      toast.error('Failed to download voucher PDF.');
+    }
+  };
+
+  return {
+    sendEmail: sendEmailMutation.mutate,
+    handleDownload,
+    isLoading: sendEmailMutation.isPending
+  };
+};
