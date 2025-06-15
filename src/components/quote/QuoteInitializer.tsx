@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -34,7 +35,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
     childrenWithBed: 0,
     childrenNoBed: 0,
     infants: 0,
-    tourType: "domestic",
+    tourType: "domestic" as 'domestic' | 'international',
     notes: ""
   });
 
@@ -51,7 +52,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
         childrenWithBed: preselectedInquiry.children,
         childrenNoBed: 0, // Default as inquiry doesn't distinguish
         infants: preselectedInquiry.infants,
-        tourType: preselectedInquiry.tour_type,
+        tourType: preselectedInquiry.tour_type as 'domestic' | 'international',
         notes: preselectedInquiry.description || ""
       });
     }
@@ -91,7 +92,11 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
       activities: [],
       transports: [],
       transfers: [],
-      sectionMarkups: {}
+      sectionMarkups: {},
+      
+      // Initialize enhanced fields based on tour type
+      visa_documentation: formData.tourType === 'international' ? [] : undefined,
+      itinerary: []
     };
 
     onInitializeQuote(quoteData);
@@ -260,7 +265,7 @@ const QuoteInitializer: React.FC<QuoteInitializerProps> = ({
             <Label htmlFor="tourType">Tour Type</Label>
             <Select 
               value={formData.tourType} 
-              onValueChange={(value) => setFormData({...formData, tourType: value})}
+              onValueChange={(value: 'domestic' | 'international') => setFormData({...formData, tourType: value})}
               disabled={!!preselectedInquiry}
             >
               <SelectTrigger>
