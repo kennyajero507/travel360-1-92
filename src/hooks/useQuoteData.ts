@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllQuotes, deleteQuote } from "../services/quote/core";
 import { emailQuote, printQuote, downloadQuotePDF } from "../services/quote/client";
@@ -5,9 +6,21 @@ import { enhancedQuoteService } from "../services/enhancedQuoteService";
 import { getAvailableInquiries } from "../services/inquiry/api";
 import { QuoteData } from "../types/quote.types";
 import { toast } from "sonner";
+import { useAuth } from "../contexts/AuthContext";
+import { useRealtimeSync } from "./useRealtimeSync";
 
 export const useQuoteData = () => {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const orgId = profile?.org_id;
+
+  // Real-time sync for quotes table
+  useRealtimeSync({
+    table: 'quotes',
+    orgId,
+    queryKeysInvalidate: ['quotes', 'available-inquiries'],
+    queryClient,
+  });
 
   // Fetch quotes
   const { 
