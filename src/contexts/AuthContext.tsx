@@ -268,7 +268,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
   // ---- Organization and Invitation logic ----
 
-  // Org creation
+  // Org creation (FIXED: set org_id on profile after org creation)
   const createOrganization = async (orgName: string) => {
     setLoading(true);
     setError(null);
@@ -277,19 +277,36 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setError("Not logged in");
       return false;
     }
-    // Here you would call a backend function or insert into organizations table
+    // Insert org
     const { data, error: orgError } = await supabase
       .from("organizations")
       .insert([{ name: orgName, owner_id: user.id }])
       .select()
       .single();
-    setLoading(false);
-    if (orgError) {
-      setError(orgError.message || "Failed to create organization.");
+    if (orgError || !data) {
+      setLoading(false);
+      setError(orgError?.message || "Failed to create organization.");
       return false;
     }
     setOrganization(data);
+
+    // PATCH profile with new org_id immediately to avoid setup loop
+    const { error: profileUpdateError } = await supabase
+      .from("profiles")
+      .update({
+        org_id: data.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    if (profileUpdateError) {
+      setLoading(false);
+      setError(profileUpdateError.message || "Failed to link profile with organization.");
+      return false;
+    }
+
+    // Refresh profile (already will reload page in org setup component)
     await refreshProfile();
+    setLoading(false);
     return true;
   };
 
