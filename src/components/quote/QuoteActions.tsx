@@ -1,142 +1,74 @@
 
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Badge } from "../ui/badge";
-import { FileDown, Mail, Printer, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { QuoteData } from "../../types/quote.types";
-import { useAuth } from "../../contexts/AuthContext";
+import React from 'react';
+import { Button } from '../ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { MoreHorizontal, Eye, Edit, Trash2, Download, Send, BookOpen } from 'lucide-react';
+import { QuoteData } from '../../types/quote.types';
+import { ConvertToBookingButton } from './ConvertToBookingButton';
 
 interface QuoteActionsProps {
   quote: QuoteData;
-  onEmailQuote?: () => void;
-  onPrintQuote?: () => void;
-  onDownloadQuote?: () => void;
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDownload: (id: string) => void;
+  onSend: (id: string) => void;
 }
 
-const QuoteActions = ({ 
-  quote, 
-  onEmailQuote, 
-  onPrintQuote, 
-  onDownloadQuote 
-}: QuoteActionsProps) => {
-  const navigate = useNavigate();
-  const { profile } = useAuth();
-  
-  const canCreateBooking = profile && 
-    ['agent', 'tour_operator', 'org_owner'].includes(profile.role) &&
-    quote.status === 'approved';
-
-  const handleCreateBooking = () => {
-    navigate(`/quotes/${quote.id}/create-booking`);
-  };
-
-  const handleEmailQuote = () => {
-    if (onEmailQuote) {
-      onEmailQuote();
-    } else {
-      toast.success("Quote sent to client via email");
-    }
-  };
-
-  const handlePrintQuote = () => {
-    if (onPrintQuote) {
-      onPrintQuote();
-    } else {
-      window.print();
-    }
-  };
-
-  const handleDownloadQuote = () => {
-    if (onDownloadQuote) {
-      onDownloadQuote();
-    } else {
-      toast.success("Quote downloaded as PDF");
-    }
-  };
-
+export const QuoteActions: React.FC<QuoteActionsProps> = ({
+  quote,
+  onView,
+  onEdit,
+  onDelete,
+  onDownload,
+  onSend,
+}) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Quote Actions
-          <Badge 
-            variant="outline" 
-            className={
-              quote.status === 'approved' ? "bg-green-50 text-green-700 border-green-300" :
-              quote.status === 'sent' ? "bg-blue-50 text-blue-700 border-blue-300" :
-              quote.status === 'rejected' ? "bg-red-50 text-red-700 border-red-300" :
-              "bg-gray-50 text-gray-700 border-gray-300"
-            }
-          >
-            {quote.status?.charAt(0).toUpperCase() + quote.status?.slice(1) || 'Draft'}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Primary Actions */}
-        <div className="grid grid-cols-1 gap-2">
-          {canCreateBooking && (
-            <Button 
-              onClick={handleCreateBooking}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Booking
-            </Button>
+    <div className="flex items-center gap-2">
+      {/* Direct Convert to Booking Button for approved quotes */}
+      {quote.status === 'approved' && quote.approved_hotel_id && (
+        <ConvertToBookingButton quote={quote} variant="outline" size="sm" />
+      )}
+      
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => onView(quote.id)}>
+            <Eye className="h-4 w-4 mr-2" />
+            View Details
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEdit(quote.id)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Quote
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onDownload(quote.id)}>
+            <Download className="h-4 w-4 mr-2" />
+            Download PDF
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onSend(quote.id)}>
+            <Send className="h-4 w-4 mr-2" />
+            Send to Client
+          </DropdownMenuItem>
+          {quote.status !== 'converted' && quote.approved_hotel_id && (
+            <DropdownMenuItem asChild>
+              <div className="w-full">
+                <ConvertToBookingButton quote={quote} variant="outline" size="sm" />
+              </div>
+            </DropdownMenuItem>
           )}
-          
-          <Button 
-            variant="outline" 
-            onClick={handleEmailQuote}
-            className="w-full"
+          <DropdownMenuItem 
+            onClick={() => onDelete(quote.id)}
+            className="text-red-600 focus:text-red-600"
           >
-            <Mail className="h-4 w-4 mr-2" />
-            Email to Client
-          </Button>
-        </div>
-
-        {/* Secondary Actions */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handlePrintQuote}
-            size="sm"
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={handleDownloadQuote}
-            size="sm"
-          >
-            <FileDown className="h-4 w-4 mr-2" />
-            Download
-          </Button>
-        </div>
-
-        {/* Status Information */}
-        {quote.status === 'approved' && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-sm text-green-700">
-              ✅ This quote has been approved by the client and is ready for booking.
-            </p>
-          </div>
-        )}
-        
-        {quote.status === 'sent' && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-700">
-              📧 This quote has been sent to the client and is awaiting their response.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
-
-export default QuoteActions;
