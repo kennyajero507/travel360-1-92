@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus } from "../types/quote.types";
@@ -142,7 +143,10 @@ export class UnifiedQuoteService {
       activities: this.parseJsonField(dbRow.activities, []),
       transports: this.parseJsonField(dbRow.transports, []),
       transfers: this.parseJsonField(dbRow.transfers, []),
-      sectionMarkups: this.parseJsonField(dbRow.sectionMarkups, {}),
+      sectionMarkups: this.parseJsonField(dbRow.sectionmarkups, {}),
+      visa_documentation: this.parseJsonField(dbRow.visa_documentation, []),
+      document_checklist: this.parseJsonField(dbRow.document_checklist, []),
+      itinerary: this.parseJsonField(dbRow.itinerary, []),
       summary_data: this.parseJsonField(dbRow.summary_data, {})
     };
   }
@@ -160,14 +164,55 @@ export class UnifiedQuoteService {
 
   private prepareQuoteForDatabase(quote: QuoteData, userId: string) {
     return {
-      ...quote,
+      inquiry_id: quote.inquiry_id || null,
+      client: quote.client,
+      mobile: quote.mobile,
+      client_email: quote.client_email || null,
+      destination: quote.destination,
+      start_date: quote.start_date,
+      end_date: quote.end_date,
+      duration_days: quote.duration_days,
+      duration_nights: quote.duration_nights,
+      adults: quote.adults,
+      children_with_bed: quote.children_with_bed,
+      children_no_bed: quote.children_no_bed,
+      infants: quote.infants,
+      tour_type: quote.tour_type,
+      status: quote.status,
+      notes: quote.notes || null,
       created_by: quote.created_by || userId,
-      updated_at: new Date().toISOString(),
+      hotel_id: quote.hotel_id || null,
+      currency_code: quote.currency_code,
+      markup_type: quote.markup_type,
+      markup_value: quote.markup_value,
       room_arrangements: JSON.stringify(quote.room_arrangements || []),
       activities: JSON.stringify(quote.activities || []),
       transports: JSON.stringify(quote.transports || []),
       transfers: JSON.stringify(quote.transfers || []),
-      sectionMarkups: JSON.stringify(quote.sectionMarkups || {}),
+      sectionmarkups: JSON.stringify(quote.sectionMarkups || {}),
+      
+      // Enhanced international fields
+      visa_required: quote.visa_required || false,
+      passport_expiry_date: quote.passport_expiry_date || null,
+      preferred_currency: quote.preferred_currency || null,
+      flight_preference: quote.flight_preference || null,
+      travel_insurance_required: quote.travel_insurance_required || false,
+      visa_documentation: JSON.stringify(quote.visa_documentation || []),
+      
+      // Enhanced domestic fields
+      regional_preference: quote.regional_preference || null,
+      transport_mode_preference: quote.transport_mode_preference || null,
+      guide_language_preference: quote.guide_language_preference || null,
+      
+      // Enhanced common fields
+      estimated_budget_range: quote.estimated_budget_range || null,
+      special_requirements: quote.special_requirements || null,
+      document_checklist: JSON.stringify(quote.document_checklist || []),
+      workflow_stage: quote.workflow_stage || 'initial',
+      
+      // Itinerary
+      itinerary: JSON.stringify(quote.itinerary || []),
+      updated_at: new Date().toISOString(),
       summary_data: quote.summary_data ? JSON.stringify(quote.summary_data) : null
     };
   }
