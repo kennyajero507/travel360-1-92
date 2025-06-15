@@ -35,7 +35,7 @@ function App() {
                 path="/"
                 element={
                   <AuthGuard>
-                    <DashboardPage />
+                    <Dashboard />
                   </AuthGuard>
                 }
               />
@@ -43,7 +43,7 @@ function App() {
                 path="/dashboard"
                 element={
                   <AuthGuard>
-                    <DashboardPage />
+                    <Dashboard />
                   </AuthGuard>
                 }
               />

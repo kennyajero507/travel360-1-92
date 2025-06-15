@@ -10,7 +10,7 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   role: string | null;
-  permissions: ReturnType<typeof calculatePermissions>;
+  permissions: ReturnType<typeof getPermissionsForRole>;
   tier: string;
   loading: boolean;
   isLoading: boolean; // for backward compat
@@ -103,7 +103,9 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       if (profile) {
         setRole(profile.role || null);
         setTier("basic");
-        setPermissions(getPermissionsForRole(profile.role || "org_owner")); // <-- Use getPermissionsForRole here
+        // Use as string because UserRole enum/type is likely string union,
+        // if you have UserRole type adjust as needed
+        setPermissions(getPermissionsForRole((profile.role || "org_owner") as string));
         if (profile.org_id) await loadOrganization(profile.org_id);
         else setOrganization(null);
       }

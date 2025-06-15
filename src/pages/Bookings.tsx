@@ -36,7 +36,7 @@ const Bookings = () => {
     try {
       const data = await getAllBookings();
       // Use convertToBooking to map each raw booking to Booking type
-      const convertedBookings = data.map(convertToBooking);
+      const convertedBookings = data.map((raw: any) => convertToBooking(raw));
       setBookings(convertedBookings);
       setFilteredBookings(convertedBookings);
     } catch (error) {
