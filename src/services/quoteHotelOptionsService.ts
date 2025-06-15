@@ -138,6 +138,7 @@ export const quoteHotelOptionsService = {
       await supabase
         .from('quotes')
         .update({
+          // These columns exist in the DB post-migration
           selected_hotel_option_id: optionId,
           client_selection_date: new Date().toISOString()
         })

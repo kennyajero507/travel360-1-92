@@ -16,6 +16,19 @@ export interface Notification {
   related_type?: 'quote' | 'booking' | 'inquiry' | 'invoice';
 }
 
+// type guard to ensure string is valid notification type
+function isNotificationType(type: any): type is Notification['type'] {
+  return ['info', 'success', 'warning', 'error'].includes(type);
+}
+
+// Helper to coerce raw notification data from Supabase to Notification type
+function toNotification(n: any): Notification {
+  return {
+    ...n,
+    type: isNotificationType(n.type) ? n.type : 'info',
+  };
+}
+
 // Realtime user notifications (read/unread, create)
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -34,8 +47,9 @@ export const useNotifications = () => {
         .select('*')
         .order('created_at', { ascending: false });
       if (!error) {
-        setNotifications(data || []);
-        setUnreadCount((data || []).filter((n: any) => !n.read).length);
+        const converted = (data || []).map(toNotification);
+        setNotifications(converted);
+        setUnreadCount(converted.filter((n: any) => !n.read).length);
       }
       setLoading(false);
     };
@@ -89,7 +103,9 @@ export const useNotifications = () => {
     setUnreadCount(0);
   };
 
-  const createNotification = async (notification: Omit<Notification, 'id' | 'created_at' | 'read'>) => {
+  const createNotification = async (
+    notification: Omit<Notification, 'id' | 'created_at' | 'read'>
+  ) => {
     // logged in user's id is set server-side via RLS
     const { data, error } = await supabase
       .from('notifications')
@@ -98,7 +114,7 @@ export const useNotifications = () => {
       .single();
 
     if (!error && data) {
-      setNotifications((prev) => [data, ...prev]);
+      setNotifications((prev) => [toNotification(data), ...prev]);
       setUnreadCount((prev) => prev + 1);
       toast(notification.title, {
         description: notification.message,
@@ -121,8 +137,9 @@ export const useNotifications = () => {
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false });
-      setNotifications(data || []);
-      setUnreadCount((data || []).filter((n: any) => !n.read).length);
+      const converted = (data || []).map(toNotification);
+      setNotifications(converted);
+      setUnreadCount(converted.filter((n: any) => !n.read).length);
     },
   };
 };

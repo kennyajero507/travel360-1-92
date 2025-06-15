@@ -937,6 +937,7 @@ export type Database = {
           children_no_bed: number | null
           children_with_bed: number | null
           client: string | null
+          client_selection_date: string | null
           created_at: string | null
           created_by: string | null
           currency_code: string | null
@@ -954,6 +955,7 @@ export type Database = {
           package_name: string | null
           room_arrangements: Json | null
           sectionmarkups: Json | null
+          selected_hotel_option_id: string | null
           start_date: string | null
           status: string
           summary_data: Json | null
@@ -969,6 +971,7 @@ export type Database = {
           children_no_bed?: number | null
           children_with_bed?: number | null
           client?: string | null
+          client_selection_date?: string | null
           created_at?: string | null
           created_by?: string | null
           currency_code?: string | null
@@ -986,6 +989,7 @@ export type Database = {
           package_name?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
+          selected_hotel_option_id?: string | null
           start_date?: string | null
           status?: string
           summary_data?: Json | null
@@ -1001,6 +1005,7 @@ export type Database = {
           children_no_bed?: number | null
           children_with_bed?: number | null
           client?: string | null
+          client_selection_date?: string | null
           created_at?: string | null
           created_by?: string | null
           currency_code?: string | null
@@ -1018,6 +1023,7 @@ export type Database = {
           package_name?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
+          selected_hotel_option_id?: string | null
           start_date?: string | null
           status?: string
           summary_data?: Json | null
