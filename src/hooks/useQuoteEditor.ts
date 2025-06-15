@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { updateQuoteStatus, generateClientPreview, emailQuote as emailQuoteService } from "../services/quoteService";
+import { updateQuoteStatus } from "../services/quote/core";
+import { generateClientPreview, emailQuote as emailQuoteService, downloadQuotePDF as downloadQuoteService } from "../services/quote/client";
 import { enhancedQuoteService } from "../services/enhancedQuoteService";
 import { QuoteData, RoomArrangement } from "../types/quote.types";
 import { useEnhancedQuoteCalculations } from "./useEnhancedQuoteCalculations";
@@ -255,6 +256,19 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     });
   }, []);
 
+  // Check if hotel selection is complete
+  const isHotelSelectionComplete = useCallback(() => {
+    if (!quote) return false;
+    
+    // Must have at least one hotel with room arrangements
+    return (
+      selectedHotels.length > 0 && 
+      selectedHotels.every(hotelId => 
+        quote.room_arrangements?.some(arr => arr.hotel_id === hotelId)
+      )
+    );
+  }, [quote, selectedHotels]);
+
   // Enhanced preview function for client view
   const previewQuote = useCallback(async () => {
     if (!quote) return;
@@ -278,7 +292,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
       console.error("Error generating preview:", error);
       toast.error("Failed to generate preview");
     }
-  }, [quote]);
+  }, [quote, isHotelSelectionComplete]);
   
   // Handle stage changes
   const handleStageChange = useCallback((stage: 'hotel-selection' | 'quote-details') => {
@@ -289,7 +303,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     }
     
     setEditorStage(stage);
-  }, []);
+  }, [isHotelSelectionComplete]);
 
   // Save the quote using enhanced service
   const handleSave = useCallback(async () => {
@@ -318,7 +332,7 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
     } finally {
       setSaving(false);
     }
-  }, [quote, editorStage, updateQuoteStable]);
+  }, [quote, editorStage, updateQuoteStable, isHotelSelectionComplete]);
 
   // Email the quote
   const emailQuote = useCallback(async () => {
@@ -345,29 +359,15 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
   
   // Download the quote
   const downloadQuote = useCallback(() => {
-    if (!quote) return;
+    if (!quote?.id) return;
     
     if (!isHotelSelectionComplete()) {
       toast.error("Please complete hotel selection before downloading");
       return;
     }
     
-    toast.success("Quote downloaded as PDF");
-    // In a real app, this would generate and download a PDF
-  }, [quote]);
-
-  // Check if hotel selection is complete
-  const isHotelSelectionComplete = useCallback(() => {
-    if (!quote) return false;
-    
-    // Must have at least one hotel with room arrangements
-    return (
-      selectedHotels.length > 0 && 
-      selectedHotels.every(hotelId => 
-        quote.room_arrangements?.some(arr => arr.hotel_id === hotelId)
-      )
-    );
-  }, [quote, selectedHotels]);
+    downloadQuoteService(quote.id);
+  }, [quote, isHotelSelectionComplete]);
 
   return {
     loading,

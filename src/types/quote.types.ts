@@ -94,6 +94,7 @@ export interface QuoteData {
   inquiry_id?: string;
   client: string;
   mobile: string;
+  client_email?: string;
   destination: string;
   start_date: string;
   end_date: string;

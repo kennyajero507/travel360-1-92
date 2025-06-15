@@ -1,73 +1,9 @@
-import { supabase } from "../integrations/supabase/client";
-import { QuoteData, QuoteStatus, ClientQuotePreview, HotelOption } from "../types/quote.types";
-import { Hotel } from "../types/hotel.types";
+
+import { supabase } from "../../integrations/supabase/client";
+import { ClientQuotePreview, HotelOption } from "../../types/quote.types";
 import { toast } from "sonner";
-import { generateQuotePDF } from "./pdfQuoteGenerator";
-
-// Define a compatible Hotel interface for the quote service
-interface QuoteServiceHotel {
-  id: string;
-  name: string;
-  category?: string;
-  status?: string; // Allow any string to match database
-}
-
-export const getAllQuotes = async (): Promise<QuoteData[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('quotes')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    
-    return (data || []).map(transformQuoteData);
-  } catch (error) {
-    console.error('Error fetching quotes:', error);
-    toast.error('Failed to fetch quotes');
-    return [];
-  }
-};
-
-const transformQuoteData = (dbRow: any): QuoteData => {
-  return {
-    ...dbRow,
-    status: dbRow.status as QuoteStatus,
-    room_arrangements: parseJsonField(dbRow.room_arrangements, []),
-    activities: parseJsonField(dbRow.activities, []),
-    transports: parseJsonField(dbRow.transports, []),
-    transfers: parseJsonField(dbRow.transfers, []),
-    sectionMarkups: parseJsonField(dbRow.sectionMarkups, {})
-  };
-};
-
-const parseJsonField = (field: any, defaultValue: any) => {
-  if (typeof field === 'string') {
-    try {
-      return JSON.parse(field);
-    } catch {
-      return defaultValue;
-    }
-  }
-  return Array.isArray(field) || typeof field === 'object' ? field : defaultValue;
-};
-
-export const getQuoteById = async (id: string): Promise<QuoteData | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('quotes')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) throw error;
-    
-    return data ? transformQuoteData(data) : null;
-  } catch (error) {
-    console.error('Error fetching quote:', error);
-    return null;
-  }
-};
+import { generateQuotePDF } from "../pdfQuoteGenerator";
+import { getQuoteById } from "./core";
 
 export const generateClientPreview = async (quoteId: string): Promise<ClientQuotePreview | null> => {
   try {
@@ -165,49 +101,6 @@ export const generateClientPreview = async (quoteId: string): Promise<ClientQuot
   }
 };
 
-export const updateQuoteStatus = async (quoteId: string, status: QuoteStatus, approvedHotelId?: string): Promise<void> => {
-  try {
-    const updateData: any = { 
-      status,
-      updated_at: new Date().toISOString()
-    };
-    
-    if (approvedHotelId) {
-      updateData.approved_hotel_id = approvedHotelId;
-    }
-
-    const { error } = await supabase
-      .from('quotes')
-      .update(updateData)
-      .eq('id', quoteId);
-
-    if (error) throw error;
-    
-    toast.success(`Quote status updated to ${status}`);
-  } catch (error) {
-    console.error('Error updating quote status:', error);
-    toast.error('Failed to update quote status');
-    throw error;
-  }
-};
-
-export const deleteQuote = async (quoteId: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('quotes')
-      .delete()
-      .eq('id', quoteId);
-
-    if (error) throw error;
-    
-    toast.success('Quote deleted successfully');
-  } catch (error) {
-    console.error('Error deleting quote:', error);
-    toast.error('Failed to delete quote');
-    throw error;
-  }
-};
-
 export const emailQuote = async (quoteId: string): Promise<void> => {
   try {
     const quote = await getQuoteById(quoteId);
@@ -220,8 +113,6 @@ export const emailQuote = async (quoteId: string): Promise<void> => {
 
     if (!quote.client_email) {
       toast.error("Client email is not set for this quote. Please add it before sending.");
-      // NOTE: Since we cannot edit the UI to add this field yet, this will currently always fail.
-      // This logic is in place for when the UI is updated.
       throw new Error("Client email missing.");
     }
     
@@ -248,9 +139,6 @@ export const printQuote = async (quoteId: string): Promise<void> => {
     const quotePreview = await generateClientPreview(quoteId);
     if (quotePreview) {
       const pdfBlob = await generateQuotePDF(quotePreview);
-      // This is a simplified print approach. It opens the PDF in a new tab for printing.
-      // A more direct print might require more complex solutions.
-      // For now, generating a PDF and letting user print it is a solid first step.
       window.print();
       toast.info('Please use your browser\'s print dialog to print the quote.');
     } else {

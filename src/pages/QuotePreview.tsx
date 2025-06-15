@@ -5,7 +5,8 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import ClientQuotePreviewComponent from "../components/quote/ClientQuotePreview";
 import { ClientQuotePreview as ClientQuotePreviewType } from "../types/quote.types";
-import { generateClientPreview, updateQuoteStatus } from "../services/quoteService";
+import { updateQuoteStatus } from "../services/quote/core";
+import { generateClientPreview } from "../services/quote/client";
 import { toast } from "sonner";
 import LoadingIndicator from "../components/quote/LoadingIndicator";
 
