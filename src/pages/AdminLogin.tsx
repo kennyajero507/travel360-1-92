@@ -15,9 +15,9 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  // Form state
+  // Form state with updated default credentials
   const [formData, setFormData] = useState({
-    email: "",
+    email: "admin@travelflow360.com",
     password: "",
   });
   
@@ -173,9 +173,14 @@ const AdminLogin = () => {
           {loading ? "Verifying..." : "Secure Sign In"}
         </Button>
         
-        <p className="text-sm text-center text-gray-500">
-          Development mode: 2FA validation disabled
-        </p>
+        <div className="text-sm text-center space-y-2">
+          <p className="text-gray-500">
+            Default credentials: admin@travelflow360.com
+          </p>
+          <p className="text-gray-500">
+            Password: TravelFlow360Admin2024!
+          </p>
+        </div>
       </form>
     </AuthLayout>
   );

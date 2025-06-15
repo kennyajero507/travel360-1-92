@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -26,23 +25,11 @@ const SystemSettings = () => {
       if (result.success) {
         setAdminCreated(true);
         toast.success('Super admin account created successfully!');
-        toast.info(`Email: ${result.credentials.email}`, {
-          duration: 10000,
-        });
-        toast.info(`Password: ${result.credentials.password}`, {
+        toast.info(`Login at /admin/login with the credentials shown below`, {
           duration: 10000,
         });
       } else {
         toast.error(result.message);
-        // Still show credentials if they exist
-        if (result.credentials) {
-          toast.info(`Email: ${result.credentials.email}`, {
-            duration: 10000,
-          });
-          toast.info(`Password: ${result.credentials.password}`, {
-            duration: 10000,
-          });
-        }
       }
     } catch (error) {
       console.error('Error creating super admin:', error);
@@ -108,7 +95,7 @@ const SystemSettings = () => {
 
           <div className="text-sm text-gray-600">
             <p>This will create or update the super admin account with system administrator privileges.</p>
-            <p className="mt-1">Use this account to access the admin dashboard at <code>/admin-login</code></p>
+            <p className="mt-1">Use this account to access the admin dashboard at <code>/admin/login</code></p>
           </div>
         </CardContent>
       </Card>
