@@ -7,9 +7,9 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { RoomType } from '../../types/hotel.types';
 import { useInventoryData } from '../../hooks/useInventoryData';
-import { format, startOfMonth, addMonths, subMonths, getYear, getMonth, isEqual, startOfDay } from 'date-fns';
+import { format, startOfMonth, addMonths, subMonths, getYear, getMonth } from 'date-fns';
 import { toast } from 'sonner';
-import { DayPicker, DayProps } from 'react-day-picker';
+import { DayContentProps } from 'react-day-picker';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { HotelRoomInventory } from '@/services/inventoryService';
 
@@ -78,7 +78,7 @@ const InventoryCalendar = ({ hotelId, roomTypes }: InventoryCalendarProps) => {
         }
     };
 
-    const DayWithInventory = (props: DayProps) => {
+    const DayContentWithInventory = (props: DayContentProps) => {
         const dateString = format(props.date, 'yyyy-MM-dd');
         const inventoryItem = inventoryMap.get(dateString);
         const totalUnits = selectedRoomType?.totalUnits ?? 0;
@@ -87,9 +87,9 @@ const InventoryCalendar = ({ hotelId, roomTypes }: InventoryCalendarProps) => {
         
         return (
             <div className="relative h-full w-full flex flex-col justify-center items-center">
-                <DayPicker.Day {...props} />
+                <span>{format(props.date, 'd')}</span>
                 {selectedRoomTypeId && props.displayMonth.getMonth() === props.date.getMonth() && (
-                    <div className="absolute bottom-0.5 left-0 right-0 text-xs text-center">
+                    <div className="absolute bottom-1 left-0 right-0 text-xs text-center">
                         <span className="text-green-600 font-semibold">{availableUnits}</span>/<span className="text-red-600">{bookedUnits}</span>
                     </div>
                 )}
@@ -143,7 +143,7 @@ const InventoryCalendar = ({ hotelId, roomTypes }: InventoryCalendarProps) => {
                             day: "h-16 w-full p-0 font-normal aria-selected:opacity-100",
                         }}
                         components={{
-                            Day: DayWithInventory,
+                            Day: DayContentWithInventory,
                             IconLeft: () => null,
                             IconRight: () => null,
                         }}
