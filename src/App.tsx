@@ -36,6 +36,18 @@ import VoucherDetailsPage from "./pages/VoucherDetailsPage";
 import QuotePreview from "./pages/QuotePreview";
 import ClientDetailsPage from "./pages/ClientDetailsPage";
 import CreateBookingPage from './pages/CreateBookingPage';
+import AdminUserManagement from "./pages/admin/AdminUserManagement";
+import AdminOrganizationManagement from "./pages/admin/AdminOrganizationManagement";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminSystemHealth from "./pages/admin/AdminSystemHealth";
+import AdminRoles from "./pages/admin/AdminRoles";
+import AdminDatabase from "./pages/admin/AdminDatabase";
+import AdminLogs from "./pages/admin/AdminLogs";
+import AdminMonitoring from "./pages/admin/AdminMonitoring";
+import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
+import AdminAccessControl from "./pages/admin/AdminAccessControl";
+import AdminEmailTemplates from "./pages/admin/AdminEmailTemplates";
+import AdminMaintenance from "./pages/admin/AdminMaintenance";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +113,120 @@ function App() {
                 <Route path="/vouchers/:voucherId" element={<VoucherDetailsPage />} />
                 <Route path="/team" element={<TeamManagementPage />} />
                 <Route path="/agent-management" element={<AgentManagement />} />
+                <Route
+                  path="/admin/health"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminSystemHealth />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/analytics"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      {/* Reuse AdminDashboard for now */}
+                      <AdminDashboard />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminUserManagement />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/organizations"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminOrganizationManagement />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/roles"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminRoles />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/database"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminDatabase />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/logs"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminLogs />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/monitoring"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminMonitoring />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/security"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      {/* Reuse AdminDashboard for now */}
+                      <AdminDashboard />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/audit"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminAuditLogs />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/access"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminAccessControl />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/settings"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminSettings />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/templates"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminEmailTemplates />
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="/admin/maintenance"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminMaintenance />
+                    </AuthGuard>
+                  }
+                />
               </Route>
             </Routes>
           </BrowserRouter>

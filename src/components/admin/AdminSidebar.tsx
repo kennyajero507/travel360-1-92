@@ -2,72 +2,96 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  Shield,
+import {
+  LayoutDashboard,
+  Activity,
+  BarChart3,
+  Users,
   Database,
-  BarChart3
+  Shield,
+  FileSearch,
+  FileText,
+  ShieldCheck,
+  Settings,
+  Mail
 } from 'lucide-react';
 
-const sidebarItems = [
+const sidebarSections = [
   {
-    title: 'Dashboard',
-    href: '/admin/dashboard',
-    icon: LayoutDashboard,
+    title: "Overview",
+    items: [
+      { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+      { title: "System Health", href: "/admin/health", icon: Activity },
+      { title: "Analytics", href: "/admin/analytics", icon: BarChart3 }
+    ]
   },
   {
-    title: 'User Management',
-    href: '/admin/users',
-    icon: Users,
+    title: "User Management",
+    items: [
+      { title: "Users", href: "/admin/users", icon: Users },
+      { title: "Organizations", href: "/admin/organizations", icon: Database },
+      { title: "Roles & Permissions", href: "/admin/roles", icon: Shield }
+    ]
   },
   {
-    title: 'Organization Management', // <-- ADDED
-    href: '/admin/organizations',
-    icon: Database,
+    title: "System Operations",
+    items: [
+      { title: "Database", href: "/admin/database", icon: Database },
+      { title: "System Logs", href: "/admin/logs", icon: FileText },
+      { title: "Monitoring", href: "/admin/monitoring", icon: Activity }
+    ]
   },
   {
-    title: 'System Settings',
-    href: '/admin/settings',
-    icon: Settings,
+    title: "Security",
+    items: [
+      { title: "Security Events", href: "/admin/security", icon: Shield },
+      { title: "Audit Logs", href: "/admin/audit", icon: FileSearch },
+      { title: "Access Control", href: "/admin/access", icon: ShieldCheck }
+    ]
   },
   {
-    title: 'Security',
-    href: '/admin/security',
-    icon: Shield,
-  },
-  {
-    title: 'Analytics',
-    href: '/admin/analytics',
-    icon: BarChart3,
-  },
+    title: "Settings",
+    items: [
+      { title: "System Settings", href: "/admin/settings", icon: Settings },
+      { title: "Email Templates", href: "/admin/templates", icon: Mail },
+      { title: "Maintenance", href: "/admin/maintenance", icon: Settings }
+    ]
+  }
 ];
 
 export const Sidebar = () => {
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen">
+    <div className="w-64 bg-white border-r border-gray-200 h-screen overflow-y-auto">
       <div className="p-4">
         <h2 className="text-lg font-semibold text-gray-900">Admin Panel</h2>
       </div>
-      <nav className="mt-4">
-        <div className="space-y-1 px-2">
-          {sidebarItems.map((item) => (
-            <NavLink
-              key={item.href}
-              to={item.href}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                )
-              }
-            >
-              <item.icon className="h-5 w-5" />
-              {item.title}
-            </NavLink>
+      <nav className="mt-2">
+        <div className="px-2 pb-8 space-y-6">
+          {sidebarSections.map((section) => (
+            <div key={section.title}>
+              <div className="px-2 py-1 text-xs uppercase font-semibold text-gray-400 tracking-wider">
+                {section.title}
+              </div>
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      )
+                    }
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.title}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </nav>
