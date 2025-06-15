@@ -22,7 +22,10 @@ export const transformQuoteData = (dbRow: any): QuoteData => {
     activities: parseJsonField(dbRow.activities, []),
     transports: parseJsonField(dbRow.transports, []),
     transfers: parseJsonField(dbRow.transfers, []),
-    sectionMarkups: parseJsonField(dbRow.sectionmarkups, {})
+    sectionMarkups: parseJsonField(dbRow.sectionmarkups, {}),
+    visa_documentation: parseJsonField(dbRow.visa_documentation, []),
+    document_checklist: parseJsonField(dbRow.document_checklist, []),
+    itinerary: parseJsonField(dbRow.itinerary, [])
   };
 };
 

@@ -1076,29 +1076,43 @@ export type Database = {
           created_by: string | null
           currency_code: string | null
           destination: string
+          document_checklist: Json | null
           duration_days: number | null
           duration_nights: number | null
           end_date: string
+          estimated_budget_range: string | null
+          flight_preference: string | null
+          guide_language_preference: string | null
           hotel_id: string | null
           id: string
           infants: number | null
           inquiry_id: string | null
+          itinerary: Json | null
           lead_source: string | null
           markup_type: string | null
           markup_value: number | null
           mobile: string
           notes: string | null
           package_name: string | null
+          passport_expiry_date: string | null
+          preferred_currency: string | null
+          regional_preference: string | null
           room_arrangements: Json | null
           sectionmarkups: Json | null
           selected_hotel_option_id: string | null
+          special_requirements: string | null
           start_date: string
           status: string
           summary_data: Json | null
           tour_type: string | null
           transfers: Json | null
+          transport_mode_preference: string | null
           transports: Json | null
+          travel_insurance_required: boolean | null
           updated_at: string | null
+          visa_documentation: Json | null
+          visa_required: boolean | null
+          workflow_stage: string | null
         }
         Insert: {
           activities?: Json | null
@@ -1113,29 +1127,43 @@ export type Database = {
           created_by?: string | null
           currency_code?: string | null
           destination: string
+          document_checklist?: Json | null
           duration_days?: number | null
           duration_nights?: number | null
           end_date: string
+          estimated_budget_range?: string | null
+          flight_preference?: string | null
+          guide_language_preference?: string | null
           hotel_id?: string | null
           id?: string
           infants?: number | null
           inquiry_id?: string | null
+          itinerary?: Json | null
           lead_source?: string | null
           markup_type?: string | null
           markup_value?: number | null
           mobile: string
           notes?: string | null
           package_name?: string | null
+          passport_expiry_date?: string | null
+          preferred_currency?: string | null
+          regional_preference?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
+          special_requirements?: string | null
           start_date: string
           status?: string
           summary_data?: Json | null
           tour_type?: string | null
           transfers?: Json | null
+          transport_mode_preference?: string | null
           transports?: Json | null
+          travel_insurance_required?: boolean | null
           updated_at?: string | null
+          visa_documentation?: Json | null
+          visa_required?: boolean | null
+          workflow_stage?: string | null
         }
         Update: {
           activities?: Json | null
@@ -1150,29 +1178,43 @@ export type Database = {
           created_by?: string | null
           currency_code?: string | null
           destination?: string
+          document_checklist?: Json | null
           duration_days?: number | null
           duration_nights?: number | null
           end_date?: string
+          estimated_budget_range?: string | null
+          flight_preference?: string | null
+          guide_language_preference?: string | null
           hotel_id?: string | null
           id?: string
           infants?: number | null
           inquiry_id?: string | null
+          itinerary?: Json | null
           lead_source?: string | null
           markup_type?: string | null
           markup_value?: number | null
           mobile?: string
           notes?: string | null
           package_name?: string | null
+          passport_expiry_date?: string | null
+          preferred_currency?: string | null
+          regional_preference?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
+          special_requirements?: string | null
           start_date?: string
           status?: string
           summary_data?: Json | null
           tour_type?: string | null
           transfers?: Json | null
+          transport_mode_preference?: string | null
           transports?: Json | null
+          travel_insurance_required?: boolean | null
           updated_at?: string | null
+          visa_documentation?: Json | null
+          visa_required?: boolean | null
+          workflow_stage?: string | null
         }
         Relationships: []
       }

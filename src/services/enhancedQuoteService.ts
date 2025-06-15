@@ -1,3 +1,4 @@
+
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus, QuoteValidation, QuoteCalculations } from "../types/quote.types";
@@ -111,19 +112,27 @@ class EnhancedQuoteService {
         transports: JSON.stringify(quote.transports || []),
         transfers: JSON.stringify(quote.transfers || []),
         sectionmarkups: JSON.stringify(quote.sectionMarkups || {}),
-        visa_required: quote.visa_required || null,
+        
+        // Enhanced international fields
+        visa_required: quote.visa_required || false,
         passport_expiry_date: quote.passport_expiry_date || null,
         preferred_currency: quote.preferred_currency || null,
         flight_preference: quote.flight_preference || null,
-        travel_insurance_required: quote.travel_insurance_required || null,
+        travel_insurance_required: quote.travel_insurance_required || false,
+        visa_documentation: JSON.stringify(quote.visa_documentation || []),
+        
+        // Enhanced domestic fields
         regional_preference: quote.regional_preference || null,
         transport_mode_preference: quote.transport_mode_preference || null,
         guide_language_preference: quote.guide_language_preference || null,
+        
+        // Enhanced common fields
         estimated_budget_range: quote.estimated_budget_range || null,
         special_requirements: quote.special_requirements || null,
         document_checklist: JSON.stringify(quote.document_checklist || []),
-        workflow_stage: quote.workflow_stage || null,
-        visa_documentation: JSON.stringify(quote.visa_documentation || []),
+        workflow_stage: quote.workflow_stage || 'initial',
+        
+        // Itinerary
         itinerary: JSON.stringify(quote.itinerary || []),
         updated_at: new Date().toISOString()
       };
@@ -162,6 +171,7 @@ class EnhancedQuoteService {
       
       const savedQuote = this.transformQuoteData(data);
       console.log('[EnhancedQuoteService] Quote saved successfully:', savedQuote);
+      toast.success('Quote saved successfully');
       return savedQuote;
     } catch (error) {
       console.error('[EnhancedQuoteService] Critical error in saveQuote:', error);
