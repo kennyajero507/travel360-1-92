@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 export const useHotelsData = () => {
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const {
@@ -55,13 +55,24 @@ export const useHotelsData = () => {
   const filteredHotels = hotels.filter(hotel => {
     const matchesSearch = search === '' || 
       hotel.name.toLowerCase().includes(search.toLowerCase()) ||
-      hotel.destination.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesFilter = filter === '' || 
-      hotel.category === filter || 
-      hotel.status === filter;
-    
-    return matchesSearch && matchesFilter;
+      (hotel.destination && hotel.destination.toLowerCase().includes(search.toLowerCase()));
+
+    if (!matchesSearch) return false;
+
+    if (filter === 'all' || !filter) return true;
+
+    switch (filter) {
+      case 'negotiated':
+        return !!hotel.additional_details?.hasNegotiatedRate;
+      case 'non-negotiated':
+        return !hotel.additional_details?.hasNegotiatedRate;
+      case 'active':
+        return hotel.status === 'Active';
+      case 'inactive':
+        return hotel.status === 'Inactive';
+      default:
+        return true;
+    }
   });
 
   return {
