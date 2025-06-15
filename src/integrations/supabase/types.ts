@@ -1008,6 +1008,7 @@ export type Database = {
           lead_source: string | null
           markup_type: string | null
           markup_value: number | null
+          mobile: string | null
           package_name: string | null
           room_arrangements: Json | null
           sectionmarkups: Json | null
@@ -1042,6 +1043,7 @@ export type Database = {
           lead_source?: string | null
           markup_type?: string | null
           markup_value?: number | null
+          mobile?: string | null
           package_name?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
@@ -1076,6 +1078,7 @@ export type Database = {
           lead_source?: string | null
           markup_type?: string | null
           markup_value?: number | null
+          mobile?: string | null
           package_name?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null

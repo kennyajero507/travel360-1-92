@@ -30,6 +30,8 @@ import CreateHotel from "./pages/CreateHotel";
 import HotelDetails from "./pages/HotelDetails";
 import EditHotel from "./pages/EditHotel";
 import EditInquiry from "./pages/EditInquiry";
+import TeamManagementPage from "./pages/TeamManagement";
+import AgentManagement from "./pages/AgentManagement";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +90,8 @@ function App() {
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/clients" element={<Clients />} />
                 <Route path="/vouchers" element={<Vouchers />} />
+                <Route path="/team" element={<TeamManagementPage />} />
+                <Route path="/agent-management" element={<AgentManagement />} />
               </Route>
             </Routes>
           </BrowserRouter>
