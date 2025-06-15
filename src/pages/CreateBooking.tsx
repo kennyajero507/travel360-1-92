@@ -9,6 +9,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
+import { QuoteData } from "../types/quote.types";
 // import { createBookingFromQuote } from "../services/bookingCreateService"; // bookings table not available
 
 const CreateBooking = () => {
@@ -17,7 +18,7 @@ const CreateBooking = () => {
   const quoteId = searchParams.get('quoteId');
   const { quotes } = useQuoteData();
 
-  const [selectedQuote, setSelectedQuote] = useState<any>(null);
+  const [selectedQuote, setSelectedQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     agentId: "",
@@ -25,8 +26,9 @@ const CreateBooking = () => {
   });
 
   useEffect(() => {
-    if (quoteId && quotes.length > 0) {
-      const quote = quotes.find(q => q.id === quoteId);
+    const quotesArray = Array.isArray(quotes) ? quotes : [];
+    if (quoteId && quotesArray.length > 0) {
+      const quote = quotesArray.find(q => q.id === quoteId);
       if (quote) {
         setSelectedQuote(quote);
         // Check if quote has an approved hotel

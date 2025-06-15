@@ -19,7 +19,7 @@ const Quotes = () => {
   const [search, setSearch] = useState("");
 
   const filteredQuotes = useMemo(() => {
-    let filtered: QuoteData[] = quotes || [];
+    let filtered: QuoteData[] = Array.isArray(quotes) ? quotes : [];
 
     if (filter !== "all") {
       filtered = filtered.filter((quote) => quote.status.toLowerCase() === filter);

@@ -1,17 +1,9 @@
-
-import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  getAllQuotes, 
-  deleteQuote, 
-  emailQuote, 
-  printQuote, 
-  downloadQuotePDF 
-} from "../services/quoteService";
+import { getAllQuotes, deleteQuote } from "../services/quote/core";
+import { emailQuote, printQuote, downloadQuotePDF } from "../services/quote/client";
 import { enhancedQuoteService } from "../services/enhancedQuoteService";
 import { getAvailableInquiries } from "../services/inquiry/api";
 import { QuoteData } from "../types/quote.types";
-import { InquiryData } from "../types/inquiry.types";
 import { toast } from "sonner";
 
 export const useQuoteData = () => {
@@ -22,7 +14,7 @@ export const useQuoteData = () => {
     data: quotes = [], 
     isLoading, 
     error 
-  } = useQuery({
+  } = useQuery<QuoteData[]>({
     queryKey: ['quotes'],
     queryFn: getAllQuotes,
   });
@@ -82,11 +74,11 @@ export const useQuoteData = () => {
   const emailQuoteMutation = useMutation({
     mutationFn: emailQuote,
     onSuccess: () => {
-      toast.success("Quote sent via email");
+      // The service itself toasts, so no need to double-toast
     },
     onError: (error) => {
+      // The service itself toasts, so we just log
       console.error("Error emailing quote:", error);
-      toast.error("Failed to send quote via email");
     }
   });
 
@@ -94,11 +86,11 @@ export const useQuoteData = () => {
   const printQuoteMutation = useMutation({
     mutationFn: printQuote,
     onSuccess: () => {
-      toast.success("Quote sent to printer");
+      // The service itself toasts
     },
     onError: (error) => {
       console.error("Error printing quote:", error);
-      toast.error("Failed to print quote");
+      // The service itself toasts
     }
   });
 
@@ -106,11 +98,11 @@ export const useQuoteData = () => {
   const downloadPDFMutation = useMutation({
     mutationFn: downloadQuotePDF,
     onSuccess: () => {
-      toast.success("Quote PDF downloaded");
+      // The service itself toasts
     },
     onError: (error) => {
       console.error("Error downloading PDF:", error);
-      toast.error("Failed to download PDF");
+      // The service itself toasts
     }
   });
 
@@ -123,7 +115,7 @@ export const useQuoteData = () => {
     error,
     createQuote: createQuoteMutation.mutateAsync,
     updateQuote: updateQuoteMutation.mutateAsync,
-    deleteQuote: deleteQuoteMutation.mutateAsync,
+    deleteQuote: deleteQuoteMutation.mutate,
     emailQuote: emailQuoteMutation.mutateAsync,
     printQuote: printQuoteMutation.mutateAsync,
     downloadQuotePDF: downloadPDFMutation.mutateAsync,
