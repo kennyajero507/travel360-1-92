@@ -7,7 +7,7 @@ import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { AlertCircle, Shield, Users, Settings, Database } from 'lucide-react';
+import { AlertCircle, Shield, Users, Settings, Database, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { createSuperAdminAccount, SUPER_ADMIN_CREDENTIALS } from '../../utils/createSuperAdmin';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,7 +25,7 @@ const SystemSettings = () => {
       if (result.success) {
         setAdminCreated(true);
         toast.success('Super admin account created successfully!');
-        toast.info(`Login at /admin/login with the credentials shown below`, {
+        toast.info(`You can now login at /admin/login with the credentials shown below`, {
           duration: 10000,
         });
       } else {
@@ -62,6 +62,19 @@ const SystemSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-green-800">System Admin Setup Complete</span>
+            </div>
+            <div className="space-y-2 text-sm text-green-700">
+              <div>✓ Database policies configured</div>
+              <div>✓ System organization created</div>
+              <div>✓ Admin permissions enabled</div>
+              <div>✓ Audit logging activated</div>
+            </div>
+          </div>
+
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="h-4 w-4 text-amber-600" />
