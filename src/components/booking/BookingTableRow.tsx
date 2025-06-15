@@ -2,7 +2,7 @@
 import { TableRow, TableCell } from "../ui/table";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
-import { CalendarClock, CheckCircle, FileText } from "lucide-react";
+import { CalendarClock, CheckCircle, FileText, Mail } from "lucide-react";
 import { Booking, BookingStatus } from "../../types/booking.types";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 
@@ -34,7 +34,17 @@ export const BookingTableRow = ({
       <TableCell className="font-medium">
         {booking.booking_reference}
       </TableCell>
-      <TableCell>{booking.client}</TableCell>
+      <TableCell>
+        <div>
+          <div className="font-medium">{booking.client}</div>
+          {booking.client_email && (
+            <div className="text-sm text-gray-500 flex items-center gap-1">
+              <Mail className="h-3 w-3" />
+              {booking.client_email}
+            </div>
+          )}
+        </div>
+      </TableCell>
       <TableCell>{booking.hotel_name}</TableCell>
       <TableCell>
         {new Date(booking.travel_start).toLocaleDateString()} - {new Date(booking.travel_end).toLocaleDateString()}

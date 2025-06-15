@@ -27,6 +27,7 @@ export const CreateBookingForm: React.FC<CreateBookingFormProps> = ({ quoteId, o
   
   const [formData, setFormData] = useState({
     client: '',
+    client_email: '',
     hotel_name: '',
     travel_start: null as Date | null,
     travel_end: null as Date | null,
@@ -54,11 +55,21 @@ export const CreateBookingForm: React.FC<CreateBookingFormProps> = ({ quoteId, o
       return;
     }
 
+    // Validate email format if provided
+    if (formData.client_email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.client_email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const bookingData = {
         booking_reference: generateBookingReference(),
         client: formData.client,
+        client_email: formData.client_email || null,
         hotel_name: formData.hotel_name,
         travel_start: formData.travel_start.toISOString().split('T')[0],
         travel_end: formData.travel_end.toISOString().split('T')[0],
@@ -125,15 +136,26 @@ export const CreateBookingForm: React.FC<CreateBookingFormProps> = ({ quoteId, o
               </div>
 
               <div>
-                <Label htmlFor="hotel_name">Hotel Name *</Label>
+                <Label htmlFor="client_email">Client Email</Label>
                 <Input
-                  id="hotel_name"
-                  value={formData.hotel_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hotel_name: e.target.value }))}
-                  placeholder="Enter hotel name"
-                  required
+                  id="client_email"
+                  type="email"
+                  value={formData.client_email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, client_email: e.target.value }))}
+                  placeholder="Enter client email"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="hotel_name">Hotel Name *</Label>
+              <Input
+                id="hotel_name"
+                value={formData.hotel_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, hotel_name: e.target.value }))}
+                placeholder="Enter hotel name"
+                required
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

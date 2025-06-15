@@ -48,6 +48,7 @@ export interface Booking {
   id: string;
   booking_reference: string;
   client: string;
+  client_email?: string;
   hotel_name: string;
   hotel_id: string;
   agent_id?: string;

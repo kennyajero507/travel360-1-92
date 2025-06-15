@@ -29,6 +29,8 @@ export const sendVoucherEmail = async (voucher: VoucherEmailData) => {
       throw new Error('Invalid client email format. Please update the client email in the booking.');
     }
 
+    console.log('Sending voucher email to:', clientEmail);
+
     // Call the edge function to send email
     const { data, error } = await supabase.functions.invoke('send-voucher-email', {
       body: { 
@@ -39,6 +41,8 @@ export const sendVoucherEmail = async (voucher: VoucherEmailData) => {
     });
 
     if (error) {
+      console.error('Edge function error:', error);
+      
       // Check if it's a RESEND API key issue
       if (error.message?.includes('RESEND_API_KEY') || error.message?.includes('unauthorized')) {
         throw new Error('Email service not configured. Please contact your administrator to set up the RESEND_API_KEY.');
@@ -46,6 +50,8 @@ export const sendVoucherEmail = async (voucher: VoucherEmailData) => {
       
       throw new Error(error.message || 'Failed to send voucher email');
     }
+
+    console.log('Email sent successfully:', data);
 
     // Update voucher as sent
     const { error: updateError } = await supabase
@@ -68,6 +74,8 @@ export const sendVoucherEmail = async (voucher: VoucherEmailData) => {
 
 export const checkEmailConfiguration = async () => {
   try {
+    console.log('Checking email configuration...');
+    
     // Try to call a simple edge function to check if RESEND is configured
     const { error } = await supabase.functions.invoke('send-voucher-email', {
       body: { test: true }
@@ -82,6 +90,7 @@ export const checkEmailConfiguration = async () => {
 
     return { configured: true };
   } catch (error) {
+    console.error('Error checking email configuration:', error);
     return {
       configured: false,
       message: 'Unable to check email configuration'

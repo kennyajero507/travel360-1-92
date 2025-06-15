@@ -18,7 +18,7 @@ export const useBookingData = () => {
     queryFn: getAllBookings,
   });
 
-  // Mutation for updating status
+  // Mutation for updating status - Fixed type mismatch
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: BookingStatus }) => apiUpdateStatus(id, status),
     onSuccess: (_, variables) => {
@@ -29,6 +29,11 @@ export const useBookingData = () => {
       toast.error(`Failed to update status: ${err.message}`);
     },
   });
+
+  // Wrapper function to match the expected interface
+  const updateBookingStatus = (id: string, status: BookingStatus) => {
+    updateStatusMutation.mutate({ id, status });
+  };
 
   // Mutation for creating a booking
   const createBookingMutation = useMutation({
@@ -97,7 +102,7 @@ export const useBookingData = () => {
     isLoading,
     error,
     refetch,
-    updateBookingStatus: updateStatusMutation.mutate,
+    updateBookingStatus,
     createBooking: createBookingMutation.mutateAsync,
     createVoucher: createVoucherMutation.mutateAsync,
     bulkUpdateStatus: bulkUpdateStatusMutation.mutateAsync,
