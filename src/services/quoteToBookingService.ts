@@ -79,6 +79,7 @@ export class QuoteToBookingService {
       // Calculate total price
       const totalPrice = this.calculateTotalPrice(quote);
 
+      // Prepare data for database insertion with proper JSON serialization
       const bookingData = {
         booking_reference: bookingReference,
         client: quote.client,
@@ -87,10 +88,10 @@ export class QuoteToBookingService {
         agent_id: additionalData.agentId || user.id,
         travel_start: quote.start_date,
         travel_end: quote.end_date,
-        room_arrangement: mappedRoomArrangements,
-        transport: mappedTransports,
-        activities: mappedActivities,
-        transfers: mappedTransfers,
+        room_arrangement: JSON.stringify(mappedRoomArrangements),
+        transport: JSON.stringify(mappedTransports),
+        activities: JSON.stringify(mappedActivities),
+        transfers: JSON.stringify(mappedTransfers),
         status: 'pending',
         total_price: totalPrice,
         quote_id: quote.id,
@@ -116,8 +117,25 @@ export class QuoteToBookingService {
         console.warn('Failed to update quote status:', quoteUpdateError);
       }
 
+      // Transform the result back to proper Booking type
+      const transformedBooking: Booking = {
+        ...bookingResult,
+        room_arrangement: typeof bookingResult.room_arrangement === 'string' 
+          ? JSON.parse(bookingResult.room_arrangement) 
+          : bookingResult.room_arrangement,
+        transport: typeof bookingResult.transport === 'string' 
+          ? JSON.parse(bookingResult.transport) 
+          : bookingResult.transport,
+        activities: typeof bookingResult.activities === 'string' 
+          ? JSON.parse(bookingResult.activities) 
+          : bookingResult.activities,
+        transfers: typeof bookingResult.transfers === 'string' 
+          ? JSON.parse(bookingResult.transfers) 
+          : bookingResult.transfers,
+      };
+
       toast.success('Quote successfully converted to booking');
-      return { success: true, booking: bookingResult };
+      return { success: true, booking: transformedBooking };
     } catch (error) {
       console.error('[QuoteToBookingService] Error converting quote:', error);
       errorHandler.handleError(error, 'convertQuoteToBooking');

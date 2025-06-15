@@ -17,10 +17,10 @@ import RecordPaymentDialog from "./RecordPaymentDialog";
 
 interface PaymentTrackerProps {
   bookingId: string;
-  bookingAmount: number;
+  totalAmount: number;
 }
 
-const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
+const PaymentTracker = ({ bookingId, totalAmount }: PaymentTrackerProps) => {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +65,7 @@ const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
     .filter(p => p.payment_status === 'completed')
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const remainingAmount = bookingAmount - totalPaid;
+  const remainingAmount = totalAmount - totalPaid;
 
   if (loading) {
     return (
@@ -91,7 +91,7 @@ const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-700">
-                ${bookingAmount.toFixed(2)}
+                ${totalAmount.toFixed(2)}
               </div>
               <div className="text-sm text-blue-600">Total Amount</div>
             </div>
@@ -113,12 +113,12 @@ const PaymentTracker = ({ bookingId, bookingAmount }: PaymentTrackerProps) => {
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Payment Progress</span>
-              <span>{((totalPaid / bookingAmount) * 100).toFixed(1)}%</span>
+              <span>{((totalPaid / totalAmount) * 100).toFixed(1)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
                 className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
-                style={{ width: `${Math.min((totalPaid / bookingAmount) * 100, 100)}%` }}
+                style={{ width: `${Math.min((totalPaid / totalAmount) * 100, 100)}%` }}
               ></div>
             </div>
           </div>

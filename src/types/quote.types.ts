@@ -1,8 +1,7 @@
-
 import { Hotel } from "./hotel.types";
 import { QuoteSummaryData } from "./quoteSummary.types";
 
-export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
+export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'converted';
 
 // Person type rates interface for room pricing
 export interface PersonTypeRates {
