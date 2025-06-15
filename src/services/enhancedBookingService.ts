@@ -1,5 +1,6 @@
-
 import { supabase } from "../integrations/supabase/client";
+import { Booking } from "../types/booking.types";
+import { Invoice, InvoiceLineItem } from "../types/invoice.types";
 
 // EnhancedBookingService with actual DB implementations
 class EnhancedBookingService {
@@ -40,6 +41,50 @@ class EnhancedBookingService {
   async exportBookings() {
     // Implement export as needed
     throw new Error("Not yet implemented.");
+  }
+
+  async getInvoiceByBookingId(bookingId: string): Promise<Invoice | null> {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async createInvoiceFromBooking(booking: Booking): Promise<Invoice> {
+    const invoiceNumber = `INV-${booking.booking_reference}-${Date.now().toString().slice(-4)}`;
+    
+    const lineItems: Omit<InvoiceLineItem, 'id'>[] = [
+      {
+        description: `Travel package for ${booking.hotel_name}`,
+        quantity: 1,
+        unit_price: booking.total_price,
+        total: booking.total_price,
+      }
+    ];
+
+    const newInvoiceData = {
+      booking_id: booking.id,
+      invoice_number: invoiceNumber,
+      client_name: booking.client,
+      amount: booking.total_price,
+      currency_code: 'USD',
+      status: 'draft',
+      line_items: lineItems.map(item => ({...item, id: Math.random().toString()})),
+      due_date: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
+    };
+    
+    const { data, error } = await supabase
+      .from('invoices')
+      .insert(newInvoiceData)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Invoice;
   }
 
   async getPaymentsByBooking(bookingId: string) {

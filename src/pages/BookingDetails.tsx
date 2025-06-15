@@ -34,7 +34,7 @@ import {
 const BookingDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { booking, isLoading, isError, updateStatus, isUpdatingStatus } = useBookingDetails(id);
+  const { booking, isLoading, isError, updateStatus, isUpdatingStatus, invoice, createInvoice, isCreatingInvoice } = useBookingDetails(id);
 
   useEffect(() => {
     if (!isLoading && (isError || !booking)) {
@@ -106,6 +106,26 @@ const BookingDetails = () => {
         </div>
         <div className="flex items-center gap-2">
           {renderStatusBadge(booking.status)}
+          
+          {invoice ? (
+            <Button variant="outline" size="sm" className="h-9" disabled>
+              <FileText className="h-4 w-4 mr-2" />
+              Invoice Created
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9" 
+              onClick={() => createInvoice()} 
+              disabled={isCreatingInvoice || booking.status === 'pending' || booking.status === 'cancelled'}
+              title={booking.status !== 'confirmed' ? "Booking must be confirmed to create an invoice" : ""}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {isCreatingInvoice ? 'Creating...' : 'Create Invoice'}
+            </Button>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">

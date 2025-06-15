@@ -1,10 +1,10 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBookingById } from '../services/bookingReadService';
 import { updateBookingStatus } from '../services/bookingUpdateService';
-import { BookingStatus } from '../types/booking.types';
+import { BookingStatus, Booking } from '../types/booking.types';
 import { toast } from 'sonner';
 import { convertToBooking } from '../utils/typeHelpers';
+import { enhancedBookingService } from '../services/enhancedBookingService';
 
 export const useBookingDetails = (bookingId?: string) => {
   const queryClient = useQueryClient();
@@ -15,6 +15,15 @@ export const useBookingDetails = (bookingId?: string) => {
       if (!bookingId) return null;
       const data = await getBookingById(bookingId);
       return data ? convertToBooking(data) : null;
+    },
+    enabled: !!bookingId,
+  });
+
+  const { data: invoice, isLoading: isLoadingInvoice } = useQuery({
+    queryKey: ['invoice', bookingId],
+    queryFn: async () => {
+      if (!bookingId) return null;
+      return enhancedBookingService.getInvoiceByBookingId(bookingId);
     },
     enabled: !!bookingId,
   });
@@ -34,11 +43,29 @@ export const useBookingDetails = (bookingId?: string) => {
     },
   });
 
+  const createInvoiceMutation = useMutation({
+    mutationFn: () => {
+      if (!booking) throw new Error("Booking data is not available to create an invoice.");
+      return enhancedBookingService.createInvoiceFromBooking(booking);
+    },
+    onSuccess: () => {
+      toast.success('Invoice created successfully.');
+      queryClient.invalidateQueries({ queryKey: ['invoice', bookingId] });
+    },
+    onError: (err: any) => {
+      toast.error(`Failed to create invoice: ${err.message}`);
+    },
+  });
+
   return {
     booking,
     isLoading,
     isError,
     updateStatus: updateStatusMutation.mutate,
     isUpdatingStatus: updateStatusMutation.isPending,
+    invoice,
+    isLoadingInvoice,
+    createInvoice: createInvoiceMutation.mutate,
+    isCreatingInvoice: createInvoiceMutation.isPending,
   };
 };
