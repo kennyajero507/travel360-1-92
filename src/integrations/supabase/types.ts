@@ -563,29 +563,41 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          currency: string | null
           email: string | null
+          email_notifications: boolean
           full_name: string | null
           id: string
           org_id: string | null
+          phone: string | null
           role: string
+          sms_notifications: boolean
           trial_ends_at: string | null
         }
         Insert: {
           created_at?: string | null
+          currency?: string | null
           email?: string | null
+          email_notifications?: boolean
           full_name?: string | null
           id: string
           org_id?: string | null
+          phone?: string | null
           role?: string
+          sms_notifications?: boolean
           trial_ends_at?: string | null
         }
         Update: {
           created_at?: string | null
+          currency?: string | null
           email?: string | null
+          email_notifications?: boolean
           full_name?: string | null
           id?: string
           org_id?: string | null
+          phone?: string | null
           role?: string
+          sms_notifications?: boolean
           trial_ends_at?: string | null
         }
         Relationships: [

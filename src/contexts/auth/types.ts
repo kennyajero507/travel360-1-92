@@ -7,4 +7,8 @@ export interface UserProfile {
   org_id: string | null;
   trial_ends_at: string | null;
   created_at: string;
+  phone: string | null;
+  currency: string | null;
+  email_notifications: boolean;
+  sms_notifications: boolean;
 }

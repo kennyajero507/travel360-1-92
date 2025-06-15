@@ -1,0 +1,6 @@
+
+ALTER TABLE public.profiles
+ADD COLUMN phone TEXT NULL,
+ADD COLUMN currency TEXT NULL DEFAULT 'USD',
+ADD COLUMN email_notifications BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN sms_notifications BOOLEAN NOT NULL DEFAULT false;

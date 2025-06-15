@@ -20,6 +20,10 @@ import Quotes from "./pages/Quotes";
 import Bookings from "./pages/Bookings";
 import CreateInquiry from "./pages/CreateInquiry";
 import CreateQuote from "./pages/CreateQuote";
+import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
+import Clients from "./pages/Clients";
+import Vouchers from "./pages/Vouchers";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +72,10 @@ function App() {
                 <Route path="/quotes" element={<Quotes />} />
                 <Route path="/quotes/create" element={<CreateQuote />} />
                 <Route path="/bookings" element={<Bookings />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/clients" element={<Clients />} />
+                <Route path="/vouchers" element={<Vouchers />} />
               </Route>
             </Routes>
           </BrowserRouter>

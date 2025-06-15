@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -10,24 +10,46 @@ import { useAuth } from "../../contexts/AuthContext";
 import { toast } from "sonner";
 
 export const ProfileSettings = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, updateProfile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    email: user?.email || '',
+    full_name: '',
+    email: '',
     phone: '',
     currency: 'USD',
     emailNotifications: true,
     smsNotifications: false,
   });
 
+  useEffect(() => {
+    if (profile && user) {
+      setFormData({
+        full_name: profile.full_name || '',
+        email: user.email || '',
+        phone: profile.phone || '',
+        currency: profile.currency || 'USD',
+        emailNotifications: profile.email_notifications ?? true,
+        smsNotifications: profile.sms_notifications ?? false,
+      });
+    }
+  }, [profile, user]);
+
   const handleSave = async () => {
     setLoading(true);
     try {
-      // TODO: Implement profile update
+      // Email is part of auth.users and cannot be updated via the profile.
+      const profileUpdates = {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        currency: formData.currency,
+        email_notifications: formData.emailNotifications,
+        sms_notifications: formData.smsNotifications,
+      };
+      await updateProfile(profileUpdates);
+      await refreshProfile();
       toast.success("Profile updated successfully");
-    } catch (error) {
-      toast.error("Failed to update profile");
+    } catch (error: any) {
+      toast.error("Failed to update profile", { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -47,6 +69,7 @@ export const ProfileSettings = () => {
                 id="full_name"
                 value={formData.full_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                disabled={loading}
               />
             </div>
             <div>
@@ -55,7 +78,7 @@ export const ProfileSettings = () => {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                disabled
               />
             </div>
             <div>
@@ -64,11 +87,16 @@ export const ProfileSettings = () => {
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                disabled={loading}
               />
             </div>
             <div>
               <Label htmlFor="currency">Preferred Currency</Label>
-              <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+              <Select 
+                value={formData.currency} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                disabled={loading}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -98,6 +126,7 @@ export const ProfileSettings = () => {
             <Switch
               checked={formData.emailNotifications}
               onCheckedChange={(checked) => setFormData(prev => ({ ...prev, emailNotifications: checked }))}
+              disabled={loading}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -108,6 +137,7 @@ export const ProfileSettings = () => {
             <Switch
               checked={formData.smsNotifications}
               onCheckedChange={(checked) => setFormData(prev => ({ ...prev, smsNotifications: checked }))}
+              disabled={loading}
             />
           </div>
         </CardContent>
