@@ -1289,7 +1289,15 @@ export type Database = {
         Args: { quote_id_param: string }
         Returns: Json
       }
+      check_system_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       get_user_org_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_organization: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
