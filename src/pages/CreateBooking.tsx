@@ -11,6 +11,7 @@ import { Booking, RoomArrangement, BookingTransport, BookingActivity, BookingTra
 import QuoteSummaryCard from "../components/booking/QuoteSummaryCard";
 import BookingDetailsForm from "../components/booking/BookingDetailsForm";
 import BookingLoading from "../components/booking/BookingLoading";
+import { useAuth } from "../contexts/AuthContext";
 
 const CreateBooking = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const CreateBooking = () => {
   const { quotes } = useQuoteData();
   const { createBooking } = useBookingData();
   const { hotels } = useHotelsData();
+  const { profile } = useAuth();
 
   const [selectedQuote, setSelectedQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,6 +28,12 @@ const CreateBooking = () => {
     agentId: "",
     notes: ""
   });
+
+  useEffect(() => {
+    if (profile) {
+      setFormData(prev => ({ ...prev, agentId: profile.id }));
+    }
+  }, [profile]);
 
   useEffect(() => {
     const quotesArray = Array.isArray(quotes) ? quotes : [];

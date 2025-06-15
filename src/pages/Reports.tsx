@@ -5,8 +5,9 @@ import { Button } from "../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { DatePicker } from "../components/ui/date-picker";
-import { BarChart3, TrendingUp, DollarSign, Users, Download, Calendar } from "lucide-react";
+import { BarChart3, TrendingUp, DollarSign, Users, Download, Calendar, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 // Mock data - replace with real API calls
 const mockBookingData = [
@@ -28,6 +29,7 @@ const mockStatusData = [
 const Reports = () => {
   const [dateRange, setDateRange] = useState<{ start?: Date; end?: Date }>({});
   const [reportType, setReportType] = useState('overview');
+  const { bookingCount, bookingRevenue, isLoading } = useAnalytics();
 
   const exportReport = (format: string) => {
     // Placeholder for export functionality
@@ -94,7 +96,7 @@ const Reports = () => {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">111</div>
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">{bookingCount}</div>}
             <p className="text-xs text-muted-foreground">
               +12% from last month
             </p>
@@ -103,11 +105,11 @@ const Reports = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Booking Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$222,000</div>
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <div className="text-2xl font-bold">${bookingRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
             <p className="text-xs text-muted-foreground">
               +8% from last month
             </p>

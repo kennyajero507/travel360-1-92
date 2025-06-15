@@ -6,9 +6,11 @@ import { FileText, Users, Calendar, ArrowUp, MessageSquare, Receipt, ClipboardLi
 import { Progress } from "../components/ui/progress";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import { useDashboardStats } from "../hooks/useDashboardStats";
 
 const Dashboard = () => {
   const { profile, loading, role, organization } = useAuth();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
   
   // Show loading state
   if (loading) {
@@ -36,9 +38,9 @@ const Dashboard = () => {
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
-            Welcome to TravelFlow360
+            Dashboard
           </h1>
-          <p className="text-lg text-gray-600 font-medium">Your comprehensive travel management dashboard</p>
+          <p className="text-lg text-gray-600 font-medium">A snapshot of your business activity.</p>
           {profile && (
             <div className="mt-2 text-sm text-gray-500">
               <p>Role: <span className="font-medium">{profile.role}</span></p>
@@ -74,7 +76,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard 
             title="Active Inquiries" 
-            value="24" 
+            value={statsLoading ? "..." : (stats?.activeInquiries ?? 0).toString()}
             trend="+12%" 
             description="vs. last month" 
             icon={<MessageSquare className="h-6 w-6 text-blue-600" />}
@@ -82,7 +84,7 @@ const Dashboard = () => {
           />
           <MetricCard 
             title="Pending Quotes" 
-            value="18" 
+            value={statsLoading ? "..." : (stats?.pendingQuotes ?? 0).toString()}
             trend="+8%" 
             description="vs. last month" 
             icon={<Receipt className="h-6 w-6 text-green-600" />}
@@ -90,7 +92,7 @@ const Dashboard = () => {
           />
           <MetricCard 
             title="Active Bookings" 
-            value="45" 
+            value={statsLoading ? "..." : (stats?.activeBookings ?? 0).toString()}
             trend="+15%" 
             description="vs. last month" 
             icon={<ClipboardList className="h-6 w-6 text-purple-600" />}
@@ -98,7 +100,7 @@ const Dashboard = () => {
           />
           <MetricCard 
             title="Revenue" 
-            value="$125K" 
+            value={statsLoading ? "..." : `$${((stats?.revenue ?? 0) / 1000).toFixed(0)}K`}
             trend="+22%" 
             description="vs. last month" 
             icon={<TrendingUp className="h-6 w-6 text-orange-600" />}
