@@ -35,7 +35,7 @@ const Bookings = () => {
   const loadBookings = async () => {
     try {
       const data = await getAllBookings();
-      // Use convertToBooking to map each raw booking to Booking type
+      // Ensure conversion for every returned item
       const convertedBookings: Booking[] = data.map((raw: any) => convertToBooking(raw));
       setBookings(convertedBookings);
       setFilteredBookings(convertedBookings);
@@ -52,10 +52,11 @@ const Bookings = () => {
       setFilteredBookings(bookings);
       return;
     }
-
     try {
       const filtered = await enhancedBookingService.getFilteredBookings(filters);
-      setFilteredBookings(filtered);
+      // make sure to convert the raw filtered objects too
+      const convertedFiltered: Booking[] = filtered.map((raw: any) => convertToBooking(raw));
+      setFilteredBookings(convertedFiltered);
     } catch (error) {
       console.error("Error applying filters:", error);
       toast.error("Failed to apply filters");
@@ -325,3 +326,5 @@ const Bookings = () => {
 };
 
 export default Bookings;
+
+// NOTE: This file is getting long (over 300 lines). Please consider asking me to refactor it into smaller, more focused components for maintainability.
