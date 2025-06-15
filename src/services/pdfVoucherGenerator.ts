@@ -1,5 +1,6 @@
 
 import jsPDF from 'jspdf';
+import { toast } from 'sonner';
 import { TravelVoucher, Booking } from '../types/booking.types';
 
 export const generateVoucherPDF = (voucher: TravelVoucher, booking: Booking) => {
