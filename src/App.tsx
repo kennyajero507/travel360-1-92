@@ -33,6 +33,7 @@ import EditInquiry from "./pages/EditInquiry";
 import TeamManagementPage from "./pages/TeamManagement";
 import AgentManagement from "./pages/AgentManagement";
 import VoucherDetailsPage from "./pages/VoucherDetailsPage";
+import QuotePreview from "./pages/QuotePreview";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/quote-preview" element={<QuotePreview />} />
               <Route 
                 path="/admin/login"
                 element={<AdminLogin />}

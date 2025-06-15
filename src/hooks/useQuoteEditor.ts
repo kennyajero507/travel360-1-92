@@ -1,8 +1,7 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { updateQuoteStatus, generateClientPreview } from "../services/quoteService";
+import { updateQuoteStatus, generateClientPreview, emailQuote as emailQuoteService } from "../services/quoteService";
 import { enhancedQuoteService } from "../services/enhancedQuoteService";
 import { QuoteData, RoomArrangement } from "../types/quote.types";
 import { useEnhancedQuoteCalculations } from "./useEnhancedQuoteCalculations";
@@ -330,18 +329,19 @@ export const useQuoteEditor = (quoteId?: string, role?: string) => {
       return;
     }
     
-    toast.success("Quote sent to client via email");
-    // Update status to sent
     try {
+      await emailQuoteService(quote.id!);
+      // Update status to sent on success
       await updateQuoteStatus(quote.id!, "sent");
       updateQuoteStable({
         ...quote,
         status: "sent" as const
       });
     } catch (error) {
-      console.error("Error updating quote status:", error);
+      // The service already toasts on error, so we just log it here.
+      console.error("Error sending quote email from hook:", error);
     }
-  }, [quote, updateQuoteStable]);
+  }, [quote, updateQuoteStable, isHotelSelectionComplete]);
   
   // Download the quote
   const downloadQuote = useCallback(() => {

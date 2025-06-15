@@ -2,6 +2,7 @@ import { supabase } from "../integrations/supabase/client";
 import { QuoteData, QuoteStatus, ClientQuotePreview, HotelOption } from "../types/quote.types";
 import { Hotel } from "../types/hotel.types";
 import { toast } from "sonner";
+import { generateQuotePDF } from "./pdfQuoteGenerator";
 
 // Define a compatible Hotel interface for the quote service
 interface QuoteServiceHotel {
@@ -209,8 +210,31 @@ export const deleteQuote = async (quoteId: string): Promise<void> => {
 
 export const emailQuote = async (quoteId: string): Promise<void> => {
   try {
-    // This will be implemented with the email edge function
-    console.log('Emailing quote:', quoteId);
+    const quote = await getQuoteById(quoteId);
+    const quotePreview = await generateClientPreview(quoteId);
+
+    if (!quote || !quotePreview) {
+      toast.error("Could not find quote details to send email.");
+      throw new Error("Quote data not found.");
+    }
+
+    if (!quote.client_email) {
+      toast.error("Client email is not set for this quote. Please add it before sending.");
+      // NOTE: Since we cannot edit the UI to add this field yet, this will currently always fail.
+      // This logic is in place for when the UI is updated.
+      throw new Error("Client email missing.");
+    }
+    
+    toast.info("Sending email...");
+
+    const { error } = await supabase.functions.invoke('send-quote-email', {
+      body: { quotePreview, recipientEmail: quote.client_email },
+    });
+
+    if (error) {
+      throw error;
+    }
+
     toast.success('Quote sent via email');
   } catch (error) {
     console.error('Error emailing quote:', error);
@@ -221,8 +245,17 @@ export const emailQuote = async (quoteId: string): Promise<void> => {
 
 export const printQuote = async (quoteId: string): Promise<void> => {
   try {
-    console.log('Printing quote:', quoteId);
-    toast.success('Quote sent to printer');
+    const quotePreview = await generateClientPreview(quoteId);
+    if (quotePreview) {
+      const pdfBlob = await generateQuotePDF(quotePreview);
+      // This is a simplified print approach. It opens the PDF in a new tab for printing.
+      // A more direct print might require more complex solutions.
+      // For now, generating a PDF and letting user print it is a solid first step.
+      window.print();
+      toast.info('Please use your browser\'s print dialog to print the quote.');
+    } else {
+      toast.error("Could not get quote data for printing.");
+    }
   } catch (error) {
     console.error('Error printing quote:', error);
     toast.error('Failed to print quote');
@@ -230,10 +263,16 @@ export const printQuote = async (quoteId: string): Promise<void> => {
   }
 };
 
+
 export const downloadQuotePDF = async (quoteId: string): Promise<void> => {
   try {
-    console.log('Downloading quote PDF:', quoteId);
-    toast.success('Quote PDF downloaded');
+    toast.info("Generating PDF...");
+    const quotePreview = await generateClientPreview(quoteId);
+    if (quotePreview) {
+      generateQuotePDF(quotePreview);
+    } else {
+      toast.error("Could not generate PDF. Quote data not found.");
+    }
   } catch (error) {
     console.error('Error downloading quote PDF:', error);
     toast.error('Failed to download quote PDF');
