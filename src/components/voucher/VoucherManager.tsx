@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Plus, Eye, Mail, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Booking, TravelVoucher } from "../../types/booking.types";
-import { getVouchersByBookingId, createVoucher, updateVoucherEmailStatus } from "../../services/voucherService";
+import { createVoucher, getVouchersByBookingId, sendVoucherByEmail } from "../../services/voucherService";
 import { generateVoucherPDF } from "../../services/pdfVoucherGenerator";
 
 interface VoucherManagerProps {
@@ -39,13 +38,16 @@ const VoucherManager = ({ booking }: VoucherManagerProps) => {
   });
 
   const sendEmailMutation = useMutation({
-    mutationFn: ({ voucherId, emailSent }: { voucherId: string, emailSent: boolean }) => 
-      updateVoucherEmailStatus(voucherId, emailSent),
+    mutationFn: ({ voucher, booking }: { voucher: TravelVoucher; booking: Booking }) =>
+      sendVoucherByEmail({ voucher, booking }),
     onSuccess: () => {
-      toast.success("Voucher marked as sent.");
+      // Toast is now handled in the service for better consistency
       queryClient.invalidateQueries({ queryKey: ["vouchers", booking.id] });
     },
-    onError: () => toast.error("Failed to update email status."),
+    onError: (err: any) => {
+      // Error toast is handled in the service
+      console.error(err);
+    },
   });
 
   const handleCreateVoucher = () => {
@@ -53,8 +55,9 @@ const VoucherManager = ({ booking }: VoucherManagerProps) => {
     createVoucherMutation.mutate(booking);
   };
   
-  const handleSendEmail = (voucherId: string) => {
-    sendEmailMutation.mutate({ voucherId, emailSent: true });
+  const handleSendEmail = (voucher: TravelVoucher) => {
+    toast.info("Sending voucher email...");
+    sendEmailMutation.mutate({ voucher, booking });
   }
 
   const handleDownloadVoucher = (voucher: TravelVoucher) => {
@@ -118,7 +121,13 @@ const VoucherManager = ({ booking }: VoucherManagerProps) => {
                       <Eye className="h-4 w-4" />
                     </Button>
                     {!voucher.email_sent && (
-                      <Button variant="ghost" size="icon" title="Mark as Emailed" onClick={() => handleSendEmail(voucher.id)}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="Send Email" 
+                        onClick={() => handleSendEmail(voucher)}
+                        disabled={sendEmailMutation.isPending && sendEmailMutation.variables?.voucher.id === voucher.id}
+                      >
                         <Mail className="h-4 w-4" />
                       </Button>
                     )}

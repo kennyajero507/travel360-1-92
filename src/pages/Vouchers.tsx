@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Booking, TravelVoucher } from "../types/booking.types";
-import { getAllVouchers, updateVoucherEmailStatus } from "../services/voucherService";
+import { getAllVouchers, sendVoucherByEmail } from "../services/voucherService";
 import { generateVoucherPDF } from "../services/pdfVoucherGenerator";
 
 // Helper to use search params
@@ -26,6 +26,7 @@ const Vouchers = () => {
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filteredVouchers, setFilteredVouchers] = useState<any[]>([]);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const navigate = useNavigate();
   const query = useQuery();
   const bookingIdFilter = query.get('bookingId');
@@ -55,24 +56,22 @@ const Vouchers = () => {
   }, [bookingIdFilter]);
   
   // Handle email sending
-  const handleSendEmail = async (voucherId: string) => {
+  const handleSendEmail = async (voucher: any) => {
+    if (!voucher.bookings) {
+      toast.error("Booking data is missing for this voucher.");
+      return;
+    }
+    setSendingEmailId(voucher.id);
     try {
-      // In a real app, this would call an API to send the email
-      // For now, we'll just update the email_sent status
-      await updateVoucherEmailStatus(voucherId, true);
-      
-      // Update local state
-      setVouchers(vouchers.map(v => 
-        v.id === voucherId ? { ...v, email_sent: true } : v
-      ));
-      setFilteredVouchers(filteredVouchers.map(v => 
-        v.id === voucherId ? { ...v, email_sent: true } : v
-      ));
-      
-      toast.success("Voucher sent to client via email");
+      toast.info("Sending voucher email...");
+      await sendVoucherByEmail({ voucher: voucher as TravelVoucher, booking: voucher.bookings as Booking });
+      // Refresh the list to show the updated status
+      await loadVouchers();
     } catch (error) {
+      // Error toast is handled by the service
       console.error("Error sending voucher email:", error);
-      toast.error("Failed to send voucher email");
+    } finally {
+      setSendingEmailId(null);
     }
   };
   
@@ -207,7 +206,8 @@ const Vouchers = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => handleSendEmail(voucher.id)}
+                            onClick={() => handleSendEmail(voucher)}
+                            disabled={sendingEmailId === voucher.id}
                           >
                             <Mail className="h-4 w-4" />
                             <span className="sr-only">Email</span>

@@ -72,6 +72,32 @@ export const updateVoucherEmailStatus = async (voucherId: string, emailSent: boo
   }
 };
 
+export const sendVoucherByEmail = async ({ voucher, booking }: { voucher: TravelVoucher, booking: Booking }): Promise<void> => {
+  try {
+    const { error: functionError } = await supabase.functions.invoke('send-voucher-email', {
+      body: { voucher, booking },
+    });
+
+    if (functionError) {
+      // The edge function returns a shaped error, so we try to parse it.
+      const parsedError = JSON.parse(functionError.context?.responseText || '{}');
+      if (parsedError.error) {
+        throw new Error(parsedError.error);
+      }
+      throw new Error(`Failed to send voucher email: ${functionError.message}`);
+    }
+
+    // If email sent successfully, update status in DB
+    await updateVoucherEmailStatus(voucher.id, true);
+    toast.success("Voucher successfully sent to the client.");
+
+  } catch (error: any) {
+    console.error("Error sending voucher by email:", error);
+    toast.error(error.message || "An unexpected error occurred.");
+    throw error; // Re-throw to be caught by the mutation
+  }
+};
+
 export const createVoucher = async (booking: Booking): Promise<TravelVoucher> => {
   const voucherReference = `V-${booking.booking_reference}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
