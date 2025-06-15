@@ -2,7 +2,8 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { profileService } from "./auth/profileService";
-import defaultPermissions, { getPermissionsForRole } from "./role/defaultPermissions";
+import { organizationService } from "./auth/organizationService";
+import { roleService } from "./auth/roleService";
 import { UserProfile } from "./auth/types";
 
 interface AuthContextType {
@@ -10,7 +11,7 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   role: string | null;
-  permissions: ReturnType<typeof getPermissionsForRole>;
+  permissions: ReturnType<typeof roleService.getPermissionsForRole>;
   tier: string;
   loading: boolean;
   isLoading: boolean;
@@ -38,7 +39,7 @@ interface AuthContextType {
 }
 
 // Default permissions and stub methods
-const initialPermissions = defaultPermissions["org_owner"];
+const initialPermissions = roleService.getDefaultPermissions();
 const initialContext: AuthContextType = {
   session: null,
   user: null,
@@ -80,20 +81,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
   // Helper: load organization (null if not found)
   const loadOrganization = useCallback(async (org_id: string | null) => {
-    if (!org_id) {
-      setOrganization(null);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("organizations")
-      .select("*")
-      .eq("id", org_id)
-      .maybeSingle();
-    if (error) {
-      setOrganization(null);
-      return;
-    }
-    setOrganization(data);
+    const org = await organizationService.loadOrganization(org_id);
+    setOrganization(org);
   }, []);
 
   // Fetch profile + set org/role/permissions
@@ -103,7 +92,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       if (profile) {
         setRole(profile.role || null);
         setTier("basic");
-        setPermissions(getPermissionsForRole((profile.role || "org_owner") as any));
+        setPermissions(roleService.getPermissionsForRole((profile.role || "org_owner") as any));
         if (profile.org_id) await loadOrganization(profile.org_id);
         else setOrganization(null);
       }
@@ -255,11 +244,11 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
   // Check role and permissions
   const checkRoleAccess = useCallback(
-    (roles: string[]) => (role ? roles.includes(role) : false),
+    (roles: string[]) => roleService.checkRoleAccess(role, roles),
     [role]
   );
   const hasPermission = useCallback(
-    (perm: string) => Boolean(permissions?.[perm]),
+    (perm: string) => roleService.hasPermission(permissions, perm),
     [permissions]
   );
 
@@ -274,36 +263,18 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setError("Not logged in");
       return false;
     }
-    // Create org
-    const { data, error: orgError } = await supabase
-      .from("organizations")
-      .insert([{ name: orgName, owner_id: user.id }])
-      .select()
-      .single();
-    if (orgError || !data) {
+    try {
+      const org = await organizationService.createOrganization(orgName, user.id);
+      setOrganization(org);
+      await organizationService.linkProfileToOrganization(org.id, user.id);
+      await refreshProfile();
       setLoading(false);
-      setError(orgError?.message || "Failed to create organization.");
+      return true;
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message || "Failed to create organization.");
       return false;
     }
-    setOrganization(data);
-
-    // Link profile with new org_id
-    const { error: profileUpdateError } = await supabase
-      .from("profiles")
-      .update({
-        org_id: data.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-    if (profileUpdateError) {
-      setLoading(false);
-      setError(profileUpdateError.message || "Failed to link profile with organization.");
-      return false;
-    }
-
-    await refreshProfile();
-    setLoading(false);
-    return true;
   };
 
   // Invitation & org helpers (unchanged, only relevant when extending team)
@@ -315,30 +286,24 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setLoading(false);
       return false;
     }
-    const { error: inviteError } = await supabase
-      .from("invitations")
-      .insert({
-        email,
-        role: invitedRole,
-        org_id: organization.id,
-      });
-    setLoading(false);
-    if (inviteError) {
-      setError(inviteError.message || "Failed to send invitation.");
+    try {
+      await organizationService.sendInvitation(email, invitedRole, organization.id);
+      setLoading(false);
+      return true;
+    } catch (err: any) {
+      setError(err.message || "Failed to send invitation.");
+      setLoading(false);
       return false;
     }
-    return true;
   };
 
   const getInvitations = async () => {
     if (!organization || !organization.id) return [];
-    const { data, error: invError } = await supabase
-      .from("invitations")
-      .select("*")
-      .eq("org_id", organization.id)
-      .order("created_at", { ascending: false });
-    if (invError) return [];
-    return data || [];
+    try {
+      return await organizationService.getInvitations(organization.id);
+    } catch {
+      return [];
+    }
   };
 
   const acceptInvitation = async (token: string) => {
