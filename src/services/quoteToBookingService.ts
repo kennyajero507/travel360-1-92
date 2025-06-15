@@ -2,7 +2,7 @@
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData } from "../types/quote.types";
-import { Booking, RoomArrangement, BookingTransport, BookingActivity, BookingTransfer } from "../types/booking.types";
+import { Booking, RoomArrangement, BookingTransport, BookingActivity, BookingTransfer, BookingStatus } from "../types/booking.types";
 import { errorHandler } from "./errorHandlingService";
 
 export class QuoteToBookingService {
@@ -92,7 +92,7 @@ export class QuoteToBookingService {
         transport: JSON.stringify(mappedTransports),
         activities: JSON.stringify(mappedActivities),
         transfers: JSON.stringify(mappedTransfers),
-        status: 'pending',
+        status: 'pending' as BookingStatus,
         total_price: totalPrice,
         quote_id: quote.id,
         notes: additionalData.notes || null,
@@ -120,6 +120,7 @@ export class QuoteToBookingService {
       // Transform the result back to proper Booking type
       const transformedBooking: Booking = {
         ...bookingResult,
+        status: bookingResult.status as BookingStatus,
         room_arrangement: typeof bookingResult.room_arrangement === 'string' 
           ? JSON.parse(bookingResult.room_arrangement) 
           : bookingResult.room_arrangement,

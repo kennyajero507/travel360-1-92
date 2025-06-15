@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBookingDetails } from '../hooks/useBookingDetails';
@@ -68,6 +67,11 @@ const BookingDetails = () => {
 
   const handleDownloadVoucher = () => {
     toast.info('Voucher download feature coming soon');
+  };
+
+  const handlePaymentRecorded = () => {
+    // Trigger a refresh of the booking details to update payment information
+    window.location.reload();
   };
 
   const totalTravelers = (booking.room_arrangement || []).reduce((total, room) => {
@@ -231,7 +235,10 @@ const BookingDetails = () => {
           <CardContent>
             <PaymentTracker bookingId={booking.id} totalAmount={booking.total_price || 0} />
             <div className="mt-4">
-              <RecordPaymentDialog bookingId={booking.id} />
+              <RecordPaymentDialog 
+                bookingId={booking.id} 
+                onPaymentRecorded={handlePaymentRecorded}
+              />
             </div>
           </CardContent>
         </Card>

@@ -20,6 +20,7 @@ const statusVariant: { [key in QuoteStatus]: "default" | "secondary" | "destruct
     approved: "default",
     rejected: "destructive",
     expired: "outline",
+    converted: "default",
 };
 
 export const QuoteTable = ({ quotes, onDelete }: QuoteTableProps) => {
