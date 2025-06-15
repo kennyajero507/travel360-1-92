@@ -11,7 +11,7 @@ import { useQuoteData } from "../hooks/useQuoteData";
 import { QuoteData } from "../types/quote.types";
 import { useBookingData } from "../hooks/useBookingData";
 import { useHotelsData } from "../hooks/useHotelsData";
-import { Booking } from "../types/booking.types";
+import { Booking, RoomArrangement, BookingTransport, BookingActivity, BookingTransfer } from "../types/booking.types";
 
 const CreateBooking = () => {
   const navigate = useNavigate();
@@ -53,6 +53,47 @@ const CreateBooking = () => {
 
     const approvedHotel = hotels.find(h => h.id === selectedQuote.approved_hotel_id);
 
+    const mappedRoomArrangements: RoomArrangement[] = selectedQuote.room_arrangements.map(room => ({
+      room_type: room.room_type,
+      adults: room.adults,
+      children_with_bed: room.children_with_bed,
+      children_no_bed: room.children_no_bed,
+      infants: room.infants,
+      num_rooms: room.num_rooms,
+      total: room.total,
+    }));
+
+    const mappedTransports: BookingTransport[] = selectedQuote.transports.map(transport => ({
+      mode: transport.type,
+      route: `${transport.from} to ${transport.to}`,
+      operator: transport.provider,
+      cost_per_person: transport.cost_per_person,
+      num_passengers: transport.num_passengers,
+      total_cost: transport.total_cost,
+      description: transport.description,
+      notes: transport.notes,
+    }));
+
+    const mappedActivities: BookingActivity[] = selectedQuote.activities.map(activity => ({
+      name: activity.name,
+      description: activity.description,
+      date: activity.date,
+      cost_per_person: activity.cost_per_person,
+      num_people: activity.num_people,
+      total_cost: activity.total_cost,
+    }));
+
+    const mappedTransfers: BookingTransfer[] = selectedQuote.transfers.map(transfer => ({
+      type: transfer.type,
+      from: transfer.from,
+      to: transfer.to,
+      vehicle_type: transfer.vehicle_type,
+      cost_per_vehicle: transfer.cost_per_vehicle,
+      num_vehicles: transfer.num_vehicles,
+      total: transfer.total,
+      description: transfer.description,
+    }));
+
     const bookingData: Omit<Booking, 'id' | 'created_at' | 'updated_at'> = {
         booking_reference: `BKG-${Date.now().toString().slice(-6)}`,
         client: selectedQuote.client,
@@ -61,10 +102,10 @@ const CreateBooking = () => {
         agent_id: formData.agentId || undefined,
         travel_start: selectedQuote.start_date,
         travel_end: selectedQuote.end_date,
-        room_arrangement: selectedQuote.room_arrangements || [],
-        transport: selectedQuote.transports || [],
-        activities: selectedQuote.activities || [],
-        transfers: selectedQuote.transfers || [],
+        room_arrangement: mappedRoomArrangements,
+        transport: mappedTransports,
+        activities: mappedActivities,
+        transfers: mappedTransfers,
         status: 'pending',
         total_price: calculateTotalPrice(selectedQuote),
         quote_id: selectedQuote.id,
@@ -81,12 +122,12 @@ const CreateBooking = () => {
     }
   };
 
-  const calculateTotalPrice = (quote: any) => {
+  const calculateTotalPrice = (quote: QuoteData | null) => {
     if (!quote) return 0;
-    const roomTotal = quote.room_arrangements?.reduce((sum: number, room: any) => sum + (room.total || 0), 0) || 0;
-    const activitiesTotal = quote.activities?.reduce((sum: number, activity: any) => sum + (activity.cost * activity.num_people || 0), 0) || 0;
-    const transportTotal = quote.transports?.reduce((sum: number, transport: any) => sum + (transport.cost || 0), 0) || 0;
-    const transfersTotal = quote.transfers?.reduce((sum: number, transfer: any) => sum + (transfer.cost || 0), 0) || 0;
+    const roomTotal = quote.room_arrangements?.reduce((sum, room) => sum + (room.total || 0), 0) || 0;
+    const activitiesTotal = quote.activities?.reduce((sum, activity) => sum + (activity.total_cost || 0), 0) || 0;
+    const transportTotal = quote.transports?.reduce((sum, transport) => sum + (transport.total_cost || 0), 0) || 0;
+    const transfersTotal = quote.transfers?.reduce((sum, transfer) => sum + (transfer.total || 0), 0) || 0;
     const subtotal = roomTotal + activitiesTotal + transportTotal + transfersTotal;
     const markupValue = quote.markup_value || 0;
     const markupType = quote.markup_type || "percentage";
