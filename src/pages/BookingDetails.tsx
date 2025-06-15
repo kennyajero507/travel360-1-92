@@ -4,46 +4,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { ArrowLeft, User, MapPin, Calendar, DollarSign, FileText, CreditCard } from "lucide-react";
+import { ArrowLeft, User, MapPin, Calendar, DollarSign, FileText, CreditCard, ChevronDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getBookingById } from "../services/bookingReadService";
-import { Booking } from "../types/booking.types";
-import { convertToBooking } from "../utils/typeHelpers";
+import { BookingStatus } from "../types/booking.types";
 import VoucherManager from "../components/voucher/VoucherManager";
 import PaymentTracker from "../components/booking/PaymentTracker";
 import NotificationCenter from "../components/communication/NotificationCenter";
+import { useBookingDetails } from "../hooks/useBookingDetails";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../components/ui/alert-dialog";
 
 const BookingDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { booking, isLoading, isError, updateStatus, isUpdatingStatus } = useBookingDetails(id);
 
   useEffect(() => {
-    if (id) {
-      loadBookingDetails(id);
-    }
-  }, [id]);
-
-  const loadBookingDetails = async (bookingId: string) => {
-    try {
-      const data = await getBookingById(bookingId);
-      if (data) {
-        setBooking(convertToBooking(data));
-      } else {
-        toast.error("Booking not found");
-        navigate("/bookings");
-      }
-    } catch (error) {
-      console.error("Error loading booking details:", error);
-      toast.error("Failed to load booking details");
+    if (!isLoading && (isError || !booking)) {
+      toast.error("Booking not found or failed to load.");
       navigate("/bookings");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isLoading, isError, booking, navigate]);
 
-  const renderStatusBadge = (status: string) => {
+  const renderStatusBadge = (status: BookingStatus) => {
     const statusColors = {
       pending: "bg-yellow-50 text-yellow-700 border-yellow-300",
       confirmed: "bg-green-50 text-green-700 border-green-300",
@@ -58,7 +58,7 @@ const BookingDetails = () => {
     );
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -104,7 +104,56 @@ const BookingDetails = () => {
             </p>
           </div>
         </div>
-        {renderStatusBadge(booking.status)}
+        <div className="flex items-center gap-2">
+          {renderStatusBadge(booking.status)}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9">
+                Manage Status
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={booking.status === 'pending' || isUpdatingStatus} onClick={() => updateStatus('pending')}>
+                Set to Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={booking.status === 'confirmed' || isUpdatingStatus} onClick={() => updateStatus('confirmed')}>
+                Set to Confirmed
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={booking.status === 'completed' || isUpdatingStatus} onClick={() => updateStatus('completed')}>
+                Set to Completed
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="h-9" disabled={booking.status === 'cancelled' || isUpdatingStatus}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action will mark the booking as cancelled. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Go Back</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-500 hover:bg-red-600"
+                  onClick={() => updateStatus('cancelled')}
+                >
+                  Yes, Cancel Booking
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {/* Booking Overview */}
