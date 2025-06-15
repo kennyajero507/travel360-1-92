@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import OrganizationSetup from "../components/OrganizationSetup";
@@ -9,7 +8,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 
 const Dashboard = () => {
-  const { profile, loading, role } = useAuth();
+  const { profile, loading, role, organization } = useAuth();
   
   // Show loading state
   if (loading) {
@@ -24,6 +23,7 @@ const Dashboard = () => {
   }
 
   // Show organization setup if user doesn't have one and is org_owner
+  // Only redirect org_owners to setup, other roles can access dashboard without org
   if (profile && !profile.org_id && profile.role === 'org_owner') {
     return <OrganizationSetup />;
   }
@@ -42,12 +42,33 @@ const Dashboard = () => {
           {profile && (
             <div className="mt-2 text-sm text-gray-500">
               <p>Role: <span className="font-medium">{profile.role}</span></p>
-              {profile.org_id && (
-                <p>Organization: <span className="font-medium">{profile.org_id}</span></p>
+              {organization ? (
+                <p>Organization: <span className="font-medium">{organization.name}</span></p>
+              ) : (
+                <p className="text-orange-600">No organization assigned</p>
               )}
             </div>
           )}
         </div>
+
+        {/* Show organization setup prompt for non-org_owner users without org */}
+        {profile && !profile.org_id && profile.role !== 'org_owner' && (
+          <div className="mb-8">
+            <Card className="border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="text-orange-800">Organization Setup Required</CardTitle>
+                <CardDescription className="text-orange-600">
+                  You're not currently associated with an organization. Contact your administrator or create your own organization.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild>
+                  <Link to="/organization/setup">Set Up Organization</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

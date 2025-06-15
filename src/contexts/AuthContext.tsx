@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -99,6 +100,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setProfile(profile);
       return profile;
     } catch (err) {
+      console.error("[AuthContext] Error fetching profile:", err);
       setError("Failed to load profile.");
       setProfile(null);
       return null;
@@ -254,7 +256,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
   // ---- Org/invitations ----
 
-  // Organization creation
+  // Organization creation - FIXED VERSION
   const createOrganization = async (orgName: string) => {
     setLoading(true);
     setError(null);
@@ -264,13 +266,27 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       return false;
     }
     try {
+      console.log("[AuthContext] Creating organization:", orgName, "for user:", user.id);
+      
+      // Step 1: Create organization
       const org = await organizationService.createOrganization(orgName, user.id);
-      setOrganization(org);
+      console.log("[AuthContext] Organization created:", org);
+      
+      // Step 2: Link profile to organization
       await organizationService.linkProfileToOrganization(org.id, user.id);
-      await refreshProfile();
+      console.log("[AuthContext] Profile linked to organization");
+      
+      // Step 3: Update local organization state
+      setOrganization(org);
+      
+      // Step 4: Refresh profile to get updated org_id
+      const updatedProfile = await fetchProfile(user.id);
+      console.log("[AuthContext] Profile refreshed:", updatedProfile);
+      
       setLoading(false);
       return true;
     } catch (err: any) {
+      console.error("[AuthContext] Organization creation failed:", err);
       setLoading(false);
       setError(err.message || "Failed to create organization.");
       return false;

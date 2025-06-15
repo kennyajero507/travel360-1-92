@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -5,12 +6,14 @@ import OrganizationForm from "./auth/OrganizationForm";
 import { Building, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Button } from "./ui/button";
+import { useNavigate } from "react-router-dom";
 
 const OrganizationSetup = () => {
   const { createOrganization, profile, loading: authLoading, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
 
   const handleCreateOrganization = async (organizationName: string) => {
     if (!organizationName.trim()) {
@@ -23,11 +26,12 @@ const OrganizationSetup = () => {
       const success = await createOrganization(organizationName);
       if (success) {
         setSuccess(true);
-        // Hard-refresh to pull updated organization membership into profile
-        setTimeout(async () => {
-          await refreshProfile();
-          window.location.reload();
-        }, 2000);
+        // Refresh profile to get updated organization info
+        await refreshProfile();
+        // Navigate to dashboard after successful creation
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       } else {
         setError("Failed to create organization. Please try again.");
       }
@@ -39,8 +43,8 @@ const OrganizationSetup = () => {
   };
 
   const handleSkipForNow = () => {
-    // Allow user to skip organization setup and go to dashboard
-    window.location.href = '/dashboard';
+    // Navigate directly to dashboard without creating organization
+    navigate('/dashboard');
   };
 
   if (authLoading) {
