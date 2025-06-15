@@ -18,7 +18,8 @@ import { Skeleton } from "../components/ui/skeleton";
 const Inquiries = () => {
   const navigate = useNavigate();
   const { profile, loading: authLoading } = useAuth();
-  const { data: inquiries, isLoading, refetch } = useInquiries();
+  // FIX: Get the correct variable, not .data
+  const { inquiries, isLoading, refetch } = useInquiries();
   const { mutate: assignInquiry, isPending: isAssigning } = useAssignInquiry();
 
   const [filter, setFilter] = useState("all");
@@ -147,6 +148,7 @@ const Inquiries = () => {
         agents={agents}
         isAssigning={isAssigning}
       />
+      {/* TODO: Add Approve button to quote details and enhanced booking details area as discussed */}
     </div>
   );
 };
