@@ -1,10 +1,10 @@
-
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Calendar } from '../ui/calendar';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../ui/table';
 import { RoomType } from '../../types/hotel.types';
 import { useInventoryData } from '../../hooks/useInventoryData';
 import { format, startOfMonth, addMonths, subMonths, getYear, getMonth } from 'date-fns';
@@ -42,6 +42,25 @@ const InventoryCalendar = ({ hotelId, roomTypes }: InventoryCalendarProps) => {
     }, [inventory, selectedRoomTypeId]);
 
     const selectedRoomType = roomTypes.find(rt => rt.id === selectedRoomTypeId);
+
+    // Prepare data table of inventory for the selected month and room type
+    const monthDates = useMemo(() => {
+        const daysInMonth = new Date(getYear(currentMonth), getMonth(currentMonth) + 1, 0).getDate();
+        return Array.from({ length: daysInMonth }, (_, i) => {
+            const date = new Date(getYear(currentMonth), getMonth(currentMonth), i + 1);
+            const dateString = format(date, 'yyyy-MM-dd');
+            const item = inventoryMap.get(dateString);
+            const totalUnits = selectedRoomType?.totalUnits ?? 0;
+            const bookedUnits = item?.booked_units ?? 0;
+            return {
+                date: date,
+                dateString,
+                bookedUnits,
+                availableUnits: totalUnits - bookedUnits,
+                notes: item?.notes || '',
+            };
+        });
+    }, [currentMonth, inventoryMap, selectedRoomType]);
 
     const handleDateSelect = (date: Date | undefined) => {
         if (!date) return;
@@ -150,6 +169,31 @@ const InventoryCalendar = ({ hotelId, roomTypes }: InventoryCalendarProps) => {
                     />
                     <div className="text-xs text-gray-500 mt-2 text-center">
                         <span className="text-green-600 font-semibold">Available</span> / <span className="text-red-600">Booked</span>
+                    </div>
+
+                    {/* INVENTORY TABLE: For selected room type/month */}
+                    <div className="mt-8">
+                        <h3 className="text-lg font-semibold mb-2">Inventory Table for {selectedRoomType?.name} - {format(currentMonth, 'MMMM yyyy')}</h3>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Booked Units</TableHead>
+                                    <TableHead>Available Units</TableHead>
+                                    <TableHead>Notes</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {monthDates.map((row) => (
+                                    <TableRow key={row.dateString}>
+                                        <TableCell>{format(row.date, 'PPP')}</TableCell>
+                                        <TableCell className="text-red-600">{row.bookedUnits}</TableCell>
+                                        <TableCell className="text-green-600">{row.availableUnits}</TableCell>
+                                        <TableCell>{row.notes}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                 </div>
                 <div className="md:col-span-1">
