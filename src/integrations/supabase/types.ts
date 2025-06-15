@@ -198,6 +198,47 @@ export type Database = {
           },
         ]
       }
+      hotel_room_inventory: {
+        Row: {
+          booked_units: number
+          created_at: string | null
+          hotel_id: string
+          id: string
+          inventory_date: string
+          notes: string | null
+          room_type_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          booked_units?: number
+          created_at?: string | null
+          hotel_id: string
+          id?: string
+          inventory_date: string
+          notes?: string | null
+          room_type_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          booked_units?: number
+          created_at?: string | null
+          hotel_id?: string
+          id?: string
+          inventory_date?: string
+          notes?: string | null
+          room_type_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_room_inventory_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotels: {
         Row: {
           additional_details: Json | null
