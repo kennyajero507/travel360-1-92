@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createInquiry, getInquiries, updateInquiry, deleteInquiry, assignInquiryToAgent } from "../services/inquiry/api";
-import { InquiryData, AssignInquiryPayload } from "../types/inquiry.types";
+import { createInquiry, getAllInquiries, updateInquiry, deleteInquiry, assignInquiryToAgent } from "../services/inquiry/api";
+import { InquiryData } from "../types/inquiry.types";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { useRealtimeSync } from "./useRealtimeSync";
@@ -21,7 +21,7 @@ export const useInquiries = () => {
 
   const { data: inquiries = [], isLoading, refetch } = useQuery<InquiryData[]>({
     queryKey: ['inquiries'],
-    queryFn: getInquiries,
+    queryFn: getAllInquiries,
   });
 
   const createInquiryMutation = useMutation({
@@ -37,7 +37,8 @@ export const useInquiries = () => {
   });
 
   const updateInquiryMutation = useMutation({
-    mutationFn: updateInquiry,
+    mutationFn: ({ inquiryId, updates }: { inquiryId: string, updates: Partial<InquiryData> }) =>
+      updateInquiry(inquiryId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inquiries'] });
       toast.success("Inquiry updated successfully");
@@ -74,19 +75,22 @@ export const useInquiries = () => {
 };
 
 export const useAssignInquiry = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: async ({ inquiryId, agentId, agentName }: AssignInquiryPayload) => {
-            return assignInquiryToAgent(inquiryId, agentId, agentName);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['inquiries']);
-            toast.success("Inquiry assigned successfully");
-        },
-        onError: (error) => {
-            console.error("Error assigning inquiry:", error);
-            toast.error("Failed to assign inquiry");
-        }
-    });
+  return useMutation({
+    mutationFn: ({
+      inquiryId,
+      agentId,
+      agentName
+    }: { inquiryId: string; agentId: string; agentName: string }) =>
+      assignInquiryToAgent(inquiryId, agentId, agentName),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+      toast.success("Inquiry assigned successfully");
+    },
+    onError: (error) => {
+      console.error("Error assigning inquiry:", error);
+      toast.error("Failed to assign inquiry");
+    }
+  });
 };
