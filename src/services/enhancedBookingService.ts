@@ -1,6 +1,7 @@
 import { supabase } from "../integrations/supabase/client";
 import { Booking } from "../types/booking.types";
 import { Invoice, InvoiceLineItem } from "../types/invoice.types";
+import { convertToInvoice } from "../utils/typeHelpers";
 
 // EnhancedBookingService with actual DB implementations
 class EnhancedBookingService {
@@ -51,7 +52,8 @@ class EnhancedBookingService {
       .maybeSingle();
     
     if (error) throw error;
-    return data as Invoice | null;
+    if (!data) return null;
+    return convertToInvoice(data);
   }
 
   async createInvoiceFromBooking(booking: Booking): Promise<Invoice> {
@@ -84,7 +86,7 @@ class EnhancedBookingService {
       .single();
 
     if (error) throw error;
-    return data as unknown as Invoice;
+    return convertToInvoice(data);
   }
 
   async getPaymentsByBooking(bookingId: string) {

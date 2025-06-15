@@ -1,6 +1,6 @@
-
 import { Payment, EmailTemplate } from "../types/enhanced-booking.types";
 import { Booking, BookingStatus } from "../types/booking.types";
+import { Invoice, InvoiceLineItem } from "../types/invoice.types";
 
 // Type guards for safe type conversion
 export const isValidPaymentStatus = (status: string): status is Payment['payment_status'] => {
@@ -13,6 +13,10 @@ export const isValidEmailTemplateType = (type: string): type is EmailTemplate['t
 
 export const isValidBookingStatus = (status: string): status is BookingStatus => {
   return ['pending', 'confirmed', 'cancelled', 'completed'].includes(status);
+};
+
+export const isValidInvoiceStatus = (status: any): status is Invoice['status'] => {
+  return ['draft', 'sent', 'paid', 'overdue', 'cancelled'].includes(status);
 };
 
 export const ensureBookingStatus = (status: any): BookingStatus => {
@@ -45,5 +49,23 @@ export const convertToBooking = (data: any): Booking => {
     transport: Array.isArray(data.transport) ? data.transport : [],
     activities: Array.isArray(data.activities) ? data.activities : [],
     transfers: Array.isArray(data.transfers) ? data.transfers : [],
+  };
+};
+
+export const convertToInvoice = (data: any): Invoice => {
+  const lineItems = Array.isArray(data.line_items)
+    ? data.line_items.map((item: any): InvoiceLineItem => ({
+        id: item.id || Math.random().toString(),
+        description: item.description || '',
+        quantity: item.quantity || 0,
+        unit_price: item.unit_price || 0,
+        total: item.total || 0,
+      }))
+    : [];
+
+  return {
+    ...data,
+    status: isValidInvoiceStatus(data.status) ? data.status : 'draft',
+    line_items: lineItems,
   };
 };
