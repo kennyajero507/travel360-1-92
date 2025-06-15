@@ -1,4 +1,3 @@
-
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
 import { QuoteData, QuoteStatus, QuoteValidation, QuoteCalculations } from "../types/quote.types";
@@ -45,7 +44,7 @@ class EnhancedQuoteService {
       activities: this.parseJsonField(dbRow.activities, []),
       transports: this.parseJsonField(dbRow.transports, []),
       transfers: this.parseJsonField(dbRow.transfers, []),
-      sectionMarkups: this.parseJsonField(dbRow.sectionMarkups, {})
+      sectionMarkups: this.parseJsonField(dbRow.sectionmarkups, {})
     };
   }
 
@@ -85,6 +84,7 @@ class EnhancedQuoteService {
         inquiry_id: quote.inquiry_id || null,
         client: quote.client,
         mobile: quote.mobile,
+        client_email: quote.client_email || null,
         destination: quote.destination,
         start_date: quote.start_date,
         end_date: quote.end_date,
@@ -106,6 +106,7 @@ class EnhancedQuoteService {
         activities: JSON.stringify(quote.activities || []),
         transports: JSON.stringify(quote.transports || []),
         transfers: JSON.stringify(quote.transfers || []),
+        sectionmarkups: JSON.stringify(quote.sectionMarkups || {}),
         updated_at: new Date().toISOString()
       };
 

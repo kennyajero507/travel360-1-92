@@ -22,7 +22,7 @@ export const transformQuoteData = (dbRow: any): QuoteData => {
     activities: parseJsonField(dbRow.activities, []),
     transports: parseJsonField(dbRow.transports, []),
     transfers: parseJsonField(dbRow.transfers, []),
-    sectionMarkups: parseJsonField(dbRow.sectionMarkups, {})
+    sectionMarkups: parseJsonField(dbRow.sectionmarkups, {})
   };
 };
 

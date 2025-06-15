@@ -988,11 +988,11 @@ export type Database = {
       quotes: {
         Row: {
           activities: Json | null
-          adults: number | null
+          adults: number
           approved_hotel_id: string | null
           children_no_bed: number | null
           children_with_bed: number | null
-          client: string | null
+          client: string
           client_email: string | null
           client_selection_date: string | null
           created_at: string | null
@@ -1001,7 +1001,7 @@ export type Database = {
           destination: string
           duration_days: number | null
           duration_nights: number | null
-          end_date: string | null
+          end_date: string
           hotel_id: string | null
           id: string
           infants: number | null
@@ -1009,12 +1009,13 @@ export type Database = {
           lead_source: string | null
           markup_type: string | null
           markup_value: number | null
-          mobile: string | null
+          mobile: string
+          notes: string | null
           package_name: string | null
           room_arrangements: Json | null
           sectionmarkups: Json | null
           selected_hotel_option_id: string | null
-          start_date: string | null
+          start_date: string
           status: string
           summary_data: Json | null
           tour_type: string | null
@@ -1024,11 +1025,11 @@ export type Database = {
         }
         Insert: {
           activities?: Json | null
-          adults?: number | null
+          adults: number
           approved_hotel_id?: string | null
           children_no_bed?: number | null
           children_with_bed?: number | null
-          client?: string | null
+          client: string
           client_email?: string | null
           client_selection_date?: string | null
           created_at?: string | null
@@ -1037,7 +1038,7 @@ export type Database = {
           destination: string
           duration_days?: number | null
           duration_nights?: number | null
-          end_date?: string | null
+          end_date: string
           hotel_id?: string | null
           id?: string
           infants?: number | null
@@ -1045,12 +1046,13 @@ export type Database = {
           lead_source?: string | null
           markup_type?: string | null
           markup_value?: number | null
-          mobile?: string | null
+          mobile: string
+          notes?: string | null
           package_name?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
-          start_date?: string | null
+          start_date: string
           status?: string
           summary_data?: Json | null
           tour_type?: string | null
@@ -1060,11 +1062,11 @@ export type Database = {
         }
         Update: {
           activities?: Json | null
-          adults?: number | null
+          adults?: number
           approved_hotel_id?: string | null
           children_no_bed?: number | null
           children_with_bed?: number | null
-          client?: string | null
+          client?: string
           client_email?: string | null
           client_selection_date?: string | null
           created_at?: string | null
@@ -1073,7 +1075,7 @@ export type Database = {
           destination?: string
           duration_days?: number | null
           duration_nights?: number | null
-          end_date?: string | null
+          end_date?: string
           hotel_id?: string | null
           id?: string
           infants?: number | null
@@ -1081,12 +1083,13 @@ export type Database = {
           lead_source?: string | null
           markup_type?: string | null
           markup_value?: number | null
-          mobile?: string | null
+          mobile?: string
+          notes?: string | null
           package_name?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
-          start_date?: string | null
+          start_date?: string
           status?: string
           summary_data?: Json | null
           tour_type?: string | null
