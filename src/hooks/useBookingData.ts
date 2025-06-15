@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getAllBookings } from '../services/bookingReadService';
@@ -7,7 +8,8 @@ import { enhancedBookingService } from '../services/enhancedBookingService';
 import { Booking, BookingStatus, TravelVoucher } from '../types/booking.types';
 import { useState } from 'react';
 import { createVoucher as apiCreateVoucher } from '../services/voucherService';
-import { useAuth } from './useAuth';
+// FIX: import useAuth from correct location
+import { useAuth } from '../contexts/AuthContext';
 import { useRealtimeSync } from "./useRealtimeSync";
 
 export const useBookingData = () => {

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from './useAuth';
+// FIX: import useAuth from correct location
+import { useAuth } from '../contexts/AuthContext';
 import { useRealtimeSync } from "./useRealtimeSync";
 
 interface Voucher {
