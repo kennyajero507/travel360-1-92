@@ -1,11 +1,20 @@
 
-import React from "react";
+import { CreateInquiryForm } from "../components/inquiry/CreateInquiryForm";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
-const CreateInquiry = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-    <h1 className="text-3xl font-bold mb-4">Create Inquiry</h1>
-    <p className="text-gray-500">Start a new inquiry (UI to be implemented).</p>
-  </div>
-);
+const CreateInquiry = () => {
+  return (
+    <div className="container mx-auto p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New Inquiry</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CreateInquiryForm />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default CreateInquiry;

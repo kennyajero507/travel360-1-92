@@ -4,17 +4,12 @@ import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { agentService } from "../services/agentService";
 import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inquiry.types";
+import { useCreateInquiry } from "./useInquiryData";
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
   const { profile, loading: authLoading } = useAuth();
-  const createInquiryMutation = {
-    isPending: false,
-    mutate: (_data: any, { onSuccess }: any = {}) => {
-      toast.error("Inquiry creation is currently unavailable (tables missing)");
-      if (onSuccess) onSuccess();
-    }
-  };
+  const createInquiryMutation = useCreateInquiry();
   
   const [activeTab, setActiveTab] = useState<'domestic' | 'international'>('domestic');
   const [formData, setFormData] = useState<InquiryFormData>({
@@ -184,11 +179,33 @@ export const useInquiryForm = () => {
     return inquiryData;
   };
 
-  const saveDraft = () => toast.error("Inquiry drafts unavailable (missing table)");
+  const saveDraft = () => {
+    if (!validateForm()) {
+      toast.error("Please fix the validation errors before saving.");
+      return;
+    }
+    const inquiryData = prepareInquiryData('Draft');
+    createInquiryMutation.mutate(inquiryData, {
+      onSuccess: () => {
+        toast.success("Draft saved successfully!");
+        navigate("/inquiries");
+      }
+    });
+  };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.error("Inquiry submission unavailable (missing table)");
+    if (!validateForm()) {
+      toast.error("Please fix the validation errors before submitting.");
+      return;
+    }
+    const inquiryData = prepareInquiryData('New');
+    createInquiryMutation.mutate(inquiryData, {
+      onSuccess: () => {
+        toast.success("Inquiry submitted successfully!");
+        navigate("/inquiries");
+      }
+    });
   };
 
   return {
@@ -201,11 +218,8 @@ export const useInquiryForm = () => {
     isSubmitting: createInquiryMutation.isPending,
     loadingAgents,
     handleTabChange,
-    saveDraft: () => toast.error("Inquiry drafts unavailable (missing table)"),
-    handleSubmit: (e: any) => {
-      e.preventDefault();
-      toast.error("Inquiry submission unavailable (missing table)");
-    },
+    saveDraft,
+    handleSubmit,
     handleCancel
   };
 };

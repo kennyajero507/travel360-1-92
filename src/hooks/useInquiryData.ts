@@ -1,9 +1,8 @@
-
 // Provide hooks for inquiry data against actual Supabase tables.
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllInquiries, assignInquiryToAgent } from "../services/inquiry/api";
-import { InquiryData } from "../types/inquiry.types";
+import { getAllInquiries, assignInquiryToAgent, createInquiry } from "../services/inquiry/api";
+import { InquiryData, InquiryInsertData } from "../types/inquiry.types";
 import { toast } from "sonner";
 
 // Fetch all inquiries
@@ -56,4 +55,21 @@ export const useAssignInquiry = () => {
     isPending: mutation.isPending,
     mutate: mutation.mutate,
   };
+};
+
+// Create inquiry mutation
+export const useCreateInquiry = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (inquiryData: InquiryInsertData) => createInquiry(inquiryData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiries"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create inquiry.");
+      console.error(err);
+    }
+  });
+
+  return mutation;
 };
