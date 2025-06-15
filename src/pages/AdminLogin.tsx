@@ -5,14 +5,17 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { Eye, EyeOff, ShieldAlert, UserPlus } from "lucide-react";
 import { supabase } from "../integrations/supabase/client";
 import AuthLayout from "../components/auth/AuthLayout";
+import { createSuperAdminAccount, SUPER_ADMIN_CREDENTIALS } from "../utils/createSuperAdmin";
+import { Separator } from "../components/ui/separator";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   // Form state with updated default credentials
@@ -106,6 +109,32 @@ const AdminLogin = () => {
       setLoading(false);
     }
   };
+
+  const handleCreateSuperAdmin = async () => {
+    setCreatingAdmin(true);
+    try {
+      const result = await createSuperAdminAccount();
+      
+      if (result.success) {
+        toast.success('Super admin account created successfully!');
+        toast.info('You can now login with the credentials below', {
+          duration: 5000,
+        });
+        // Auto-fill the password after successful creation
+        setFormData(prev => ({
+          ...prev,
+          password: SUPER_ADMIN_CREDENTIALS.password
+        }));
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Error creating super admin:', error);
+      toast.error('Failed to create super admin account');
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
   
   return (
     <AuthLayout
@@ -172,16 +201,37 @@ const AdminLogin = () => {
         >
           {loading ? "Verifying..." : "Secure Sign In"}
         </Button>
-        
-        <div className="text-sm text-center space-y-2">
-          <p className="text-gray-500">
-            Default credentials: admin@travelflow360.com
-          </p>
-          <p className="text-gray-500">
-            Password: TravelFlow360Admin2024!
-          </p>
-        </div>
       </form>
+      
+      <div className="mt-6">
+        <Separator className="my-4" />
+        
+        <div className="text-center space-y-3">
+          <div className="text-sm text-gray-600">
+            <p className="font-medium">Need to create the admin account?</p>
+            <p>Click below to set up the super admin account first</p>
+          </div>
+          
+          <Button
+            onClick={handleCreateSuperAdmin}
+            disabled={creatingAdmin}
+            variant="outline"
+            className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            {creatingAdmin ? "Creating Admin Account..." : "Create Super Admin Account"}
+          </Button>
+        </div>
+      </div>
+      
+      <div className="text-sm text-center space-y-2 mt-4">
+        <p className="text-gray-500">
+          Default credentials: admin@travelflow360.com
+        </p>
+        <p className="text-gray-500">
+          Password: TravelFlow360Admin2024!
+        </p>
+      </div>
     </AuthLayout>
   );
 };
