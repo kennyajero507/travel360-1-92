@@ -23,7 +23,7 @@ const NotificationCenter: React.FC = () => {
   // Helper for marking a single notification as read
   const handleMarkAsRead = (id: string) => {
     if (typeof markAsRead === "function") {
-      markAsRead();
+      markAsRead(id);
     }
   };
 

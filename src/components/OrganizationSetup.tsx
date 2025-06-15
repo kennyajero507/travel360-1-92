@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -18,18 +17,16 @@ const OrganizationSetup = () => {
       setError("Organization name is required");
       return;
     }
-
     setError(null);
     setLoading(true);
-    
     try {
       const success = await createOrganization(organizationName);
       if (success) {
         setSuccess(true);
-        // Wait a bit then refresh
+        // Hard-refresh to pull updated organization membership into profile
         setTimeout(async () => {
           await refreshProfile();
-          window.location.href = '/dashboard';
+          window.location.reload();
         }, 2000);
       } else {
         setError("Failed to create organization. Please try again.");

@@ -36,9 +36,9 @@ const Bookings = () => {
     try {
       const data = await getAllBookings();
       // Use convertToBooking to map each raw booking to Booking type
-      const convertedBookings = data.map((raw: any) => {
+      const convertedBookings: Booking[] = data.map((raw: any) => {
         // Safely parse room_arrangement if it exists and is a string
-        let roomArr = [];
+        let roomArr: any[] = [];
         if (typeof raw.room_arrangement === "string") {
           try {
             roomArr = JSON.parse(raw.room_arrangement);
@@ -48,7 +48,9 @@ const Bookings = () => {
         } else if (Array.isArray(raw.room_arrangement)) {
           roomArr = raw.room_arrangement;
         }
-        return { ...convertToBooking(raw), room_arrangement: roomArr };
+        // Clone the booking and replace room_arrangement
+        const bookingObj = { ...convertToBooking(raw), room_arrangement: roomArr };
+        return bookingObj as Booking;
       });
       setBookings(convertedBookings);
       setFilteredBookings(convertedBookings);
