@@ -13,8 +13,9 @@ import {
   ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
-import { TravelVoucher } from "../types/booking.types";
+import { Booking, TravelVoucher } from "../types/booking.types";
 import { getAllVouchers, updateVoucherEmailStatus } from "../services/voucherService";
+import { generateVoucherPDF } from "../services/pdfVoucherGenerator";
 
 // Helper to use search params
 function useQuery() {
@@ -77,9 +78,11 @@ const Vouchers = () => {
   
   // Handle download
   const handleDownload = (voucher: any) => {
-    // In a real app, this would download the voucher PDF
-    // For now, we'll just show a toast
-    toast.success("Voucher downloaded successfully");
+    if (voucher && voucher.bookings) {
+      generateVoucherPDF(voucher as TravelVoucher, voucher.bookings as Booking);
+    } else {
+      toast.error("Booking data for this voucher is missing and the PDF could not be generated.");
+    }
   };
   
   // Clear filters
@@ -196,7 +199,7 @@ const Vouchers = () => {
                           size="sm"
                           onClick={() => handleDownload(voucher)}
                         >
-                          <FileDown className="h-4 w-4" />
+                          <Download className="h-4 w-4" />
                           <span className="sr-only">Download</span>
                         </Button>
                         

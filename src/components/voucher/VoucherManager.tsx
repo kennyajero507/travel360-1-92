@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Plus, Eye, Mail } from "lucide-react";
+import { Plus, Eye, Mail, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Booking, TravelVoucher } from "../../types/booking.types";
 import { getVouchersByBookingId, createVoucher, updateVoucherEmailStatus } from "../../services/voucherService";
+import { generateVoucherPDF } from "../../services/pdfVoucherGenerator";
 
 interface VoucherManagerProps {
   booking: Booking;
@@ -54,6 +55,10 @@ const VoucherManager = ({ booking }: VoucherManagerProps) => {
   
   const handleSendEmail = (voucherId: string) => {
     sendEmailMutation.mutate({ voucherId, emailSent: true });
+  }
+
+  const handleDownloadVoucher = (voucher: TravelVoucher) => {
+    generateVoucherPDF(voucher, booking);
   }
 
   return (
@@ -106,11 +111,14 @@ const VoucherManager = ({ booking }: VoucherManagerProps) => {
                     )}
                   </TableCell>
                   <TableCell className="text-right flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(`/vouchers/${voucher.id}`)}>
+                    <Button variant="ghost" size="icon" title="Download" onClick={() => handleDownloadVoucher(voucher)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" title="View Details" onClick={() => navigate(`/vouchers/${voucher.id}`)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                     {!voucher.email_sent && (
-                      <Button variant="ghost" size="icon" onClick={() => handleSendEmail(voucher.id)}>
+                      <Button variant="ghost" size="icon" title="Mark as Emailed" onClick={() => handleSendEmail(voucher.id)}>
                         <Mail className="h-4 w-4" />
                       </Button>
                     )}

@@ -3,16 +3,14 @@ import { toast } from "sonner";
 import { TravelVoucher, Booking } from "../types/booking.types";
 
 // Voucher management
-export const getAllVouchers = async (): Promise<TravelVoucher[]> => {
+export const getAllVouchers = async (): Promise<any[]> => {
   try {
     const { data, error } = await supabase
       .from('travel_vouchers')
       .select(`
         *,
         bookings!inner (
-          booking_reference,
-          client,
-          hotel_name
+          *
         )
       `)
       .order('created_at', { ascending: false });
