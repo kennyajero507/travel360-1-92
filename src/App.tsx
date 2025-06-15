@@ -25,6 +25,9 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import Clients from "./pages/Clients";
 import Vouchers from "./pages/Vouchers";
+import CreateHotel from "./pages/CreateHotel";
+import HotelDetails from "./pages/HotelDetails";
+import EditHotel from "./pages/EditHotel";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +71,9 @@ function App() {
                   element={<OrganizationSetup />}
                 />
                 <Route path="/hotels" element={<Hotels />} />
+                <Route path="/hotels/create" element={<CreateHotel />} />
+                <Route path="/hotels/:hotelId" element={<HotelDetails />} />
+                <Route path="/hotels/:hotelId/edit" element={<EditHotel />} />
                 <Route path="/inquiries" element={<Inquiries />} />
                 <Route path="/inquiries/create" element={<CreateInquiry />} />
                 <Route path="/quotes" element={<Quotes />} />

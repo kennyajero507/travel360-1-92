@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -50,7 +49,7 @@ const EditHotel = () => {
     
     try {
       await updateHotel(hotel.id, hotelData);
-      navigate(`/hotel-details/${hotel.id}`);
+      navigate(`/hotels/${hotel.id}`);
     } catch (error) {
       console.error("Error updating hotel:", error);
     }

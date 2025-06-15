@@ -76,7 +76,7 @@ const HotelDetails = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate(`/edit-hotel/${hotel.id}`)}>
+          <Button onClick={() => navigate(`/hotels/${hotel.id}/edit`)}>
             <Edit className="h-4 w-4 mr-2" />
             Edit Hotel
           </Button>
