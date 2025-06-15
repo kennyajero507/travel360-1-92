@@ -9,6 +9,20 @@ export const clientService = {
     return data || [];
   },
 
+  async getClientById(id: string): Promise<Client | null> {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`Error fetching client by ID: ${id}`, error);
+      throw error;
+    }
+    return data;
+  },
+
   async createClient(newClient: NewClient): Promise<Client> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");

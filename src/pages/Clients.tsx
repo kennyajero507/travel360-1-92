@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, FileText, Loader2 } from "lucide-react";
+import { Plus, MoreHorizontal, FileText, Loader2, Eye } from "lucide-react";
 import { useClientsData } from "../hooks/useClientsData";
 import { NewClient } from "../types/client.types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +41,7 @@ const Clients = () => {
   });
   
   const { clients, isLoading, isError, search, setSearch, createClient } = useClientsData();
+  const navigate = useNavigate();
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,15 +106,15 @@ const Clients = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <FileText className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}`)}>
+                        <Eye className="mr-2 h-4 w-4" />
                         View Client Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem disabled>
                         <FileText className="mr-2 h-4 w-4" />
                         Create New Quote
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem disabled>
                         <FileText className="mr-2 h-4 w-4" />
                         View Client Quotes
                       </DropdownMenuItem>

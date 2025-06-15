@@ -34,6 +34,7 @@ import TeamManagementPage from "./pages/TeamManagement";
 import AgentManagement from "./pages/AgentManagement";
 import VoucherDetailsPage from "./pages/VoucherDetailsPage";
 import QuotePreview from "./pages/QuotePreview";
+import ClientDetailsPage from "./pages/ClientDetailsPage";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,7 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/clients" element={<Clients />} />
+                <Route path="/clients/:clientId" element={<ClientDetailsPage />} />
                 <Route path="/vouchers" element={<Vouchers />} />
                 <Route path="/vouchers/:voucherId" element={<VoucherDetailsPage />} />
                 <Route path="/team" element={<TeamManagementPage />} />
