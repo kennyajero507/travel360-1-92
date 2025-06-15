@@ -10,6 +10,8 @@ import { Button } from "../components/ui/button";
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import EnhancedAnalyticsDashboard from "../components/analytics/EnhancedAnalyticsDashboard";
 import QuickActionsPanel from "../components/analytics/QuickActionsPanel";
+import { errorHandler } from "@/services/errorHandlingService";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const { profile, loading, role, organization } = useAuth();
@@ -35,6 +37,26 @@ const Dashboard = () => {
 
   const isAgent = role === 'agent';
   
+  // Example quick action form for validation and error demo
+  const [quickAction, setQuickAction] = useState("");
+  const [quickActionError, setQuickActionError] = useState("");
+
+  const handleQuickAction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickAction.trim()) {
+      setQuickActionError("This field is required!");
+      return;
+    }
+    setQuickActionError("");
+    try {
+      // Optional: Simulate action (could be a Supabase call)
+      // throw new Error("Simulated dashboard error");
+      toast.success("Quick action executed!");
+    } catch (err: any) {
+      errorHandler.handleError(err, "Dashboard Quick Action");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-6 py-8">
@@ -293,6 +315,30 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Example quick action form with validation */}
+      <form className="mb-8 max-w-sm" onSubmit={handleQuickAction}>
+        <label className="block text-sm mb-1 font-medium">
+          Try a quick action
+        </label>
+        <input
+          className={`border rounded px-2 py-1 w-full ${
+            quickActionError ? "border-red-400" : ""
+          }`}
+          value={quickAction}
+          onChange={e => setQuickAction(e.target.value)}
+          placeholder="Type something..."
+        />
+        {quickActionError && (
+          <div className="text-xs text-red-600 mt-1">{quickActionError}</div>
+        )}
+        <button
+          className="mt-2 px-3 py-1 bg-blue-600 text-white rounded"
+          type="submit"
+        >
+          Run
+        </button>
+      </form>
     </div>
   );
 };
