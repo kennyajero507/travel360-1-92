@@ -9,7 +9,9 @@ import {
   downloadQuotePDF 
 } from "../services/quoteService";
 import { enhancedQuoteService } from "../services/enhancedQuoteService";
+import { getAvailableInquiries } from "../services/inquiry/api";
 import { QuoteData } from "../types/quote.types";
+import { InquiryData } from "../types/inquiry.types";
 import { toast } from "sonner";
 
 export const useQuoteData = () => {
@@ -25,11 +27,23 @@ export const useQuoteData = () => {
     queryFn: getAllQuotes,
   });
 
+  // Fetch available inquiries for quote creation
+  const { 
+    data: availableInquiries = [], 
+    isLoading: isLoadingInquiries 
+  } = useQuery({
+    queryKey: ['available-inquiries'],
+    queryFn: getAvailableInquiries,
+  });
+
   // Create quote mutation using enhanced service
   const createQuoteMutation = useMutation({
     mutationFn: (quote: QuoteData) => enhancedQuoteService.saveQuote(quote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      // If quote was created from inquiry, invalidate inquiries too
+      queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+      queryClient.invalidateQueries({ queryKey: ['available-inquiries'] });
       toast.success("Quote created successfully");
     },
     onError: (error) => {
@@ -102,8 +116,10 @@ export const useQuoteData = () => {
 
   return {
     quotes,
+    availableInquiries,
     loading: isLoading,
     isLoading,
+    isLoadingInquiries,
     error,
     createQuote: createQuoteMutation.mutateAsync,
     updateQuote: updateQuoteMutation.mutateAsync,
