@@ -1,29 +1,25 @@
-import { useState } from "react";
+
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { toast } from "sonner";
 import { MoreHorizontal } from "lucide-react";
-import { Booking } from "../../types/booking.types";
-import { enhancedBookingService } from "../../services/enhancedBookingService";
+import { Booking, BookingStatus } from "../../types/booking.types";
 
 interface BulkBookingActionsProps {
   bookings: Booking[];
   selectedBookings: string[];
   onSelectionChange: (selected: string[]) => void;
-  onRefresh: () => void;
+  onBulkStatusUpdate: (status: BookingStatus) => void;
+  onBulkDelete: () => void;
 }
-
-// Fix usage of enhancedBookingService methods so no arguments are missing/extra
 
 const BulkBookingActions = ({
   bookings,
   selectedBookings,
   onSelectionChange,
-  onRefresh,
-}: any) => {
-  const [loading, setLoading] = useState(false);
-
+  onBulkStatusUpdate,
+  onBulkDelete,
+}: BulkBookingActionsProps) => {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       onSelectionChange(bookings.map(booking => booking.id));
@@ -32,20 +28,20 @@ const BulkBookingActions = ({
     }
   };
 
-  const handleBulkStatusUpdate = async (status: string) => {
-    if (selectedBookings.length === 0) return;
-    await enhancedBookingService.bulkUpdateStatus(selectedBookings, status);
-    onRefresh();
+  const handleBulkStatusUpdate = (status: BookingStatus) => {
+    if (selectedBookings.length > 0) {
+      onBulkStatusUpdate(status);
+    }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedBookings.length === 0) return;
-    await enhancedBookingService.bulkDelete(selectedBookings);
-    onRefresh();
+  const handleBulkDelete = () => {
+    if (selectedBookings.length > 0) {
+      onBulkDelete();
+    }
   };
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center space-x-4">
       <div className="flex items-center space-x-2">
         <Checkbox
           id="select-all"
@@ -57,13 +53,13 @@ const BulkBookingActions = ({
           htmlFor="select-all"
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
-          Select All
+          Select All ({selectedBookings.length})
         </label>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled={selectedBookings.length === 0}>
             <MoreHorizontal className="h-4 w-4 mr-2" />
             Bulk Actions
           </Button>
