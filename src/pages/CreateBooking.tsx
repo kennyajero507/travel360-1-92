@@ -6,17 +6,20 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import { useQuoteData } from "../hooks/useQuoteData";
 import { QuoteData } from "../types/quote.types";
-// import { createBookingFromQuote } from "../services/bookingCreateService"; // bookings table not available
+import { useBookingData } from "../hooks/useBookingData";
+import { useHotelsData } from "../hooks/useHotelsData";
+import { Booking } from "../types/booking.types";
 
 const CreateBooking = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const quoteId = searchParams.get('quoteId');
   const { quotes } = useQuoteData();
+  const { createBooking } = useBookingData();
+  const { hotels } = useHotelsData();
 
   const [selectedQuote, setSelectedQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,10 +45,40 @@ const CreateBooking = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedQuote || !selectedQuote.approved_hotel_id) {
+        toast.error("No selected quote or approved hotel.");
+        return;
+    }
+    setLoading(true);
 
-    toast.error("Bookings functionality is not available. The bookings table does not exist.");
-    return;
-    // All below booking creation logic is disabled until bookings table is present
+    const approvedHotel = hotels.find(h => h.id === selectedQuote.approved_hotel_id);
+
+    const bookingData: Omit<Booking, 'id' | 'created_at' | 'updated_at'> = {
+        booking_reference: `BKG-${Date.now().toString().slice(-6)}`,
+        client: selectedQuote.client,
+        hotel_name: approvedHotel?.name || 'Approved Hotel',
+        hotel_id: selectedQuote.approved_hotel_id,
+        agent_id: formData.agentId || undefined,
+        travel_start: selectedQuote.start_date,
+        travel_end: selectedQuote.end_date,
+        room_arrangement: selectedQuote.room_arrangements || [],
+        transport: selectedQuote.transports || [],
+        activities: selectedQuote.activities || [],
+        transfers: selectedQuote.transfers || [],
+        status: 'pending',
+        total_price: calculateTotalPrice(selectedQuote),
+        quote_id: selectedQuote.id,
+        notes: formData.notes,
+    };
+    
+    try {
+        const result = await createBooking(bookingData);
+        if (result.success && result.booking) {
+            navigate(`/bookings/${result.booking.id}`);
+        }
+    } finally {
+        setLoading(false);
+    }
   };
 
   const calculateTotalPrice = (quote: any) => {
@@ -171,22 +204,19 @@ const CreateBooking = () => {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder="Add any additional notes for this booking..."
                 rows={4}
-                disabled
+                disabled={loading}
               />
-            </div>
-            <div className="py-2 text-red-600">
-              Bookings functionality not implemented. Table missing.
             </div>
           </CardContent>
         </Card>
 
         {/* Submit Button */}
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={() => navigate('/quotes')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/quotes')} disabled={loading}>
             Cancel
           </Button>
-          <Button type="submit" disabled>
-            Not Available
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Creating Booking...' : 'Create Booking'}
           </Button>
         </div>
       </form>
@@ -195,4 +225,3 @@ const CreateBooking = () => {
 };
 
 export default CreateBooking;
-
