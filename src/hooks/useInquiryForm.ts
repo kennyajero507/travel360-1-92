@@ -1,16 +1,20 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { agentService } from "../services/agentService";
 import { InquiryFormData, AvailableAgent, InquiryInsertData } from "../types/inquiry.types";
-import { useCreateInquiry } from "./useInquiryData";
 
 export const useInquiryForm = () => {
   const navigate = useNavigate();
   const { profile, loading: authLoading } = useAuth();
-  const createInquiryMutation = useCreateInquiry();
+  const createInquiryMutation = {
+    isPending: false,
+    mutate: (_data: any, { onSuccess }: any = {}) => {
+      toast.error("Inquiry creation is currently unavailable (tables missing)");
+      if (onSuccess) onSuccess();
+    }
+  };
   
   const [activeTab, setActiveTab] = useState<'domestic' | 'international'>('domestic');
   const [formData, setFormData] = useState<InquiryFormData>({
@@ -180,54 +184,11 @@ export const useInquiryForm = () => {
     return inquiryData;
   };
 
-  const saveDraft = async () => {
-    if (createInquiryMutation.isPending) return;
-    
-    if (!profile?.id) {
-      toast.error("Authentication required");
-      return;
-    }
+  const saveDraft = () => toast.error("Inquiry drafts unavailable (missing table)");
 
-    if (!formData.client_name?.trim()) {
-      toast.error("Client name is required even for drafts");
-      return;
-    }
-
-    if (!profile.org_id && profile.role !== 'system_admin') {
-      toast.error("You must belong to an organization to create inquiries");
-      return;
-    }
-    
-    const draftData = prepareInquiryData('Draft');
-    createInquiryMutation.mutate(draftData, {
-      onSuccess: () => navigate("/inquiries"),
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
-    
-    if (createInquiryMutation.isPending) return;
-
-    if (!profile?.id) {
-      toast.error("You must be logged in to create inquiries");
-      return;
-    }
-
-    if (!profile.org_id && profile.role !== 'system_admin') {
-      toast.error("You must belong to an organization to create inquiries");
-      return;
-    }
-    
-    if (!validateForm()) {
-      toast.error("Please fix the validation errors before submitting");
-      return;
-    }
-
-    const submittedFormData = prepareInquiryData('New');
-    createInquiryMutation.mutate(submittedFormData, {
-      onSuccess: () => navigate("/inquiries"),
-    });
+    toast.error("Inquiry submission unavailable (missing table)");
   };
 
   return {
@@ -240,8 +201,11 @@ export const useInquiryForm = () => {
     isSubmitting: createInquiryMutation.isPending,
     loadingAgents,
     handleTabChange,
-    saveDraft,
-    handleSubmit,
+    saveDraft: () => toast.error("Inquiry drafts unavailable (missing table)"),
+    handleSubmit: (e: any) => {
+      e.preventDefault();
+      toast.error("Inquiry submission unavailable (missing table)");
+    },
     handleCancel
   };
 };
