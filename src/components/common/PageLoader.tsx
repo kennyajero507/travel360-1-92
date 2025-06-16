@@ -1,19 +1,15 @@
 
-import { Card, CardContent } from "../ui/card";
-import LoadingSpinner from "./LoadingSpinner";
+import React from 'react';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface PageLoaderProps {
-  message?: string;
+  text?: string;
 }
 
-const PageLoader = ({ message = "Loading..." }: PageLoaderProps) => {
+const PageLoader: React.FC<PageLoaderProps> = ({ text = 'Loading...' }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardContent className="p-8 text-center">
-          <LoadingSpinner size="lg" text={message} className="flex-col gap-4" />
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex items-center justify-center">
+      <LoadingSpinner size="lg" text={text} />
     </div>
   );
 };
