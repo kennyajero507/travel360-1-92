@@ -1164,6 +1164,7 @@ export type Database = {
           markup_value: number | null
           mobile: string
           notes: string | null
+          org_id: string | null
           package_name: string | null
           passport_expiry_date: string | null
           preferred_currency: string | null
@@ -1215,6 +1216,7 @@ export type Database = {
           markup_value?: number | null
           mobile: string
           notes?: string | null
+          org_id?: string | null
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
@@ -1266,6 +1268,7 @@ export type Database = {
           markup_value?: number | null
           mobile?: string
           notes?: string | null
+          org_id?: string | null
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
@@ -1287,7 +1290,22 @@ export type Database = {
           visa_required?: boolean | null
           workflow_stage?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_quotes_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_quotes_org"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       travel_vouchers: {
         Row: {
@@ -1348,6 +1366,10 @@ export type Database = {
       check_system_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      create_data_backup: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_user_org_id: {
         Args: Record<PropertyKey, never>

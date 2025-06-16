@@ -1,144 +1,65 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../integrations/supabase/client';
-import { toast } from 'sonner';
 
-// This matches DB + app notifications model
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  read: boolean;
-  created_at: string;
-  user_id: string;
-  related_id?: string;
-  related_type?: 'quote' | 'booking' | 'inquiry' | 'invoice';
-}
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { notificationService, NotificationData } from '../services/notificationService';
+import { useAuth } from '../contexts/AuthContext';
+import { useRealtimeSync } from './useRealtimeSync';
+import { useEffect } from 'react';
 
-// type guard to ensure string is valid notification type
-function isNotificationType(type: any): type is Notification['type'] {
-  return ['info', 'success', 'warning', 'error'].includes(type);
-}
-
-// Helper to coerce raw notification data from Supabase to Notification type
-function toNotification(n: any): Notification {
-  return {
-    ...n,
-    type: isNotificationType(n.type) ? n.type : 'info',
-  };
-}
-
-// Realtime user notifications (read/unread, create)
 export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
 
-  // Fetch from Supabase live
-  useEffect(() => {
-    let subscriber: any;
+  // Real-time sync for notifications
+  useRealtimeSync({
+    table: 'notifications',
+    filterColumn: 'user_id',
+    filterValue: userId,
+    queryKeysInvalidate: ['notifications', 'unread-count'],
+    queryClient,
+  });
 
-    const fetchNotifications = async () => {
-      setLoading(true);
-      // Only for the logged-in user
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error) {
-        const converted = (data || []).map(toNotification);
-        setNotifications(converted);
-        setUnreadCount(converted.filter((n: any) => !n.read).length);
-      }
-      setLoading(false);
-    };
+  const {
+    data: notifications = [],
+    isLoading
+  } = useQuery({
+    queryKey: ['notifications', userId],
+    queryFn: () => userId ? notificationService.getUserNotifications(userId) : [],
+    enabled: !!userId
+  });
 
-    fetchNotifications();
+  const {
+    data: unreadCount = 0
+  } = useQuery({
+    queryKey: ['unread-count', userId],
+    queryFn: () => userId ? notificationService.getUnreadCount(userId) : 0,
+    enabled: !!userId,
+    refetchInterval: 30000 // Refetch every 30 seconds
+  });
 
-    // Subscribe to realtime changes
-    subscriber = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-        },
-        (payload) => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      if (subscriber) supabase.removeChannel(subscriber);
-    };
-  }, []);
-
-  const markAsRead = async (notificationId: string) => {
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notificationId);
-
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === notificationId ? { ...n, read: true } : n
-      )
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-  };
-
-  const markAllAsRead = async () => {
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('read', false);
-
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
-    setUnreadCount(0);
-  };
-
-  const createNotification = async (
-    notification: Omit<Notification, 'id' | 'created_at' | 'read'>
-  ) => {
-    // logged in user's id is set server-side via RLS
-    const { data, error } = await supabase
-      .from('notifications')
-      .insert([{ ...notification }])
-      .select()
-      .single();
-
-    if (!error && data) {
-      setNotifications((prev) => [toNotification(data), ...prev]);
-      setUnreadCount((prev) => prev + 1);
-      toast(notification.title, {
-        description: notification.message,
-        duration: 5000,
-      });
+  const markAsReadMutation = useMutation({
+    mutationFn: notificationService.markAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count', userId] });
     }
-    return !!data;
-  };
+  });
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => userId ? notificationService.markAllAsRead(userId) : Promise.resolve(false),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+      queryClient.invalidateQueries({ queryKey: ['unread-count', userId] });
+    }
+  });
 
   return {
     notifications,
     unreadCount,
-    loading,
-    markAsRead,
-    markAllAsRead,
-    createNotification,
-    refetch: async () => {
-      // Force reload from DB
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false });
-      const converted = (data || []).map(toNotification);
-      setNotifications(converted);
-      setUnreadCount(converted.filter((n: any) => !n.read).length);
-    },
+    isLoading,
+    markAsRead: markAsReadMutation.mutateAsync,
+    markAllAsRead: markAllAsReadMutation.mutateAsync,
+    isMarkingAsRead: markAsReadMutation.isPending,
+    isMarkingAllAsRead: markAllAsReadMutation.isPending
   };
 };
