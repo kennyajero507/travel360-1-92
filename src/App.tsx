@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthErrorBoundary } from "./components/auth/AuthErrorBoundary";
-import { ErrorBoundary } from "./components/common/ErrorBoundary";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 import AuthGuard from "./components/auth/AuthGuard";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";

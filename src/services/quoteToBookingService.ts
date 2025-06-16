@@ -72,7 +72,7 @@ export const quoteToBookingService = {
         return { success: false, error: 'Failed to fetch hotel details' };
       }
 
-      // Map quote data to booking structure
+      // Map quote data to booking structure with proper type handling
       const mappedRoomArrangements: RoomArrangement[] = (quote.room_arrangements || []).map(room => ({
         room_type: room.room_type || 'Standard',
         adults: room.adults || 0,
@@ -80,14 +80,14 @@ export const quoteToBookingService = {
         children_no_bed: room.children_no_bed || 0,
         infants: room.infants || 0,
         num_rooms: room.num_rooms || 1,
-        rate_per_night: room.rate_per_night || 0,
+        rate_per_night: typeof room.rate_per_night === 'number' ? room.rate_per_night : 0,
         total: room.total || 0,
       }));
 
       const mappedTransports: BookingTransport[] = (quote.transports || []).map(transport => ({
-        mode: transport.type || transport.mode || 'Flight',
+        mode: transport.type || 'Flight',
         route: `${transport.from || ''} to ${transport.to || ''}`,
-        operator: transport.provider || transport.operator,
+        operator: transport.provider,
         cost_per_person: transport.cost_per_person || 0,
         num_passengers: transport.num_passengers || 0,
         total_cost: transport.total_cost || 0,
@@ -96,20 +96,20 @@ export const quoteToBookingService = {
       }));
 
       const mappedActivities: BookingActivity[] = (quote.activities || []).map(activity => ({
-        name: activity.name || activity.activity_type || 'Activity',
+        name: activity.name || 'Activity',
         description: activity.description,
         date: activity.date,
-        cost_per_person: activity.cost_per_person || activity.adult_cost || 0,
-        num_people: activity.num_people || activity.number_of_people || 0,
+        cost_per_person: activity.cost_per_person || 0,
+        num_people: activity.num_people || 0,
         total_cost: activity.total_cost || 0,
       }));
 
       const mappedTransfers: BookingTransfer[] = (quote.transfers || []).map(transfer => ({
-        type: transfer.type || transfer.transfer_type || 'Airport Transfer',
+        type: transfer.type || 'Airport Transfer',
         from: transfer.from || '',
         to: transfer.to || '',
         vehicle_type: transfer.vehicle_type || 'Standard',
-        cost_per_vehicle: transfer.cost_per_vehicle || transfer.adult_cost || 0,
+        cost_per_vehicle: transfer.cost_per_vehicle || 0,
         num_vehicles: transfer.num_vehicles || 1,
         total: transfer.total || 0,
         description: transfer.description,
@@ -132,8 +132,8 @@ export const quoteToBookingService = {
       }
       const totalPrice = subtotal + markup;
 
-      // Create booking data
-      const bookingData: Omit<Booking, 'id' | 'created_at' | 'updated_at'> = {
+      // Create booking data with proper JSON serialization
+      const bookingData = {
         booking_reference: `BKG-${Date.now().toString().slice(-6)}`,
         client: quote.client,
         client_email: quote.client_email,
@@ -142,24 +142,22 @@ export const quoteToBookingService = {
         agent_id: additionalData?.agentId,
         travel_start: quote.start_date,
         travel_end: quote.end_date,
-        room_arrangement: mappedRoomArrangements,
-        transport: mappedTransports,
-        activities: mappedActivities,
-        transfers: mappedTransfers,
-        status: 'pending',
+        room_arrangement: JSON.stringify(mappedRoomArrangements),
+        transport: JSON.stringify(mappedTransports),
+        activities: JSON.stringify(mappedActivities),
+        transfers: JSON.stringify(mappedTransfers),
+        status: 'pending' as const,
         total_price: totalPrice,
         quote_id: quote.id,
         notes: additionalData?.notes || quote.notes,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
       // Insert booking into database
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
-        .insert([{
-          ...bookingData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+        .insert([bookingData])
         .select()
         .single();
 
@@ -182,7 +180,16 @@ export const quoteToBookingService = {
         // Don't fail the conversion, just log the error
       }
 
-      return { success: true, booking: booking as Booking };
+      // Parse JSON fields back to objects for return
+      const parsedBooking: Booking = {
+        ...booking,
+        room_arrangement: JSON.parse(booking.room_arrangement as string),
+        transport: JSON.parse(booking.transport as string),
+        activities: JSON.parse(booking.activities as string),
+        transfers: JSON.parse(booking.transfers as string)
+      };
+
+      return { success: true, booking: parsedBooking };
     } catch (error) {
       console.error('[QuoteToBookingService] Error converting quote:', error);
       ErrorHandler.handleSupabaseError(error, 'convertQuoteToBooking');
