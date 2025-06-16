@@ -2,7 +2,7 @@
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { QuoteData } from '../types/quote.types';
-import { Booking, RoomArrangement, BookingTransport, BookingActivity, BookingTransfer } from '../types/booking.types';
+import { Booking, RoomArrangement, BookingTransport, BookingActivity, BookingTransfer, BookingStatus } from '../types/booking.types';
 import { ErrorHandler } from '../utils/errorHandler';
 
 export interface ConvertQuoteResult {
@@ -15,6 +15,12 @@ export interface QuoteEligibilityResult {
   eligible: boolean;
   reason?: string;
 }
+
+// Helper function to ensure valid booking status
+const ensureBookingStatus = (status: any): BookingStatus => {
+  const validStatuses: BookingStatus[] = ['pending', 'confirmed', 'cancelled', 'completed'];
+  return validStatuses.includes(status) ? status : 'pending';
+};
 
 export const quoteToBookingService = {
   async checkQuoteEligibilityForBooking(quoteId: string): Promise<QuoteEligibilityResult> {
@@ -146,7 +152,7 @@ export const quoteToBookingService = {
         transport: JSON.stringify(mappedTransports),
         activities: JSON.stringify(mappedActivities),
         transfers: JSON.stringify(mappedTransfers),
-        status: 'pending' as const,
+        status: 'pending' as BookingStatus,
         total_price: totalPrice,
         quote_id: quote.id,
         notes: additionalData?.notes || quote.notes,
@@ -180,9 +186,10 @@ export const quoteToBookingService = {
         // Don't fail the conversion, just log the error
       }
 
-      // Parse JSON fields back to objects for return
+      // Parse JSON fields back to objects for return with proper type casting
       const parsedBooking: Booking = {
         ...booking,
+        status: ensureBookingStatus(booking.status),
         room_arrangement: JSON.parse(booking.room_arrangement as string),
         transport: JSON.parse(booking.transport as string),
         activities: JSON.parse(booking.activities as string),
