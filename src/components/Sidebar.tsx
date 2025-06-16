@@ -19,12 +19,14 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useSidebarCounts } from "../hooks/useSidebarCounts";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
   const { profile, checkRoleAccess } = useAuth();
+  const { data: counts, isLoading: countsLoading } = useSidebarCounts();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const toggleMenu = (menu: string) => {
@@ -54,19 +56,22 @@ export function Sidebar({ className }: SidebarProps) {
       title: "Inquiries",
       href: "/inquiries",
       icon: MessageSquare,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
+      count: counts?.inquiries || 0
     },
     {
       title: "Quotes",
       href: "/quotes",
       icon: FileText,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
+      count: counts?.quotes || 0
     },
     {
       title: "Bookings",
       href: "/bookings",
       icon: BookOpen,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
+      count: counts?.bookings || 0
     },
     {
       title: "Hotels",
@@ -78,13 +83,15 @@ export function Sidebar({ className }: SidebarProps) {
       title: "Vouchers",
       href: "/vouchers",
       icon: Plane,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
+      count: counts?.vouchers || 0
     },
     {
       title: "Clients",
       href: "/clients",
       icon: Users,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
+      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
+      count: counts?.clients || 0
     },
     {
       title: "Reports",
@@ -133,6 +140,11 @@ export function Sidebar({ className }: SidebarProps) {
                       <Link to={item.href}>
                         <item.icon className="h-4 w-4" />
                         {item.title}
+                        {item.count !== undefined && item.count > 0 && (
+                          <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                            {countsLoading ? "..." : item.count}
+                          </Badge>
+                        )}
                       </Link>
                     </Button>
                   );

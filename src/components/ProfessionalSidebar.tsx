@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "../lib/utils";
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
+import { useSidebarCounts } from "../hooks/useSidebarCounts";
 
 interface ProfessionalSidebarProps {
   className?: string;
@@ -32,6 +32,7 @@ const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const { profile, checkRoleAccess, logout } = useAuth();
+  const { data: counts, isLoading: countsLoading } = useSidebarCounts();
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -50,28 +51,28 @@ const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
       href: "/inquiries",
       icon: MessageSquare,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: 3
+      count: counts?.inquiries || 0
     },
     {
       title: "Quotes",
       href: "/quotes",
       icon: FileText,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: 5
+      count: counts?.quotes || 0
     },
     {
       title: "Bookings",
       href: "/bookings",
       icon: BookOpen,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: 2
+      count: counts?.bookings || 0
     },
     {
       title: "Vouchers",
       href: "/vouchers",
       icon: Plane,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: 0
+      count: counts?.vouchers || 0
     },
     {
       title: "Hotels",
@@ -85,7 +86,7 @@ const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
       href: "/clients",
       icon: Users,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: 0
+      count: counts?.clients || 0
     }
   ];
 
@@ -188,7 +189,7 @@ const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
                       <span className="flex-1">{item.title}</span>
                       {item.count > 0 && (
                         <Badge variant="secondary" className="h-5 text-xs bg-slate-100 text-slate-700">
-                          {item.count}
+                          {countsLoading ? "..." : item.count}
                         </Badge>
                       )}
                     </>
