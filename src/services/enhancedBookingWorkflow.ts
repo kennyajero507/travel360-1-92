@@ -2,6 +2,7 @@
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { Booking, BookingStatus } from '../types/booking.types';
+import { ensureBookingStatus } from '../utils/typeHelpers';
 
 export class EnhancedBookingWorkflow {
   
@@ -119,6 +120,7 @@ export class EnhancedBookingWorkflow {
       // Convert JSON fields back to arrays for return
       const convertedBooking: Booking = {
         ...booking,
+        status: ensureBookingStatus(booking.status),
         room_arrangement: typeof booking.room_arrangement === 'string' 
           ? JSON.parse(booking.room_arrangement) 
           : booking.room_arrangement || [],
