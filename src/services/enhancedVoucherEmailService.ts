@@ -31,12 +31,13 @@ export const sendVoucherEmail = async (voucher: VoucherEmailData) => {
 
     console.log('Sending voucher email to:', clientEmail);
 
-    // Call the edge function to send email
-    const { data, error } = await supabase.functions.invoke('send-voucher-email', {
+    // Call the enhanced email edge function
+    const { data, error } = await supabase.functions.invoke('send-email', {
       body: { 
-        voucher,
-        booking: voucher.bookings,
-        recipient_email: clientEmail
+        to: clientEmail,
+        subject: `Travel Voucher - ${voucher.voucher_reference}`,
+        html: generateVoucherEmailHTML(voucher),
+        from: 'noreply@travelflow360.com'
       }
     });
 
@@ -72,13 +73,80 @@ export const sendVoucherEmail = async (voucher: VoucherEmailData) => {
   }
 };
 
+const generateVoucherEmailHTML = (voucher: VoucherEmailData): string => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Travel Voucher</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9fafb; }
+        .voucher-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+        .footer { text-align: center; padding: 20px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Travel Voucher</h1>
+          <p>Voucher Reference: ${voucher.voucher_reference}</p>
+        </div>
+        
+        <div class="content">
+          <p>Dear ${voucher.bookings?.client || 'Valued Guest'},</p>
+          <p>Please find your travel voucher details below:</p>
+          
+          <div class="voucher-details">
+            <h3>Booking Details</h3>
+            <div class="detail-row">
+              <span><strong>Hotel:</strong></span>
+              <span>${voucher.bookings?.hotel_name || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span><strong>Check-in:</strong></span>
+              <span>${voucher.bookings?.travel_start || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span><strong>Check-out:</strong></span>
+              <span>${voucher.bookings?.travel_end || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span><strong>Voucher Reference:</strong></span>
+              <span>${voucher.voucher_reference}</span>
+            </div>
+          </div>
+          
+          <p>Please present this voucher at check-in. Have a wonderful trip!</p>
+        </div>
+        
+        <div class="footer">
+          <p>Thank you for choosing our services!</p>
+          <p>For any questions, please contact our support team.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 export const checkEmailConfiguration = async () => {
   try {
     console.log('Checking email configuration...');
     
-    // Try to call a simple edge function to check if RESEND is configured
-    const { error } = await supabase.functions.invoke('send-voucher-email', {
-      body: { test: true }
+    // Try to call the email function to check if RESEND is configured
+    const { error } = await supabase.functions.invoke('send-email', {
+      body: { 
+        to: 'test@example.com',
+        subject: 'Test Configuration',
+        html: '<p>Test email</p>',
+        test: true 
+      }
     });
 
     if (error?.message?.includes('RESEND_API_KEY')) {
