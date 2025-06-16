@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 
 const OrganizationSetup = () => {
-  const { createOrganization, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { createOrganization, profile, loading: authLoading, refreshProfile, error: authError } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -20,22 +20,32 @@ const OrganizationSetup = () => {
       setError("Organization name is required");
       return;
     }
+    
     setError(null);
     setLoading(true);
+    
     try {
+      console.log('[OrganizationSetup] Creating organization:', organizationName);
+      
       const success = await createOrganization(organizationName);
+      
       if (success) {
+        console.log('[OrganizationSetup] Organization created successfully');
         setSuccess(true);
+        
         // Refresh profile to get updated organization info
         await refreshProfile();
+        
         // Navigate to dashboard after successful creation
         setTimeout(() => {
           navigate('/dashboard');
         }, 1500);
       } else {
-        setError("Failed to create organization. Please try again.");
+        const errorMsg = authError || "Failed to create organization. Please try again.";
+        setError(errorMsg);
       }
     } catch (error: any) {
+      console.error('[OrganizationSetup] Error creating organization:', error);
       setError(error.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -98,6 +108,13 @@ const OrganizationSetup = () => {
               <AlertDescription>
                 It looks like you're joining as a {profile?.role}. You can skip this step for now.
               </AlertDescription>
+            </Alert>
+          )}
+          
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
           

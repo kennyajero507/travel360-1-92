@@ -42,6 +42,10 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
   
   const handleRoleChange = (value: 'org_owner' | 'tour_operator') => {
     setFormData(prev => ({ ...prev, role: value }));
+    // Clear validation errors when role changes
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -71,14 +75,18 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
     return errors.length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
     
-    onSubmit(formData);
+    try {
+      await onSubmit(formData);
+    } catch (err) {
+      console.error('Signup form submission error:', err);
+    }
   };
 
   return (
@@ -133,6 +141,7 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
             value={formData.companyName}
             onChange={handleInputChange}
             disabled={loading}
+            required={formData.role === 'org_owner'}
           />
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-3">
@@ -154,6 +163,7 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
           value={formData.fullName}
           onChange={handleInputChange}
           disabled={loading}
+          required
         />
       </div>
       
@@ -167,6 +177,7 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
           value={formData.email}
           onChange={handleInputChange}
           disabled={loading}
+          required
         />
       </div>
       
@@ -182,6 +193,7 @@ const SignupForm = ({ onSubmit, loading, error }: SignupFormProps) => {
             onChange={handleInputChange}
             disabled={loading}
             minLength={6}
+            required
           />
           <button
             type="button"

@@ -186,7 +186,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     setLoading(false);
   };
 
-  // Signup (with required redirect URL)
+  // FIXED Signup - with proper redirect URL and error handling
   const signup = async (
     email: string,
     password: string,
@@ -196,33 +196,55 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   ) => {
     setError(null);
     setLoading(true);
-    const redirectUrl = `${window.location.origin}/`;
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-          role,
-          company_name: companyName,
+    
+    try {
+      const redirectUrl = `${window.location.origin}/login`;
+      
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+            role,
+            company_name: companyName,
+          }
+        },
+      });
+      
+      setLoading(false);
+      
+      if (signUpError) {
+        console.error("[AuthContext] Signup error:", signUpError);
+        setError(signUpError.message || "Signup failed.");
+        return false;
+      }
+
+      if (data.user) {
+        console.log("[AuthContext] Signup successful, user created:", data.user.id);
+        
+        // If email is confirmed immediately (in dev), handle the session
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.user);
+          
+          // Give the trigger time to create the profile
+          setTimeout(async () => {
+            await fetchProfile(data.user!.id);
+          }, 1000);
         }
-      },
-    });
-    setLoading(false);
-    if (signUpError) {
-      setError(signUpError?.message || "Signup failed.");
+        
+        return true;
+      }
+      
+      return false;
+    } catch (err: any) {
+      console.error("[AuthContext] Unexpected signup error:", err);
+      setLoading(false);
+      setError(err.message || "An unexpected error occurred during signup.");
       return false;
     }
-    // If email confirmation required, user is null here
-    if (data.user) {
-      setSession(data.session || null);
-      setUser(data.user);
-      setTimeout(async () => {
-        await fetchProfile(data.user!.id);
-      }, 0);
-    }
-    return true;
   };
 
   // Profile update
@@ -254,9 +276,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     [permissions]
   );
 
-  // ---- Org/invitations ----
-
-  // Organization creation - FIXED VERSION
+  // FIXED Organization creation
   const createOrganization = async (orgName: string) => {
     setLoading(true);
     setError(null);

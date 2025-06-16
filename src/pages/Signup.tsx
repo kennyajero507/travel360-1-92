@@ -22,7 +22,10 @@ const Signup = () => {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
-        <p>Loading...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
       </div>
     );
   }
@@ -38,6 +41,12 @@ const Signup = () => {
     setLoading(true);
     
     try {
+      console.log('[Signup] Attempting signup with data:', {
+        email: formData.email,
+        role: formData.role,
+        hasCompanyName: !!formData.companyName
+      });
+
       const signupSuccess = await signup(
         formData.email, 
         formData.password, 
@@ -47,13 +56,16 @@ const Signup = () => {
       );
       
       if (signupSuccess) {
+        toast.success('Account created successfully! Please check your email to verify your account before signing in.');
+        // Redirect to login after a brief delay
         setTimeout(() => {
           navigate("/login");
-        }, 2000);
+        }, 3000);
       } else {
-        setError("Registration failed. The email might already be in use.");
+        setError("Registration failed. Please try again.");
       }
     } catch (error: any) {
+      console.error('[Signup] Error during signup:', error);
       setError(error.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);

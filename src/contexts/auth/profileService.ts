@@ -3,38 +3,79 @@ import { supabase } from '../../integrations/supabase/client';
 import { UserProfile } from './types';
 
 export const profileService = {
-  // Retry-aware profile fetch with improved error surfacing
-  async fetchUserProfile(userId: string, maxRetries = 2): Promise<UserProfile | null> {
-    let lastError: any = null;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
+  async fetchUserProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      console.log('[ProfileService] Fetching profile for user:', userId);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-        if (error) {
-          lastError = error;
-          console.error(`[ProfileService] Error fetching user profile (attempt ${attempt + 1}):`, error.message);
-          if (error.code === 'PGRST116' /* Not found */) continue;
+      if (error) {
+        console.error('[ProfileService] Error fetching profile:', error);
+        
+        // If no profile exists, try to repair it
+        if (error.code === 'PGRST116') {
+          console.log('[ProfileService] No profile found, attempting to repair...');
+          return await this.repairUserProfile(userId);
         }
-
-        if (!data) {
-          lastError = '[ProfileService] No profile found';
-          continue;
-        }
-
-        return data as UserProfile;
-      } catch (err) {
-        lastError = err;
-        console.error(`[ProfileService] Unexpected error fetching profile (attempt ${attempt + 1}):`, err);
+        
+        throw error;
       }
-      // Exponential backoff
-      if (attempt < maxRetries) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+
+      if (!data) {
+        console.log('[ProfileService] No profile data, attempting to repair...');
+        return await this.repairUserProfile(userId);
+      }
+
+      console.log('[ProfileService] Profile fetched successfully:', data);
+      return data as UserProfile;
+    } catch (error) {
+      console.error('[ProfileService] Error in fetchUserProfile:', error);
+      return null;
     }
-    // All retries failed
-    if (lastError) console.error('[ProfileService] Profile fetch ultimately failed:', lastError);
-    return null;
   },
+
+  async repairUserProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      console.log('[ProfileService] Attempting to repair profile for user:', userId);
+      
+      // Get user data from auth
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user || user.id !== userId) {
+        console.error('[ProfileService] Cannot repair profile - no authenticated user');
+        return null;
+      }
+
+      // Create a basic profile
+      const profileData = {
+        id: userId,
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        email: user.email,
+        role: user.user_metadata?.role || 'org_owner',
+        created_at: new Date().toISOString(),
+        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days from now
+      };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([profileData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[ProfileService] Error repairing profile:', error);
+        return null;
+      }
+
+      console.log('[ProfileService] Profile repaired successfully:', data);
+      return data as UserProfile;
+    } catch (error) {
+      console.error('[ProfileService] Error in repairUserProfile:', error);
+      return null;
+    }
+  }
 };
