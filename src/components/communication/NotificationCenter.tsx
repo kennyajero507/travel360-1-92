@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -20,10 +21,19 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
-  // Helper for marking a single notification as read
-  const handleMarkAsRead = (id: string) => {
-    if (typeof markAsRead === "function") {
-      markAsRead(id);
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markAsRead(notificationId);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead();
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
     }
   };
 
@@ -51,7 +61,7 @@ const NotificationCenter: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={markAllAsRead}
+                  onClick={handleMarkAllAsRead}
                   className="text-xs"
                 >
                   <CheckCheck className="h-3 w-3 mr-1" />

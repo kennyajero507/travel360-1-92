@@ -21,6 +21,22 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markAsRead(notificationId);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead();
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -45,7 +61,7 @@ const NotificationCenter: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={markAllAsRead}
+                  onClick={handleMarkAllAsRead}
                   className="text-xs"
                 >
                   <CheckCheck className="h-3 w-3 mr-1" />
@@ -93,7 +109,7 @@ const NotificationCenter: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => handleMarkAsRead(notification.id)}
                             className="ml-2 p-1 h-6 w-6"
                           >
                             <Check className="h-3 w-3" />

@@ -44,7 +44,10 @@ export const notificationService = {
         return null;
       }
 
-      return data;
+      return {
+        ...data,
+        type: data.type as NotificationData['type']
+      };
     } catch (error) {
       ErrorHandler.handleSupabaseError(error, 'createNotification');
       return null;
@@ -67,7 +70,10 @@ export const notificationService = {
         return [];
       }
 
-      return data || [];
+      return (data || []).map(notification => ({
+        ...notification,
+        type: notification.type as NotificationData['type']
+      }));
     } catch (error) {
       ErrorHandler.handleSupabaseError(error, 'getUserNotifications');
       return [];

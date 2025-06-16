@@ -1,5 +1,6 @@
 
-import { Loader2 } from 'lucide-react';
+import React from 'react';
+import { cn } from '../../lib/utils';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -7,29 +8,26 @@ interface LoadingSpinnerProps {
   className?: string;
 }
 
-export const LoadingSpinner = ({ size = 'md', text, className = '' }: LoadingSpinnerProps) => {
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+  size = 'md', 
+  text, 
+  className 
+}) => {
   const sizeClasses = {
     sm: 'h-4 w-4',
-    md: 'h-6 w-6',
-    lg: 'h-8 w-8'
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12'
   };
 
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <Loader2 className={`animate-spin ${sizeClasses[size]}`} />
-      {text && <span className="ml-2 text-sm text-gray-600">{text}</span>}
+    <div className={cn("flex flex-col items-center justify-center gap-2", className)}>
+      <div className={cn(
+        "animate-spin rounded-full border-2 border-gray-300 border-t-blue-600",
+        sizeClasses[size]
+      )} />
+      {text && (
+        <p className="text-sm text-gray-600 animate-pulse">{text}</p>
+      )}
     </div>
   );
 };
-
-export const LoadingCard = ({ text = 'Loading...' }: { text?: string }) => (
-  <div className="flex items-center justify-center p-8">
-    <LoadingSpinner size="lg" text={text} />
-  </div>
-);
-
-export const LoadingPage = ({ text = 'Loading...' }: { text?: string }) => (
-  <div className="min-h-screen flex items-center justify-center">
-    <LoadingSpinner size="lg" text={text} />
-  </div>
-);

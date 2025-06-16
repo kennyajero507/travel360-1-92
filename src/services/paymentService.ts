@@ -47,7 +47,7 @@ export const paymentService = {
       }
 
       toast.success('Payment recorded successfully');
-      return data;
+      return data as PaymentRecord;
     } catch (error) {
       ErrorHandler.handleSupabaseError(error, 'createPayment');
       return null;
@@ -104,7 +104,10 @@ export const paymentService = {
         return [];
       }
 
-      return data || [];
+      return (data || []).map(payment => ({
+        ...payment,
+        payment_status: payment.payment_status as PaymentRecord['payment_status']
+      }));
     } catch (error) {
       ErrorHandler.handleSupabaseError(error, 'getPaymentsByBooking');
       return [];
@@ -163,7 +166,10 @@ export const paymentService = {
         return [];
       }
 
-      return data || [];
+      return (data || []).map(payment => ({
+        ...payment,
+        payment_status: payment.payment_status as PaymentRecord['payment_status']
+      }));
     } catch (error) {
       ErrorHandler.handleSupabaseError(error, 'getAllPayments');
       return [];
