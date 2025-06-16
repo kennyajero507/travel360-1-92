@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
@@ -7,7 +6,7 @@ import { MoreHorizontal, Send, Download, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Invoice } from '../../types/invoice.types';
 import MobileOptimizedTable from '../mobile/MobileOptimizedTable';
-import { useMobile } from '../../hooks/use-mobile';
+import { useIsMobile } from '../../hooks/use-mobile';
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -17,7 +16,7 @@ interface InvoiceTableProps {
 }
 
 const InvoiceTable = ({ invoices, isLoading, onSendInvoice, onDownloadInvoice }: InvoiceTableProps) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {

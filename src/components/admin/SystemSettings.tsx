@@ -2,8 +2,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Settings, Mail, Shield, Database } from 'lucide-react';
+import { Settings, Mail, Shield, Database, Wrench } from 'lucide-react';
 import EmailConfigurationForm from '../email/EmailConfigurationForm';
+import QuickSetupGuide from './QuickSetupGuide';
 
 const SystemSettings = () => {
   return (
@@ -16,8 +17,12 @@ const SystemSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="email" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="setup" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="setup" className="flex items-center gap-2">
+                <Wrench className="h-4 w-4" />
+                <span className="hidden sm:inline">Setup</span>
+              </TabsTrigger>
               <TabsTrigger value="email" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">Email</span>
@@ -35,6 +40,10 @@ const SystemSettings = () => {
                 <span className="hidden sm:inline">General</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="setup">
+              <QuickSetupGuide />
+            </TabsContent>
 
             <TabsContent value="email">
               <EmailConfigurationForm />
