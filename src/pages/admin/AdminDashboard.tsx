@@ -1,7 +1,14 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import { useAuth } from "../../contexts/AuthContext";
+import { 
+  Users, 
+  Building, 
+  Activity, 
+  FileText
+} from "lucide-react";
 import AdminSystemStats from '../../components/admin/AdminSystemStats';
 import SystemHealthCheck from '../../components/admin/SystemHealthCheck';
 import WorkflowTester from '../../components/admin/WorkflowTester';

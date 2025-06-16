@@ -56,9 +56,8 @@ const fetchSidebarCounts = async (orgId: string | null): Promise<SidebarCounts> 
       .in('agent_id', userIds),
     supabase
       .from('travel_vouchers')
-      .select('vouchers.id', { count: 'exact' })
-      .join('bookings', 'bookings.id = travel_vouchers.booking_id')
-      .in('bookings.agent_id', userIds),
+      .select('id', { count: 'exact' })
+      .eq('booking_id', 'travel_vouchers.booking_id'),
     supabase
       .from('clients')
       .select('id', { count: 'exact' })
