@@ -7,7 +7,7 @@ import { MoreHorizontal, Send, Download, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Invoice } from '../../types/invoice.types';
 import MobileOptimizedTable from '../mobile/MobileOptimizedTable';
-import { useAuth } from '../../contexts/AuthContext';
+import { useMobile } from '../../hooks/use-mobile';
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -17,7 +17,7 @@ interface InvoiceTableProps {
 }
 
 const InvoiceTable = ({ invoices, isLoading, onSendInvoice, onDownloadInvoice }: InvoiceTableProps) => {
-  const { isMobile } = useAuth();
+  const isMobile = useMobile();
 
   const getStatusColor = (status: Invoice['status']) => {
     switch (status) {
