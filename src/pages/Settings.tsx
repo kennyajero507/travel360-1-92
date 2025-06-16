@@ -2,8 +2,6 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { ProfileSettings } from "../components/settings/ProfileSettings";
-import { DestinationManagement } from "../components/settings/DestinationManagement";
-import { PackageTemplates } from "../components/settings/PackageTemplates";
 import { QuoteSettings } from "../components/settings/QuoteSettings";
 import { TransferSettings } from "../components/settings/TransferSettings";
 import { BrandingSettings } from "../components/settings/BrandingSettings";
@@ -66,7 +64,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           
           {(isOrgOwner || isSystemAdmin) && (
@@ -74,11 +72,7 @@ const Settings = () => {
           )}
           
           {canManageBusinessSettings && (
-            <>
-              <TabsTrigger value="destinations">Destinations</TabsTrigger>
-              <TabsTrigger value="packages">Packages</TabsTrigger>
-              <TabsTrigger value="quotes">Quote Settings</TabsTrigger>
-            </>
+            <TabsTrigger value="quotes">Quote Settings</TabsTrigger>
           )}
           
           {isOrgOwner && (
@@ -101,19 +95,9 @@ const Settings = () => {
         )}
 
         {canManageBusinessSettings && (
-          <>
-            <TabsContent value="destinations" className="space-y-6">
-              <DestinationManagement />
-            </TabsContent>
-
-            <TabsContent value="packages" className="space-y-6">
-              <PackageTemplates />
-            </TabsContent>
-
-            <TabsContent value="quotes" className="space-y-6">
-              <QuoteSettings />
-            </TabsContent>
-          </>
+          <TabsContent value="quotes" className="space-y-6">
+            <QuoteSettings />
+          </TabsContent>
         )}
 
         {isOrgOwner && (
@@ -137,4 +121,3 @@ const Settings = () => {
 };
 
 export default Settings;
-

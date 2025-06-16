@@ -1,161 +1,129 @@
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { 
-  LayoutDashboard, 
-  MessageSquare, 
-  FileText, 
-  Building, 
-  Calendar,
-  Users,
-  Settings,
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { cn } from '../../lib/utils';
+import {
+  LayoutDashboard,
+  Activity,
   BarChart3,
-  BookOpen,
-  Plane,
-  ChevronDown,
-  ChevronRight
-} from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { useSidebarCounts } from "../hooks/useSidebarCounts";
+  Users,
+  Database,
+  Shield,
+  FileSearch,
+  FileText,
+  ShieldCheck,
+  Settings,
+  Mail,
+  Building,
+  Table,
+  Terminal,
+  FileText,
+  FileBarChart,
+  Calendar,
+  Building,
+  MapPin,
+  Receipt,
+  CreditCard,
+  Users,
+  BarChart3,
+  Settings
+} from 'lucide-react';
 
-interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-export function Sidebar({ className }: SidebarProps) {
-  const location = useLocation();
-  const { profile, checkRoleAccess } = useAuth();
-  const { data: counts, isLoading: countsLoading } = useSidebarCounts();
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
-
-  const toggleMenu = (menu: string) => {
-    setExpandedMenus(prev => 
-      prev.includes(menu) 
-        ? prev.filter(m => m !== menu)
-        : [...prev, menu]
-    );
-  };
-
-  const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
-  const canAccess = (roles: string[]) => {
-    return checkRoleAccess(roles);
-  };
-
-  const navigationItems = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
-    },
-    {
-      title: "Inquiries",
-      href: "/inquiries",
-      icon: MessageSquare,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: counts?.inquiries || 0
-    },
-    {
-      title: "Quotes",
-      href: "/quotes",
-      icon: FileText,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: counts?.quotes || 0
-    },
-    {
-      title: "Bookings",
-      href: "/bookings",
-      icon: BookOpen,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: counts?.bookings || 0
-    },
-    {
-      title: "Hotels",
-      href: "/hotels",
-      icon: Building,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
-    },
-    {
-      title: "Vouchers",
-      href: "/vouchers",
-      icon: Plane,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: counts?.vouchers || 0
-    },
-    {
-      title: "Clients",
-      href: "/clients",
-      icon: Users,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
-      count: counts?.clients || 0
-    },
-    {
-      title: "Reports",
-      href: "/reports",
-      icon: BarChart3,
-      roles: ['system_admin', 'org_owner', 'tour_operator']
-    },
-    {
-      title: "Team Management",
-      href: "/team",
-      icon: Users,
-      roles: ['system_admin', 'org_owner', 'tour_operator']
-    },
-    {
-      title: "Settings",
-      href: "/settings",
-      icon: Settings,
-      roles: ['system_admin', 'org_owner', 'tour_operator', 'agent']
-    }
-  ];
-
-  if (!profile) {
-    return null;
+const sidebarSections = [
+  {
+    title: "Overview",
+    items: [
+      { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+      { title: "System Health", href: "/admin/monitoring", icon: Activity },
+      { title: "Analytics", href: "/admin/analytics", icon: BarChart3 }
+    ]
+  },
+  {
+    title: "User Management",
+    items: [
+      { title: "Users", href: "/admin/users", icon: Users },
+      { title: "Organizations", href: "/admin/organizations", icon: Database },
+      { title: "Enhanced Orgs", href: "/admin/enhanced-organizations", icon: Building },
+      { title: "Roles & Permissions", href: "/admin/role-permissions", icon: Shield }
+    ]
+  },
+  {
+    title: "System Operations",
+    items: [
+      { title: "Live Table Viewer", href: "/admin/table-viewer", icon: Table },
+      { title: "SQL Executor", href: "/admin/sql-executor", icon: Terminal },
+      { title: "Database", href: "/admin/database", icon: Database },
+      { title: "System Logs", href: "/admin/logs", icon: FileText }
+    ]
+  },
+  {
+    title: "Security",
+    items: [
+      { title: "Security Events", href: "/admin/security", icon: Shield },
+      { title: "Audit Logs", href: "/admin/audit", icon: FileSearch },
+      { title: "Access Control", href: "/admin/access", icon: ShieldCheck }
+    ]
+  },
+  {
+    title: "Settings",
+    items: [
+      { title: "System Settings", href: "/admin/settings", icon: Settings },
+      { title: "Email Templates", href: "/admin/templates", icon: Mail },
+      { title: "Maintenance", href: "/admin/maintenance", icon: Settings }
+    ]
   }
+];
 
+const sidebarItems = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: FileText, label: "Inquiries", path: "/inquiries" },
+  { icon: FileBarChart, label: "Quotes", path: "/quotes" },
+  { icon: Calendar, label: "Bookings", path: "/bookings" },
+  { icon: Building, label: "Hotels", path: "/hotels" },
+  { icon: MapPin, label: "Tour Templates", path: "/tour-templates" },
+  { icon: Receipt, label: "Invoices", path: "/invoices" },
+  { icon: CreditCard, label: "Payments", path: "/payments" },
+  { icon: FileText, label: "Vouchers", path: "/vouchers" },
+  { icon: Users, label: "Clients", path: "/clients" },
+  { icon: BarChart3, label: "Reports", path: "/reports" },
+  { icon: Settings, label: "Settings", path: "/settings" },
+];
+
+export const Sidebar = () => {
   return (
-    <div className={cn("pb-12", className)}>
-      <div className="space-y-4 py-4">
-        <div className="px-3 py-2">
-          <div className="space-y-1">
-            <ScrollArea className="h-[calc(100vh-8rem)]">
-              <div className="space-y-2 p-2">
-                {navigationItems.map((item) => {
-                  if (!canAccess(item.roles)) return null;
-                  
-                  return (
-                    <Button
-                      key={item.href}
-                      variant={isActive(item.href) ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start gap-2",
-                        isActive(item.href) && "bg-muted font-medium"
-                      )}
-                      asChild
-                    >
-                      <Link to={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        {item.title}
-                        {item.count !== undefined && item.count > 0 && (
-                          <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                            {countsLoading ? "..." : item.count}
-                          </Badge>
-                        )}
-                      </Link>
-                    </Button>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </div>
-        </div>
+    <div className="w-64 bg-white border-r border-gray-200 h-screen overflow-y-auto">
+      <div className="p-4">
+        <h2 className="text-lg font-semibold text-gray-900">Admin Panel</h2>
       </div>
+      <nav className="mt-2">
+        <div className="px-2 pb-8 space-y-6">
+          {sidebarSections.map((section) => (
+            <div key={section.title}>
+              <div className="px-2 py-1 text-xs uppercase font-semibold text-gray-400 tracking-wider">
+                {section.title}
+              </div>
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      )
+                    }
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.title}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </nav>
     </div>
   );
-}
-
-export default Sidebar;
+};

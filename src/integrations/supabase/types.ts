@@ -1454,6 +1454,93 @@ export type Database = {
         }
         Relationships: []
       }
+      tour_templates: {
+        Row: {
+          base_price: number | null
+          country: string
+          created_at: string | null
+          created_by: string | null
+          currency_code: string | null
+          description: string | null
+          destination_name: string
+          duration_days: number
+          duration_nights: number
+          exclusions: Json | null
+          id: string
+          images: Json | null
+          inclusions: Json | null
+          is_active: boolean | null
+          itinerary: Json | null
+          org_id: string | null
+          region: string | null
+          tags: Json | null
+          title: string
+          tour_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          country?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string | null
+          description?: string | null
+          destination_name: string
+          duration_days: number
+          duration_nights: number
+          exclusions?: Json | null
+          id?: string
+          images?: Json | null
+          inclusions?: Json | null
+          is_active?: boolean | null
+          itinerary?: Json | null
+          org_id?: string | null
+          region?: string | null
+          tags?: Json | null
+          title: string
+          tour_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          country?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency_code?: string | null
+          description?: string | null
+          destination_name?: string
+          duration_days?: number
+          duration_nights?: number
+          exclusions?: Json | null
+          id?: string
+          images?: Json | null
+          inclusions?: Json | null
+          is_active?: boolean | null
+          itinerary?: Json | null
+          org_id?: string | null
+          region?: string | null
+          tags?: Json | null
+          title?: string
+          tour_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       travel_vouchers: {
         Row: {
           booking_id: string

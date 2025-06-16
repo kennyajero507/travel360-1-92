@@ -77,7 +77,9 @@ export class QuotePreviewService {
           description: hotel.description,
           amenities: hotel.amenities || [],
           images: hotel.images || [],
-          roomTypes: hotel.room_types || []
+          roomTypes: hotel.room_types || [],
+          destination: hotel.destination || '',
+          status: hotel.status || 'Active'
         })),
         hotelOptions: hotels.map(hotel => ({
           id: hotel.id,

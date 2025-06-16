@@ -57,6 +57,16 @@ import AdminRolePermissions from "./pages/admin/AdminRolePermissions";
 import AdminLiveTableViewer from "./pages/admin/AdminLiveTableViewer";
 import AdminSQLExecutor from "./pages/admin/AdminSQLExecutor";
 import AdminSystemMonitoring from "./pages/admin/AdminSystemMonitoring";
+import About from "./pages/About";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
+import AcceptInvitation from "./pages/AcceptInvitation";
+import NormalizedQuoteEditor from "./pages/NormalizedQuoteEditor";
+import CreateInvoice from "./pages/CreateInvoice";
+import InvoiceManagementPage from "./pages/InvoiceManagementPage";
+import PaymentManagement from "./pages/PaymentManagement";
+import TourTemplates from "./pages/TourTemplates";
+import Calendar from "./pages/Calendar";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,49 +96,40 @@ function App() {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/pricing" element={<Pricing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/accept-invitation" element={<AcceptInvitation />} />
                 <Route path="/quote-preview" element={<QuotePreview />} />
-                <Route 
-                  path="/admin/login"
-                  element={<AdminLogin />}
-                />
-
-                {/* Admin Portal: ALL /admin* routes get wrapped in AdminLayout */}
-                <Route
-                  path="/admin"
-                  element={
-                    <AuthGuard allowedRoles={['system_admin']}>
-                      <AdminLayout />
-                    </AuthGuard>
-                  }
-                >
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="health" element={<AdminSystemHealth />} />
-                  <Route path="analytics" element={<AdminDashboard />} />
-                  <Route path="users" element={<AdminUserManagement />} />
-                  <Route path="organizations" element={<AdminOrganizationManagement />} />
-                  <Route path="roles" element={<AdminRoles />} />
-                  <Route path="database" element={<AdminDatabase />} />
-                  <Route path="logs" element={<AdminLogs />} />
-                  <Route path="monitoring" element={<AdminMonitoring />} />
-                  <Route path="security" element={<AdminDashboard />} />
-                  <Route path="audit" element={<AdminAuditLogs />} />
-                  <Route path="access" element={<AdminAccessControl />} />
-                  <Route path="settings" element={<AdminSettings />} />
-                  <Route path="templates" element={<AdminEmailTemplates />} />
-                  <Route path="maintenance" element={<AdminMaintenance />} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route element={<AuthGuard />}>
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="monitoring" element={<AdminMonitoring />} />
+                    <Route path="analytics" element={<AdvancedAnalytics />} />
+                    <Route path="users" element={<AdminUserManagement />} />
+                    <Route path="organizations" element={<AdminOrganizationManagement />} />
+                    <Route path="enhanced-organizations" element={<AdminEnhancedOrganizations />} />
+                    <Route path="role-permissions" element={<AdminRolePermissions />} />
+                    <Route path="table-viewer" element={<AdminLiveTableViewer />} />
+                    <Route path="sql-executor" element={<AdminSQLExecutor />} />
+                    <Route path="database" element={<AdminDatabase />} />
+                    <Route path="logs" element={<AdminLogs />} />
+                    <Route path="security" element={<AdminSystemHealth />} />
+                    <Route path="audit" element={<AdminAuditLogs />} />
+                    <Route path="access" element={<AdminAccessControl />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                    <Route path="templates" element={<AdminEmailTemplates />} />
+                    <Route path="maintenance" element={<AdminMaintenance />} />
+                  </Route>
                 </Route>
-
-                {/* Enhanced Admin Routes */}
-                <Route path="/admin/enhanced-organizations" element={<AdminEnhancedOrganizations />} />
-                <Route path="/admin/role-permissions" element={<AdminRolePermissions />} />
-                <Route path="/admin/table-viewer" element={<AdminLiveTableViewer />} />
-                <Route path="/admin/sql-executor" element={<AdminSQLExecutor />} />
-                <Route path="/admin/monitoring" element={<AdminSystemMonitoring />} />
-
+                
                 {/* User Portal: All non-admin features go here */}
                 <Route
                   element={
@@ -157,14 +158,22 @@ function App() {
                   <Route path="/bookings" element={<Bookings />} />
                   <Route path="/bookings/create" element={<CreateBookingPage />} />
                   <Route path="/bookings/:id" element={<BookingDetails />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/clients" element={<Clients />} />
-                  <Route path="/clients/:clientId" element={<ClientDetailsPage />} />
+                  <Route path="/invoices" element={<Invoices />} />
+                  <Route path="/invoices/create" element={<CreateInvoice />} />
+                  <Route path="/invoice-management" element={<InvoiceManagementPage />} />
+                  <Route path="/payments" element={<PaymentManagement />} />
                   <Route path="/vouchers" element={<Vouchers />} />
                   <Route path="/vouchers/:voucherId" element={<VoucherDetailsPage />} />
+                  <Route path="/clients" element={<Clients />} />
+                  <Route path="/clients/:clientId" element={<ClientDetailsPage />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/advanced-analytics" element={<AdvancedAnalytics />} />
+                  <Route path="/calendar" element={<Calendar />} />
+                  <Route path="/settings" element={<Settings />} />
                   <Route path="/team" element={<TeamManagementPage />} />
-                  <Route path="/agent-management" element={<AgentManagement />} />
+                  <Route path="/agents" element={<AgentManagement />} />
+                  <Route path="/tour-templates" element={<TourTemplates />} />
                 </Route>
               </Routes>
             </BrowserRouter>

@@ -135,7 +135,7 @@ const QuotePreview = () => {
         </div>
 
         <ClientQuotePreviewComponent
-          quotePreview={clientPreview}
+          preview={clientPreview}
           onHotelSelect={setApprovedHotelId}
           selectedHotelId={approvedHotelId}
         />
