@@ -54,10 +54,14 @@ const fetchSidebarCounts = async (orgId: string | null): Promise<SidebarCounts> 
       .from('bookings')
       .select('id', { count: 'exact' })
       .in('agent_id', userIds),
+    // Fix voucher query: get vouchers for bookings created by org users
     supabase
       .from('travel_vouchers')
-      .select('id', { count: 'exact' })
-      .eq('booking_id', 'travel_vouchers.booking_id'),
+      .select(`
+        id,
+        bookings!inner(agent_id)
+      `, { count: 'exact' })
+      .in('bookings.agent_id', userIds),
     supabase
       .from('clients')
       .select('id', { count: 'exact' })

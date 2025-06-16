@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { AlertCircle, Edit, Trash2, UserPlus, Search } from 'lucide-react';
+import { AlertCircle, Edit, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../../integrations/supabase/client';
 import { useAuth } from '../../contexts/AuthContext';
+import AddUserDialog from './AddUserDialog';
 
 interface UserProfile {
   id: string;
@@ -142,10 +143,7 @@ const UserManagement = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>User Management</span>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
+            <AddUserDialog onUserAdded={fetchUsers} />
           </CardTitle>
         </CardHeader>
         <CardContent>
