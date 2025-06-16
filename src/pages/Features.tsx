@@ -2,9 +2,42 @@
 import React from 'react';
 import Navigation from '../components/landing/Navigation';
 import Footer from '../components/landing/Footer';
-import { Zap, Globe, Users, Shield, BarChart3, Sparkles } from 'lucide-react';
+import { CheckCircle, Users, Calendar, FileText, BarChart, Shield } from 'lucide-react';
 
 const Features = () => {
+  const features = [
+    {
+      icon: <FileText className="h-8 w-8 text-teal-600" />,
+      title: "Smart Quote Management",
+      description: "Create professional quotes with multi-hotel comparisons, automated calculations, and client approval workflows."
+    },
+    {
+      icon: <Calendar className="h-8 w-8 text-teal-600" />,
+      title: "End-to-End Booking",
+      description: "Convert approved quotes to confirmed bookings with automated voucher generation and client notifications."
+    },
+    {
+      icon: <Users className="h-8 w-8 text-teal-600" />,
+      title: "Team Collaboration",
+      description: "Manage your travel team with role-based access, inquiry assignment, and real-time collaboration tools."
+    },
+    {
+      icon: <BarChart className="h-8 w-8 text-teal-600" />,
+      title: "Analytics & Insights",
+      description: "Track conversion rates, revenue metrics, and team performance with comprehensive analytics dashboard."
+    },
+    {
+      icon: <Shield className="h-8 w-8 text-teal-600" />,
+      title: "Secure & Compliant",
+      description: "Enterprise-grade security with audit trails, data protection, and compliance features built-in."
+    },
+    {
+      icon: <CheckCircle className="h-8 w-8 text-teal-600" />,
+      title: "Mobile Optimized",
+      description: "Full mobile responsiveness ensures your team can work efficiently from any device, anywhere."
+    }
+  ];
+
   return (
     <div className="min-h-screen flex flex-col w-full bg-white">
       <Navigation />
@@ -16,41 +49,44 @@ const Features = () => {
               Powerful Features for Travel Professionals
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto font-light">
-              Everything you need to streamline your travel business operations and delight your customers.
+              Everything you need to streamline your travel business operations and delight your clients.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={<Zap className="h-12 w-12 text-teal-600" />}
-              title="Lightning-fast quotes"
-              description="Create professional travel quotes in under 5 minutes with our intuitive interface and automated calculations."
-            />
-            <FeatureCard 
-              icon={<Globe className="h-12 w-12 text-teal-600" />}
-              title="Multi-hotel comparison"
-              description="Compare rates and amenities across multiple properties in real-time to find the best options for your clients."
-            />
-            <FeatureCard 
-              icon={<Users className="h-12 w-12 text-teal-600" />}
-              title="Team management"
-              description="Manage agents and track performance with role-based dashboards and comprehensive analytics."
-            />
-            <FeatureCard 
-              icon={<Shield className="h-12 w-12 text-teal-600" />}
-              title="Secure & compliant"
-              description="Enterprise-grade security with GDPR compliance built-in to protect your business and client data."
-            />
-            <FeatureCard 
-              icon={<BarChart3 className="h-12 w-12 text-teal-600" />}
-              title="Business insights"
-              description="Track conversion rates and revenue with powerful analytics and detailed reporting capabilities."
-            />
-            <FeatureCard 
-              icon={<Sparkles className="h-12 w-12 text-teal-600" />}
-              title="Client-friendly sharing"
-              description="Share beautiful quotes via email, WhatsApp, or secure links with professional presentation."
-            />
+            {features.map((feature, index) => (
+              <div key={index} className="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow">
+                <div className="mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-16 text-center">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">
+              Ready to get started?
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a 
+                href="/signup"
+                className="bg-teal-600 text-white px-8 py-3 rounded-full font-medium hover:bg-teal-700 transition-colors"
+              >
+                Start Free Trial
+              </a>
+              <a 
+                href="/pricing"
+                className="border border-gray-300 text-gray-700 px-8 py-3 rounded-full font-medium hover:bg-gray-50 transition-colors"
+              >
+                View Pricing
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -59,13 +95,5 @@ const Features = () => {
     </div>
   );
 };
-
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
-  <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-    <div className="mb-6">{icon}</div>
-    <h3 className="text-2xl font-semibold text-gray-900 mb-4">{title}</h3>
-    <p className="text-gray-600 leading-relaxed">{description}</p>
-  </div>
-);
 
 export default Features;

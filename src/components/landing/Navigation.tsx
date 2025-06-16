@@ -1,69 +1,111 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '../ui/button';
 import { Globe, Menu, X } from 'lucide-react';
+import { Button } from '../ui/button';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="w-full bg-white/80 backdrop-blur-sm border-b border-gray-100 fixed top-0 z-50">
-      <nav className="w-full px-8 lg:px-16 xl:px-24 flex justify-between items-center h-20">
-        {/* Logo */}
-        <Link to="/" className="flex items-center space-x-3">
-          <Globe className="h-10 w-10 text-teal-600" />
-          <span className="text-2xl font-light text-teal-600 tracking-wide">TravelFlow360</span>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center space-x-12">
-          <Link to="/features" className="text-gray-700 hover:text-teal-600 font-light text-lg tracking-wide transition-colors">Features</Link>
-          <Link to="/pricing" className="text-gray-700 hover:text-teal-600 font-light text-lg tracking-wide transition-colors">Pricing</Link>
-          <Link to="/about" className="text-gray-700 hover:text-teal-600 font-light text-lg tracking-wide transition-colors">About</Link>
-          <Link to="/blog" className="text-gray-700 hover:text-teal-600 font-light text-lg tracking-wide transition-colors">Blog</Link>
-        </div>
-
-        {/* CTA Buttons */}
-        <div className="hidden lg:flex items-center space-x-6">
-          <Link to="/login">
-            <Button variant="ghost" size="lg" className="text-lg font-light tracking-wide">Login</Button>
+    <nav className="bg-white border-b sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="flex items-center space-x-2">
+            <Globe className="h-8 w-8 text-teal-600" />
+            <span className="text-xl font-bold text-teal-600">TravelFlow360</span>
           </Link>
-          <Link to="/signup">
-            <Button size="lg" className="bg-black text-white hover:bg-gray-800 rounded-none px-8 py-3 text-lg font-light tracking-wide">Start Free Trial</Button>
-          </Link>
-        </div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/features" className="text-slate-600 hover:text-teal-600 transition-colors">
+              Features
+            </Link>
+            <Link to="/pricing" className="text-slate-600 hover:text-teal-600 transition-colors">
+              Pricing
+            </Link>
+            <Link to="/about" className="text-slate-600 hover:text-teal-600 transition-colors">
+              About
+            </Link>
+            <a href="#contact" className="text-slate-600 hover:text-teal-600 transition-colors">
+              Contact
+            </a>
+          </div>
+          
+          <div className="hidden md:flex items-center space-x-3">
+            <Link to="/login">
+              <Button variant="ghost" className="text-slate-600 hover:text-teal-600">
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/signup">
+              <Button className="bg-teal-600 hover:bg-teal-700">
+                Get Started
+              </Button>
+            </Link>
+          </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="lg:hidden"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          {isMenuOpen ? <X className="h-8 w-8" /> : <Menu className="h-8 w-8" />}
-        </button>
-      </nav>
-
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100 w-full">
-          <div className="px-8 py-8 space-y-6">
-            <Link to="/features" className="block text-gray-700 hover:text-teal-600 font-light text-xl">Features</Link>
-            <Link to="/pricing" className="block text-gray-700 hover:text-teal-600 font-light text-xl">Pricing</Link>
-            <Link to="/about" className="block text-gray-700 hover:text-teal-600 font-light text-xl">About</Link>
-            <Link to="/blog" className="block text-gray-700 hover:text-teal-600 font-light text-xl">Blog</Link>
-            
-            <div className="pt-6 border-t border-gray-200 space-y-4">
-              <Link to="/login">
-                <Button variant="outline" size="lg" className="w-full text-lg font-light">Login</Button>
-              </Link>
-              <Link to="/signup">
-                <Button size="lg" className="w-full bg-black text-white hover:bg-gray-800 rounded-none text-lg font-light">Start Free Trial</Button>
-              </Link>
-            </div>
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
           </div>
         </div>
-      )}
-    </header>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+              <Link 
+                to="/features" 
+                className="block px-3 py-2 text-slate-600 hover:text-teal-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Features
+              </Link>
+              <Link 
+                to="/pricing" 
+                className="block px-3 py-2 text-slate-600 hover:text-teal-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Pricing
+              </Link>
+              <Link 
+                to="/about" 
+                className="block px-3 py-2 text-slate-600 hover:text-teal-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About
+              </Link>
+              <a 
+                href="#contact" 
+                className="block px-3 py-2 text-slate-600 hover:text-teal-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact
+              </a>
+              <div className="flex flex-col space-y-2 px-3 pt-4">
+                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="outline" className="w-full">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
+                  <Button className="w-full bg-teal-600 hover:bg-teal-700">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
   );
 };
 
