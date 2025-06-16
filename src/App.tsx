@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -67,6 +68,7 @@ import InvoiceManagementPage from "./pages/InvoiceManagementPage";
 import PaymentManagement from "./pages/PaymentManagement";
 import TourTemplates from "./pages/TourTemplates";
 import Calendar from "./pages/Calendar";
+import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,7 +111,7 @@ function App() {
                 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLayout />}>
-                  <Route element={<AuthGuard />}>
+                  <Route element={<AuthGuard><div /></AuthGuard>}>
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="monitoring" element={<AdminMonitoring />} />
                     <Route path="analytics" element={<AdvancedAnalytics />} />
@@ -158,7 +160,7 @@ function App() {
                   <Route path="/bookings" element={<Bookings />} />
                   <Route path="/bookings/create" element={<CreateBookingPage />} />
                   <Route path="/bookings/:id" element={<BookingDetails />} />
-                  <Route path="/invoices" element={<Invoices />} />
+                  <Route path="/invoices" element={<InvoiceManagementPage />} />
                   <Route path="/invoices/create" element={<CreateInvoice />} />
                   <Route path="/invoice-management" element={<InvoiceManagementPage />} />
                   <Route path="/payments" element={<PaymentManagement />} />
@@ -167,7 +169,7 @@ function App() {
                   <Route path="/clients" element={<Clients />} />
                   <Route path="/clients/:clientId" element={<ClientDetailsPage />} />
                   <Route path="/reports" element={<Reports />} />
-                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/analytics" element={<AdvancedAnalytics />} />
                   <Route path="/advanced-analytics" element={<AdvancedAnalytics />} />
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/settings" element={<Settings />} />

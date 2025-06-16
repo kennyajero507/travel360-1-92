@@ -11,7 +11,7 @@ export class TourTemplateService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as TourTemplate[];
   }
 
   async getTourTemplate(id: string): Promise<TourTemplate | null> {
@@ -22,30 +22,55 @@ export class TourTemplateService {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data as TourTemplate | null;
   }
 
   async createTourTemplate(tourTemplate: TourTemplateFormData): Promise<TourTemplate> {
     const { data, error } = await supabase
       .from('tour_templates')
-      .insert([tourTemplate])
+      .insert([{
+        ...tourTemplate,
+        itinerary: tourTemplate.itinerary as any,
+        inclusions: tourTemplate.inclusions as any,
+        exclusions: tourTemplate.exclusions as any,
+        images: tourTemplate.images as any,
+        tags: tourTemplate.tags as any
+      }])
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as TourTemplate;
   }
 
   async updateTourTemplate(id: string, tourTemplate: Partial<TourTemplateFormData>): Promise<TourTemplate> {
+    const updateData: any = { ...tourTemplate };
+    
+    if (updateData.itinerary) {
+      updateData.itinerary = updateData.itinerary as any;
+    }
+    if (updateData.inclusions) {
+      updateData.inclusions = updateData.inclusions as any;
+    }
+    if (updateData.exclusions) {
+      updateData.exclusions = updateData.exclusions as any;
+    }
+    if (updateData.images) {
+      updateData.images = updateData.images as any;
+    }
+    if (updateData.tags) {
+      updateData.tags = updateData.tags as any;
+    }
+
     const { data, error } = await supabase
       .from('tour_templates')
-      .update(tourTemplate)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as TourTemplate;
   }
 
   async deleteTourTemplate(id: string): Promise<void> {

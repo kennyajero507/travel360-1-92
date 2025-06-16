@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { cn } from '../../lib/utils';
+import { cn } from '../lib/utils';
 import {
   LayoutDashboard,
   Activity,
@@ -16,16 +17,11 @@ import {
   Building,
   Table,
   Terminal,
-  FileText,
   FileBarChart,
   Calendar,
-  Building,
   MapPin,
   Receipt,
-  CreditCard,
-  Users,
-  BarChart3,
-  Settings
+  CreditCard
 } from 'lucide-react';
 
 const sidebarSections = [
