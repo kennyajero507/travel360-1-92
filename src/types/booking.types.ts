@@ -62,6 +62,7 @@ export interface Booking {
   total_price: number;
   quote_id: string;
   notes?: string;
+  org_id?: string;
   created_at?: string;
   updated_at?: string;
 }

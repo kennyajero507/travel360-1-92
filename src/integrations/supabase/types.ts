@@ -48,6 +48,7 @@ export type Database = {
           agent_id: string | null
           booking_reference: string
           client: string
+          client_email: string | null
           created_at: string | null
           hotel_id: string | null
           hotel_name: string
@@ -69,6 +70,7 @@ export type Database = {
           agent_id?: string | null
           booking_reference: string
           client: string
+          client_email?: string | null
           created_at?: string | null
           hotel_id?: string | null
           hotel_name: string
@@ -90,6 +92,7 @@ export type Database = {
           agent_id?: string | null
           booking_reference?: string
           client?: string
+          client_email?: string | null
           created_at?: string | null
           hotel_id?: string | null
           hotel_name?: string

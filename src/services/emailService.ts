@@ -89,7 +89,7 @@ export class EmailService {
       }
       
       const booking = voucher.bookings;
-      if (!booking.client_email) {
+      if (!booking?.client_email) {
         return {
           success: false,
           error: 'Client email not found. Please add the client email to the booking.'

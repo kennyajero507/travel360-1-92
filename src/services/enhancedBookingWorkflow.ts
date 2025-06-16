@@ -79,11 +79,15 @@ export class EnhancedBookingWorkflow {
         };
       }
       
-      // Add org_id to booking data
+      // Convert TypeScript arrays to JSON for database storage
       const completeBookingData = {
         ...bookingData,
         org_id: profile.org_id,
-        status: 'pending' as BookingStatus
+        status: 'pending' as BookingStatus,
+        room_arrangement: JSON.stringify(bookingData.room_arrangement || []),
+        transport: JSON.stringify(bookingData.transport || []),
+        activities: JSON.stringify(bookingData.activities || []),
+        transfers: JSON.stringify(bookingData.transfers || [])
       };
       
       console.log('Creating booking with complete data:', completeBookingData);
@@ -112,9 +116,26 @@ export class EnhancedBookingWorkflow {
         client: booking.client
       });
       
+      // Convert JSON fields back to arrays for return
+      const convertedBooking: Booking = {
+        ...booking,
+        room_arrangement: typeof booking.room_arrangement === 'string' 
+          ? JSON.parse(booking.room_arrangement) 
+          : booking.room_arrangement || [],
+        transport: typeof booking.transport === 'string' 
+          ? JSON.parse(booking.transport) 
+          : booking.transport || [],
+        activities: typeof booking.activities === 'string' 
+          ? JSON.parse(booking.activities) 
+          : booking.activities || [],
+        transfers: typeof booking.transfers === 'string' 
+          ? JSON.parse(booking.transfers) 
+          : booking.transfers || []
+      };
+      
       return {
         success: true,
-        booking: booking as Booking
+        booking: convertedBooking
       };
       
     } catch (error) {
