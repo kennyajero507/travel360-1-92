@@ -1,6 +1,8 @@
 
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
+import { ErrorHandler } from '../utils/errorHandler';
+import { validateField, hotelValidationSchema, roomTypeValidationSchema } from '../utils/validators';
 
 export interface Hotel {
   id: string;
@@ -39,6 +41,12 @@ const transformHotelData = (dbRow: any): Hotel => {
   };
 };
 
+// Validation helper
+const validateHotelData = (data: Partial<Hotel>): { isValid: boolean; errors: string[] } => {
+  const validation = validateField(hotelValidationSchema, data);
+  return { isValid: validation.success, errors: validation.errors };
+};
+
 export const hotelService = {
   async getAllHotels(): Promise<Hotel[]> {
     try {
@@ -50,15 +58,14 @@ export const hotelService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('[HotelService] Error fetching hotels:', error);
-        throw error;
+        ErrorHandler.handleSupabaseError(error, 'Fetching hotels');
+        return [];
       }
 
       console.log('[HotelService] Fetched hotels:', data?.length || 0);
       return (data || []).map(transformHotelData);
     } catch (error) {
-      console.error('[HotelService] Error in getAllHotels:', error);
-      toast.error('Failed to load hotels');
+      ErrorHandler.handleSupabaseError(error, 'getAllHotels');
       return [];
     }
   },
@@ -74,14 +81,13 @@ export const hotelService = {
         .maybeSingle();
 
       if (error) {
-        console.error('[HotelService] Error fetching hotel:', error);
-        throw error;
+        ErrorHandler.handleSupabaseError(error, 'Fetching hotel details');
+        return null;
       }
 
       return data ? transformHotelData(data) : null;
     } catch (error) {
-      console.error('[HotelService] Error in getHotelById:', error);
-      toast.error('Failed to load hotel details');
+      ErrorHandler.handleSupabaseError(error, 'getHotelById');
       return null;
     }
   },
@@ -90,9 +96,17 @@ export const hotelService = {
     try {
       console.log('[HotelService] Creating hotel:', hotelData);
       
+      // Validate input data
+      const validation = validateHotelData(hotelData);
+      if (!validation.isValid) {
+        toast.error(`Validation failed: ${validation.errors.join(', ')}`);
+        return null;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        throw new Error('User not authenticated');
+        ErrorHandler.handleAuthError({ message: 'User not authenticated' });
+        return null;
       }
 
       const { data, error } = await supabase
@@ -107,16 +121,15 @@ export const hotelService = {
         .single();
 
       if (error) {
-        console.error('[HotelService] Error creating hotel:', error);
-        toast.error('Failed to create hotel');
-        throw error;
+        ErrorHandler.handleSupabaseError(error, 'Creating hotel');
+        return null;
       }
 
       toast.success('Hotel created successfully');
       return transformHotelData(data);
     } catch (error) {
-      console.error('[HotelService] Error in createHotel:', error);
-      throw error;
+      ErrorHandler.handleSupabaseError(error, 'createHotel');
+      return null;
     }
   },
 
@@ -124,8 +137,26 @@ export const hotelService = {
     try {
       console.log('[HotelService] Updating hotel:', id, updates);
 
+      // Validate updates
+      if (Object.keys(updates).length > 0) {
+        const validation = validateHotelData(updates);
+        if (!validation.isValid) {
+          toast.error(`Validation failed: ${validation.errors.join(', ')}`);
+          return null;
+        }
+      }
+
       // Ensure isOutOfOrder is preserved for all room types
       if (updates.room_types && Array.isArray(updates.room_types)) {
+        const roomValidation = updates.room_types.every(rt => 
+          validateField(roomTypeValidationSchema, rt).success
+        );
+        
+        if (!roomValidation) {
+          toast.error('Invalid room type data');
+          return null;
+        }
+        
         updates.room_types = updates.room_types.map(rt => ({
           ...rt,
           isOutOfOrder: rt.isOutOfOrder || false
@@ -143,16 +174,15 @@ export const hotelService = {
         .single();
 
       if (error) {
-        console.error('[HotelService] Error updating hotel:', error);
-        toast.error('Failed to update hotel');
-        throw error;
+        ErrorHandler.handleSupabaseError(error, 'Updating hotel');
+        return null;
       }
 
       toast.success('Hotel updated successfully');
       return transformHotelData(data);
     } catch (error) {
-      console.error('[HotelService] Error in updateHotel:', error);
-      throw error;
+      ErrorHandler.handleSupabaseError(error, 'updateHotel');
+      return null;
     }
   },
 
@@ -166,16 +196,15 @@ export const hotelService = {
         .eq('id', id);
 
       if (error) {
-        console.error('[HotelService] Error deleting hotel:', error);
-        toast.error('Failed to delete hotel');
-        throw error;
+        ErrorHandler.handleSupabaseError(error, 'Deleting hotel');
+        return false;
       }
 
       toast.success('Hotel deleted successfully');
       return true;
     } catch (error) {
-      console.error('[HotelService] Error in deleteHotel:', error);
-      throw error;
+      ErrorHandler.handleSupabaseError(error, 'deleteHotel');
+      return false;
     }
   },
 
@@ -183,10 +212,10 @@ export const hotelService = {
     try {
       console.log('[HotelService] Toggling hotel status:', id);
       
-      // First get current status
       const hotel = await this.getHotelById(id);
       if (!hotel) {
-        throw new Error('Hotel not found');
+        toast.error('Hotel not found');
+        return null;
       }
 
       const newStatus = hotel.status === 'Active' ? 'Inactive' : 'Active';
@@ -202,16 +231,15 @@ export const hotelService = {
         .single();
 
       if (error) {
-        console.error('[HotelService] Error toggling hotel status:', error);
-        toast.error('Failed to update hotel status');
-        throw error;
+        ErrorHandler.handleSupabaseError(error, 'Toggling hotel status');
+        return null;
       }
 
       toast.success(`Hotel ${newStatus.toLowerCase()} successfully`);
       return transformHotelData(data);
     } catch (error) {
-      console.error('[HotelService] Error in toggleHotelStatus:', error);
-      throw error;
+      ErrorHandler.handleSupabaseError(error, 'toggleHotelStatus');
+      return null;
     }
   }
 };

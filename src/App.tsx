@@ -1,8 +1,10 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthErrorBoundary } from "./components/auth/AuthErrorBoundary";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import AuthGuard from "./components/auth/AuthGuard";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -49,106 +51,125 @@ import AdminAccessControl from "./pages/admin/AdminAccessControl";
 import AdminEmailTemplates from "./pages/admin/AdminEmailTemplates";
 import AdminMaintenance from "./pages/admin/AdminMaintenance";
 import AdminLayout from "./components/admin/AdminLayout";
-import Landing from "./pages/Landing"; // Import the correct landing page
+import Landing from "./pages/Landing";
 import HotelRoomManagementPage from "./pages/HotelRoomManagementPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Don't retry on auth errors or client errors
+        if (error?.status >= 400 && error?.status < 500) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthErrorBoundary>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/quote-preview" element={<QuotePreview />} />
-              <Route 
-                path="/admin/login"
-                element={<AdminLogin />}
-              />
-
-              {/* Admin Portal: ALL /admin* routes get wrapped in AdminLayout */}
-              <Route
-                path="/admin"
-                element={
-                  <AuthGuard allowedRoles={['system_admin']}>
-                    <AdminLayout />
-                  </AuthGuard>
-                }
-              >
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="health" element={<AdminSystemHealth />} />
-                <Route path="analytics" element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUserManagement />} />
-                <Route path="organizations" element={<AdminOrganizationManagement />} />
-                <Route path="roles" element={<AdminRoles />} />
-                <Route path="database" element={<AdminDatabase />} />
-                <Route path="logs" element={<AdminLogs />} />
-                <Route path="monitoring" element={<AdminMonitoring />} />
-                <Route path="security" element={<AdminDashboard />} />
-                <Route path="audit" element={<AdminAuditLogs />} />
-                <Route path="access" element={<AdminAccessControl />} />
-                <Route path="settings" element={<AdminSettings />} />
-                <Route path="templates" element={<AdminEmailTemplates />} />
-                <Route path="maintenance" element={<AdminMaintenance />} />
-              </Route>
-
-              {/* User Portal: All non-admin features go here */}
-              <Route
-                element={
-                  <AuthGuard>
-                    <Layout />
-                  </AuthGuard>
-                }
-              >
-                <Route path="/dashboard" element={<Dashboard />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthErrorBoundary>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/quote-preview" element={<QuotePreview />} />
                 <Route 
-                  path="/organization/setup"
-                  element={<OrganizationSetup />}
+                  path="/admin/login"
+                  element={<AdminLogin />}
                 />
-                <Route path="/hotels" element={<Hotels />} />
-                <Route path="/hotels/create" element={<CreateHotel />} />
-                <Route path="/hotels/:hotelId" element={<HotelDetails />} />
-                <Route path="/hotels/:hotelId/edit" element={<EditHotel />} />
-                <Route path="/hotels/:hotelId/rooms" element={<HotelRoomManagementPage />} />
-                <Route path="/inquiries" element={<Inquiries />} />
-                <Route path="/inquiries/create" element={<CreateInquiry />} />
-                <Route path="/inquiries/:inquiryId" element={<InquiryDetails />} />
-                <Route path="/inquiries/edit/:inquiryId" element={<EditInquiry />} />
-                <Route path="/quotes" element={<Quotes />} />
-                <Route path="/quotes/create" element={<CreateQuote />} />
-                <Route path="/quotes/:quoteId" element={<EditQuote />} />
-                <Route path="/bookings" element={<Bookings />} />
-                <Route path="/bookings/create" element={<CreateBookingPage />} />
-                <Route path="/bookings/:id" element={<BookingDetails />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/clients" element={<Clients />} />
-                <Route path="/clients/:clientId" element={<ClientDetailsPage />} />
-                <Route path="/vouchers" element={<Vouchers />} />
-                <Route path="/vouchers/:voucherId" element={<VoucherDetailsPage />} />
-                <Route path="/team" element={<TeamManagementPage />} />
-                <Route path="/agent-management" element={<AgentManagement />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </AuthErrorBoundary>
-      <Toaster 
-        position="top-right" 
-        toastOptions={{
-          style: {
-            fontFamily: 'Inter, sans-serif',
-          },
-        }}
-      />
-    </QueryClientProvider>
+
+                {/* Admin Portal: ALL /admin* routes get wrapped in AdminLayout */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AuthGuard allowedRoles={['system_admin']}>
+                      <AdminLayout />
+                    </AuthGuard>
+                  }
+                >
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="health" element={<AdminSystemHealth />} />
+                  <Route path="analytics" element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUserManagement />} />
+                  <Route path="organizations" element={<AdminOrganizationManagement />} />
+                  <Route path="roles" element={<AdminRoles />} />
+                  <Route path="database" element={<AdminDatabase />} />
+                  <Route path="logs" element={<AdminLogs />} />
+                  <Route path="monitoring" element={<AdminMonitoring />} />
+                  <Route path="security" element={<AdminDashboard />} />
+                  <Route path="audit" element={<AdminAuditLogs />} />
+                  <Route path="access" element={<AdminAccessControl />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="templates" element={<AdminEmailTemplates />} />
+                  <Route path="maintenance" element={<AdminMaintenance />} />
+                </Route>
+
+                {/* User Portal: All non-admin features go here */}
+                <Route
+                  element={
+                    <AuthGuard>
+                      <Layout />
+                    </AuthGuard>
+                  }
+                >
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route 
+                    path="/organization/setup"
+                    element={<OrganizationSetup />}
+                  />
+                  <Route path="/hotels" element={<Hotels />} />
+                  <Route path="/hotels/create" element={<CreateHotel />} />
+                  <Route path="/hotels/:hotelId" element={<HotelDetails />} />
+                  <Route path="/hotels/:hotelId/edit" element={<EditHotel />} />
+                  <Route path="/hotels/:hotelId/rooms" element={<HotelRoomManagementPage />} />
+                  <Route path="/inquiries" element={<Inquiries />} />
+                  <Route path="/inquiries/create" element={<CreateInquiry />} />
+                  <Route path="/inquiries/:inquiryId" element={<InquiryDetails />} />
+                  <Route path="/inquiries/edit/:inquiryId" element={<EditInquiry />} />
+                  <Route path="/quotes" element={<Quotes />} />
+                  <Route path="/quotes/create" element={<CreateQuote />} />
+                  <Route path="/quotes/:quoteId" element={<EditQuote />} />
+                  <Route path="/bookings" element={<Bookings />} />
+                  <Route path="/bookings/create" element={<CreateBookingPage />} />
+                  <Route path="/bookings/:id" element={<BookingDetails />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/clients" element={<Clients />} />
+                  <Route path="/clients/:clientId" element={<ClientDetailsPage />} />
+                  <Route path="/vouchers" element={<Vouchers />} />
+                  <Route path="/vouchers/:voucherId" element={<VoucherDetailsPage />} />
+                  <Route path="/team" element={<TeamManagementPage />} />
+                  <Route path="/agent-management" element={<AgentManagement />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </AuthErrorBoundary>
+        <Toaster 
+          position="top-right" 
+          toastOptions={{
+            style: {
+              fontFamily: 'Inter, sans-serif',
+            },
+            duration: 4000,
+          }}
+        />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
