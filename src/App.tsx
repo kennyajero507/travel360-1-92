@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -53,6 +52,11 @@ import AdminMaintenance from "./pages/admin/AdminMaintenance";
 import AdminLayout from "./components/admin/AdminLayout";
 import Landing from "./pages/Landing";
 import HotelRoomManagementPage from "./pages/HotelRoomManagementPage";
+import AdminEnhancedOrganizations from "./pages/admin/AdminEnhancedOrganizations";
+import AdminRolePermissions from "./pages/admin/AdminRolePermissions";
+import AdminLiveTableViewer from "./pages/admin/AdminLiveTableViewer";
+import AdminSQLExecutor from "./pages/admin/AdminSQLExecutor";
+import AdminSystemMonitoring from "./pages/admin/AdminSystemMonitoring";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -117,6 +121,13 @@ function App() {
                   <Route path="templates" element={<AdminEmailTemplates />} />
                   <Route path="maintenance" element={<AdminMaintenance />} />
                 </Route>
+
+                {/* Enhanced Admin Routes */}
+                <Route path="/admin/enhanced-organizations" element={<AdminEnhancedOrganizations />} />
+                <Route path="/admin/role-permissions" element={<AdminRolePermissions />} />
+                <Route path="/admin/table-viewer" element={<AdminLiveTableViewer />} />
+                <Route path="/admin/sql-executor" element={<AdminSQLExecutor />} />
+                <Route path="/admin/monitoring" element={<AdminSystemMonitoring />} />
 
                 {/* User Portal: All non-admin features go here */}
                 <Route

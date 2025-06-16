@@ -13,7 +13,10 @@ import {
   FileText,
   ShieldCheck,
   Settings,
-  Mail
+  Mail,
+  Building,
+  Table,
+  Terminal
 } from 'lucide-react';
 
 const sidebarSections = [
@@ -21,7 +24,7 @@ const sidebarSections = [
     title: "Overview",
     items: [
       { title: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-      { title: "System Health", href: "/admin/health", icon: Activity },
+      { title: "System Health", href: "/admin/monitoring", icon: Activity },
       { title: "Analytics", href: "/admin/analytics", icon: BarChart3 }
     ]
   },
@@ -30,15 +33,17 @@ const sidebarSections = [
     items: [
       { title: "Users", href: "/admin/users", icon: Users },
       { title: "Organizations", href: "/admin/organizations", icon: Database },
-      { title: "Roles & Permissions", href: "/admin/roles", icon: Shield }
+      { title: "Enhanced Orgs", href: "/admin/enhanced-organizations", icon: Building },
+      { title: "Roles & Permissions", href: "/admin/role-permissions", icon: Shield }
     ]
   },
   {
     title: "System Operations",
     items: [
+      { title: "Live Table Viewer", href: "/admin/table-viewer", icon: Table },
+      { title: "SQL Executor", href: "/admin/sql-executor", icon: Terminal },
       { title: "Database", href: "/admin/database", icon: Database },
-      { title: "System Logs", href: "/admin/logs", icon: FileText },
-      { title: "Monitoring", href: "/admin/monitoring", icon: Activity }
+      { title: "System Logs", href: "/admin/logs", icon: FileText }
     ]
   },
   {

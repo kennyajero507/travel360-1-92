@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_activity_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          target_id: string | null
+          target_type: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           created_at: string | null
@@ -647,6 +683,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          billing_cycle: string | null
           created_at: string | null
           deleted_at: string | null
           deleted_by: string | null
@@ -656,10 +693,17 @@ export type Database = {
           owner_id: string | null
           primary_color: string | null
           secondary_color: string | null
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_end_date: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
           subscription_tier: string | null
           tagline: string | null
         }
         Insert: {
+          billing_cycle?: string | null
           created_at?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
@@ -669,10 +713,17 @@ export type Database = {
           owner_id?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
           subscription_tier?: string | null
           tagline?: string | null
         }
         Update: {
+          billing_cycle?: string | null
           created_at?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
@@ -682,6 +733,12 @@ export type Database = {
           owner_id?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
           subscription_tier?: string | null
           tagline?: string | null
         }
@@ -1310,6 +1367,93 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          permission: string
+          resource: string | null
+          role: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          permission: string
+          resource?: string | null
+          role: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          permission?: string
+          resource?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
+      system_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          severity: string | null
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          severity?: string | null
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          severity?: string | null
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      system_metrics: {
+        Row: {
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_unit: string | null
+          metric_value: number | null
+          timestamp: string | null
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_unit?: string | null
+          metric_value?: number | null
+          timestamp?: string | null
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_unit?: string | null
+          metric_value?: number | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
       travel_vouchers: {
         Row: {
           booking_id: string
@@ -1370,6 +1514,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_user_permission: {
+        Args: {
+          p_user_id: string
+          p_permission: string
+          p_resource?: string
+          p_action?: string
+        }
+        Returns: boolean
+      }
       create_data_backup: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1380,6 +1533,15 @@ export type Database = {
       }
       get_user_organization: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      log_admin_activity: {
+        Args: {
+          p_action: string
+          p_target_type?: string
+          p_target_id?: string
+          p_details?: Json
+        }
         Returns: string
       }
     }
