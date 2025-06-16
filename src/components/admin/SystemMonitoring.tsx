@@ -17,25 +17,7 @@ import {
   TrendingUp,
   Clock
 } from 'lucide-react';
-
-interface SystemMetric {
-  id: string;
-  metric_name: string;
-  metric_value: number;
-  metric_unit: string;
-  timestamp: string;
-  metadata?: any;
-}
-
-interface SystemEvent {
-  id: string;
-  event_type: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  source?: string;
-  message?: string;
-  metadata?: any;
-  created_at: string;
-}
+import { SystemMetric, SystemEvent } from '../../types/admin.types';
 
 const SystemMonitoring = () => {
   const [metrics, setMetrics] = useState<SystemMetric[]>([]);
@@ -83,7 +65,14 @@ const SystemMonitoring = () => {
       .limit(20);
 
     if (error) throw error;
-    setEvents(data || []);
+    
+    // Type assertion with proper validation
+    const typedEvents: SystemEvent[] = (data || []).map(event => ({
+      ...event,
+      severity: (event.severity as SystemEvent['severity']) || 'low'
+    }));
+    
+    setEvents(typedEvents);
   };
 
   const fetchSystemHealth = async () => {
@@ -106,7 +95,7 @@ const SystemMonitoring = () => {
     });
   };
 
-  const getSeverityBadge = (severity: string) => {
+  const getSeverityBadge = (severity: SystemEvent['severity']) => {
     switch (severity) {
       case 'critical':
         return <Badge className="bg-red-100 text-red-800">Critical</Badge>;

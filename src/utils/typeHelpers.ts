@@ -18,6 +18,31 @@ export const isValidBookingStatus = (status: string): status is BookingStatus =>
   return validStatuses.includes(status as BookingStatus);
 };
 
+// Enhanced type helpers for admin types
+export const ensureOrganizationStatus = (status: string): 'active' | 'suspended' | 'inactive' => {
+  const validStatuses = ['active', 'suspended', 'inactive'];
+  if (validStatuses.includes(status)) {
+    return status as 'active' | 'suspended' | 'inactive';
+  }
+  return 'active';
+};
+
+export const ensureSubscriptionStatus = (status: string): 'trial' | 'active' | 'past_due' | 'canceled' | 'suspended' => {
+  const validStatuses = ['trial', 'active', 'past_due', 'canceled', 'suspended'];
+  if (validStatuses.includes(status)) {
+    return status as 'trial' | 'active' | 'past_due' | 'canceled' | 'suspended';
+  }
+  return 'trial';
+};
+
+export const ensureSystemEventSeverity = (severity: string): 'low' | 'medium' | 'high' | 'critical' => {
+  const validSeverities = ['low', 'medium', 'high', 'critical'];
+  if (validSeverities.includes(severity)) {
+    return severity as 'low' | 'medium' | 'high' | 'critical';
+  }
+  return 'low';
+};
+
 export const convertToBooking = (data: any) => {
   return {
     ...data,
@@ -46,7 +71,17 @@ export const convertToInvoice = (data: any) => {
   };
 };
 
-export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
+export const formatCurrency = (amount: number, currency: string = 'KES'): string => {
+  // Use Kenya Shilling formatting as default
+  if (currency === 'KES') {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+  
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
@@ -54,7 +89,7 @@ export const formatCurrency = (amount: number, currency: string = 'USD'): string
 };
 
 export const formatDate = (date: string | Date): string => {
-  return new Date(date).toLocaleDateString('en-US', {
+  return new Date(date).toLocaleDateString('en-KE', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -62,7 +97,7 @@ export const formatDate = (date: string | Date): string => {
 };
 
 export const formatDateTime = (date: string | Date): string => {
-  return new Date(date).toLocaleString('en-US', {
+  return new Date(date).toLocaleString('en-KE', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

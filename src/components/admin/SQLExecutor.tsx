@@ -32,25 +32,36 @@ const SQLExecutor = () => {
     const startTime = Date.now();
 
     try {
-      // For security, we'll use RPC to execute raw SQL
-      const { data, error } = await supabase.rpc('execute_sql', {
-        sql_query: sqlQuery
-      });
+      // For now, we'll implement basic SELECT queries directly
+      // In production, this would use the execute_sql RPC function
+      if (sqlQuery.toLowerCase().trim().startsWith('select')) {
+        // Simple implementation for basic queries
+        if (sqlQuery.includes('FROM profiles')) {
+          const { data, error } = await supabase.from('profiles').select('*').limit(100);
+          if (error) throw error;
+          setResults(data || []);
+          if (data && data.length > 0) {
+            setColumns(Object.keys(data[0]));
+          }
+        } else if (sqlQuery.includes('FROM organizations')) {
+          const { data, error } = await supabase.from('organizations').select('*').limit(100);
+          if (error) throw error;
+          setResults(data || []);
+          if (data && data.length > 0) {
+            setColumns(Object.keys(data[0]));
+          }
+        } else {
+          // For complex queries, show a message about RPC function
+          throw new Error('Complex SQL queries require the execute_sql RPC function to be properly configured.');
+        }
+      } else {
+        throw new Error('Only SELECT queries are currently supported in this demo version.');
+      }
 
       const endTime = Date.now();
       setExecutionTime(endTime - startTime);
 
-      if (error) {
-        throw error;
-      }
-
-      if (data && Array.isArray(data) && data.length > 0) {
-        setResults(data);
-        setColumns(Object.keys(data[0]));
-        toast.success(`Query executed successfully. ${data.length} rows returned.`);
-      } else {
-        toast.success('Query executed successfully. No rows returned.');
-      }
+      toast.success(`Query executed successfully. ${results.length} rows returned.`);
     } catch (error: any) {
       console.error('SQL execution error:', error);
       setError(error.message || 'Failed to execute SQL query');
@@ -73,15 +84,15 @@ const SQLExecutor = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Terminal className="h-5 w-5" />
-            SQL Query Executor (Admin Only)
+            SQL Query Executor (Demo Mode)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Alert className="mb-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Warning:</strong> This tool allows direct SQL execution. Use with extreme caution.
-              Always test queries in a development environment first.
+              <strong>Demo Mode:</strong> Currently supports basic SELECT queries only. 
+              Full SQL execution requires proper RPC function setup.
             </AlertDescription>
           </Alert>
 

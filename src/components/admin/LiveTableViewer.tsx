@@ -6,25 +6,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
+import { Alert, AlertDescription } from '../ui/alert';
 import { toast } from 'sonner';
 import { supabase } from '../../integrations/supabase/client';
 import { Database, Search, RefreshCw, Download } from 'lucide-react';
 
+type TableName = 'profiles' | 'organizations' | 'inquiries' | 'quotes' | 'bookings' | 
+  'hotels' | 'clients' | 'travel_vouchers' | 'payments' | 'invoices' |
+  'role_permissions' | 'system_events' | 'admin_activity_logs';
+
 const LiveTableViewer = () => {
-  const [tables] = useState([
+  const [tables] = useState<TableName[]>([
     'profiles', 'organizations', 'inquiries', 'quotes', 'bookings', 
     'hotels', 'clients', 'travel_vouchers', 'payments', 'invoices',
     'role_permissions', 'system_events', 'admin_activity_logs'
   ]);
   
-  const [selectedTable, setSelectedTable] = useState('');
+  const [selectedTable, setSelectedTable] = useState<TableName | ''>('');
   const [tableData, setTableData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [limit, setLimit] = useState(50);
 
-  const fetchTableData = async (tableName: string) => {
+  const fetchTableData = async (tableName: TableName) => {
     if (!tableName) return;
     
     setLoading(true);
@@ -49,7 +54,7 @@ const LiveTableViewer = () => {
 
   useEffect(() => {
     if (selectedTable) {
-      fetchTableData(selectedTable);
+      fetchTableData(selectedTable as TableName);
     }
   }, [selectedTable, limit]);
 
@@ -92,6 +97,13 @@ const LiveTableViewer = () => {
     return String(value);
   };
 
+  const sampleQueries = [
+    "SELECT COUNT(*) as total_users FROM profiles;",
+    "SELECT role, COUNT(*) as count FROM profiles GROUP BY role;",
+    "SELECT status, COUNT(*) as count FROM organizations GROUP BY status;",
+    "SELECT * FROM system_events WHERE severity = 'critical' ORDER BY created_at DESC LIMIT 10;"
+  ];
+
   return (
     <div className="space-y-6">
       <Card>
@@ -102,9 +114,16 @@ const LiveTableViewer = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <Alert className="mb-4">
+            <Database className="h-4 w-4" />
+            <AlertDescription>
+              View live data from database tables. Use with caution in production environments.
+            </AlertDescription>
+          </Alert>
+
           <div className="flex gap-4 mb-6">
             <div className="flex-1">
-              <Select value={selectedTable} onValueChange={setSelectedTable}>
+              <Select value={selectedTable} onValueChange={(value: TableName) => setSelectedTable(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a table" />
                 </SelectTrigger>
@@ -132,7 +151,7 @@ const LiveTableViewer = () => {
             
             <Button 
               variant="outline" 
-              onClick={() => fetchTableData(selectedTable)}
+              onClick={() => selectedTable && fetchTableData(selectedTable as TableName)}
               disabled={!selectedTable || loading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />

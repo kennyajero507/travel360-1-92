@@ -1,10 +1,11 @@
+
 import { supabase } from "../integrations/supabase/client";
 
 export interface CurrencyRate {
   code: string;
   name: string;
   symbol: string;
-  rate: number; // Rate relative to USD
+  rate: number; // Rate relative to KES (Kenya Shilling)
 }
 
 export interface CurrencyConversion {
@@ -15,16 +16,18 @@ export interface CurrencyConversion {
   rate: number;
 }
 
-// Static currency data - in production, this would come from an API
+// Updated currency data with KES as base currency
 const SUPPORTED_CURRENCIES: CurrencyRate[] = [
-  { code: 'USD', name: 'US Dollar', symbol: '$', rate: 1 },
-  { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.85 },
-  { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.73 },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', rate: 1.25 },
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rate: 1.35 },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', rate: 110 },
-  { code: 'INR', name: 'Indian Rupee', symbol: '₹', rate: 75 },
-  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', rate: 6.5 },
+  { code: 'KES', name: 'Kenya Shilling', symbol: 'KSh', rate: 1 }, // Base currency
+  { code: 'USD', name: 'US Dollar', symbol: '$', rate: 0.0067 }, // 1 KES = 0.0067 USD
+  { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.0062 },
+  { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.0053 },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', rate: 0.0091 },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rate: 0.0103 },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', rate: 0.98 },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R', rate: 0.12 },
+  { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh', rate: 18.5 },
+  { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh', rate: 25.2 },
 ];
 
 export class CurrencyService {
@@ -64,9 +67,9 @@ export class CurrencyService {
       throw new Error(`Unsupported currency conversion: ${fromCurrency} to ${toCurrency}`);
     }
 
-    // Convert to USD first, then to target currency
-    const usdAmount = amount / fromRate.rate;
-    const convertedAmount = usdAmount * toRate.rate;
+    // Convert to KES first, then to target currency
+    const kesAmount = amount / fromRate.rate;
+    const convertedAmount = kesAmount * toRate.rate;
     const conversionRate = toRate.rate / fromRate.rate;
 
     return {
@@ -84,8 +87,15 @@ export class CurrencyService {
     if (!currency) return `${amount}`;
 
     // Format with appropriate decimal places
-    const decimals = currencyCode === 'JPY' ? 0 : 2;
+    const decimals = ['JPY', 'KES', 'TZS', 'UGX'].includes(currencyCode) ? 0 : 2;
     const formattedAmount = amount.toFixed(decimals);
+
+    // Add thousand separators for KES
+    if (currencyCode === 'KES') {
+      const parts = formattedAmount.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return `${currency.symbol} ${parts.join('.')}`;
+    }
 
     return `${currency.symbol}${formattedAmount}`;
   }
@@ -111,6 +121,58 @@ export class CurrencyService {
     } catch (error) {
       console.error('Failed to update currency rates:', error);
     }
+  }
+
+  // Get Kenya regions for domestic tours
+  getKenyaRegions(): string[] {
+    return [
+      'Nairobi',
+      'Mombasa',
+      'Kisumu',
+      'Nakuru',
+      'Eldoret',
+      'Thika',
+      'Malindi',
+      'Kitale',
+      'Garissa',
+      'Kakamega',
+      'Machakos',
+      'Meru',
+      'Nyeri',
+      'Kericho',
+      'Embu',
+      'Migori',
+      'Homa Bay',
+      'Naivasha',
+      'Nanyuki',
+      'Diani Beach',
+      'Watamu',
+      'Lamu',
+      'Amboseli',
+      'Maasai Mara',
+      'Tsavo East',
+      'Tsavo West',
+      'Samburu',
+      'Mount Kenya',
+      'Aberdare',
+      'Lake Nakuru'
+    ];
+  }
+
+  // Get East Africa countries for international tours
+  getEastAfricaCountries(): string[] {
+    return [
+      'Kenya',
+      'Tanzania',
+      'Uganda',
+      'Rwanda',
+      'Burundi',
+      'South Sudan',
+      'Ethiopia',
+      'Somalia',
+      'Djibouti',
+      'Eritrea'
+    ];
   }
 }
 

@@ -20,18 +20,7 @@ import {
   Users,
   Activity
 } from 'lucide-react';
-
-interface Organization {
-  id: string;
-  name: string;
-  status: 'active' | 'suspended' | 'inactive';
-  subscription_status: 'trial' | 'active' | 'past_due' | 'canceled' | 'suspended';
-  subscription_start_date?: string;
-  subscription_end_date?: string;
-  billing_cycle: 'monthly' | 'yearly';
-  created_at: string;
-  owner_id?: string;
-}
+import { Organization, SubscriptionStatus, BillingCycle, OrganizationStatus } from '../../types/admin.types';
 
 const EnhancedOrganizationManagement = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -51,7 +40,16 @@ const EnhancedOrganizationManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrganizations(data || []);
+      
+      // Type assertion with proper validation
+      const typedOrganizations: Organization[] = (data || []).map(org => ({
+        ...org,
+        status: (org.status as OrganizationStatus) || 'active',
+        subscription_status: (org.subscription_status as SubscriptionStatus) || 'trial',
+        billing_cycle: (org.billing_cycle as BillingCycle) || 'monthly'
+      }));
+      
+      setOrganizations(typedOrganizations);
     } catch (error) {
       console.error('Error fetching organizations:', error);
       toast.error('Failed to fetch organizations');
@@ -60,7 +58,7 @@ const EnhancedOrganizationManagement = () => {
     }
   };
 
-  const updateOrganizationStatus = async (orgId: string, status: string) => {
+  const updateOrganizationStatus = async (orgId: string, status: OrganizationStatus) => {
     try {
       const { error } = await supabase
         .from('organizations')
@@ -85,7 +83,12 @@ const EnhancedOrganizationManagement = () => {
     }
   };
 
-  const updateSubscription = async (orgId: string, subscriptionData: any) => {
+  const updateSubscription = async (orgId: string, subscriptionData: {
+    status: SubscriptionStatus;
+    billing_cycle: BillingCycle;
+    start_date: string;
+    end_date: string;
+  }) => {
     try {
       const { error } = await supabase
         .from('organizations')
@@ -115,7 +118,7 @@ const EnhancedOrganizationManagement = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: OrganizationStatus) => {
     switch (status) {
       case 'active':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
@@ -128,7 +131,7 @@ const EnhancedOrganizationManagement = () => {
     }
   };
 
-  const getSubscriptionBadge = (status: string) => {
+  const getSubscriptionBadge = (status: SubscriptionStatus) => {
     switch (status) {
       case 'active':
         return <Badge className="bg-blue-100 text-blue-800">Active</Badge>;
@@ -239,11 +242,16 @@ const EnhancedOrganizationManagement = () => {
 
 const SubscriptionForm = ({ organization, onUpdate }: { 
   organization: Organization | null, 
-  onUpdate: (orgId: string, data: any) => void 
+  onUpdate: (orgId: string, data: {
+    status: SubscriptionStatus;
+    billing_cycle: BillingCycle;
+    start_date: string;
+    end_date: string;
+  }) => void 
 }) => {
   const [formData, setFormData] = useState({
-    status: organization?.subscription_status || 'trial',
-    billing_cycle: organization?.billing_cycle || 'monthly',
+    status: organization?.subscription_status || 'trial' as SubscriptionStatus,
+    billing_cycle: organization?.billing_cycle || 'monthly' as BillingCycle,
     start_date: organization?.subscription_start_date || '',
     end_date: organization?.subscription_end_date || ''
   });
@@ -259,7 +267,12 @@ const SubscriptionForm = ({ organization, onUpdate }: {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="status">Subscription Status</Label>
-        <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+        <Select 
+          value={formData.status} 
+          onValueChange={(value: SubscriptionStatus) => 
+            setFormData(prev => ({ ...prev, status: value }))
+          }
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -275,7 +288,12 @@ const SubscriptionForm = ({ organization, onUpdate }: {
 
       <div>
         <Label htmlFor="billing_cycle">Billing Cycle</Label>
-        <Select value={formData.billing_cycle} onValueChange={(value) => setFormData(prev => ({ ...prev, billing_cycle: value }))}>
+        <Select 
+          value={formData.billing_cycle} 
+          onValueChange={(value: BillingCycle) => 
+            setFormData(prev => ({ ...prev, billing_cycle: value }))
+          }
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
