@@ -43,10 +43,17 @@ export const useQuoteData = () => {
 
   // Create quote mutation using enhanced service
   const createQuoteMutation = useMutation({
-    mutationFn: (quote: QuoteData) => enhancedQuoteService.saveQuote(quote),
+    mutationFn: (quote: QuoteData) => {
+      // Ensure KES currency is set
+      const quoteWithDefaults = {
+        ...quote,
+        currency_code: quote.currency_code || 'KES',
+        preferred_currency: quote.preferred_currency || 'KES'
+      };
+      return enhancedQuoteService.saveQuote(quoteWithDefaults);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
-      // If quote was created from inquiry, invalidate inquiries too
       queryClient.invalidateQueries({ queryKey: ['inquiries'] });
       queryClient.invalidateQueries({ queryKey: ['available-inquiries'] });
       toast.success("Quote created successfully");

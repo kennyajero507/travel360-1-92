@@ -5,9 +5,10 @@ import { Card, CardContent } from "../components/ui/card";
 import ClientQuotePreviewComponent from "../components/quote/ClientQuotePreview";
 import { ClientQuotePreview as ClientQuotePreviewType } from "../types/quote.types";
 import { updateQuoteStatus } from "../services/quote/core";
-import { generateClientPreview } from "../services/quote/client";
+import { quotePreviewService } from "../services/quotePreviewService";
 import { toast } from "sonner";
 import LoadingIndicator from "../components/quote/LoadingIndicator";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 
 const QuotePreview = () => {
   const [searchParams] = useSearchParams();
@@ -17,10 +18,12 @@ const QuotePreview = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [approvedHotelId, setApprovedHotelId] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadPreview = async () => {
       setLoading(true);
+      setError(null);
       
       try {
         let previewData: ClientQuotePreviewType | null = null;
@@ -28,90 +31,128 @@ const QuotePreview = () => {
         // First try to load from session storage (from live editing)
         const storedPreview = sessionStorage.getItem('previewQuote');
         if (storedPreview) {
-          previewData = JSON.parse(storedPreview);
-          sessionStorage.removeItem('previewQuote');
+          try {
+            previewData = JSON.parse(storedPreview);
+            sessionStorage.removeItem('previewQuote');
+          } catch (parseError) {
+            console.error("Error parsing stored preview:", parseError);
+          }
         } 
         // Otherwise, generate from API if we have an ID
         else if (quoteId) {
-          previewData = await generateClientPreview(quoteId);
+          previewData = await quotePreviewService.generateClientPreview(quoteId);
         }
         
         if (previewData) {
           setClientPreview(previewData);
         } else {
-          toast.error("Quote preview could not be loaded");
+          setError("Quote preview could not be loaded. The quote may not exist or you may not have permission to view it.");
         }
       } catch (error) {
         console.error("Error loading quote preview:", error);
-        toast.error("Failed to load quote preview");
+        setError("An error occurred while loading the quote preview. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-    
+
     loadPreview();
   }, [quoteId]);
-  
-  useEffect(() => {
-    if (clientPreview && clientPreview.hotelOptions && clientPreview.hotelOptions.length > 0) {
-      // If preview data contains an approved hotel, store it
-      const approved = clientPreview.hotelOptions.find(opt => opt.selected);
-      setApprovedHotelId(approved ? approved.id : null);
-    }
-  }, [clientPreview]);
 
-  const handleChoosePackage = async (hotelId: string) => {
-    if (!quoteId) return;
+  const handleApproveQuote = async () => {
+    if (!clientPreview || !approvedHotelId) {
+      toast.error("Please select a hotel option first");
+      return;
+    }
+
     setApproving(true);
     try {
-      await updateQuoteStatus(quoteId, "approved", hotelId);
-      toast.success(`Package selected successfully!`);
-      setApprovedHotelId(hotelId);
-      // Refetch preview to update client UI
-      const updatedPreview = await generateClientPreview(quoteId);
-      if (updatedPreview) {
-        setClientPreview(updatedPreview);
-      }
+      await updateQuoteStatus(clientPreview.id, "approved", approvedHotelId);
+      toast.success("Quote approved successfully! We will contact you shortly to proceed with booking.");
+      
+      // Redirect to a thank you page or back to the main site
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
     } catch (error) {
-      console.error("Error selecting package:", error);
-      toast.error("Failed to select package");
+      console.error("Error approving quote:", error);
+      toast.error("Failed to approve quote. Please try again.");
     } finally {
       setApproving(false);
     }
   };
-  
-  const handleRequestChanges = () => {
-    toast.info("Change request sent to your travel consultant");
-    // In a real app, this would send feedback to the agent
-  };
-  
+
   if (loading) {
     return <LoadingIndicator message="Loading quote preview..." />;
   }
-  
-  if (!clientPreview) {
+
+  if (error) {
     return (
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Quote Not Found</h2>
-            <p className="text-gray-600 mb-6">The requested quote could not be loaded.</p>
-            <Button onClick={() => navigate('/quotes')}>Return to Quotes</Button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Quote Not Found</h1>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <Button onClick={() => navigate('/')} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Return to Home
+            </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
-  
+
+  if (!clientPreview) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Preview Unavailable</h1>
+            <p className="text-gray-600 mb-6">
+              The quote preview is temporarily unavailable. Please contact us directly for assistance.
+            </p>
+            <Button onClick={() => navigate('/')} className="w-full">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Return to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6">
-      <ClientQuotePreviewComponent
-        quote={clientPreview}
-        onChoosePackage={handleChoosePackage}
-        onRequestChanges={handleRequestChanges}
-        approvedHotelId={approvedHotelId || undefined}
-        approving={approving}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="mb-6">
+          <Button variant="outline" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+        </div>
+
+        <ClientQuotePreviewComponent
+          quotePreview={clientPreview}
+          onHotelSelect={setApprovedHotelId}
+          selectedHotelId={approvedHotelId}
+        />
+
+        <div className="mt-8 flex justify-center gap-4">
+          <Button variant="outline" onClick={() => navigate('/')}>
+            Not Interested
+          </Button>
+          <Button 
+            onClick={handleApproveQuote}
+            disabled={!approvedHotelId || approving}
+            className="bg-teal-600 hover:bg-teal-700"
+          >
+            {approving ? "Approving..." : "Approve & Proceed to Booking"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

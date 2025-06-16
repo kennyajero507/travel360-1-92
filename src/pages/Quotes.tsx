@@ -10,10 +10,12 @@ import { Skeleton } from "../components/ui/skeleton";
 import { QuoteTable } from "../components/quote/QuoteTable";
 import { QuoteFilters } from "../components/quote/QuoteFilters";
 import { QuoteData } from "../types/quote.types";
+import { quotePreviewService } from "../services/quotePreviewService";
+import { toast } from "sonner";
 
 const Quotes = () => {
   const navigate = useNavigate();
-  const { quotes, isLoading, deleteQuote } = useQuoteData();
+  const { quotes, isLoading, deleteQuote, emailQuote, downloadQuotePDF } = useQuoteData();
   
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -36,6 +38,37 @@ const Quotes = () => {
 
     return filtered;
   }, [quotes, filter, search]);
+
+  const handlePreviewQuote = async (quote: QuoteData) => {
+    try {
+      const preview = await quotePreviewService.generateClientPreview(quote.id);
+      if (preview) {
+        sessionStorage.setItem('previewQuote', JSON.stringify(preview));
+        window.open('/quote-preview', '_blank');
+      } else {
+        toast.error("Failed to generate quote preview");
+      }
+    } catch (error) {
+      console.error("Error previewing quote:", error);
+      toast.error("Failed to preview quote");
+    }
+  };
+
+  const handleEmailQuote = async (quote: QuoteData) => {
+    try {
+      await emailQuote(quote.id);
+    } catch (error) {
+      console.error("Error emailing quote:", error);
+    }
+  };
+
+  const handleDownloadQuote = async (quote: QuoteData) => {
+    try {
+      await downloadQuotePDF(quote.id);
+    } catch (error) {
+      console.error("Error downloading quote:", error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -65,10 +98,18 @@ const Quotes = () => {
           <CardTitle>Manage Quotes</CardTitle>
         </CardHeader>
         <CardContent>
-          <QuoteFilters filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} />
+          <QuoteFilters 
+            filter={filter} 
+            setFilter={setFilter} 
+            search={search} 
+            setSearch={setSearch} 
+          />
           <QuoteTable
             quotes={filteredQuotes}
             onDelete={deleteQuote}
+            onPreview={handlePreviewQuote}
+            onEmail={handleEmailQuote}
+            onDownload={handleDownloadQuote}
           />
         </CardContent>
       </Card>

@@ -12,18 +12,29 @@ const CreateQuote = () => {
 
     const handleQuoteCreate = async (quote: QuoteData) => {
         try {
-            const savedQuote = await createQuote(quote);
-            // The success toast is now handled consistently in the useQuoteData hook.
-            // A toast with "Redirecting..." could be added here if desired.
+            // Ensure KES is the default currency
+            const quoteWithCurrency = {
+                ...quote,
+                currency_code: quote.currency_code || 'KES',
+                preferred_currency: quote.preferred_currency || 'KES'
+            };
+            
+            const savedQuote = await createQuote(quoteWithCurrency);
+            toast.success("Quote created successfully! Redirecting to edit view...");
             navigate(`/quotes/${savedQuote.id}`);
         } catch (error) {
-            // error is already toasted by the hook, so no action needed here.
             console.error("Quote creation failed:", error);
+            toast.error("Failed to create quote. Please try again.");
         }
     };
 
     return (
-        <QuoteCreationWizard onQuoteCreate={handleQuoteCreate} />
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold">Create New Quote</h1>
+            </div>
+            <QuoteCreationWizard onQuoteCreate={handleQuoteCreate} />
+        </div>
     );
 };
 

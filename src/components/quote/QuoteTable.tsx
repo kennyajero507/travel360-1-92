@@ -1,123 +1,119 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { MoreHorizontal, Eye, Trash2, Edit, FileText } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Button } from "../ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { Badge } from "../ui/badge";
-import { QuoteData, QuoteStatus } from "../../types/quote.types";
-import { format } from "date-fns";
-import { toast } from "sonner";
+
+import React from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { QuoteData } from '../../types/quote.types';
+import { Edit, Trash2, Eye, Mail, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useMultiCurrency } from '../../hooks/useMultiCurrency';
+import { ConvertToBookingButton } from './ConvertToBookingButton';
+import QuoteActionButtons from './QuoteActionButtons';
 
 interface QuoteTableProps {
   quotes: QuoteData[];
-  onDelete: (quoteId: string) => void;
+  onDelete: (id: string) => void;
+  onEmail?: (quote: QuoteData) => void;
+  onDownload?: (quote: QuoteData) => void;
+  onPreview?: (quote: QuoteData) => void;
 }
 
-const statusVariant: { [key in QuoteStatus]: "default" | "secondary" | "destructive" | "outline" } = {
-    draft: "secondary",
-    sent: "default",
-    approved: "default",
-    rejected: "destructive",
-    expired: "outline",
-    converted: "default",
-};
-
-export const QuoteTable = ({ quotes, onDelete }: QuoteTableProps) => {
+export const QuoteTable: React.FC<QuoteTableProps> = ({
+  quotes,
+  onDelete,
+  onEmail,
+  onDownload,
+  onPreview
+}) => {
   const navigate = useNavigate();
 
-  const handleEdit = (quoteId: string) => {
-    navigate(`/quotes/${quoteId}`);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'sent': return 'bg-blue-100 text-blue-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'expired': return 'bg-orange-100 text-orange-800';
+      case 'converted': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const handleDelete = (quoteId: string) => {
-    onDelete(quoteId);
+  const QuoteRow = ({ quote }: { quote: QuoteData }) => {
+    const { convertedQuoteTotals, formatAmount } = useMultiCurrency(quote, 'KES');
+    
+    return (
+      <TableRow key={quote.id}>
+        <TableCell className="font-medium">{quote.client}</TableCell>
+        <TableCell>{quote.destination}</TableCell>
+        <TableCell>
+          <div className="text-sm">
+            <div>{new Date(quote.start_date).toLocaleDateString()}</div>
+            <div className="text-gray-500">to {new Date(quote.end_date).toLocaleDateString()}</div>
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="text-sm">
+            <div>{quote.duration_nights} nights</div>
+            <div className="text-gray-500">{quote.duration_days} days</div>
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="text-sm">
+            {quote.adults} adults
+            {quote.children_with_bed > 0 && <div>{quote.children_with_bed} children</div>}
+          </div>
+        </TableCell>
+        <TableCell>
+          <Badge className={getStatusColor(quote.status)}>
+            {quote.status}
+          </Badge>
+        </TableCell>
+        <TableCell className="font-medium">
+          {convertedQuoteTotals ? formatAmount(convertedQuoteTotals.grandTotal) : 'N/A'}
+        </TableCell>
+        <TableCell>
+          <QuoteActionButtons
+            quote={quote}
+            onEdit={() => navigate(`/quotes/${quote.id}`)}
+            onPreview={() => onPreview?.(quote)}
+            onEmail={() => onEmail?.(quote)}
+            onDownload={() => onDownload?.(quote)}
+            showConvertToBooking={true}
+            viewMode="agent"
+          />
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  if (quotes.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No quotes found. Create your first quote to get started.</p>
+      </div>
+    );
   }
 
-  const handleViewInquiry = (inquiryId: string) => {
-    navigate(`/inquiries/${inquiryId}`);
-  };
-
   return (
-    <div className="rounded-md border">
+    <div className="border rounded-lg overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Client</TableHead>
             <TableHead>Destination</TableHead>
-            <TableHead>Dates</TableHead>
-            <TableHead>Linked Inquiry</TableHead>
+            <TableHead>Travel Dates</TableHead>
+            <TableHead>Duration</TableHead>
+            <TableHead>Travelers</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>Total (KES)</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {quotes.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
-                No quotes found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            quotes.map((quote) => (
-              <TableRow key={quote.id}>
-                <TableCell className="font-medium">{quote.client}</TableCell>
-                <TableCell>{quote.destination}</TableCell>
-                <TableCell>
-                  {quote.start_date && quote.end_date ?
-                    `${format(new Date(quote.start_date), "dd MMM yyyy")} - ${format(new Date(quote.end_date), "dd MMM yyyy")}`
-                    : "N/A"
-                  }
-                </TableCell>
-                <TableCell>
-                  {quote.inquiry_id ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewInquiry(quote.inquiry_id!)}
-                      className="text-xs"
-                    >
-                      <FileText className="h-3 w-3 mr-1" />
-                      View Inquiry
-                    </Button>
-                  ) : (
-                    <span className="text-gray-400 text-sm">No inquiry</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={statusVariant[quote.status] || 'default'} 
-                    className={`capitalize ${quote.status === 'approved' ? 'bg-green-100 text-green-800' : ''}`}
-                  >
-                    {quote.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(quote.id)}>
-                        <Edit className="mr-2 h-4 w-4" /> View / Edit
-                      </DropdownMenuItem>
-                      {quote.inquiry_id && (
-                        <DropdownMenuItem onClick={() => handleViewInquiry(quote.inquiry_id!)}>
-                          <FileText className="mr-2 h-4 w-4" /> View Linked Inquiry
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onClick={() => handleDelete(quote.id)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
+          {quotes.map((quote) => (
+            <QuoteRow key={quote.id} quote={quote} />
+          ))}
         </TableBody>
       </Table>
     </div>
