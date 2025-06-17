@@ -1,5 +1,5 @@
 
-export interface TourTemplate {
+export interface Tour {
   id: string;
   title: string;
   destination_name: string;
@@ -33,7 +33,7 @@ export interface ItineraryDay {
   activities: string[];
 }
 
-export interface TourTemplateFormData {
+export interface TourFormData {
   title: string;
   destination_name: string;
   country: string;
@@ -50,3 +50,7 @@ export interface TourTemplateFormData {
   images: string[];
   tags: string[];
 }
+
+// Backward compatibility
+export type TourTemplate = Tour;
+export type TourTemplateFormData = TourFormData;

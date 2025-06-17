@@ -1,7 +1,7 @@
 
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList, BarChart3, UserCog } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Home, Settings, Users, Hotel, MessageSquare, Receipt, ClipboardList, BarChart3, UserCog, Map } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 interface VerticalNavProps {
@@ -64,6 +64,11 @@ const VerticalNav = ({ collapsed, setCollapsed }: VerticalNavProps) => {
         {/* Vouchers - available to all except clients */}
         {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator', 'agent']) && (
           <NavItem to="/vouchers" collapsed={collapsed} icon={<FileText size={20} />} label="Vouchers" />
+        )}
+        
+        {/* Tours - restricted to admin, org_owner, tour_operator */}
+        {checkRoleAccess(['system_admin', 'org_owner', 'tour_operator']) && (
+          <NavItem to="/tours" collapsed={collapsed} icon={<Map size={20} />} label="Tours" />
         )}
         
         {/* Clients - available to all except clients */}

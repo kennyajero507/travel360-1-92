@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCog,
-  LogOut
+  LogOut,
+  Map
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
@@ -73,6 +74,13 @@ const ProfessionalSidebar = ({ className }: ProfessionalSidebarProps) => {
       icon: Plane,
       roles: ['system_admin', 'org_owner', 'tour_operator', 'agent'],
       count: counts?.vouchers || 0
+    },
+    {
+      title: "Tours",
+      href: "/tours",
+      icon: Map,
+      roles: ['system_admin', 'org_owner', 'tour_operator'],
+      count: 0
     },
     {
       title: "Hotels",

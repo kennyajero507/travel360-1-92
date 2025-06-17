@@ -21,7 +21,8 @@ import {
   Calendar,
   MapPin,
   Receipt,
-  CreditCard
+  CreditCard,
+  Map
 } from 'lucide-react';
 
 const sidebarSections = [
@@ -75,7 +76,7 @@ const sidebarItems = [
   { icon: FileBarChart, label: "Quotes", path: "/quotes" },
   { icon: Calendar, label: "Bookings", path: "/bookings" },
   { icon: Building, label: "Hotels", path: "/hotels" },
-  { icon: MapPin, label: "Tour Templates", path: "/tour-templates" },
+  { icon: Map, label: "Tours", path: "/tours" },
   { icon: Receipt, label: "Invoices", path: "/invoices" },
   { icon: CreditCard, label: "Payments", path: "/payments" },
   { icon: FileText, label: "Vouchers", path: "/vouchers" },

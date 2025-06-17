@@ -66,7 +66,7 @@ import NormalizedQuoteEditor from "./pages/NormalizedQuoteEditor";
 import CreateInvoice from "./pages/CreateInvoice";
 import InvoiceManagementPage from "./pages/InvoiceManagementPage";
 import PaymentManagement from "./pages/PaymentManagement";
-import TourTemplates from "./pages/TourTemplates";
+import Tours from "./pages/Tours";
 import Calendar from "./pages/Calendar";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 
@@ -111,7 +111,7 @@ function App() {
                 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLayout />}>
-                  <Route element={<AuthGuard><div /></AuthGuard>}>
+                  <Route element={<AuthGuard />}>
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="monitoring" element={<AdminMonitoring />} />
                     <Route path="analytics" element={<AdvancedAnalytics />} />
@@ -175,7 +175,7 @@ function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/team" element={<TeamManagementPage />} />
                   <Route path="/agents" element={<AgentManagement />} />
-                  <Route path="/tour-templates" element={<TourTemplates />} />
+                  <Route path="/tours" element={<Tours />} />
                 </Route>
               </Routes>
             </BrowserRouter>

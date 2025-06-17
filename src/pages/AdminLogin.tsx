@@ -24,18 +24,22 @@ const AdminLogin = () => {
   // Check if already logged in as admin
   useEffect(() => {
     const checkAdminStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-      if (session?.user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+        if (session?.user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-        if (data?.role === 'system_admin') {
-          navigate('/admin/dashboard');
+          if (data?.role === 'system_admin') {
+            navigate('/admin/dashboard');
+          }
         }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
       }
     };
 
@@ -68,7 +72,8 @@ const AdminLogin = () => {
       });
 
       if (authError) {
-        toast.error(authError.message);
+        console.error('Auth error:', authError);
+        toast.error(authError.message || "Invalid login credentials");
         setLoading(false);
         return;
       }
@@ -82,6 +87,7 @@ const AdminLogin = () => {
           .single();
 
         if (profileError) {
+          console.error('Profile error:', profileError);
           toast.error("Failed to verify admin credentials");
           // Sign out since not an admin
           await supabase.auth.signOut();
@@ -90,7 +96,7 @@ const AdminLogin = () => {
         }
 
         // Verify if user is admin
-        if (profileData.role === 'system_admin') {
+        if (profileData?.role === 'system_admin') {
           toast.success("Admin login successful!");
           navigate("/admin/dashboard");
         } else {
