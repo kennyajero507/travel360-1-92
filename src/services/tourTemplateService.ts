@@ -30,11 +30,11 @@ export class TourTemplateService {
       .from('tour_templates')
       .insert([{
         ...tourTemplate,
-        itinerary: tourTemplate.itinerary,
-        inclusions: tourTemplate.inclusions,
-        exclusions: tourTemplate.exclusions,
-        images: tourTemplate.images,
-        tags: tourTemplate.tags
+        itinerary: tourTemplate.itinerary as any,
+        inclusions: tourTemplate.inclusions as any,
+        exclusions: tourTemplate.exclusions as any,
+        images: tourTemplate.images as any,
+        tags: tourTemplate.tags as any
       }])
       .select()
       .single();
@@ -44,9 +44,28 @@ export class TourTemplateService {
   }
 
   async updateTourTemplate(id: string, tourTemplate: Partial<TourTemplateFormData>): Promise<TourTemplate> {
+    const updateData: any = { ...tourTemplate };
+    
+    // Convert arrays to Json for Supabase
+    if (updateData.itinerary) {
+      updateData.itinerary = updateData.itinerary as any;
+    }
+    if (updateData.inclusions) {
+      updateData.inclusions = updateData.inclusions as any;
+    }
+    if (updateData.exclusions) {
+      updateData.exclusions = updateData.exclusions as any;
+    }
+    if (updateData.images) {
+      updateData.images = updateData.images as any;
+    }
+    if (updateData.tags) {
+      updateData.tags = updateData.tags as any;
+    }
+
     const { data, error } = await supabase
       .from('tour_templates')
-      .update(tourTemplate)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
