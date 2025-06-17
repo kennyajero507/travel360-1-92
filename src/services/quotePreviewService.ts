@@ -1,6 +1,6 @@
 
 import { supabase } from '../integrations/supabase/client';
-import { QuoteData } from '../types/quote.types';
+import { QuoteData, ClientQuotePreview, HotelOption } from '../types/quote.types';
 
 interface QuotePreviewData {
   quote: QuoteData;
@@ -17,7 +17,7 @@ interface QuotePreviewData {
 }
 
 class QuotePreviewService {
-  async generateClientPreview(quoteId: string): Promise<QuotePreviewData | null> {
+  async generateClientPreview(quoteId: string): Promise<ClientQuotePreview | null> {
     try {
       console.log('[QuotePreviewService] Generating preview for quote:', quoteId);
 
@@ -38,9 +38,10 @@ class QuotePreviewService {
         return null;
       }
 
-      // Transform the quote data
+      // Transform the quote data with proper type casting
       const transformedQuote: QuoteData = {
         ...quote,
+        tour_type: (quote.tour_type as 'domestic' | 'international') || 'domestic',
         room_arrangements: this.parseJsonField(quote.room_arrangements, []),
         activities: this.parseJsonField(quote.activities, []),
         transports: this.parseJsonField(quote.transports, []),
@@ -54,6 +55,42 @@ class QuotePreviewService {
       // Calculate totals
       const calculations = this.calculateTotals(transformedQuote);
 
+      // Get hotel data for options
+      const hotelIds = new Set<string>();
+      if (transformedQuote.hotel_id) hotelIds.add(transformedQuote.hotel_id);
+      
+      // Collect hotel IDs from room arrangements
+      transformedQuote.room_arrangements?.forEach(room => {
+        if (room.hotel_id) hotelIds.add(room.hotel_id);
+      });
+
+      let hotelOptions: HotelOption[] = [];
+      if (hotelIds.size > 0) {
+        const { data: hotels } = await supabase
+          .from('hotels')
+          .select('*')
+          .in('id', Array.from(hotelIds));
+
+        hotelOptions = (hotels || []).map((hotel: any) => {
+          // Calculate total price for this hotel from room arrangements
+          const hotelRooms = transformedQuote.room_arrangements?.filter(room => room.hotel_id === hotel.id) || [];
+          const totalPrice = hotelRooms.reduce((sum, room) => sum + (room.total || 0), 0);
+          const avgPricePerNight = hotelRooms.length > 0 && transformedQuote.duration_nights > 0 
+            ? totalPrice / transformedQuote.duration_nights / hotelRooms.length 
+            : 0;
+
+          return {
+            id: hotel.id,
+            name: hotel.name,
+            category: hotel.category || 'Standard',
+            pricePerNight: avgPricePerNight,
+            totalPrice: totalPrice,
+            currencyCode: transformedQuote.currency_code || 'KES',
+            selected: hotel.id === transformedQuote.hotel_id
+          };
+        });
+      }
+
       // Try to fetch organization details (optional)
       let organization = null;
       if (quote.org_id) {
@@ -65,14 +102,35 @@ class QuotePreviewService {
         organization = orgData;
       }
 
-      const previewData: QuotePreviewData = {
-        quote: transformedQuote,
-        organization,
-        calculations
+      // Create the client preview data
+      const clientPreview: ClientQuotePreview = {
+        id: transformedQuote.id,
+        inquiryNumber: transformedQuote.inquiry_id || 'N/A',
+        client: transformedQuote.client,
+        destination: transformedQuote.destination,
+        packageName: transformedQuote.package_name || `${transformedQuote.destination} Package`,
+        startDate: transformedQuote.start_date,
+        endDate: transformedQuote.end_date,
+        duration: {
+          days: transformedQuote.duration_days,
+          nights: transformedQuote.duration_nights
+        },
+        travelers: {
+          adults: transformedQuote.adults,
+          childrenWithBed: transformedQuote.children_with_bed,
+          childrenNoBed: transformedQuote.children_no_bed,
+          infants: transformedQuote.infants
+        },
+        tourType: transformedQuote.tour_type,
+        createdAt: transformedQuote.created_at || new Date().toISOString(),
+        hotels: [], // Will be populated if needed
+        hotelOptions,
+        totalCost: calculations.grand_total,
+        currency: transformedQuote.currency_code || 'KES'
       };
 
-      console.log('[QuotePreviewService] Preview generated successfully:', previewData);
-      return previewData;
+      console.log('[QuotePreviewService] Preview generated successfully:', clientPreview);
+      return clientPreview;
 
     } catch (error) {
       console.error('[QuotePreviewService] Error generating preview:', error);
