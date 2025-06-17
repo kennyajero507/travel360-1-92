@@ -1,6 +1,6 @@
 
 import { supabase } from '../integrations/supabase/client';
-import { QuoteData, ClientQuotePreview, HotelOption } from '../types/quote.types';
+import { QuoteData, ClientQuotePreview, HotelOption, QuoteStatus } from '../types/quote.types';
 
 interface QuotePreviewData {
   quote: QuoteData;
@@ -41,6 +41,7 @@ class QuotePreviewService {
       // Transform the quote data with proper type casting
       const transformedQuote: QuoteData = {
         ...quote,
+        status: (quote.status as QuoteStatus) || 'draft',
         tour_type: (quote.tour_type as 'domestic' | 'international') || 'domestic',
         room_arrangements: this.parseJsonField(quote.room_arrangements, []),
         activities: this.parseJsonField(quote.activities, []),
