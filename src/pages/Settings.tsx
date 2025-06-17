@@ -5,6 +5,8 @@ import { ProfileSettings } from "../components/settings/ProfileSettings";
 import { QuoteSettings } from "../components/settings/QuoteSettings";
 import { TransferSettings } from "../components/settings/TransferSettings";
 import { BrandingSettings } from "../components/settings/BrandingSettings";
+import CountrySettings from "../components/settings/CountrySettings";
+import GeneralSettings from "../components/settings/GeneralSettings";
 import InvitationManager from "../components/InvitationManager";
 import SubscriptionSettings from "../components/settings/SubscriptionSettings";
 import { useAuth } from "../contexts/AuthContext";
@@ -64,8 +66,10 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="country">Country</TabsTrigger>
+          <TabsTrigger value="general">General</TabsTrigger>
           
           {(isOrgOwner || isSystemAdmin) && (
             <TabsTrigger value="branding">Branding</TabsTrigger>
@@ -86,6 +90,14 @@ const Settings = () => {
 
         <TabsContent value="profile" className="space-y-6">
           <ProfileSettings />
+        </TabsContent>
+
+        <TabsContent value="country" className="space-y-6">
+          <CountrySettings />
+        </TabsContent>
+
+        <TabsContent value="general" className="space-y-6">
+          <GeneralSettings />
         </TabsContent>
 
         {(isOrgOwner || isSystemAdmin) && (

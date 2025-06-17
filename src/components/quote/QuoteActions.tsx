@@ -1,74 +1,72 @@
 
 import React from 'react';
 import { Button } from '../ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { MoreHorizontal, Eye, Edit, Trash2, Download, Send, BookOpen } from 'lucide-react';
+import { Send, BookOpen, Download, Mail } from 'lucide-react';
 import { QuoteData } from '../../types/quote.types';
-import { ConvertToBookingButton } from './ConvertToBookingButton';
+import QuotePreviewButton from './QuotePreviewButton';
 
 interface QuoteActionsProps {
   quote: QuoteData;
-  onView: (id: string) => void;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
-  onDownload: (id: string) => void;
-  onSend: (id: string) => void;
+  onProceedToBooking: () => void;
+  onSendToClient: () => void;
+  onDownload: () => void;
+  onEmail: () => void;
+  isLoading?: boolean;
 }
 
-export const QuoteActions: React.FC<QuoteActionsProps> = ({
+const QuoteActions: React.FC<QuoteActionsProps> = ({
   quote,
-  onView,
-  onEdit,
-  onDelete,
+  onProceedToBooking,
+  onSendToClient,
   onDownload,
-  onSend,
+  onEmail,
+  isLoading = false
 }) => {
   return (
-    <div className="flex items-center gap-2">
-      {/* Direct Convert to Booking Button for approved quotes */}
-      {quote.status === 'approved' && quote.approved_hotel_id && (
-        <ConvertToBookingButton quote={quote} variant="outline" size="sm" />
-      )}
+    <div className="flex flex-wrap gap-2">
+      <QuotePreviewButton quote={quote} />
       
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onView(quote.id)}>
-            <Eye className="h-4 w-4 mr-2" />
-            View Details
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onEdit(quote.id)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Quote
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDownload(quote.id)}>
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onSend(quote.id)}>
-            <Send className="h-4 w-4 mr-2" />
-            Send to Client
-          </DropdownMenuItem>
-          {quote.status !== 'converted' && quote.approved_hotel_id && (
-            <DropdownMenuItem asChild>
-              <div className="w-full">
-                <ConvertToBookingButton quote={quote} variant="outline" size="sm" />
-              </div>
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem 
-            onClick={() => onDelete(quote.id)}
-            className="text-red-600 focus:text-red-600"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onDownload}
+        disabled={isLoading || !quote.id}
+      >
+        <Download className="h-4 w-4 mr-2" />
+        Download PDF
+      </Button>
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onEmail}
+        disabled={isLoading || !quote.id}
+      >
+        <Mail className="h-4 w-4 mr-2" />
+        Email Quote
+      </Button>
+
+      <Button
+        variant="default"
+        size="sm"
+        onClick={onSendToClient}
+        disabled={isLoading || !quote.id}
+      >
+        <Send className="h-4 w-4 mr-2" />
+        Send to Client
+      </Button>
+
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={onProceedToBooking}
+        disabled={isLoading || !quote.id}
+      >
+        <BookOpen className="h-4 w-4 mr-2" />
+        Proceed to Booking
+      </Button>
     </div>
   );
 };
+
+export default QuoteActions;
