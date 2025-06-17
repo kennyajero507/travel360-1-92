@@ -50,7 +50,8 @@ class QuotePreviewService {
         sectionMarkups: this.parseJsonField(quote.sectionmarkups, {}),
         visa_documentation: this.parseJsonField(quote.visa_documentation, []),
         document_checklist: this.parseJsonField(quote.document_checklist, []),
-        itinerary: this.parseJsonField(quote.itinerary, [])
+        itinerary: this.parseJsonField(quote.itinerary, []),
+        summary_data: this.parseJsonField(quote.summary_data, undefined)
       };
 
       // Calculate totals
