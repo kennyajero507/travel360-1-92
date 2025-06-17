@@ -104,13 +104,13 @@ class QuotePreviewService {
         organization = orgData;
       }
 
-      // Create the client preview data
+      // Create the client preview data - use quote.package_name directly from database
       const clientPreview: ClientQuotePreview = {
         id: transformedQuote.id,
         inquiryNumber: transformedQuote.inquiry_id || 'N/A',
         client: transformedQuote.client,
         destination: transformedQuote.destination,
-        packageName: transformedQuote.package_name || `${transformedQuote.destination} Package`,
+        packageName: quote.package_name || `${transformedQuote.destination} Package`,
         startDate: transformedQuote.start_date,
         endDate: transformedQuote.end_date,
         duration: {

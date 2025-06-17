@@ -2,7 +2,7 @@
 import React from 'react';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useCountry } from '../../contexts/CountryContext';
+import { useOrganizationSettings } from '../../hooks/useOrganizationSettings';
 
 interface RegionalPreferencesProps {
   value: string;
@@ -15,9 +15,25 @@ const RegionalPreferences: React.FC<RegionalPreferencesProps> = ({
   onChange,
   tourType
 }) => {
-  const { regions, country } = useCountry();
+  const { settings, loading } = useOrganizationSettings();
 
   if (tourType !== 'domestic') return null;
+
+  const regions = settings?.default_regions || ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'];
+  const country = settings?.default_country || 'Kenya';
+
+  if (loading) {
+    return (
+      <div>
+        <Label htmlFor="regional_preference">Regional Preference</Label>
+        <Select disabled>
+          <SelectTrigger>
+            <SelectValue placeholder="Loading regions..." />
+          </SelectTrigger>
+        </Select>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -681,6 +681,44 @@ export type Database = {
           },
         ]
       }
+      organization_settings: {
+        Row: {
+          created_at: string | null
+          default_country: string | null
+          default_currency: string | null
+          default_regions: Json | null
+          id: string
+          org_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_country?: string | null
+          default_currency?: string | null
+          default_regions?: Json | null
+          id?: string
+          org_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_country?: string | null
+          default_currency?: string | null
+          default_regions?: Json | null
+          id?: string
+          org_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           billing_cycle: string | null
@@ -814,6 +852,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          country: string | null
           created_at: string | null
           currency: string | null
           email: string | null
@@ -827,6 +866,7 @@ export type Database = {
           trial_ends_at: string | null
         }
         Insert: {
+          country?: string | null
           created_at?: string | null
           currency?: string | null
           email?: string | null
@@ -840,6 +880,7 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Update: {
+          country?: string | null
           created_at?: string | null
           currency?: string | null
           email?: string | null
@@ -1613,6 +1654,15 @@ export type Database = {
       create_data_backup: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_organization_settings: {
+        Args: { p_org_id?: string }
+        Returns: {
+          org_id: string
+          default_country: string
+          default_currency: string
+          default_regions: Json
+        }[]
       }
       get_user_org_id: {
         Args: Record<PropertyKey, never>

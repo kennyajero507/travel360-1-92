@@ -16,6 +16,16 @@ const HotelComparisonToggle: React.FC<HotelComparisonToggleProps> = ({
   onToggle,
   disabled = false
 }) => {
+  const handleToggle = (checked: boolean) => {
+    onToggle(checked);
+    // Add any additional logic needed when toggling comparison mode
+    if (checked) {
+      console.log('Hotel comparison mode enabled');
+    } else {
+      console.log('Single hotel mode enabled');
+    }
+  };
+
   return (
     <Card className="border-dashed">
       <CardContent className="pt-4">
@@ -41,7 +51,7 @@ const HotelComparisonToggle: React.FC<HotelComparisonToggleProps> = ({
           <Switch
             id="comparison-mode"
             checked={isComparisonMode}
-            onCheckedChange={onToggle}
+            onCheckedChange={handleToggle}
             disabled={disabled}
           />
         </div>
