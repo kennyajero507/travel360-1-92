@@ -111,7 +111,7 @@ function App() {
                 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLayout />}>
-                  <Route element={<AuthGuard />}>
+                  <Route element={<AuthGuard><div /></AuthGuard>}>
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="monitoring" element={<AdminMonitoring />} />
                     <Route path="analytics" element={<AdvancedAnalytics />} />
