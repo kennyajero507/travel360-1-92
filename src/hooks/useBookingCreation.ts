@@ -41,7 +41,8 @@ export const useBookingCreation = () => {
         return { eligible: false, reason: 'Missing travel dates' };
       }
 
-      if (!quote.room_arrangements || quote.room_arrangements.length === 0) {
+      // Fix the type checking for room_arrangements
+      if (!quote.room_arrangements || !Array.isArray(quote.room_arrangements) || quote.room_arrangements.length === 0) {
         return { eligible: false, reason: 'No accommodation arrangements specified' };
       }
 
@@ -58,10 +59,23 @@ export const useBookingCreation = () => {
     try {
       // Calculate total price
       let totalPrice = 0;
-      quote.room_arrangements?.forEach((room: any) => totalPrice += room.total || 0);
-      quote.transports?.forEach((transport: any) => totalPrice += transport.total_cost || 0);
-      quote.transfers?.forEach((transfer: any) => totalPrice += transfer.total || 0);
-      quote.activities?.forEach((activity: any) => totalPrice += activity.total_cost || 0);
+      
+      // Safe array checking for room_arrangements
+      if (Array.isArray(quote.room_arrangements)) {
+        quote.room_arrangements.forEach((room: any) => totalPrice += room.total || 0);
+      }
+      
+      if (Array.isArray(quote.transports)) {
+        quote.transports.forEach((transport: any) => totalPrice += transport.total_cost || 0);
+      }
+      
+      if (Array.isArray(quote.transfers)) {
+        quote.transfers.forEach((transfer: any) => totalPrice += transfer.total || 0);
+      }
+      
+      if (Array.isArray(quote.activities)) {
+        quote.activities.forEach((activity: any) => totalPrice += activity.total_cost || 0);
+      }
 
       // Create booking
       const bookingData = {
@@ -69,7 +83,9 @@ export const useBookingCreation = () => {
         booking_reference: `BK-${Date.now()}`,
         client: quote.client,
         client_email: quote.client_email,
-        hotel_name: quote.room_arrangements?.[0]?.hotel_name || 'Multiple Hotels',
+        hotel_name: Array.isArray(quote.room_arrangements) && quote.room_arrangements.length > 0 
+          ? quote.room_arrangements[0]?.hotel_name || 'Multiple Hotels'
+          : 'Multiple Hotels',
         hotel_id: quote.hotel_id,
         agent_id: additionalData.agentId || profile?.id,
         travel_start: quote.start_date,

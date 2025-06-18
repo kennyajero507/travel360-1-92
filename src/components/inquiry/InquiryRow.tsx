@@ -1,7 +1,7 @@
 
 import { TableCell, TableRow } from "../../components/ui/table";
 import { InquiryStatusBadge, PriorityBadge } from "./InquiryStatusBadge";
-import { InquiryActions } from "./InquiryActions";
+import InquiryActions from "./InquiryActions";
 import { Phone, Calendar, MapPin, Package } from "lucide-react";
 
 interface InquiryRowProps {
