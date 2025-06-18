@@ -1,55 +1,50 @@
 
 import React from 'react';
-import { useOrganizationSettings } from '../../hooks/useOrganizationSettings';
 
 interface CurrencyDisplayProps {
   amount: number;
-  className?: string;
-  showCode?: boolean;
   currencyCode?: string;
+  className?: string;
 }
 
 const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({ 
   amount, 
-  className = "", 
-  showCode = false,
-  currencyCode 
+  currencyCode = 'KES',
+  className 
 }) => {
-  const { settings } = useOrganizationSettings();
-  
-  // Use provided currency code or fall back to organization default
-  const currency = currencyCode || settings?.default_currency || 'KES';
-
-  const getCurrencySymbol = (code: string) => {
-    const symbols: Record<string, string> = {
+  const formatCurrency = (value: number, code: string) => {
+    // Handle different currency symbols
+    const currencySymbols: { [key: string]: string } = {
       'KES': 'KSh',
-      'TZS': 'TSh',
-      'UGX': 'USh',
       'USD': '$',
       'EUR': '€',
-      'GBP': '£'
+      'GBP': '£',
+      'TZS': 'TSh',
+      'UGX': 'USh'
     };
-    return symbols[code] || code;
-  };
 
-  const formatAmount = (value: number) => {
-    const decimals = ['JPY', 'KES', 'TZS', 'UGX'].includes(currency) ? 0 : 2;
-    const formattedAmount = value.toFixed(decimals);
-
-    // Add thousand separators for larger amounts
-    if (currency === 'KES' || value >= 1000) {
-      const parts = formattedAmount.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      return parts.join('.');
+    const symbol = currencySymbols[code] || code;
+    
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: code,
+        currencyDisplay: 'symbol',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(value).replace(/^[A-Z]{3}/, symbol);
+    } catch (error) {
+      // Fallback formatting if currency is not supported
+      return `${symbol} ${value.toLocaleString('en-US', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 2 
+      })}`;
     }
-
-    return formattedAmount;
   };
 
   return (
     <span className={className}>
-      {getCurrencySymbol(currency)}{formatAmount(amount)}
-      {showCode && ` ${currency}`}
+      {formatCurrency(amount, currencyCode)}
     </span>
   );
 };

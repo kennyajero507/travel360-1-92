@@ -6,39 +6,37 @@ import { InquiryFormProps } from "../../types/inquiry.types";
 
 export const DomesticSpecificCard = ({ formData, setFormData, validationErrors }: InquiryFormProps) => {
   const regionalPreferences = [
-    { value: 'north', label: 'North India' },
-    { value: 'south', label: 'South India' },
-    { value: 'east', label: 'East India' },
-    { value: 'west', label: 'West India' },
-    { value: 'central', label: 'Central India' },
-    { value: 'northeast', label: 'Northeast India' }
+    { value: 'nairobi', label: 'Nairobi & Central' },
+    { value: 'coastal', label: 'Coastal Kenya' },
+    { value: 'rift_valley', label: 'Rift Valley' },
+    { value: 'western', label: 'Western Kenya' },
+    { value: 'northern', label: 'Northern Kenya' },
+    { value: 'eastern', label: 'Eastern Kenya' }
   ];
 
   const transportModes = [
     { value: 'flight', label: 'Flight' },
-    { value: 'train', label: 'Train' },
     { value: 'bus', label: 'Bus/Coach' },
     { value: 'car', label: 'Private Car' },
+    { value: 'matatu', label: 'Matatu' },
     { value: 'mixed', label: 'Mixed Transport' }
   ];
 
   const languages = [
-    { value: 'hindi', label: 'Hindi' },
     { value: 'english', label: 'English' },
-    { value: 'bengali', label: 'Bengali' },
-    { value: 'tamil', label: 'Tamil' },
-    { value: 'telugu', label: 'Telugu' },
-    { value: 'marathi', label: 'Marathi' },
-    { value: 'gujarati', label: 'Gujarati' },
-    { value: 'kannada', label: 'Kannada' },
-    { value: 'malayalam', label: 'Malayalam' },
-    { value: 'punjabi', label: 'Punjabi' }
+    { value: 'swahili', label: 'Swahili' },
+    { value: 'kikuyu', label: 'Kikuyu' },
+    { value: 'luo', label: 'Luo' },
+    { value: 'kamba', label: 'Kamba' },
+    { value: 'kalenjin', label: 'Kalenjin' },
+    { value: 'kisii', label: 'Kisii' },
+    { value: 'meru', label: 'Meru' }
   ];
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Domestic Tour Preferences</CardTitle>
+        <CardTitle>Kenya Domestic Tour Preferences</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

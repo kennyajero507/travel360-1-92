@@ -6,10 +6,15 @@ import { Phone, Calendar, MapPin, Package } from "lucide-react";
 
 interface InquiryRowProps {
   inquiry: any;
-  openAssignDialog: (inquiryId: string) => void;
+  onView: (inquiry: any) => void;
+  onEdit: (inquiry: any) => void;
+  onDelete: (inquiryId: string) => void;
+  onAssignAgent: (inquiry: any) => void;
+  onConvertToQuote: (quoteData: any) => Promise<void>;
   permissions: any;
   role: string;
   currentUser: any;
+  isConverting?: boolean;
 }
 
 // Helper function to format travelers info
@@ -34,7 +39,18 @@ const formatDuration = (inquiry: any) => {
   return 'N/A';
 };
 
-export const InquiryRow = ({ inquiry, openAssignDialog, permissions, role, currentUser }: InquiryRowProps) => {
+export const InquiryRow = ({ 
+  inquiry, 
+  onView,
+  onEdit,
+  onDelete,
+  onAssignAgent,
+  onConvertToQuote,
+  permissions, 
+  role, 
+  currentUser,
+  isConverting = false
+}: InquiryRowProps) => {
   return (
     <TableRow key={inquiry.id}>
       <TableCell className="font-medium text-blue-600">
@@ -96,10 +112,12 @@ export const InquiryRow = ({ inquiry, openAssignDialog, permissions, role, curre
       <TableCell className="text-right">
         <InquiryActions 
           inquiry={inquiry} 
-          openAssignDialog={openAssignDialog}
-          permissions={permissions}
-          role={role}
-          currentUserId={currentUser?.id || ''}
+          onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onAssignAgent={onAssignAgent}
+          onConvertToQuote={onConvertToQuote}
+          isConverting={isConverting}
         />
       </TableCell>
     </TableRow>

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -17,8 +16,7 @@ import {
   Eye,
   Save,
   Send,
-  Download,
-  Settings
+  Download
 } from "lucide-react";
 import { QuoteData } from "../../types/quote.types";
 import CurrencyDisplay from "./CurrencyDisplay";
@@ -60,16 +58,23 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   ];
 
   const handleCurrencyChange = (newCurrency: string) => {
-    onQuoteUpdate({
+    const updatedQuote = {
       ...quote,
       currency_code: newCurrency,
       preferred_currency: newCurrency
-    });
+    };
+    onQuoteUpdate(updatedQuote);
   };
 
   const handleComparisonToggle = (enabled: boolean) => {
     setIsComparisonMode(enabled);
-    // Additional logic can be added here for comparison mode
+    console.log(`Hotel comparison mode ${enabled ? 'enabled' : 'disabled'}`);
+    
+    // If disabling comparison mode and multiple hotels are selected, keep only the first one
+    if (!enabled && selectedHotels.length > 1) {
+      // You might want to implement logic to handle this case
+      console.log('Switching to single hotel mode - keeping first hotel');
+    }
   };
 
   // Calculate completion progress
