@@ -1,170 +1,83 @@
-import { Link, useNavigate } from "react-router-dom";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "../../components/ui/dropdown-menu";
-import { Button } from "../../components/ui/button";
-import { FileText, MoreHorizontal, MessageSquare, UserCheck, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { deleteInquiry } from "@/services/inquiry";
-import { useAuth } from "../../contexts/AuthContext";
+
+import React from 'react';
+import { Button } from '../ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { MoreHorizontal, Eye, Edit, FileText, Trash2, User } from 'lucide-react';
+import InquiryToQuoteConverter from './InquiryToQuoteConverter';
+import { Badge } from '../ui/badge';
 
 interface InquiryActionsProps {
   inquiry: any;
-  openAssignDialog: (inquiryId: string) => void;
-  permissions: any;
-  role: string;
-  currentUserId: string;
-  onDelete?: () => void;
+  onView: (inquiry: any) => void;
+  onEdit: (inquiry: any) => void;
+  onDelete: (inquiryId: string) => void;
+  onAssignAgent: (inquiry: any) => void;
+  onConvertToQuote: (quoteData: any) => Promise<void>;
+  isConverting?: boolean;
 }
 
-export const InquiryActions = ({ 
-  inquiry, 
-  openAssignDialog, 
-  permissions, 
-  role, 
-  currentUserId,
-  onDelete
-}: InquiryActionsProps) => {
-  const navigate = useNavigate();
-  const { profile } = useAuth();
-  
-  const handleCreateQuote = () => {
-    if (!inquiry.id) {
-      toast.error("Inquiry ID is required to create a quote");
-      return;
-    }
-    
-    // Navigate to create quote page with inquiry ID as query parameter
-    navigate(`/quotes/create?inquiryId=${inquiry.id}`);
-  };
-  
-  const handleDeleteInquiry = async () => {
-    if (!inquiry.id) {
-      toast.error("Inquiry ID is required to delete");
-      return;
-    }
-    
-    try {
-      if (window.confirm("Are you sure you want to delete this inquiry?")) {
-        await deleteInquiry(inquiry.id);
-        toast.success("Inquiry deleted successfully");
-        if (onDelete) onDelete();
-        // Refresh the page to update the list
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error("Error deleting inquiry:", error);
-      toast.error("Failed to delete inquiry");
+const InquiryActions: React.FC<InquiryActionsProps> = ({
+  inquiry,
+  onView,
+  onEdit,
+  onDelete,
+  onAssignAgent,
+  onConvertToQuote,
+  isConverting = false
+}) => {
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'new': return 'bg-blue-100 text-blue-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      case 'quoted': return 'bg-green-100 text-green-800';
+      case 'converted': return 'bg-purple-100 text-purple-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
-  
-  // Check if user can modify this inquiry based on role
-  const canModify = () => {
-    if (!profile) return false;
-    
-    // System admins can modify anything
-    if (profile.role === 'system_admin') return true;
-    
-    // Organization owners and tour operators can modify anything within their org
-    if (['org_owner', 'tour_operator'].includes(profile.role)) return true;
-    
-    // Agents can only modify their assigned inquiries
-    if (profile.role === 'agent') {
-      return inquiry.assigned_to === currentUserId;
-    }
-    
-    return false;
-  };
-  
-  // Check if user can create quote based on role and assignment
-  const canCreateQuote = () => {
-    if (!profile) return false;
-    
-    // System admins can create quotes for any inquiry
-    if (profile.role === 'system_admin') return true;
-    
-    // Organization owners and tour operators can create quotes for any inquiry in their org
-    if (['org_owner', 'tour_operator'].includes(profile.role)) return true;
-    
-    // Agents can only create quotes for inquiries assigned to them
-    if (profile.role === 'agent') {
-      return inquiry.assigned_to === currentUserId;
-    }
-    
-    return false;
-  };
-  
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white">
-        <DropdownMenuItem asChild>
-          <Link 
-            to={`/inquiries/${inquiry.id}`} 
-            className="flex items-center w-full cursor-pointer"
+    <div className="flex items-center gap-2">
+      <Badge className={getStatusColor(inquiry.status)}>
+        {inquiry.status.replace('_', ' ')}
+      </Badge>
+      
+      <InquiryToQuoteConverter
+        inquiry={inquiry}
+        onConvert={onConvertToQuote}
+        isConverting={isConverting}
+      />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => onView(inquiry)}>
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEdit(inquiry)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Inquiry
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onAssignAgent(inquiry)}>
+            <User className="mr-2 h-4 w-4" />
+            Assign Agent
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => onDelete(inquiry.id)}
+            className="text-red-600"
           >
-            <MessageSquare className="mr-2 h-4 w-4" />
-            View Inquiry
-          </Link>
-        </DropdownMenuItem>
-        
-        {canModify() && (
-          <DropdownMenuItem asChild>
-            <Link 
-              to={`/inquiries/edit/${inquiry.id}`} 
-              className="flex items-center w-full cursor-pointer"
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Edit Inquiry
-            </Link>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
           </DropdownMenuItem>
-        )}
-        
-        {/* Show create quote based on role and assignment */}
-        {canCreateQuote() && (
-          <DropdownMenuItem onClick={handleCreateQuote} className="flex items-center w-full cursor-pointer">
-            <FileText className="mr-2 h-4 w-4" />
-            Create Quote
-          </DropdownMenuItem>
-        )}
-        
-        {/* Only tour operators and above can assign inquiries */}
-        {profile && ['system_admin', 'org_owner', 'tour_operator'].includes(profile.role) && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={() => openAssignDialog(inquiry.id)}
-              className="flex items-center w-full cursor-pointer"
-            >
-              <UserCheck className="mr-2 h-4 w-4" />
-              Assign to Agent
-            </DropdownMenuItem>
-          </>
-        )}
-        
-        {/* Only system admins, org owners and tour operators can delete inquiries */}
-        {profile && ['system_admin', 'org_owner', 'tour_operator'].includes(profile.role) && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={handleDeleteInquiry}
-              className="flex items-center w-full cursor-pointer text-red-600 hover:text-red-800 hover:bg-red-50"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Inquiry
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
+
+export default InquiryActions;
