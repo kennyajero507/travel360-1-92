@@ -5,6 +5,8 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Progress } from "../ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Label } from "../ui/label";
 import { 
   User, 
   Hotel, 
@@ -15,9 +17,12 @@ import {
   Eye,
   Save,
   Send,
-  Download
+  Download,
+  Settings
 } from "lucide-react";
 import { QuoteData } from "../../types/quote.types";
+import CurrencyDisplay from "./CurrencyDisplay";
+import HotelComparisonToggle from "./HotelComparisonToggle";
 
 interface QuoteBuilderProps {
   quote: QuoteData;
@@ -43,6 +48,29 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   saving = false
 }) => {
   const [activeTab, setActiveTab] = useState("client");
+  const [isComparisonMode, setIsComparisonMode] = useState(selectedHotels.length > 1);
+
+  const currencies = [
+    { code: 'KES', name: 'Kenyan Shilling' },
+    { code: 'USD', name: 'US Dollar' },
+    { code: 'EUR', name: 'Euro' },
+    { code: 'GBP', name: 'British Pound' },
+    { code: 'TZS', name: 'Tanzanian Shilling' },
+    { code: 'UGX', name: 'Ugandan Shilling' }
+  ];
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    onQuoteUpdate({
+      ...quote,
+      currency_code: newCurrency,
+      preferred_currency: newCurrency
+    });
+  };
+
+  const handleComparisonToggle = (enabled: boolean) => {
+    setIsComparisonMode(enabled);
+    // Additional logic can be added here for comparison mode
+  };
 
   // Calculate completion progress
   const calculateProgress = () => {
@@ -180,7 +208,34 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Currency and Comparison Settings */}
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="flex-1 min-w-48">
+              <Label htmlFor="currency">Quote Currency</Label>
+              <Select value={quote.currency_code || 'KES'} onValueChange={handleCurrencyChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.code} - {currency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex-1 min-w-64">
+              <HotelComparisonToggle
+                isComparisonMode={isComparisonMode}
+                onToggle={handleComparisonToggle}
+              />
+            </div>
+          </div>
+
+          {/* Progress Bar */}
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium">Progress</span>
             <Badge variant="outline">{Math.round(calculateProgress())}% Complete</Badge>
@@ -233,7 +288,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <Hotel className="h-6 w-6 mx-auto mb-2 text-blue-600" />
             <p className="text-sm text-gray-600">Accommodation</p>
             <p className="text-lg font-semibold text-blue-600">
-              ${accommodationTotal.toLocaleString()}
+              <CurrencyDisplay amount={accommodationTotal} currencyCode={quote.currency_code} />
             </p>
           </CardContent>
         </Card>
@@ -242,7 +297,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <Bus className="h-6 w-6 mx-auto mb-2 text-green-600" />
             <p className="text-sm text-gray-600">Transport</p>
             <p className="text-lg font-semibold text-green-600">
-              ${transportTotal.toLocaleString()}
+              <CurrencyDisplay amount={transportTotal} currencyCode={quote.currency_code} />
             </p>
           </CardContent>
         </Card>
@@ -251,7 +306,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <MapPin className="h-6 w-6 mx-auto mb-2 text-purple-600" />
             <p className="text-sm text-gray-600">Transfers</p>
             <p className="text-lg font-semibold text-purple-600">
-              ${transferTotal.toLocaleString()}
+              <CurrencyDisplay amount={transferTotal} currencyCode={quote.currency_code} />
             </p>
           </CardContent>
         </Card>
@@ -260,7 +315,7 @@ const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <Compass className="h-6 w-6 mx-auto mb-2 text-orange-600" />
             <p className="text-sm text-gray-600">Activities</p>
             <p className="text-lg font-semibold text-orange-600">
-              ${excursionTotal.toLocaleString()}
+              <CurrencyDisplay amount={excursionTotal} currencyCode={quote.currency_code} />
             </p>
           </CardContent>
         </Card>
