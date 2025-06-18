@@ -44,10 +44,28 @@ export const useOrganizationSettings = () => {
             .single();
 
           if (!insertError && newSettings) {
-            setSettings(newSettings);
+            // Convert the data to match our interface
+            const convertedSettings: OrganizationSettings = {
+              org_id: newSettings.org_id,
+              default_country: newSettings.default_country,
+              default_currency: newSettings.default_currency,
+              default_regions: Array.isArray(newSettings.default_regions) 
+                ? newSettings.default_regions as string[]
+                : ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret']
+            };
+            setSettings(convertedSettings);
           }
         } else if (data) {
-          setSettings(data);
+          // Convert the data to match our interface
+          const convertedSettings: OrganizationSettings = {
+            org_id: data.org_id,
+            default_country: data.default_country,
+            default_currency: data.default_currency,
+            default_regions: Array.isArray(data.default_regions) 
+              ? data.default_regions as string[]
+              : ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret']
+          };
+          setSettings(convertedSettings);
         }
       } catch (error) {
         console.error('Error with organization settings:', error);
