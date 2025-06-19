@@ -1,5 +1,5 @@
 
-import { CreateInquiryForm } from "../components/inquiry/CreateInquiryForm";
+import { SimplifiedInquiryForm } from "../components/inquiry/SimplifiedInquiryForm";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
 const CreateInquiry = () => {
@@ -8,9 +8,10 @@ const CreateInquiry = () => {
       <Card>
         <CardHeader>
           <CardTitle>Create New Inquiry</CardTitle>
+          <p className="text-gray-600">Fill in the essential information to create a new travel inquiry</p>
         </CardHeader>
         <CardContent>
-          <CreateInquiryForm />
+          <SimplifiedInquiryForm />
         </CardContent>
       </Card>
     </div>
