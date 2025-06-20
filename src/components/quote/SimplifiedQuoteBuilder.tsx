@@ -18,10 +18,17 @@ import {
   Eye,
   Save,
   CreditCard,
-  ArrowRight
+  ArrowRight,
+  Car,
+  Plane,
+  Camera,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { QuoteData, RoomArrangement } from '../../types/quote.types';
+import { QuoteData, RoomArrangement, QuoteTransport, QuoteTransfer, QuoteActivity } from '../../types/quote.types';
 import CurrencyDisplay from './CurrencyDisplay';
+import HotelComparisonToggle from './HotelComparisonToggle';
+import HotelComparisonManager from './HotelComparisonManager';
 
 interface SimplifiedQuoteBuilderProps {
   quote: QuoteData;
@@ -46,6 +53,9 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
 }) => {
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
   const [roomArrangements, setRoomArrangements] = useState<RoomArrangement[]>(quote.room_arrangements || []);
+  const [showServices, setShowServices] = useState(false);
+  const [isComparisonMode, setIsComparisonMode] = useState(false);
+  const [hotelOptions, setHotelOptions] = useState<any[]>([]);
 
   // Find selected hotel
   useEffect(() => {
@@ -60,7 +70,7 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
     let completed = 0;
     const total = 3;
 
-    // Block 1: Quote Essentials (client info + hotel/accommodation)
+    // Block 1: Client & Travel Details (client info + hotel/accommodation)
     if (quote.client && quote.mobile && quote.destination && selectedHotel && roomArrangements.length > 0) {
       completed++;
     }
@@ -145,6 +155,81 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
     onQuoteUpdate(updatedQuote);
   };
 
+  const handleAddTransport = () => {
+    const newTransport: QuoteTransport = {
+      id: `transport-${Date.now()}`,
+      type: 'private_car',
+      from: '',
+      to: '',
+      date: quote.start_date || '',
+      cost_per_person: 0,
+      num_passengers: quote.adults + quote.children_with_bed + quote.children_no_bed,
+      total_cost: 0
+    };
+
+    const updatedQuote = {
+      ...quote,
+      transports: [...(quote.transports || []), newTransport]
+    };
+    onQuoteUpdate(updatedQuote);
+  };
+
+  const handleAddTransfer = () => {
+    const newTransfer: QuoteTransfer = {
+      id: `transfer-${Date.now()}`,
+      type: 'airport_pickup',
+      from: 'Airport',
+      to: selectedHotel?.name || 'Hotel',
+      date: quote.start_date || '',
+      vehicle_type: 'Sedan',
+      cost_per_vehicle: 0,
+      num_vehicles: 1,
+      total: 0
+    };
+
+    const updatedQuote = {
+      ...quote,
+      transfers: [...(quote.transfers || []), newTransfer]
+    };
+    onQuoteUpdate(updatedQuote);
+  };
+
+  const handleAddActivity = () => {
+    const newActivity: QuoteActivity = {
+      id: `activity-${Date.now()}`,
+      name: '',
+      date: quote.start_date || '',
+      cost_per_person: 0,
+      num_people: quote.adults + quote.children_with_bed + quote.children_no_bed,
+      total_cost: 0
+    };
+
+    const updatedQuote = {
+      ...quote,
+      activities: [...(quote.activities || []), newActivity]
+    };
+    onQuoteUpdate(updatedQuote);
+  };
+
+  const handleComparisonToggle = (enabled: boolean) => {
+    setIsComparisonMode(enabled);
+    if (enabled) {
+      onAddHotelForComparison();
+    }
+  };
+
+  const handleAddHotelOption = (hotel: any) => {
+    setHotelOptions(prev => [...prev, hotel]);
+  };
+
+  const handleRemoveHotelOption = (hotelId: string) => {
+    setHotelOptions(prev => prev.filter(h => h.id !== hotelId));
+  };
+
+  const handleSelectHotelOption = (hotelId: string) => {
+    setHotelOptions(prev => prev.map(h => ({ ...h, isSelected: h.id === hotelId })));
+  };
+
   const isReadyForBooking = () => {
     return quote.client && 
            quote.mobile && 
@@ -201,12 +286,12 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
         </CardHeader>
       </Card>
 
-      {/* Block 1: Quote Essentials */}
+      {/* Block 1: Client & Travel Details */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <User className="h-5 w-5 text-blue-600" />
-            🔶 Block 1: Quote Essentials
+            🔶 Block 1: Client & Travel Details
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -399,7 +484,26 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
         </CardContent>
       </Card>
 
-      {/* Block 2: Additional Services (Optional) */}
+      {/* Hotel Comparison Toggle */}
+      <HotelComparisonToggle
+        isComparisonMode={isComparisonMode}
+        onToggle={handleComparisonToggle}
+        disabled={!selectedHotel}
+      />
+
+      {/* Hotel Comparison Manager */}
+      {isComparisonMode && (
+        <HotelComparisonManager
+          isComparisonMode={isComparisonMode}
+          hotelOptions={hotelOptions}
+          onAddHotel={handleAddHotelOption}
+          onRemoveHotel={handleRemoveHotelOption}
+          onSelectHotel={handleSelectHotelOption}
+          currencyCode={quote.currency_code || 'USD'}
+        />
+      )}
+
+      {/* Block 2: Additional Services */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -408,13 +512,67 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <p>Transport, transfers, and activities can be added here</p>
-            <p className="text-sm">This section is optional for basic quotes</p>
-            <Button variant="outline" size="sm" className="mt-2">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Services
+          <div className="space-y-4">
+            <Button
+              onClick={() => setShowServices(!showServices)}
+              variant="outline"
+              className="w-full justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Services
+              </div>
+              {showServices ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
+
+            {showServices && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <Button
+                    onClick={handleAddTransport}
+                    variant="outline"
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <Car className="h-6 w-6 mb-2" />
+                    <span>Add Transport</span>
+                  </Button>
+                  <Button
+                    onClick={handleAddTransfer}
+                    variant="outline"
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <Plane className="h-6 w-6 mb-2" />
+                    <span>Add Transfer</span>
+                  </Button>
+                  <Button
+                    onClick={handleAddActivity}
+                    variant="outline"
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <Camera className="h-6 w-6 mb-2" />
+                    <span>Add Activity</span>
+                  </Button>
+                </div>
+
+                {/* Show added services summary */}
+                {(quote.transports?.length > 0 || quote.transfers?.length > 0 || quote.activities?.length > 0) && (
+                  <div className="bg-gray-50 p-4 rounded">
+                    <h4 className="font-medium mb-2">Added Services:</h4>
+                    <div className="space-y-1 text-sm">
+                      {quote.transports?.length > 0 && (
+                        <div>• {quote.transports.length} Transport(s)</div>
+                      )}
+                      {quote.transfers?.length > 0 && (
+                        <div>• {quote.transfers.length} Transfer(s)</div>
+                      )}
+                      {quote.activities?.length > 0 && (
+                        <div>• {quote.activities.length} Activity(ies)</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -471,7 +629,7 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
 
             {/* Secondary Actions */}
             <Button
-              onClick={onAddHotelForComparison}
+              onClick={() => setIsComparisonMode(!isComparisonMode)}
               disabled={!selectedHotel}
               variant="outline"
             >

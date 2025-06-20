@@ -6,6 +6,7 @@ import { useBookingCreation } from './useBookingCreation';
 
 export const useSimplifiedQuoteBuilder = (quote: QuoteData, onQuoteUpdate: (quote: QuoteData) => void) => {
   const [isConverting, setIsConverting] = useState(false);
+  const [isComparingHotels, setIsComparingHotels] = useState(false);
   const { convertQuoteToBooking } = useBookingCreation();
 
   const handleConvertToBooking = useCallback(async () => {
@@ -37,13 +38,29 @@ export const useSimplifiedQuoteBuilder = (quote: QuoteData, onQuoteUpdate: (quot
   }, [quote, convertQuoteToBooking]);
 
   const handleAddHotelForComparison = useCallback(() => {
-    // This would trigger the multi-hotel comparison mode
-    toast.info('Hotel comparison feature coming soon!');
-  }, []);
+    if (!quote.hotel_id) {
+      toast.error('Please select a hotel first before comparing');
+      return;
+    }
+    
+    setIsComparingHotels(true);
+    toast.success('Hotel comparison mode activated! You can now add another hotel to compare.');
+  }, [quote.hotel_id]);
+
+  const handleToggleComparison = useCallback((enabled: boolean) => {
+    setIsComparingHotels(enabled);
+    if (enabled) {
+      handleAddHotelForComparison();
+    } else {
+      toast.info('Comparison mode disabled');
+    }
+  }, [handleAddHotelForComparison]);
 
   return {
     isConverting,
+    isComparingHotels,
     handleConvertToBooking,
-    handleAddHotelForComparison
+    handleAddHotelForComparison,
+    handleToggleComparison
   };
 };
