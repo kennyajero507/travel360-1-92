@@ -7,28 +7,27 @@ import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
 import { 
   User, 
   Hotel, 
   MapPin, 
   Calendar,
-  Users,
   Plus,
   Eye,
   Save,
   CreditCard,
   ArrowRight,
-  Car,
-  Plane,
-  Camera,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { QuoteData, RoomArrangement, QuoteTransport, QuoteTransfer, QuoteActivity } from '../../types/quote.types';
+import { QuoteData, RoomArrangement } from '../../types/quote.types';
 import CurrencyDisplay from './CurrencyDisplay';
 import HotelComparisonToggle from './HotelComparisonToggle';
 import HotelComparisonManager from './HotelComparisonManager';
+import RoomArrangementSection from './RoomArrangementSection';
+import TransferSection from './TransferSection';
+import TransportBookingSection from './TransportBookingSection';
+import ExcursionSection from './ExcursionSection';
 
 interface SimplifiedQuoteBuilderProps {
   quote: QuoteData;
@@ -133,80 +132,11 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
     }
   };
 
-  const updateRoomArrangement = (updates: Partial<RoomArrangement>) => {
-    const updatedArrangements = roomArrangements.map(room => {
-      const updated = { ...room, ...updates };
-      // Recalculate total
-      updated.total = updated.num_rooms * (
-        (updated.adults * updated.rate_per_night.adult * updated.nights) +
-        (updated.children_with_bed * updated.rate_per_night.childWithBed * updated.nights) +
-        (updated.children_no_bed * updated.rate_per_night.childNoBed * updated.nights)
-      );
-      return updated;
-    });
-    
+  const handleRoomArrangementsChange = (updatedArrangements: RoomArrangement[]) => {
     setRoomArrangements(updatedArrangements);
-    
-    // Update quote
     const updatedQuote = {
       ...quote,
       room_arrangements: updatedArrangements
-    };
-    onQuoteUpdate(updatedQuote);
-  };
-
-  const handleAddTransport = () => {
-    const newTransport: QuoteTransport = {
-      id: `transport-${Date.now()}`,
-      type: 'private_car',
-      from: '',
-      to: '',
-      date: quote.start_date || '',
-      cost_per_person: 0,
-      num_passengers: quote.adults + quote.children_with_bed + quote.children_no_bed,
-      total_cost: 0
-    };
-
-    const updatedQuote = {
-      ...quote,
-      transports: [...(quote.transports || []), newTransport]
-    };
-    onQuoteUpdate(updatedQuote);
-  };
-
-  const handleAddTransfer = () => {
-    const newTransfer: QuoteTransfer = {
-      id: `transfer-${Date.now()}`,
-      type: 'airport_pickup',
-      from: 'Airport',
-      to: selectedHotel?.name || 'Hotel',
-      date: quote.start_date || '',
-      vehicle_type: 'Sedan',
-      cost_per_vehicle: 0,
-      num_vehicles: 1,
-      total: 0
-    };
-
-    const updatedQuote = {
-      ...quote,
-      transfers: [...(quote.transfers || []), newTransfer]
-    };
-    onQuoteUpdate(updatedQuote);
-  };
-
-  const handleAddActivity = () => {
-    const newActivity: QuoteActivity = {
-      id: `activity-${Date.now()}`,
-      name: '',
-      date: quote.start_date || '',
-      cost_per_person: 0,
-      num_people: quote.adults + quote.children_with_bed + quote.children_no_bed,
-      total_cost: 0
-    };
-
-    const updatedQuote = {
-      ...quote,
-      activities: [...(quote.activities || []), newActivity]
     };
     onQuoteUpdate(updatedQuote);
   };
@@ -243,6 +173,8 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
                        (quote.transfers?.reduce((sum, t) => sum + (t.total || 0), 0) || 0) +
                        (quote.activities?.reduce((sum, a) => sum + (a.total_cost || 0), 0) || 0);
   const grandTotal = accommodationTotal + servicesTotal;
+
+  const availableRoomTypes = selectedHotel?.room_types || ['Standard Room', 'Deluxe Room', 'Suite', 'Family Room'];
 
   return (
     <div className="space-y-6">
@@ -397,7 +329,7 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
             </div>
           </div>
 
-          {/* Hotel Selection & Accommodation */}
+          {/* Hotel Selection */}
           <div className="border-t pt-6">
             <h3 className="flex items-center gap-2 font-medium mb-4">
               <Hotel className="h-4 w-4 text-green-600" />
@@ -421,63 +353,17 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
                 </Select>
               </div>
 
-              {selectedHotel && roomArrangements.length > 0 && (
-                <Card className="bg-gray-50">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-3">{selectedHotel.name} - Room Details</h4>
-                    {roomArrangements.map(room => (
-                      <div key={room.id} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                          <Label>Room Type</Label>
-                          <Select
-                            value={room.room_type}
-                            onValueChange={(value) => updateRoomArrangement({ room_type: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Standard Room">Standard Room</SelectItem>
-                              <SelectItem value="Deluxe Room">Deluxe Room</SelectItem>
-                              <SelectItem value="Suite">Suite</SelectItem>
-                              <SelectItem value="Family Room">Family Room</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label>Number of Rooms</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={room.num_rooms}
-                            onChange={(e) => updateRoomArrangement({ num_rooms: parseInt(e.target.value) || 1 })}
-                          />
-                        </div>
-                        <div>
-                          <Label>Rate per Night (Adult)</Label>
-                          <Input
-                            type="number"
-                            value={room.rate_per_night.adult}
-                            onChange={(e) => updateRoomArrangement({ 
-                              rate_per_night: { 
-                                ...room.rate_per_night, 
-                                adult: parseFloat(e.target.value) || 0 
-                              }
-                            })}
-                          />
-                        </div>
-                        <div className="flex flex-col justify-end">
-                          <div className="text-right">
-                            <div className="text-sm text-gray-600">Total Cost</div>
-                            <div className="font-medium text-green-600">
-                              <CurrencyDisplay amount={room.total} currencyCode={quote.currency_code} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
+              {/* Detailed Room Arrangements */}
+              {selectedHotel && (
+                <div className="mt-6">
+                  <RoomArrangementSection
+                    roomArrangements={roomArrangements}
+                    duration={quote.duration_nights || 1}
+                    onRoomArrangementsChange={handleRoomArrangementsChange}
+                    availableRoomTypes={availableRoomTypes}
+                    hotelId={selectedHotel.id}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -520,57 +406,30 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
             >
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add Services
+                {showServices ? 'Hide Services' : 'Add Services'}
               </div>
               {showServices ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
 
             {showServices && (
-              <div className="space-y-4 border-t pt-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <Button
-                    onClick={handleAddTransport}
-                    variant="outline"
-                    className="flex flex-col items-center p-4 h-auto"
-                  >
-                    <Car className="h-6 w-6 mb-2" />
-                    <span>Add Transport</span>
-                  </Button>
-                  <Button
-                    onClick={handleAddTransfer}
-                    variant="outline"
-                    className="flex flex-col items-center p-4 h-auto"
-                  >
-                    <Plane className="h-6 w-6 mb-2" />
-                    <span>Add Transfer</span>
-                  </Button>
-                  <Button
-                    onClick={handleAddActivity}
-                    variant="outline"
-                    className="flex flex-col items-center p-4 h-auto"
-                  >
-                    <Camera className="h-6 w-6 mb-2" />
-                    <span>Add Activity</span>
-                  </Button>
-                </div>
+              <div className="space-y-6 border-t pt-6">
+                {/* Transport Section */}
+                <TransportBookingSection
+                  transports={quote.transports || []}
+                  onTransportsChange={(transports) => onQuoteUpdate({ ...quote, transports })}
+                />
 
-                {/* Show added services summary */}
-                {(quote.transports?.length > 0 || quote.transfers?.length > 0 || quote.activities?.length > 0) && (
-                  <div className="bg-gray-50 p-4 rounded">
-                    <h4 className="font-medium mb-2">Added Services:</h4>
-                    <div className="space-y-1 text-sm">
-                      {quote.transports?.length > 0 && (
-                        <div>• {quote.transports.length} Transport(s)</div>
-                      )}
-                      {quote.transfers?.length > 0 && (
-                        <div>• {quote.transfers.length} Transfer(s)</div>
-                      )}
-                      {quote.activities?.length > 0 && (
-                        <div>• {quote.activities.length} Activity(ies)</div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {/* Transfer Section */}
+                <TransferSection
+                  transfers={quote.transfers || []}
+                  onTransfersChange={(transfers) => onQuoteUpdate({ ...quote, transfers })}
+                />
+
+                {/* Activities Section */}
+                <ExcursionSection
+                  excursions={quote.activities || []}
+                  onExcursionsChange={(activities) => onQuoteUpdate({ ...quote, activities })}
+                />
               </div>
             )}
           </div>
