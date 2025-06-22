@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -16,8 +15,8 @@ import { useVoucherActions } from '../hooks/useVoucherActions';
 const Travel = () => {
   const [activeTab, setActiveTab] = useState('quotes');
   
-  // Data hooks
-  const { data: quotes = [], isLoading: quotesLoading } = useQuoteData();
+  // Data hooks - fixed destructuring
+  const { quotes = [], isLoading: quotesLoading } = useQuoteData();
   const { bookings = [], isLoading: bookingsLoading } = useBookingData();
   const { data: vouchers = [], isLoading: vouchersLoading } = useVoucherData();
   const { sendEmail, handleDownload } = useVoucherActions();
@@ -56,7 +55,7 @@ const Travel = () => {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Quotes</CardTitle>
@@ -152,7 +151,7 @@ const Travel = () => {
                           {quote.status}
                         </Badge>
                         <Button asChild size="sm" variant="outline">
-                          <Link to={`/quotes/${quote.id}/edit`}>Edit</Link>
+                          <Link to={`/quotes/${quote.id}`}>Edit</Link>
                         </Button>
                       </div>
                     </div>
