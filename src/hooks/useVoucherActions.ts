@@ -2,7 +2,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
-import { generateVoucherPDF } from '../services/pdfVoucherGenerator';
 
 export const useVoucherActions = () => {
   const queryClient = useQueryClient();
@@ -39,16 +38,8 @@ export const useVoucherActions = () => {
 
   const handleDownload = async (voucherId: string) => {
     try {
-      const vouchers = queryClient.getQueryData(['vouchers']) as any[];
-      const voucher = vouchers?.find(v => v.id === voucherId);
-      
-      if (!voucher) {
-        toast.error('Voucher not found');
-        return;
-      }
-
-      // Generate and download PDF using existing generator
-      generateVoucherPDF(voucher, voucher.bookings);
+      // This would integrate with your PDF generation service
+      toast.info('PDF download functionality coming soon!');
     } catch (error) {
       console.error('Error downloading voucher:', error);
       toast.error('Failed to download voucher PDF.');

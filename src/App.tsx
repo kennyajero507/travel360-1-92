@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
@@ -69,7 +68,6 @@ import PaymentManagement from "./pages/PaymentManagement";
 import Tours from "./pages/Tours";
 import Calendar from "./pages/Calendar";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
-import Travel from "./pages/Travel";
 import { CountryProvider } from "./contexts/CountryContext";
 
 const queryClient = new QueryClient({

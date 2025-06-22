@@ -13,11 +13,20 @@ const MobileNavigation = () => {
 
   const navigationItems = [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/inquiries', label: 'Inquiries' },
+    { href: '/quotes', label: 'Quotes' },
+    { href: '/bookings', label: 'Bookings' },
     { href: '/clients', label: 'Clients' },
-    { href: '/travel', label: 'Travel' },
     { href: '/hotels', label: 'Hotels' },
-    { href: '/reports', label: 'Reports' },
+    { href: '/team', label: 'Team' },
     { href: '/settings', label: 'Settings' },
+  ];
+
+  const adminItems = [
+    { href: '/admin/dashboard', label: 'Admin Dashboard' },
+    { href: '/admin/users', label: 'User Management' },
+    { href: '/admin/organizations', label: 'Organizations' },
+    { href: '/admin/settings', label: 'Admin Settings' },
   ];
 
   const isActive = (href: string) => location.pathname === href;
@@ -46,35 +55,59 @@ const MobileNavigation = () => {
                     key={item.href}
                     to={item.href}
                     onClick={() => setOpen(false)}
-                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      isActive(item.href) 
+                    className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(item.href)
                         ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     {item.label}
                   </Link>
                 ))}
+                
+                {profile?.role === 'system_admin' && (
+                  <>
+                    <div className="border-t pt-4 mt-4">
+                      <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                        Admin
+                      </h3>
+                      {adminItems.map((item) => (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          onClick={() => setOpen(false)}
+                          className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            isActive(item.href)
+                              ? 'bg-red-100 text-red-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
               </nav>
             </div>
             
-            {/* User Info & Logout */}
             <div className="border-t pt-4 mt-4">
-              {profile && (
-                <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                  <div className="font-medium text-sm">{profile.full_name}</div>
-                  <div className="text-xs text-gray-500 capitalize">
-                    {profile.role?.replace('_', ' ')}
-                  </div>
+              <div className="space-y-2">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-medium">{profile?.full_name}</p>
+                  <p className="text-xs text-gray-500">{profile?.email}</p>
                 </div>
-              )}
-              <Button 
-                variant="outline" 
-                onClick={logout}
-                className="w-full"
-              >
-                Sign Out
-              </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    logout();
+                    setOpen(false);
+                  }}
+                >
+                  Sign Out
+                </Button>
+              </div>
             </div>
           </div>
         </SheetContent>
