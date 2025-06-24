@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
 import { generateVoucherPDF } from '../services/pdfVoucherGenerator';
 import { Booking, TravelVoucher } from '../types/booking.types';
+import { ensureBookingStatus } from '../utils/typeHelpers';
 
 export const useVoucherActions = () => {
   const queryClient = useQueryClient();
@@ -98,7 +99,7 @@ export const useVoucherActions = () => {
         transfers: Array.isArray(bookingData.transfers)
           ? bookingData.transfers
           : JSON.parse(bookingData.transfers as string || '[]'),
-        status: bookingData.status,
+        status: ensureBookingStatus(bookingData.status),
         total_price: bookingData.total_price,
         quote_id: bookingData.quote_id,
         notes: bookingData.notes,
