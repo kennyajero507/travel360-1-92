@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
 import { generateVoucherPDF } from '../services/pdfVoucherGenerator';
+import { Booking, TravelVoucher } from '../types/booking.types';
 
 export const useVoucherActions = () => {
   const queryClient = useQueryClient();
@@ -41,8 +42,8 @@ export const useVoucherActions = () => {
     mutationFn: async (voucherId: string) => {
       console.log('Starting voucher download for:', voucherId);
       
-      // Get voucher data
-      const { data: voucher, error: voucherError } = await supabase
+      // Get voucher data with proper typing
+      const { data: voucherData, error: voucherError } = await supabase
         .from('travel_vouchers')
         .select(`
           *,
@@ -53,14 +54,61 @@ export const useVoucherActions = () => {
         .eq('id', voucherId)
         .single();
 
-      if (voucherError || !voucher) {
+      if (voucherError || !voucherData) {
         throw new Error('Voucher not found');
       }
 
-      console.log('Voucher data retrieved:', voucher);
+      console.log('Voucher data retrieved:', voucherData);
+      
+      // Create properly typed voucher object
+      const voucher: TravelVoucher = {
+        id: voucherData.id,
+        booking_id: voucherData.booking_id,
+        voucher_reference: voucherData.voucher_reference,
+        issued_date: voucherData.issued_date,
+        issued_by: voucherData.issued_by,
+        notes: voucherData.notes,
+        email_sent: voucherData.email_sent,
+        voucher_pdf_url: voucherData.voucher_pdf_url,
+        created_at: voucherData.created_at,
+        updated_at: voucherData.updated_at
+      };
+
+      // Create properly typed booking object
+      const bookingData = voucherData.bookings;
+      const booking: Booking = {
+        id: bookingData.id,
+        booking_reference: bookingData.booking_reference,
+        client: bookingData.client,
+        client_email: bookingData.client_email,
+        hotel_name: bookingData.hotel_name,
+        hotel_id: bookingData.hotel_id,
+        agent_id: bookingData.agent_id,
+        travel_start: bookingData.travel_start,
+        travel_end: bookingData.travel_end,
+        room_arrangement: Array.isArray(bookingData.room_arrangement) 
+          ? bookingData.room_arrangement 
+          : JSON.parse(bookingData.room_arrangement as string || '[]'),
+        transport: Array.isArray(bookingData.transport)
+          ? bookingData.transport
+          : JSON.parse(bookingData.transport as string || '[]'),
+        activities: Array.isArray(bookingData.activities)
+          ? bookingData.activities
+          : JSON.parse(bookingData.activities as string || '[]'),
+        transfers: Array.isArray(bookingData.transfers)
+          ? bookingData.transfers
+          : JSON.parse(bookingData.transfers as string || '[]'),
+        status: bookingData.status,
+        total_price: bookingData.total_price,
+        quote_id: bookingData.quote_id,
+        notes: bookingData.notes,
+        org_id: bookingData.org_id,
+        created_at: bookingData.created_at,
+        updated_at: bookingData.updated_at
+      };
       
       // Generate and download PDF
-      generateVoucherPDF(voucher, voucher.bookings);
+      generateVoucherPDF(voucher, booking);
       
       return voucher;
     },
