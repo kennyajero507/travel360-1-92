@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { 
-  Mail, Save, Eye, Send, Settings, Template, 
+  Mail, Save, Eye, Send, Settings, FileText, 
   Plus, Edit, Trash2, Copy 
 } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
