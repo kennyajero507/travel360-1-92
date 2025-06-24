@@ -18,6 +18,8 @@ const MobileNavigation = () => {
     { href: '/bookings', label: 'Bookings' },
     { href: '/clients', label: 'Clients' },
     { href: '/hotels', label: 'Hotels' },
+    { href: '/tours', label: 'Tours' },
+    { href: '/vouchers', label: 'Vouchers' },
     { href: '/team', label: 'Team' },
     { href: '/settings', label: 'Settings' },
   ];

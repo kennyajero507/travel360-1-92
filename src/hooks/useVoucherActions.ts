@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '../integrations/supabase/client';
+import { generateVoucherPDF } from '../services/pdfVoucherGenerator';
 
 export const useVoucherActions = () => {
   const queryClient = useQueryClient();
@@ -36,19 +37,49 @@ export const useVoucherActions = () => {
     }
   });
 
-  const handleDownload = async (voucherId: string) => {
-    try {
-      // This would integrate with your PDF generation service
-      toast.info('PDF download functionality coming soon!');
-    } catch (error) {
+  const downloadMutation = useMutation({
+    mutationFn: async (voucherId: string) => {
+      console.log('Starting voucher download for:', voucherId);
+      
+      // Get voucher data
+      const { data: voucher, error: voucherError } = await supabase
+        .from('travel_vouchers')
+        .select(`
+          *,
+          bookings!inner (
+            *
+          )
+        `)
+        .eq('id', voucherId)
+        .single();
+
+      if (voucherError || !voucher) {
+        throw new Error('Voucher not found');
+      }
+
+      console.log('Voucher data retrieved:', voucher);
+      
+      // Generate and download PDF
+      generateVoucherPDF(voucher, voucher.bookings);
+      
+      return voucher;
+    },
+    onSuccess: () => {
+      toast.success('Voucher PDF downloaded successfully!');
+    },
+    onError: (error) => {
       console.error('Error downloading voucher:', error);
-      toast.error('Failed to download voucher PDF.');
+      toast.error('Failed to download voucher PDF. Please try again.');
     }
+  });
+
+  const handleDownload = async (voucherId: string) => {
+    downloadMutation.mutate(voucherId);
   };
 
   return {
     sendEmail: sendEmailMutation.mutate,
     handleDownload,
-    isLoading: sendEmailMutation.isPending
+    isLoading: sendEmailMutation.isPending || downloadMutation.isPending
   };
 };

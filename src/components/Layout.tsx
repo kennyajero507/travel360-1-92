@@ -2,6 +2,7 @@
 import { ReactNode } from "react";
 import { Outlet } from "react-router-dom";
 import ProfessionalSidebar from "./ProfessionalSidebar";
+import MobileNavigation from "./mobile/MobileNavigation";
 import { CurrencyProvider } from "../contexts/CurrencyContext";
 import AuthErrorBoundary from "./common/AuthErrorBoundary";
 
@@ -16,6 +17,9 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="min-h-screen flex w-full bg-slate-50">
           <ProfessionalSidebar />
           <main className="flex-1 overflow-auto">
+            <div className="lg:hidden p-4 border-b bg-white">
+              <MobileNavigation />
+            </div>
             <div className="p-6">
               {children || <Outlet />}
             </div>

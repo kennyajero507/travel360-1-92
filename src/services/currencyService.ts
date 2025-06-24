@@ -90,13 +90,14 @@ export class CurrencyService {
     const decimals = ['JPY', 'KES', 'TZS', 'UGX'].includes(currencyCode) ? 0 : 2;
     const formattedAmount = amount.toFixed(decimals);
 
-    // Add thousand separators for KES
-    if (currencyCode === 'KES') {
+    // Add thousand separators for KES and other whole number currencies
+    if (['KES', 'TZS', 'UGX', 'JPY'].includes(currencyCode)) {
       const parts = formattedAmount.split('.');
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
       return `${currency.symbol} ${parts.join('.')}`;
     }
 
+    // For decimal currencies, use standard formatting
     return `${currency.symbol}${formattedAmount}`;
   }
 
