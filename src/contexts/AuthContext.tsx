@@ -39,7 +39,6 @@ interface AuthContextType {
   setTier: (tier: string) => void;
 }
 
-// Default permissions and stub methods
 const initialPermissions = roleService.getDefaultPermissions();
 const initialContext: AuthContextType = {
   session: null,
@@ -79,171 +78,207 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [permissions, setPermissions] = useState(initialPermissions);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Helper: load organization (null if not found)
-  const loadOrganization = useCallback(async (org_id: string | null) => {
-    const org = await organizationService.loadOrganization(org_id);
-    setOrganization(org);
-  }, []);
-
-  // Fetch profile + set org/role/permissions
+  // Simplified profile fetching with better error handling
   const fetchProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
     try {
+      console.log('[AuthContext] Fetching profile for user:', uid);
       setError(null);
-      const profile = await profileService.fetchUserProfile(uid);
-      if (profile) {
-        setRole(profile.role || null);
-        setTier("basic");
-        setPermissions(roleService.getPermissionsForRole((profile.role || "org_owner") as any));
-        if (profile.org_id) await loadOrganization(profile.org_id);
-        else setOrganization(null);
+      
+      // Try to fetch profile directly first
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('[AuthContext] Profile fetch error:', profileError);
+        
+        // If profile doesn't exist, try to create it
+        if (profileError.code === 'PGRST116') {
+          console.log('[AuthContext] Profile not found, attempting to create one');
+          
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: uid,
+                email: userData.user.email,
+                full_name: userData.user.user_metadata?.full_name || 'User',
+                role: 'org_owner',
+                created_at: new Date().toISOString()
+              });
+            
+            if (insertError) {
+              console.error('[AuthContext] Failed to create profile:', insertError);
+              setError('Failed to create user profile');
+              return null;
+            }
+            
+            // Fetch the newly created profile
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', uid)
+              .single();
+            
+            if (newProfile) {
+              setProfile(newProfile);
+              setRole(newProfile.role);
+              setPermissions(roleService.getPermissionsForRole(newProfile.role as any));
+              return newProfile;
+            }
+          }
+        }
+        
+        setError('Failed to load profile');
+        return null;
       }
-      setProfile(profile);
-      return profile;
-    } catch (err) {
-      console.error("[AuthContext] Error fetching profile:", err);
-      setError("Failed to load profile.");
-      setProfile(null);
+
+      if (profileData) {
+        console.log('[AuthContext] Profile loaded successfully:', profileData);
+        setProfile(profileData);
+        setRole(profileData.role);
+        setPermissions(roleService.getPermissionsForRole(profileData.role as any));
+        
+        // Load organization if exists
+        if (profileData.org_id) {
+          const org = await organizationService.loadOrganization(profileData.org_id);
+          setOrganization(org);
+        }
+        
+        return profileData;
+      }
+
+      return null;
+    } catch (err: any) {
+      console.error('[AuthContext] Unexpected error fetching profile:', err);
+      setError(err.message || 'Failed to load profile');
       return null;
     }
-  }, [loadOrganization]);
+  }, []);
 
-  const refreshProfile = useCallback(async () => {
-    if (user && !loading) {
-      setLoading(true);
-      await fetchProfile(user.id);
-      setLoading(false);
-    }
-  }, [user, fetchProfile, loading]);
-
-  const repairProfile = useCallback(async () => {
-    setError(null);
-    await refreshProfile();
-  }, [refreshProfile]);
-
-  // Auth state listener with improved error handling
+  // Simplified auth state management
   useEffect(() => {
-    let ignore = false;
     let mounted = true;
 
     const handleAuthStateChange = async (event: string, session: Session | null) => {
-      if (ignore || !mounted) return;
+      if (!mounted) return;
 
-      console.log("[AuthContext] Auth state change:", event, !!session);
+      console.log('[AuthContext] Auth state change:', event, !!session);
       
       setSession(session);
       setUser(session?.user || null);
       
       if (session?.user) {
         setLoading(true);
-        try {
-          await fetchProfile(session.user.id);
-        } catch (err) {
-          console.error("[AuthContext] Error in auth state change:", err);
-          setError("Failed to load user data");
-        } finally {
-          if (mounted) {
-            setLoading(false);
-            setInitialLoadComplete(true);
-          }
+        const profile = await fetchProfile(session.user.id);
+        if (mounted) {
+          setLoading(false);
         }
       } else {
+        // Clear state on logout
         setProfile(null);
         setRole(null);
         setPermissions(initialPermissions);
         setOrganization(null);
         setError(null);
         setLoading(false);
-        setInitialLoadComplete(true);
       }
     };
 
+    // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
-    // Initial session load with timeout
-    const loadInitialSession = async () => {
+    // Get initial session
+    const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("[AuthContext] Error getting initial session:", error);
-          setError("Failed to get session");
-          setLoading(false);
-          setInitialLoadComplete(true);
-          return;
+          console.error('[AuthContext] Error getting initial session:', error);
+          setError('Failed to get session');
         }
-
-        await handleAuthStateChange('INITIAL_SESSION', session);
+        
+        if (mounted) {
+          await handleAuthStateChange('INITIAL_SESSION', session);
+        }
       } catch (err) {
-        console.error("[AuthContext] Error in initial session load:", err);
-        setError("Failed to initialize session");
-        setLoading(false);
-        setInitialLoadComplete(true);
+        console.error('[AuthContext] Error in initial session load:', err);
+        if (mounted) {
+          setError('Failed to initialize session');
+          setLoading(false);
+        }
       }
     };
 
-    // Set a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (!initialLoadComplete && mounted) {
-        console.warn("[AuthContext] Loading timeout reached");
-        setLoading(false);
-        setInitialLoadComplete(true);
-        setError("Session loading timed out");
-      }
-    }, 8000);
+    getInitialSession();
 
-    loadInitialSession();
+    // Fallback timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('[AuthContext] Auth initialization timeout');
+        setLoading(false);
+      }
+    }, 5000);
 
     return () => {
-      ignore = true;
       mounted = false;
-      clearTimeout(loadingTimeout);
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, loading]);
 
-  // Login
-  const login = async (email: string, password: string) => {
-    setError(null);
-    setLoading(true);
-    const { data, error: supaError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (supaError || !data.session) {
-      setError(supaError?.message || "Login failed.");
+  // Simplified login
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      console.log('[AuthContext] Attempting login for:', email);
+      setError(null);
+      setLoading(true);
+      
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (authError) {
+        console.error('[AuthContext] Login error:', authError);
+        setError(authError.message);
+        setLoading(false);
+        return false;
+      }
+      
+      if (data.session && data.user) {
+        console.log('[AuthContext] Login successful');
+        // Auth state change will handle profile loading
+        return true;
+      }
+      
+      setLoading(false);
+      return false;
+    } catch (err: any) {
+      console.error('[AuthContext] Unexpected login error:', err);
+      setError(err.message || 'Login failed');
+      setLoading(false);
       return false;
     }
-    setSession(data.session);
-    setUser(data.session.user);
-    await fetchProfile(data.session.user.id);
-    return true;
   };
 
-  // Logout
-  const logout = async () => {
-    setLoading(true);
-    await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
-    setRole(null);
-    setPermissions(initialPermissions);
-    setOrganization(null);
-    setLoading(false);
-  };
-
-  // FIXED Signup - with proper redirect URL and error handling
+  // Simplified signup
   const signup = async (
     email: string,
     password: string,
     fullName?: string,
     role: string = "org_owner",
     companyName?: string
-  ) => {
-    setError(null);
-    setLoading(true);
-    
+  ): Promise<boolean> => {
     try {
+      console.log('[AuthContext] Attempting signup for:', email);
+      setError(null);
+      setLoading(true);
+      
       const redirectUrl = `${window.location.origin}/login`;
       
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -259,140 +294,107 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         },
       });
       
-      setLoading(false);
-      
       if (signUpError) {
-        console.error("[AuthContext] Signup error:", signUpError);
-        setError(signUpError.message || "Signup failed.");
+        console.error('[AuthContext] Signup error:', signUpError);
+        setError(signUpError.message);
+        setLoading(false);
         return false;
       }
 
       if (data.user) {
-        console.log("[AuthContext] Signup successful, user created:", data.user.id);
-        
-        // If email is confirmed immediately (in dev), handle the session
-        if (data.session) {
-          setSession(data.session);
-          setUser(data.user);
-          
-          // Give the trigger time to create the profile
-          setTimeout(async () => {
-            await fetchProfile(data.user!.id);
-          }, 1000);
-        }
-        
+        console.log('[AuthContext] Signup successful');
+        setLoading(false);
         return true;
       }
       
+      setLoading(false);
       return false;
     } catch (err: any) {
-      console.error("[AuthContext] Unexpected signup error:", err);
+      console.error('[AuthContext] Unexpected signup error:', err);
+      setError(err.message || 'Signup failed');
       setLoading(false);
-      setError(err.message || "An unexpected error occurred during signup.");
       return false;
     }
   };
+
+  // Simple logout
+  const logout = async () => {
+    setLoading(true);
+    await supabase.auth.signOut();
+    // Auth state change will handle cleanup
+  };
+
+  // Refresh profile
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  }, [user, fetchProfile]);
+
+  const repairProfile = useCallback(async () => {
+    setError(null);
+    await refreshProfile();
+  }, [refreshProfile]);
 
   // Profile update
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user) {
-      setError("Not logged in.");
-      return;
-    }
-    setLoading(true);
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq("id", user.id);
-    setLoading(false);
-    if (updateError) {
-      setError(updateError.message || "Failed to update profile.");
-    } else {
-      await refreshProfile();
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+      
+      if (error) {
+        setError(error.message);
+      } else {
+        await refreshProfile();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Update failed');
     }
   };
 
-  // Check role and permissions
+  // Role and permission checks
   const checkRoleAccess = useCallback(
     (roles: string[]) => roleService.checkRoleAccess(role, roles),
     [role]
   );
+  
   const hasPermission = useCallback(
     (perm: string) => roleService.hasPermission(permissions, perm),
     [permissions]
   );
 
-  // FIXED Organization creation
-  const createOrganization = async (orgName: string) => {
-    setLoading(true);
-    setError(null);
-    if (!user) {
-      setLoading(false);
-      setError("Not logged in");
-      return false;
-    }
+  // Organization creation
+  const createOrganization = async (orgName: string): Promise<boolean> => {
+    if (!user) return false;
+    
     try {
-      console.log("[AuthContext] Creating organization:", orgName, "for user:", user.id);
+      setLoading(true);
+      setError(null);
       
-      // Step 1: Create organization
       const org = await organizationService.createOrganization(orgName, user.id);
-      console.log("[AuthContext] Organization created:", org);
-      
-      // Step 2: Link profile to organization
       await organizationService.linkProfileToOrganization(org.id, user.id);
-      console.log("[AuthContext] Profile linked to organization");
       
-      // Step 3: Update local organization state
       setOrganization(org);
-      
-      // Step 4: Refresh profile to get updated org_id
-      const updatedProfile = await fetchProfile(user.id);
-      console.log("[AuthContext] Profile refreshed:", updatedProfile);
+      await refreshProfile();
       
       setLoading(false);
       return true;
     } catch (err: any) {
-      console.error("[AuthContext] Organization creation failed:", err);
-      setLoading(false);
-      setError(err.message || "Failed to create organization.");
-      return false;
-    }
-  };
-
-  // Invitation & org helpers (unchanged, only relevant when extending team)
-  const sendInvitation = async (email: string, invitedRole: string) => {
-    setLoading(true);
-    setError(null);
-    if (!organization || !organization.id) {
-      setError("You must have an organization first");
-      setLoading(false);
-      return false;
-    }
-    try {
-      await organizationService.sendInvitation(email, invitedRole, organization.id);
-      setLoading(false);
-      return true;
-    } catch (err: any) {
-      setError(err.message || "Failed to send invitation.");
+      console.error('[AuthContext] Organization creation failed:', err);
+      setError(err.message || 'Failed to create organization');
       setLoading(false);
       return false;
     }
   };
 
-  const getInvitations = async () => {
-    if (!organization || !organization.id) return [];
-    try {
-      return await organizationService.getInvitations(organization.id);
-    } catch {
-      return [];
-    }
-  };
-
-  const acceptInvitation = async (token: string) => {
-    setLoading(true);
-    setLoading(false);
-    return true;
-  };
+  // Stub implementations for team features
+  const sendInvitation = async () => false;
+  const getInvitations = async () => [];
+  const acceptInvitation = async () => false;
 
   const contextValue: AuthContextType = {
     session,

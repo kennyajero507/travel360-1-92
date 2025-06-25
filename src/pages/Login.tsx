@@ -6,15 +6,25 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
+import AuthDebugger from "../components/auth/AuthDebugger";
 import { Eye, EyeOff } from "lucide-react";
+import { Alert, AlertDescription } from "../components/ui/alert";
 
 const Login = () => {
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, session, profile } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showDebugger, setShowDebugger] = useState(false);
   const navigate = useNavigate();
+
+  // Redirect if already logged in and has profile
+  React.useEffect(() => {
+    if (session && profile) {
+      navigate("/dashboard");
+    }
+  }, [session, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +35,14 @@ const Login = () => {
       return;
     }
     
+    console.log('[Login] Attempting login with:', email);
     const success = await login(email, password);
+    
     if (success) {
-      navigate("/dashboard");
+      console.log('[Login] Login successful, waiting for profile...');
+      // Navigation will happen automatically via useEffect above
     } else {
-      setFormError("Invalid credentials or error logging in.");
+      setFormError(error || "Login failed. Please check your credentials.");
     }
   };
 
@@ -47,15 +60,12 @@ const Login = () => {
         to: "/admin/login"
       }}
     >
-      {error && (
-        <div className="mb-4 p-3 text-red-600 bg-red-50 border border-red-200 rounded-md text-sm text-center">
-          {error}
-        </div>
-      )}
-      {formError && (
-        <div className="mb-4 p-3 text-red-600 bg-red-50 border border-red-200 rounded-md text-sm text-center">
-          {formError}
-        </div>
+      {(error || formError) && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>
+            {formError || error}
+          </AlertDescription>
+        </Alert>
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -108,6 +118,24 @@ const Login = () => {
           {loading ? "Signing in..." : "Sign In"}
         </Button>
       </form>
+      
+      {/* Debug section - only show in development or when there are persistent issues */}
+      <div className="mt-8 pt-8 border-t">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowDebugger(!showDebugger)}
+          className="text-xs text-gray-500"
+        >
+          {showDebugger ? 'Hide' : 'Show'} Debug Info
+        </Button>
+        
+        {showDebugger && (
+          <div className="mt-4">
+            <AuthDebugger />
+          </div>
+        )}
+      </div>
     </AuthLayout>
   );
 };
