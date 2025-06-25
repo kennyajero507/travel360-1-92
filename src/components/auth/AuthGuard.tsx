@@ -1,8 +1,10 @@
+
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { useEffect, useState } from 'react';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -12,44 +14,74 @@ interface AuthGuardProps {
 export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
   const { session, loading, checkRoleAccess, error, profile, repairProfile } = useAuth();
   const location = useLocation();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  // Robust loading: loading or not-yet-fetched session/profile
-  if (loading || (session && !profile && !error)) {
+  // Set a timeout for loading state to prevent infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        setLoadingTimeout(true);
+      }
+    }, 10000); // 10 seconds timeout
+
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  // Reset timeout when loading state changes
+  useEffect(() => {
+    if (!loading) {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
+
+  // Show loading with timeout handling
+  if (loading && !loadingTimeout) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Loading account...</p>
-          {error && (
-            <div className="mt-4 max-w-md mx-auto">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2 text-orange-600">
-                    <AlertCircle className="h-4 w-4" />
-                    Loading Issue
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-gray-600 mb-3">{error}</p>
-                  <Button
-                    onClick={repairProfile}
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Retry
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
     );
   }
 
-  // Not logged in OR profile couldn't be loaded
+  // Show timeout error if loading takes too long
+  if (loading && loadingTimeout) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-600">
+                <AlertCircle className="h-5 w-5" />
+                Loading Taking Too Long
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-3">
+                The account loading is taking longer than expected. This might be a temporary issue.
+              </p>
+              <Button
+                onClick={() => {
+                  setLoadingTimeout(false);
+                  window.location.reload();
+                }}
+                size="sm"
+                variant="outline"
+                className="w-full"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Refresh Page
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in
   if (!session) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
