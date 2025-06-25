@@ -114,18 +114,25 @@ const ProductionAuthRecovery = () => {
       
       // Step 4: Check Organization
       updateStep('organization', { status: 'running' });
-      const currentProfile = profile || await supabase
+      
+      // Get the current profile (either existing or newly created)
+      const { data: currentProfile, error: currentProfileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
       
-      if (currentProfile.data && !currentProfile.data.org_id) {
+      if (currentProfileError) {
+        updateStep('organization', { status: 'error', error: currentProfileError.message });
+        return;
+      }
+      
+      if (currentProfile && !currentProfile.org_id) {
         // Create organization for user
         const { data: org, error: orgError } = await supabase
           .from('organizations')
           .insert({
-            name: `${currentProfile.data.full_name || 'User'}'s Organization`,
+            name: `${currentProfile.full_name || 'User'}'s Organization`,
             owner_id: session.user.id,
             created_at: new Date().toISOString()
           })
