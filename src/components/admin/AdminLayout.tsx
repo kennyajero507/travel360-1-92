@@ -1,10 +1,14 @@
 
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import AdminHeader from '../AdminHeader';
 import { Sidebar } from './AdminSidebar';
 
-const AdminLayout = () => {
+interface AdminLayoutProps {
+  children: React.ReactNode;
+}
+
+const AdminLayout = ({ children }: AdminLayoutProps) => {
   const location = useLocation();
   
   return (
@@ -13,7 +17,7 @@ const AdminLayout = () => {
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-6">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
