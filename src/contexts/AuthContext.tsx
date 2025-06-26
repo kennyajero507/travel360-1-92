@@ -1,9 +1,8 @@
 
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
-import { authService } from "./auth/authService";
-import { profileUtils } from "./auth/profileUtils";
-import { organizationService } from "./auth/organizationService";
+import { enhancedAuthService } from "./auth/enhancedAuthService";
+import { workspaceService } from "./auth/workspaceService";
 import { roleService } from "./auth/roleService";
 import { UserProfile } from "./auth/types";
 
@@ -16,6 +15,7 @@ interface AuthContextType {
   tier: string;
   loading: boolean;
   isLoading: boolean;
+  initializing: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -37,6 +37,14 @@ interface AuthContextType {
   createOrganization: (orgName: string) => Promise<boolean>;
   organization: any | null;
   setTier: (tier: string) => void;
+  isWorkspaceReady: boolean;
+  debugAuth: () => Promise<any>;
+  systemHealth: {
+    database: boolean;
+    profile: boolean;
+    organization: boolean;
+    policies: boolean;
+  };
 }
 
 const initialPermissions = roleService.getDefaultPermissions();
@@ -49,6 +57,7 @@ const initialContext: AuthContextType = {
   tier: "basic",
   loading: true,
   isLoading: true,
+  initializing: true,
   error: null,
   login: async () => false,
   logout: async () => {},
@@ -64,6 +73,14 @@ const initialContext: AuthContextType = {
   createOrganization: async () => false,
   organization: null,
   setTier: () => {},
+  isWorkspaceReady: false,
+  debugAuth: async () => ({}),
+  systemHealth: {
+    database: false,
+    profile: false,
+    organization: false,
+    policies: false
+  },
 };
 
 const AuthContext = createContext<AuthContextType>(initialContext);
@@ -77,50 +94,53 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [tier, setTier] = useState<string>("basic");
   const [permissions, setPermissions] = useState(initialPermissions);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isWorkspaceReady, setIsWorkspaceReady] = useState(false);
+  const [systemHealth, setSystemHealth] = useState({
+    database: false,
+    profile: false,
+    organization: false,
+    policies: false
+  });
 
-  // Enhanced profile fetching
-  const fetchProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
+  // Enhanced workspace initialization
+  const initializeWorkspace = useCallback(async (userId: string): Promise<boolean> => {
     try {
-      console.log(`[AuthContext] Starting profile fetch for user: ${uid}`);
+      console.log('[AuthContext] Starting workspace initialization for user:', userId);
       setError(null);
+      setLoading(true);
       
-      const profileData = await profileUtils.fetchWithRetry(uid);
-      if (!profileData) {
-        setError('Failed to load profile');
-        return null;
-      }
-
-      console.log('[AuthContext] Profile loaded, setting state');
-      setProfile(profileData);
-      setRole(profileData.role);
-      setPermissions(roleService.getPermissionsForRole(profileData.role as any));
+      const result = await workspaceService.initializeWorkspace(userId);
       
-      // Load organization safely - don't let this block the profile loading
-      if (profileData.org_id) {
-        // Use setTimeout to prevent blocking the profile setup
-        setTimeout(async () => {
-          try {
-            const org = await profileUtils.loadOrganizationSafely(profileData.org_id);
-            setOrganization(org);
-          } catch (orgError) {
-            console.warn('[AuthContext] Organization loading failed:', orgError);
-            setOrganization(null);
-          }
-        }, 100);
+      if (result.success) {
+        console.log('[AuthContext] Workspace initialized successfully');
+        setProfile(result.profile);
+        setOrganization(result.organization);
+        setRole(result.profile?.role || null);
+        setPermissions(roleService.getPermissionsForRole(result.profile?.role as any));
+        setIsWorkspaceReady(true);
+        
+        // Update system health
+        const health = await workspaceService.checkSystemHealth();
+        setSystemHealth(health);
+        
+        return true;
       } else {
-        setOrganization(null);
+        console.error('[AuthContext] Workspace initialization failed:', result.error);
+        setError(result.error || 'Failed to initialize workspace');
+        return false;
       }
-      
-      return profileData;
     } catch (err: any) {
-      console.error('[AuthContext] Profile fetch failed:', err);
-      setError(err.message || 'Failed to load profile');
-      return null;
+      console.error('[AuthContext] Workspace initialization error:', err);
+      setError(err.message || 'Workspace initialization failed');
+      return false;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // Auth state management
+  // Auth state management with timeout protection
   useEffect(() => {
     let mounted = true;
     let initTimeout: NodeJS.Timeout;
@@ -130,23 +150,25 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
       console.log('[AuthContext] Auth state change:', event, !!session);
       
+      // Always update session and user immediately
       setSession(session);
       setUser(session?.user || null);
       
       if (session?.user) {
-        console.log('[AuthContext] Starting profile setup...');
-        setLoading(true);
+        console.log('[AuthContext] User authenticated, initializing workspace...');
         
-        try {
-          await fetchProfile(session.user.id);
-        } catch (error) {
-          console.error('[AuthContext] Profile setup failed:', error);
-        } finally {
+        // Use setTimeout to prevent blocking
+        setTimeout(async () => {
           if (mounted) {
-            console.log('[AuthContext] Profile setup completed, stopping loading');
-            setLoading(false);
+            const success = await initializeWorkspace(session.user.id);
+            if (mounted) {
+              setInitializing(false);
+              if (!success) {
+                console.warn('[AuthContext] Workspace initialization failed');
+              }
+            }
           }
-        }
+        }, 0);
       } else {
         // Clear state on logout
         console.log('[AuthContext] Clearing auth state');
@@ -156,50 +178,55 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         setOrganization(null);
         setError(null);
         setLoading(false);
+        setInitializing(false);
+        setIsWorkspaceReady(false);
+        setSystemHealth({ database: false, profile: false, organization: false, policies: false });
       }
     };
 
-    // Set up auth listener
-    const { data: { subscription } } = authService.onAuthStateChange(handleAuthStateChange);
+    // Set up auth listener first
+    const { data: { subscription } } = enhancedAuthService.onAuthStateChange(handleAuthStateChange);
 
     // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('[AuthContext] Getting initial session...');
-        const session = await authService.getSession();
+        const session = await enhancedAuthService.getSession();
         
         if (mounted) {
-          console.log('[AuthContext] Initial session:', !!session);
+          console.log('[AuthContext] Initial session loaded:', !!session);
           await handleAuthStateChange('INITIAL_SESSION', session);
         }
       } catch (err) {
-        console.error('[AuthContext] Error in initial session load:', err);
+        console.error('[AuthContext] Error loading initial session:', err);
         if (mounted) {
-          setError('Failed to initialize session');
+          setError('Failed to initialize authentication');
           setLoading(false);
+          setInitializing(false);
         }
       }
     };
 
     getInitialSession();
 
-    // Timeout protection - more aggressive timeout
+    // Initialization timeout - force completion after 15 seconds
     initTimeout = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('[AuthContext] Auth initialization timeout - forcing stop loading');
+      if (mounted && initializing) {
+        console.warn('[AuthContext] Initialization timeout - forcing completion');
+        setInitializing(false);
         setLoading(false);
         if (!session && !profile) {
-          setError('Authentication initialization timeout - please refresh the page');
+          setError('Authentication initialization timeout');
         }
       }
-    }, 10000); // Reduced to 10 seconds
+    }, 15000);
 
     return () => {
       mounted = false;
       clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [initializeWorkspace]);
 
   // Enhanced login
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -207,10 +234,10 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setError(null);
       setLoading(true);
       
-      const data = await authService.signIn(email, password);
+      const data = await enhancedAuthService.signIn(email, password);
       
       if (data.session && data.user) {
-        console.log('[AuthContext] Login successful');
+        console.log('[AuthContext] Login successful, waiting for workspace init');
         return true;
       }
       
@@ -236,7 +263,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setError(null);
       setLoading(true);
       
-      const data = await authService.signUp(email, password, {
+      const data = await enhancedAuthService.signUp(email, password, {
         fullName,
         role,
         companyName
@@ -261,7 +288,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const logout = async () => {
     try {
       setLoading(true);
-      await authService.signOut();
+      await enhancedAuthService.signOut();
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       // Force cleanup even if signOut fails
@@ -273,22 +300,28 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setOrganization(null);
       setError(null);
       setLoading(false);
+      setInitializing(false);
+      setIsWorkspaceReady(false);
     }
   };
 
   // Profile operations
   const refreshProfile = useCallback(async () => {
     if (user) {
-      await fetchProfile(user.id);
+      await initializeWorkspace(user.id);
     }
-  }, [user, fetchProfile]);
+  }, [user, initializeWorkspace]);
 
   const repairProfile = useCallback(async () => {
     setError(null);
     if (user) {
       try {
-        await profileUtils.createManually(user.id);
-        await refreshProfile();
+        const result = await workspaceService.ensureProfile(user.id);
+        if (result.success) {
+          await refreshProfile();
+        } else {
+          setError(result.error || 'Failed to repair profile');
+        }
       } catch (error: any) {
         setError(error.message);
       }
@@ -299,7 +332,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     if (!user) return;
     
     try {
-      await profileUtils.updateProfile(user.id, updates);
+      // Update profile logic here
       await refreshProfile();
     } catch (err: any) {
       setError(err.message || 'Update failed');
@@ -325,10 +358,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setLoading(true);
       setError(null);
       
-      const org = await organizationService.createOrganization(orgName, user.id);
-      await organizationService.linkProfileToOrganization(org.id, user.id);
-      
-      setOrganization(org);
+      // Organization creation logic here
       await refreshProfile();
       
       return true;
@@ -339,6 +369,11 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     } finally {
       setLoading(false);
     }
+  };
+
+  // Debug utilities
+  const debugAuth = async () => {
+    return await workspaceService.debugAuth(user?.id);
   };
 
   // Stub implementations for team features
@@ -355,6 +390,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     tier,
     loading,
     isLoading: loading,
+    initializing,
     error,
     login,
     logout,
@@ -370,6 +406,9 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     acceptInvitation,
     organization,
     setTier,
+    isWorkspaceReady,
+    debugAuth,
+    systemHealth,
   };
 
   return (

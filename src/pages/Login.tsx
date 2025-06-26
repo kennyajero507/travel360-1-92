@@ -6,28 +6,25 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
-import SystemHealthCheck from "../components/auth/SystemHealthCheck";
-import { Eye, EyeOff, AlertCircle, CheckCircle, Loader2, Settings } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Card, CardContent } from "../components/ui/card";
 
 const Login = () => {
-  const { login, loading, error, session, profile } = useAuth();
+  const { login, loading, error, session, isWorkspaceReady } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [showHealthCheck, setShowHealthCheck] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  // Redirect if already logged in and has profile
+  // Redirect if fully authenticated and workspace is ready
   React.useEffect(() => {
-    if (session && profile) {
-      console.log('[Login] User already authenticated, redirecting to dashboard');
+    if (session && isWorkspaceReady) {
+      console.log('[Login] User authenticated and workspace ready, redirecting...');
       navigate("/dashboard");
     }
-  }, [session, profile, navigate]);
+  }, [session, isWorkspaceReady, navigate]);
 
   // Form validation
   const validateForm = () => {
@@ -69,8 +66,8 @@ const Login = () => {
       const success = await login(email.trim().toLowerCase(), password);
       
       if (success) {
-        console.log('[Login] Login successful, waiting for profile...');
-        // Navigation will happen automatically via useEffect above
+        console.log('[Login] Login successful, workspace initialization will handle redirect');
+        // Navigation will happen automatically via useEffect when workspace is ready
       } else {
         setFormError(error || "Login failed. Please check your credentials.");
       }
@@ -81,51 +78,6 @@ const Login = () => {
       setIsSubmitting(false);
     }
   };
-
-  // Show success state when login is successful but waiting for redirect
-  if (session && !profile && !loading) {
-    return (
-      <AuthLayout
-        title="Welcome Back"
-        description="Setting up your workspace..."
-      >
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <CheckCircle className="h-12 w-12 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Login Successful!</h3>
-                <p className="text-sm text-gray-600">Setting up your workspace...</p>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{ width: '85%' }}></div>
-              </div>
-              
-              {/* Show health check if taking too long */}
-              <div className="mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowHealthCheck(!showHealthCheck)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  {showHealthCheck ? 'Hide' : 'Show'} System Check
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {showHealthCheck && (
-          <div className="mt-6">
-            <SystemHealthCheck />
-          </div>
-        )}
-      </AuthLayout>
-    );
-  }
 
   return (
     <AuthLayout
@@ -229,25 +181,6 @@ const Login = () => {
           <div className={`w-2 h-2 rounded-full ${navigator.onLine ? 'bg-green-500' : 'bg-red-500'}`}></div>
           <span>{navigator.onLine ? 'Connected' : 'Offline'}</span>
         </div>
-      </div>
-      
-      {/* Debug section */}
-      <div className="mt-8 pt-8 border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowHealthCheck(!showHealthCheck)}
-          className="text-xs text-gray-500"
-        >
-          <Settings className="h-4 w-4 mr-2" />
-          {showHealthCheck ? 'Hide' : 'Show'} System Health
-        </Button>
-        
-        {showHealthCheck && (
-          <div className="mt-4">
-            <SystemHealthCheck />
-          </div>
-        )}
       </div>
     </AuthLayout>
   );
