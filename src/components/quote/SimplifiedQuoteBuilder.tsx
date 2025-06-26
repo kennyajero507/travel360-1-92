@@ -28,7 +28,6 @@ import RoomArrangementSection from './RoomArrangementSection';
 import TransferSection from './TransferSection';
 import TransportBookingSection from './TransportBookingSection';
 import ExcursionSection from './ExcursionSection';
-import { useCurrency } from '../../contexts/CurrencyContext';
 
 interface SimplifiedQuoteBuilderProps {
   quote: QuoteData;
@@ -56,18 +55,6 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
   const [showServices, setShowServices] = useState(false);
   const [isComparisonMode, setIsComparisonMode] = useState(false);
   const [hotelOptions, setHotelOptions] = useState<any[]>([]);
-  const { currency } = useCurrency();
-
-  // Ensure quote uses current currency context
-  useEffect(() => {
-    if (quote.currency_code !== currency.code) {
-      onQuoteUpdate({
-        ...quote,
-        currency_code: currency.code,
-        preferred_currency: currency.code
-      });
-    }
-  }, [currency.code, quote.currency_code]);
 
   // Find selected hotel
   useEffect(() => {
@@ -106,12 +93,10 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
     const hotel = hotels.find(h => h.id === hotelId);
     setSelectedHotel(hotel);
     
-    // Update quote with selected hotel and ensure currency consistency
+    // Update quote with selected hotel
     const updatedQuote = {
       ...quote,
-      hotel_id: hotelId,
-      currency_code: currency.code,
-      preferred_currency: currency.code
+      hotel_id: hotelId
     };
     onQuoteUpdate(updatedQuote);
 
@@ -127,9 +112,9 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
         children_no_bed: quote.children_no_bed || 0,
         infants: quote.infants || 0,
         rate_per_night: {
-          adult: hotel?.base_rate || 8000, // Default KES rate
-          childWithBed: (hotel?.base_rate || 8000) * 0.7,
-          childNoBed: (hotel?.base_rate || 8000) * 0.4,
+          adult: hotel?.base_rate || 100,
+          childWithBed: (hotel?.base_rate || 100) * 0.7,
+          childNoBed: (hotel?.base_rate || 100) * 0.4,
           infant: 0
         },
         nights: quote.duration_nights || 1,
@@ -151,8 +136,7 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
     setRoomArrangements(updatedArrangements);
     const updatedQuote = {
       ...quote,
-      room_arrangements: updatedArrangements,
-      currency_code: currency.code
+      room_arrangements: updatedArrangements
     };
     onQuoteUpdate(updatedQuote);
   };
@@ -401,7 +385,7 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
           onAddHotel={handleAddHotelOption}
           onRemoveHotel={handleRemoveHotelOption}
           onSelectHotel={handleSelectHotelOption}
-          currencyCode={quote.currency_code || currency.code}
+          currencyCode={quote.currency_code || 'USD'}
         />
       )}
 
@@ -467,20 +451,20 @@ const SimplifiedQuoteBuilder: React.FC<SimplifiedQuoteBuilderProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Accommodation:</span>
-                  <CurrencyDisplay amount={accommodationTotal} currencyCode={quote.currency_code || currency.code} />
+                  <CurrencyDisplay amount={accommodationTotal} currencyCode={quote.currency_code} />
                 </div>
                 <div className="flex justify-between">
                   <span>Additional Services:</span>
-                  <CurrencyDisplay amount={servicesTotal} currencyCode={quote.currency_code || currency.code} />
+                  <CurrencyDisplay amount={servicesTotal} currencyCode={quote.currency_code} />
                 </div>
                 <div className="flex justify-between font-medium border-t pt-2">
                   <span>Total Amount:</span>
-                  <CurrencyDisplay amount={grandTotal} currencyCode={quote.currency_code || currency.code} />
+                  <CurrencyDisplay amount={grandTotal} currencyCode={quote.currency_code} />
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  <CurrencyDisplay amount={grandTotal} currencyCode={quote.currency_code || currency.code} />
+                  <CurrencyDisplay amount={grandTotal} currencyCode={quote.currency_code} />
                 </div>
                 <div className="text-sm text-gray-600">
                   Total Quote Value

@@ -6,76 +6,30 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
-import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "../components/ui/alert";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
-  const { login, loading, error, session, isWorkspaceReady } = useAuth();
+  const { login, loading, error } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-
-  // Redirect if fully authenticated and workspace is ready
-  React.useEffect(() => {
-    if (session && isWorkspaceReady) {
-      console.log('[Login] User authenticated and workspace ready, redirecting...');
-      navigate("/dashboard");
-    }
-  }, [session, isWorkspaceReady, navigate]);
-
-  // Form validation
-  const validateForm = () => {
-    if (!email.trim()) {
-      setFormError("Email is required");
-      return false;
-    }
-    
-    if (!email.includes('@')) {
-      setFormError("Please enter a valid email address");
-      return false;
-    }
-    
-    if (!password) {
-      setFormError("Password is required");
-      return false;
-    }
-    
-    if (password.length < 6) {
-      setFormError("Password must be at least 6 characters");
-      return false;
-    }
-    
-    return true;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     
-    if (!validateForm()) {
+    if (!email || !password) {
+      setFormError("Please enter both email and password");
       return;
     }
     
-    setIsSubmitting(true);
-    console.log('[Login] Attempting login with:', email);
-    
-    try {
-      const success = await login(email.trim().toLowerCase(), password);
-      
-      if (success) {
-        console.log('[Login] Login successful, workspace initialization will handle redirect');
-        // Navigation will happen automatically via useEffect when workspace is ready
-      } else {
-        setFormError(error || "Login failed. Please check your credentials.");
-      }
-    } catch (err) {
-      console.error('[Login] Unexpected error:', err);
-      setFormError("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    const success = await login(email, password);
+    if (success) {
+      navigate("/dashboard");
+    } else {
+      setFormError("Invalid credentials or error logging in.");
     }
   };
 
@@ -93,14 +47,15 @@ const Login = () => {
         to: "/admin/login"
       }}
     >
-      {/* Enhanced error display */}
-      {(error || formError) && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {formError || error}
-          </AlertDescription>
-        </Alert>
+      {error && (
+        <div className="mb-4 p-3 text-red-600 bg-red-50 border border-red-200 rounded-md text-sm text-center">
+          {error}
+        </div>
+      )}
+      {formError && (
+        <div className="mb-4 p-3 text-red-600 bg-red-50 border border-red-200 rounded-md text-sm text-center">
+          {formError}
+        </div>
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -111,14 +66,10 @@ const Login = () => {
             type="email"
             placeholder="Enter your email"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (formError) setFormError(null);
-            }}
-            disabled={loading || isSubmitting}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
             required
             className="w-full"
-            autoComplete="email"
           />
         </div>
         
@@ -130,20 +81,15 @@ const Login = () => {
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (formError) setFormError(null);
-              }}
-              disabled={loading || isSubmitting}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
               required
               className="w-full pr-10"
-              autoComplete="current-password"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              disabled={loading || isSubmitting}
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -156,32 +102,12 @@ const Login = () => {
         
         <Button
           type="submit"
-          className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-50"
-          disabled={loading || isSubmitting}
+          className="w-full bg-teal-600 hover:bg-teal-700"
+          disabled={loading}
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
-            </>
-          ) : loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            "Sign In"
-          )}
+          {loading ? "Signing in..." : "Sign In"}
         </Button>
       </form>
-      
-      {/* Connection status indicator */}
-      <div className="mt-4 text-center">
-        <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-          <div className={`w-2 h-2 rounded-full ${navigator.onLine ? 'bg-green-500' : 'bg-red-500'}`}></div>
-          <span>{navigator.onLine ? 'Connected' : 'Offline'}</span>
-        </div>
-      </div>
     </AuthLayout>
   );
 };

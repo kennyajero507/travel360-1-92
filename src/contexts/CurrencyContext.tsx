@@ -1,6 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState } from 'react';
 
 // Updated to use an object instead of a simple string
 interface Currency {
@@ -18,10 +17,10 @@ interface CurrencyContextType {
 
 // Define available currencies - expanded list
 const availableCurrencies: Currency[] = [
-  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh' }, // Default currency first
   { code: 'USD', name: 'US Dollar', symbol: '$' },
   { code: 'EUR', name: 'Euro', symbol: '€' },
   { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh' },
   { code: 'TZS', name: 'Tanzanian Shilling', symbol: 'TSh' },
   { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh' },
   { code: 'RWF', name: 'Rwandan Franc', symbol: 'RWF' },
@@ -73,27 +72,15 @@ const availableCurrencies: Currency[] = [
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { profile } = useAuth();
-  
-  // Initialize with KES as default currency (Kenya-focused system)
-  const [currency, setCurrency] = useState<Currency>(availableCurrencies[0]); // KES is first
-
-  // Update currency when user profile loads
-  useEffect(() => {
-    if (profile?.currency) {
-      const userCurrency = availableCurrencies.find(c => c.code === profile.currency);
-      if (userCurrency) {
-        setCurrency(userCurrency);
-      }
-    }
-  }, [profile?.currency]);
+  // Initialize with USD as default currency
+  const [currency, setCurrency] = useState<Currency>(availableCurrencies[0]);
 
   const formatAmount = (amount: number): string => {
     const formatter = new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency: currency.code,
-      minimumFractionDigits: currency.code === 'KES' ? 0 : 2,
-      maximumFractionDigits: currency.code === 'KES' ? 0 : 2,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
     
     return formatter.format(amount);

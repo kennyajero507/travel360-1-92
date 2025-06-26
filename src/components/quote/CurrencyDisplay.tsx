@@ -1,35 +1,50 @@
 
 import React from 'react';
-import { useCurrency } from '../../contexts/CurrencyContext';
-import { currencyService } from '../../services/currencyService';
 
 interface CurrencyDisplayProps {
   amount: number;
   currencyCode?: string;
   className?: string;
-  showSymbol?: boolean;
 }
 
 const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({ 
   amount, 
-  currencyCode, 
-  className = '',
-  showSymbol = true 
+  currencyCode = 'KES',
+  className 
 }) => {
-  const { currency: contextCurrency } = useCurrency();
-  
-  // Use provided currency code or fall back to context currency
-  const displayCurrency = currencyCode || contextCurrency.code;
-  
-  // Format the amount using the currency service
-  const formattedAmount = currencyService.formatAmount(amount, displayCurrency);
-  
-  // If showSymbol is false, extract just the number part
-  const displayValue = showSymbol ? formattedAmount : amount.toLocaleString();
-  
+  const formatCurrency = (value: number, code: string) => {
+    // Handle different currency symbols
+    const currencySymbols: { [key: string]: string } = {
+      'KES': 'KSh',
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'TZS': 'TSh',
+      'UGX': 'USh'
+    };
+
+    const symbol = currencySymbols[code] || code;
+    
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: code,
+        currencyDisplay: 'symbol',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(value).replace(/^[A-Z]{3}/, symbol);
+    } catch (error) {
+      // Fallback formatting if currency is not supported
+      return `${symbol} ${value.toLocaleString('en-US', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 2 
+      })}`;
+    }
+  };
+
   return (
-    <span className={`font-medium ${className}`} data-currency={displayCurrency}>
-      {displayValue}
+    <span className={className}>
+      {formatCurrency(amount, currencyCode)}
     </span>
   );
 };
