@@ -78,10 +78,10 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Enhanced profile fetching with retry mechanism
+  // Enhanced profile fetching with organization loading fix
   const fetchProfile = useCallback(async (uid: string, retryCount = 0): Promise<UserProfile | null> => {
     const maxRetries = 3;
-    const retryDelay = [1000, 2000, 3000]; // Progressive delay
+    const retryDelay = [1000, 2000, 3000];
     
     try {
       console.log(`[AuthContext] Fetching profile for user: ${uid} (attempt ${retryCount + 1})`);
@@ -96,14 +96,12 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       if (profileError) {
         console.error('[AuthContext] Profile fetch error:', profileError);
         
-        // If profile doesn't exist and we haven't exceeded retries, wait and try again
         if (profileError.code === 'PGRST116' && retryCount < maxRetries) {
           console.log(`[AuthContext] Profile not found, retrying in ${retryDelay[retryCount]}ms...`);
           await new Promise(resolve => setTimeout(resolve, retryDelay[retryCount]));
           return fetchProfile(uid, retryCount + 1);
         }
         
-        // If still no profile after retries, create one manually
         if (profileError.code === 'PGRST116') {
           console.log('[AuthContext] Creating profile manually after retries failed');
           return await createProfileManually(uid);
@@ -119,23 +117,39 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         setRole(profileData.role);
         setPermissions(roleService.getPermissionsForRole(profileData.role as any));
         
-        // Load organization if exists
+        // Load organization with enhanced error handling and timeout
         if (profileData.org_id) {
-          const org = await organizationService.loadOrganization(profileData.org_id);
-          setOrganization(org);
+          console.log('[AuthContext] Loading organization:', profileData.org_id);
+          try {
+            // Add timeout protection for organization loading
+            const orgLoadPromise = organizationService.loadOrganization(profileData.org_id);
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Organization loading timeout')), 5000)
+            );
+            
+            const org = await Promise.race([orgLoadPromise, timeoutPromise]);
+            console.log('[AuthContext] Organization loaded:', org);
+            setOrganization(org);
+          } catch (orgError: any) {
+            console.warn('[AuthContext] Organization loading failed, but continuing:', orgError.message);
+            // Don't fail the entire auth process if organization loading fails
+            // User can still access the app with their profile
+            setOrganization(null);
+          }
+        } else {
+          console.log('[AuthContext] No organization ID in profile');
+          setOrganization(null);
         }
         
         return profileData;
       }
 
-      // No profile data but no error - retry if we haven't exceeded max attempts
       if (retryCount < maxRetries) {
         console.log(`[AuthContext] No profile data, retrying in ${retryDelay[retryCount]}ms...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay[retryCount]));
         return fetchProfile(uid, retryCount + 1);
       }
 
-      // Create profile manually as last resort
       return await createProfileManually(uid);
 
     } catch (err: any) {
@@ -194,7 +208,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     }
   };
 
-  // Enhanced auth state management with timeout protection
+  // Enhanced auth state management with better timeout handling
   useEffect(() => {
     let mounted = true;
     let initTimeout: NodeJS.Timeout;
@@ -208,13 +222,24 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setUser(session?.user || null);
       
       if (session?.user) {
+        console.log('[AuthContext] Starting profile fetch...');
         setLoading(true);
-        const profile = await fetchProfile(session.user.id);
-        if (mounted) {
-          setLoading(false);
+        
+        try {
+          const profile = await fetchProfile(session.user.id);
+          if (mounted) {
+            console.log('[AuthContext] Profile fetch completed, stopping loading');
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('[AuthContext] Profile fetch failed:', error);
+          if (mounted) {
+            setLoading(false);
+          }
         }
       } else {
         // Clear state on logout
+        console.log('[AuthContext] Clearing auth state');
         setProfile(null);
         setRole(null);
         setPermissions(initialPermissions);
@@ -227,17 +252,21 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     // Set up auth listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
-    // Get initial session with timeout protection
+    // Get initial session with enhanced error handling
     const getInitialSession = async () => {
       try {
+        console.log('[AuthContext] Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('[AuthContext] Error getting initial session:', error);
           setError('Failed to get session');
+          setLoading(false);
+          return;
         }
         
         if (mounted) {
+          console.log('[AuthContext] Initial session:', !!session);
           await handleAuthStateChange('INITIAL_SESSION', session);
         }
       } catch (err) {
@@ -251,23 +280,23 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
     getInitialSession();
 
-    // Timeout protection - prevent infinite loading
+    // Enhanced timeout protection
     initTimeout = setTimeout(() => {
       if (mounted && loading) {
         console.warn('[AuthContext] Auth initialization timeout - forcing stop loading');
         setLoading(false);
         if (!session && !profile) {
-          setError('Authentication initialization timeout');
+          setError('Authentication initialization timeout - please refresh the page');
         }
       }
-    }, 10000); // 10 second timeout
+    }, 15000); // Increased to 15 seconds for better reliability
 
     return () => {
       mounted = false;
       clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
-  }, [fetchProfile, loading]);
+  }, [fetchProfile]);
 
   // Enhanced login with better error handling
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -327,7 +356,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setError(null);
       setLoading(true);
       
-      // Validate input
       if (!email || !password) {
         setError('Email and password are required');
         setLoading(false);
@@ -418,7 +446,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const repairProfile = useCallback(async () => {
     setError(null);
     if (user) {
-      // Force profile recreation
       await createProfileManually(user.id);
     }
   }, [user]);
