@@ -79,7 +79,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [permissions, setPermissions] = useState(initialPermissions);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Helper: load organization (null if not found)
   const loadOrganization = useCallback(async (org_id: string | null) => {
@@ -90,7 +89,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   // Fetch profile + set org/role/permissions
   const fetchProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
     try {
-      setError(null);
       const profile = await profileService.fetchUserProfile(uid);
       if (profile) {
         setRole(profile.role || null);
@@ -110,97 +108,53 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   }, [loadOrganization]);
 
   const refreshProfile = useCallback(async () => {
-    if (user && !loading) {
+    if (user) {
       setLoading(true);
       await fetchProfile(user.id);
       setLoading(false);
     }
-  }, [user, fetchProfile, loading]);
+  }, [user, fetchProfile]);
 
   const repairProfile = useCallback(async () => {
     setError(null);
     await refreshProfile();
   }, [refreshProfile]);
 
-  // Auth state listener with improved error handling
+  // Auth state listener (no async logic here to avoid deadlocks)
   useEffect(() => {
     let ignore = false;
-    let mounted = true;
+    setLoading(true);
 
-    const handleAuthStateChange = async (event: string, session: Session | null) => {
-      if (ignore || !mounted) return;
-
-      console.log("[AuthContext] Auth state change:", event, !!session);
-      
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user || null);
-      
       if (session?.user) {
         setLoading(true);
-        try {
-          await fetchProfile(session.user.id);
-        } catch (err) {
-          console.error("[AuthContext] Error in auth state change:", err);
-          setError("Failed to load user data");
-        } finally {
-          if (mounted) {
-            setLoading(false);
-            setInitialLoadComplete(true);
-          }
-        }
+        setTimeout(async () => {
+          if (!ignore) await fetchProfile(session.user.id);
+          setLoading(false);
+        }, 0);
       } else {
         setProfile(null);
         setRole(null);
         setPermissions(initialPermissions);
         setOrganization(null);
-        setError(null);
         setLoading(false);
-        setInitialLoadComplete(true);
       }
-    };
+    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
-
-    // Initial session load with timeout
-    const loadInitialSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("[AuthContext] Error getting initial session:", error);
-          setError("Failed to get session");
-          setLoading(false);
-          setInitialLoadComplete(true);
-          return;
-        }
-
-        await handleAuthStateChange('INITIAL_SESSION', session);
-      } catch (err) {
-        console.error("[AuthContext] Error in initial session load:", err);
-        setError("Failed to initialize session");
+    // Initial session load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchProfile(session.user.id).finally(() => setLoading(false));
+      } else {
         setLoading(false);
-        setInitialLoadComplete(true);
       }
-    };
+    });
 
-    // Set a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (!initialLoadComplete && mounted) {
-        console.warn("[AuthContext] Loading timeout reached");
-        setLoading(false);
-        setInitialLoadComplete(true);
-        setError("Session loading timed out");
-      }
-    }, 8000);
-
-    loadInitialSession();
-
-    return () => {
-      ignore = true;
-      mounted = false;
-      clearTimeout(loadingTimeout);
-      subscription.unsubscribe();
-    };
+    return () => { ignore = true; subscription.unsubscribe(); };
   }, [fetchProfile]);
 
   // Login
