@@ -1,7 +1,8 @@
+
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
-import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
-import { profileService } from "./auth/profileService";
+import { authService } from "./auth/authService";
+import { profileUtils } from "./auth/profileUtils";
 import { organizationService } from "./auth/organizationService";
 import { roleService } from "./auth/roleService";
 import { UserProfile } from "./auth/types";
@@ -78,137 +79,48 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Enhanced profile fetching with organization loading fix
-  const fetchProfile = useCallback(async (uid: string, retryCount = 0): Promise<UserProfile | null> => {
-    const maxRetries = 3;
-    const retryDelay = [1000, 2000, 3000];
-    
+  // Enhanced profile fetching
+  const fetchProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
     try {
-      console.log(`[AuthContext] Fetching profile for user: ${uid} (attempt ${retryCount + 1})`);
+      console.log(`[AuthContext] Starting profile fetch for user: ${uid}`);
       setError(null);
       
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', uid)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('[AuthContext] Profile fetch error:', profileError);
-        
-        if (profileError.code === 'PGRST116' && retryCount < maxRetries) {
-          console.log(`[AuthContext] Profile not found, retrying in ${retryDelay[retryCount]}ms...`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay[retryCount]));
-          return fetchProfile(uid, retryCount + 1);
-        }
-        
-        if (profileError.code === 'PGRST116') {
-          console.log('[AuthContext] Creating profile manually after retries failed');
-          return await createProfileManually(uid);
-        }
-        
+      const profileData = await profileUtils.fetchWithRetry(uid);
+      if (!profileData) {
         setError('Failed to load profile');
         return null;
       }
 
-      if (profileData) {
-        console.log('[AuthContext] Profile loaded successfully:', profileData);
-        setProfile(profileData);
-        setRole(profileData.role);
-        setPermissions(roleService.getPermissionsForRole(profileData.role as any));
-        
-        // Load organization with enhanced error handling and timeout
-        if (profileData.org_id) {
-          console.log('[AuthContext] Loading organization:', profileData.org_id);
+      console.log('[AuthContext] Profile loaded, setting state');
+      setProfile(profileData);
+      setRole(profileData.role);
+      setPermissions(roleService.getPermissionsForRole(profileData.role as any));
+      
+      // Load organization safely - don't let this block the profile loading
+      if (profileData.org_id) {
+        // Use setTimeout to prevent blocking the profile setup
+        setTimeout(async () => {
           try {
-            // Add timeout protection for organization loading
-            const orgLoadPromise = organizationService.loadOrganization(profileData.org_id);
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Organization loading timeout')), 5000)
-            );
-            
-            const org = await Promise.race([orgLoadPromise, timeoutPromise]);
-            console.log('[AuthContext] Organization loaded:', org);
+            const org = await profileUtils.loadOrganizationSafely(profileData.org_id);
             setOrganization(org);
-          } catch (orgError: any) {
-            console.warn('[AuthContext] Organization loading failed, but continuing:', orgError.message);
-            // Don't fail the entire auth process if organization loading fails
-            // User can still access the app with their profile
+          } catch (orgError) {
+            console.warn('[AuthContext] Organization loading failed:', orgError);
             setOrganization(null);
           }
-        } else {
-          console.log('[AuthContext] No organization ID in profile');
-          setOrganization(null);
-        }
-        
-        return profileData;
+        }, 100);
+      } else {
+        setOrganization(null);
       }
-
-      if (retryCount < maxRetries) {
-        console.log(`[AuthContext] No profile data, retrying in ${retryDelay[retryCount]}ms...`);
-        await new Promise(resolve => setTimeout(resolve, retryDelay[retryCount]));
-        return fetchProfile(uid, retryCount + 1);
-      }
-
-      return await createProfileManually(uid);
-
+      
+      return profileData;
     } catch (err: any) {
-      console.error('[AuthContext] Unexpected error fetching profile:', err);
-      
-      if (retryCount < maxRetries) {
-        console.log(`[AuthContext] Retrying due to error in ${retryDelay[retryCount]}ms...`);
-        await new Promise(resolve => setTimeout(resolve, retryDelay[retryCount]));
-        return fetchProfile(uid, retryCount + 1);
-      }
-      
+      console.error('[AuthContext] Profile fetch failed:', err);
       setError(err.message || 'Failed to load profile');
       return null;
     }
   }, []);
 
-  // Manual profile creation as fallback
-  const createProfileManually = async (uid: string): Promise<UserProfile | null> => {
-    try {
-      console.log('[AuthContext] Creating profile manually for user:', uid);
-      
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return null;
-
-      const profileData = {
-        id: uid,
-        email: userData.user.email,
-        full_name: userData.user.user_metadata?.full_name || 'User',
-        role: 'org_owner',
-        created_at: new Date().toISOString(),
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-      };
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('[AuthContext] Failed to create profile manually:', error);
-        setError('Failed to create user profile');
-        return null;
-      }
-
-      console.log('[AuthContext] Profile created manually:', data);
-      setProfile(data);
-      setRole(data.role);
-      setPermissions(roleService.getPermissionsForRole(data.role as any));
-      
-      return data;
-    } catch (error: any) {
-      console.error('[AuthContext] Error in manual profile creation:', error);
-      setError('Failed to create profile');
-      return null;
-    }
-  };
-
-  // Enhanced auth state management with better timeout handling
+  // Auth state management
   useEffect(() => {
     let mounted = true;
     let initTimeout: NodeJS.Timeout;
@@ -222,18 +134,16 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setUser(session?.user || null);
       
       if (session?.user) {
-        console.log('[AuthContext] Starting profile fetch...');
+        console.log('[AuthContext] Starting profile setup...');
         setLoading(true);
         
         try {
-          const profile = await fetchProfile(session.user.id);
-          if (mounted) {
-            console.log('[AuthContext] Profile fetch completed, stopping loading');
-            setLoading(false);
-          }
+          await fetchProfile(session.user.id);
         } catch (error) {
-          console.error('[AuthContext] Profile fetch failed:', error);
+          console.error('[AuthContext] Profile setup failed:', error);
+        } finally {
           if (mounted) {
+            console.log('[AuthContext] Profile setup completed, stopping loading');
             setLoading(false);
           }
         }
@@ -249,21 +159,14 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       }
     };
 
-    // Set up auth listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+    // Set up auth listener
+    const { data: { subscription } } = authService.onAuthStateChange(handleAuthStateChange);
 
-    // Get initial session with enhanced error handling
+    // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('[AuthContext] Getting initial session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('[AuthContext] Error getting initial session:', error);
-          setError('Failed to get session');
-          setLoading(false);
-          return;
-        }
+        const session = await authService.getSession();
         
         if (mounted) {
           console.log('[AuthContext] Initial session:', !!session);
@@ -280,7 +183,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
     getInitialSession();
 
-    // Enhanced timeout protection
+    // Timeout protection - more aggressive timeout
     initTimeout = setTimeout(() => {
       if (mounted && loading) {
         console.warn('[AuthContext] Auth initialization timeout - forcing stop loading');
@@ -289,7 +192,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
           setError('Authentication initialization timeout - please refresh the page');
         }
       }
-    }, 15000); // Increased to 15 seconds for better reliability
+    }, 10000); // Reduced to 10 seconds
 
     return () => {
       mounted = false;
@@ -298,52 +201,30 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     };
   }, [fetchProfile]);
 
-  // Enhanced login with better error handling
+  // Enhanced login
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('[AuthContext] Attempting login for:', email);
       setError(null);
       setLoading(true);
       
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (authError) {
-        console.error('[AuthContext] Login error:', authError);
-        let errorMessage = 'Login failed';
-        
-        if (authError.message.includes('Invalid login credentials')) {
-          errorMessage = 'Invalid email or password';
-        } else if (authError.message.includes('Email not confirmed')) {
-          errorMessage = 'Please confirm your email address';
-        } else if (authError.message.includes('Too many requests')) {
-          errorMessage = 'Too many login attempts. Please try again later';
-        }
-        
-        setError(errorMessage);
-        setLoading(false);
-        return false;
-      }
+      const data = await authService.signIn(email, password);
       
       if (data.session && data.user) {
         console.log('[AuthContext] Login successful');
-        // Auth state change will handle profile loading
         return true;
       }
       
-      setLoading(false);
       return false;
     } catch (err: any) {
-      console.error('[AuthContext] Unexpected login error:', err);
-      setError('Network error. Please check your connection and try again');
-      setLoading(false);
+      console.error('[AuthContext] Login error:', err);
+      setError(err.message || 'Login failed');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Enhanced signup with better validation
+  // Enhanced signup
   const signup = async (
     email: string,
     password: string,
@@ -352,67 +233,27 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     companyName?: string
   ): Promise<boolean> => {
     try {
-      console.log('[AuthContext] Attempting signup for:', email);
       setError(null);
       setLoading(true);
       
-      if (!email || !password) {
-        setError('Email and password are required');
-        setLoading(false);
-        return false;
-      }
-      
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
-        setLoading(false);
-        return false;
-      }
-      
-      const redirectUrl = `${window.location.origin}/login`;
-      
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName || email.split('@')[0],
-            role,
-            company_name: companyName,
-          }
-        },
+      const data = await authService.signUp(email, password, {
+        fullName,
+        role,
+        companyName
       });
-      
-      if (signUpError) {
-        console.error('[AuthContext] Signup error:', signUpError);
-        let errorMessage = 'Registration failed';
-        
-        if (signUpError.message.includes('already registered')) {
-          errorMessage = 'An account with this email already exists';
-        } else if (signUpError.message.includes('Password should be')) {
-          errorMessage = 'Password is too weak. Please use a stronger password';
-        } else if (signUpError.message.includes('Invalid email')) {
-          errorMessage = 'Please enter a valid email address';
-        }
-        
-        setError(errorMessage);
-        setLoading(false);
-        return false;
-      }
 
       if (data.user) {
         console.log('[AuthContext] Signup successful');
-        setLoading(false);
         return true;
       }
       
-      setLoading(false);
       return false;
     } catch (err: any) {
-      console.error('[AuthContext] Unexpected signup error:', err);
-      setError('Network error. Please check your connection and try again');
-      setLoading(false);
+      console.error('[AuthContext] Signup error:', err);
+      setError(err.message || 'Registration failed');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -420,8 +261,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const logout = async () => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
-      // Auth state change will handle cleanup
+      await authService.signOut();
     } catch (error) {
       console.error('[AuthContext] Logout error:', error);
       // Force cleanup even if signOut fails
@@ -436,7 +276,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     }
   };
 
-  // Enhanced profile refresh
+  // Profile operations
   const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.id);
@@ -446,25 +286,21 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const repairProfile = useCallback(async () => {
     setError(null);
     if (user) {
-      await createProfileManually(user.id);
+      try {
+        await profileUtils.createManually(user.id);
+        await refreshProfile();
+      } catch (error: any) {
+        setError(error.message);
+      }
     }
-  }, [user]);
+  }, [user, refreshProfile]);
 
-  // Profile update
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return;
     
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq("id", user.id);
-      
-      if (error) {
-        setError(error.message);
-      } else {
-        await refreshProfile();
-      }
+      await profileUtils.updateProfile(user.id, updates);
+      await refreshProfile();
     } catch (err: any) {
       setError(err.message || 'Update failed');
     }
@@ -495,13 +331,13 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setOrganization(org);
       await refreshProfile();
       
-      setLoading(false);
       return true;
     } catch (err: any) {
       console.error('[AuthContext] Organization creation failed:', err);
       setError(err.message || 'Failed to create organization');
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 

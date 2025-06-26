@@ -6,8 +6,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
-import AuthDebugger from "../components/auth/AuthDebugger";
-import { Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import SystemHealthCheck from "../components/auth/SystemHealthCheck";
+import { Eye, EyeOff, AlertCircle, CheckCircle, Loader2, Settings } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Card, CardContent } from "../components/ui/card";
 
@@ -17,7 +17,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [showDebugger, setShowDebugger] = useState(false);
+  const [showHealthCheck, setShowHealthCheck] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -70,10 +70,7 @@ const Login = () => {
       
       if (success) {
         console.log('[Login] Login successful, waiting for profile...');
-        // Show success state briefly before redirect
-        setTimeout(() => {
-          // Navigation will happen automatically via useEffect above
-        }, 500);
+        // Navigation will happen automatically via useEffect above
       } else {
         setFormError(error || "Login failed. Please check your credentials.");
       }
@@ -105,9 +102,27 @@ const Login = () => {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{ width: '85%' }}></div>
               </div>
+              
+              {/* Show health check if taking too long */}
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowHealthCheck(!showHealthCheck)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  {showHealthCheck ? 'Hide' : 'Show'} System Check
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
+        
+        {showHealthCheck && (
+          <div className="mt-6">
+            <SystemHealthCheck />
+          </div>
+        )}
       </AuthLayout>
     );
   }
@@ -146,7 +161,7 @@ const Login = () => {
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
-              if (formError) setFormError(null); // Clear error on input
+              if (formError) setFormError(null);
             }}
             disabled={loading || isSubmitting}
             required
@@ -165,7 +180,7 @@ const Login = () => {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                if (formError) setFormError(null); // Clear error on input
+                if (formError) setFormError(null);
               }}
               disabled={loading || isSubmitting}
               required
@@ -221,15 +236,16 @@ const Login = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowDebugger(!showDebugger)}
+          onClick={() => setShowHealthCheck(!showHealthCheck)}
           className="text-xs text-gray-500"
         >
-          {showDebugger ? 'Hide' : 'Show'} Debug Info
+          <Settings className="h-4 w-4 mr-2" />
+          {showHealthCheck ? 'Hide' : 'Show'} System Health
         </Button>
         
-        {showDebugger && (
+        {showHealthCheck && (
           <div className="mt-4">
-            <AuthDebugger />
+            <SystemHealthCheck />
           </div>
         )}
       </div>
