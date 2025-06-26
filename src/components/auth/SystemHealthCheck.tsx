@@ -115,23 +115,14 @@ const SystemHealthCheck = () => {
       id: 'trigger_function',
       name: 'Profile Creation Trigger',
       check: async () => {
-        // Check if the trigger exists by looking at the function
-        const { data, error } = await supabase.rpc('execute_sql', {
-          sql_query: `
-            SELECT EXISTS (
-              SELECT 1 FROM information_schema.triggers 
-              WHERE trigger_name = 'on_auth_user_created'
-            ) as trigger_exists;
-          `
-        });
-        
-        if (error && !error.message.includes('permission')) {
-          throw new Error(`Cannot check trigger: ${error.message}`);
-        }
-        
-        // If we can't check the trigger directly, assume it exists if profiles are being created
+        // Simple check - if we have a profile, the trigger is likely working
         if (profile) {
           return 'Profile creation working (trigger likely functional)';
+        }
+        
+        // If no profile but we have a user, this suggests trigger issues
+        if (user && !profile) {
+          throw new Error('Profile missing despite user existing - trigger may not be working');
         }
         
         return 'Profile creation trigger status unknown but profiles exist';
