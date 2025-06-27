@@ -1666,6 +1666,10 @@ export type Database = {
           policies_blocking: string[]
         }[]
       }
+      debug_user_profile: {
+        Args: { target_user_id?: string }
+        Returns: Json
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

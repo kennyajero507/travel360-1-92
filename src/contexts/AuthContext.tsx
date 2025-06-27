@@ -36,6 +36,7 @@ interface AuthContextType {
   createOrganization: (orgName: string) => Promise<boolean>;
   organization: any | null;
   setTier: (tier: string) => void;
+  debugAuth: () => Promise<any>;
 }
 
 // Default permissions and stub methods
@@ -64,6 +65,7 @@ const initialContext: AuthContextType = {
   createOrganization: async () => false,
   organization: null,
   setTier: () => {},
+  debugAuth: async () => ({}),
 };
 
 const AuthContext = createContext<AuthContextType>(initialContext);
@@ -79,7 +81,18 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper: load organization (null if not found)
+  // Circuit breaker for preventing infinite loops
+  const [circuitBreaker, setCircuitBreaker] = useState<{
+    isOpen: boolean;
+    failureCount: number;
+    lastFailure: number;
+  }>({
+    isOpen: false,
+    failureCount: 0,
+    lastFailure: 0,
+  });
+
+  // Helper: load organization
   const loadOrganization = useCallback(async (org_id: string | null) => {
     if (!org_id) {
       setOrganization(null);
@@ -94,38 +107,89 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     }
   }, []);
 
-  // Fetch profile + set org/role/permissions
+  // Circuit breaker check
+  const checkCircuitBreaker = useCallback((): boolean => {
+    const now = Date.now();
+    const RESET_TIMEOUT = 30000; // 30 seconds
+    const FAILURE_THRESHOLD = 5;
+
+    if (circuitBreaker.isOpen) {
+      if (now - circuitBreaker.lastFailure > RESET_TIMEOUT) {
+        console.log('[AuthContext] Circuit breaker reset');
+        setCircuitBreaker({ isOpen: false, failureCount: 0, lastFailure: 0 });
+        return false;
+      }
+      return true; // Circuit is open
+    }
+
+    return circuitBreaker.failureCount >= FAILURE_THRESHOLD;
+  }, [circuitBreaker]);
+
+  // Record failure for circuit breaker
+  const recordFailure = useCallback(() => {
+    setCircuitBreaker(prev => ({
+      isOpen: prev.failureCount + 1 >= 5,
+      failureCount: prev.failureCount + 1,
+      lastFailure: Date.now(),
+    }));
+  }, []);
+
+  // Enhanced profile fetching with circuit breaker
   const fetchProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
+    if (checkCircuitBreaker()) {
+      console.warn('[AuthContext] Circuit breaker is open, skipping profile fetch');
+      setError("Service temporarily unavailable. Please try again in a moment.");
+      return null;
+    }
+
     try {
       console.log('[AuthContext] Fetching profile for user:', uid);
       setError(null);
       
+      // Perform health check first
+      const isHealthy = await profileService.healthCheck();
+      if (!isHealthy) {
+        throw new Error('Database connectivity issue detected');
+      }
+
       const profile = await profileService.fetchUserProfile(uid);
+      
       if (profile) {
         console.log('[AuthContext] Profile loaded successfully:', profile);
         setRole(profile.role || null);
         setTier("basic");
         setPermissions(roleService.getPermissionsForRole((profile.role || "org_owner") as any));
+        
         if (profile.org_id) {
           await loadOrganization(profile.org_id);
         } else {
           setOrganization(null);
         }
+        
         setProfile(profile);
         return profile;
       } else {
         console.warn('[AuthContext] No profile found for user:', uid);
         setProfile(null);
-        setError("Profile not found. Please contact support if this issue persists.");
+        setError("Profile setup required. We'll help you create one.");
         return null;
       }
     } catch (err: any) {
       console.error("[AuthContext] Error fetching profile:", err);
-      setError(err.message || "Failed to load profile.");
+      recordFailure();
+      
+      if (err.message?.includes('Access denied')) {
+        setError("Authentication issue detected. Please try logging out and back in.");
+      } else if (err.message?.includes('connectivity')) {
+        setError("Connection issue. Please check your internet connection.");
+      } else {
+        setError("Profile loading failed. Please try refreshing the page.");
+      }
+      
       setProfile(null);
       return null;
     }
-  }, [loadOrganization]);
+  }, [checkCircuitBreaker, recordFailure, loadOrganization]);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
@@ -141,36 +205,65 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       return;
     }
     
+    if (checkCircuitBreaker()) {
+      setError("Service temporarily unavailable. Please wait a moment and try again.");
+      return;
+    }
+    
     console.log('[AuthContext] Attempting to repair profile for user:', user.id);
     setError(null);
     setLoading(true);
     
     try {
-      // Try to repair the profile using the profile service
       const repairedProfile = await profileService.repairUserProfile(user.id);
+      
       if (repairedProfile) {
         console.log('[AuthContext] Profile repaired successfully:', repairedProfile);
         setProfile(repairedProfile);
         setRole(repairedProfile.role || null);
         setPermissions(roleService.getPermissionsForRole((repairedProfile.role || "org_owner") as any));
+        
         if (repairedProfile.org_id) {
           await loadOrganization(repairedProfile.org_id);
         }
+        
         setError(null);
       } else {
-        setError("Failed to repair profile. Please contact support.");
+        recordFailure();
+        setError("Profile repair failed. Please contact support if this continues.");
       }
     } catch (err: any) {
       console.error('[AuthContext] Profile repair failed:', err);
-      setError(err.message || "Failed to repair profile.");
+      recordFailure();
+      setError("Profile repair failed. Please try logging out and back in.");
     } finally {
       setLoading(false);
     }
-  }, [user, loadOrganization]);
+  }, [user, checkCircuitBreaker, recordFailure, loadOrganization]);
 
-  // Auth state listener with improved error handling
+  // Debug function
+  const debugAuth = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const debugInfo = await profileService.debugProfile(user?.id);
+      
+      return {
+        authUser: user,
+        debugInfo,
+        circuitBreaker,
+        loading,
+        error,
+        profile,
+      };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Debug failed' };
+    }
+  }, [circuitBreaker, loading, error, profile]);
+
+  // Auth state listener with enhanced error handling
   useEffect(() => {
     let ignore = false;
+    let timeoutId: NodeJS.Timeout;
     
     console.log('[AuthContext] Setting up auth state listener');
 
@@ -179,13 +272,17 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       
       console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
       
+      // Clear any existing timeout
+      if (timeoutId) clearTimeout(timeoutId);
+      
       setSession(session);
       setUser(session?.user || null);
       
       if (session?.user) {
         setLoading(true);
-        // Use setTimeout to prevent blocking the auth state change
-        setTimeout(async () => {
+        
+        // Use timeout to prevent blocking the auth state change
+        timeoutId = setTimeout(async () => {
           if (!ignore) {
             await fetchProfile(session.user.id);
             setLoading(false);
@@ -198,16 +295,18 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         setOrganization(null);
         setError(null);
         setLoading(false);
+        // Reset circuit breaker on logout
+        setCircuitBreaker({ isOpen: false, failureCount: 0, lastFailure: 0 });
       }
     });
 
-    // Initial session load with better error handling
+    // Initial session load
     supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
       if (ignore) return;
       
       if (sessionError) {
         console.error('[AuthContext] Error getting initial session:', sessionError);
-        setError(sessionError.message);
+        setError("Session initialization failed. Please refresh the page.");
         setLoading(false);
         return;
       }
@@ -227,12 +326,13 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
     return () => { 
       console.log('[AuthContext] Cleaning up auth listener');
-      ignore = true; 
+      ignore = true;
+      if (timeoutId) clearTimeout(timeoutId);
       subscription.unsubscribe(); 
     };
   }, [fetchProfile]);
 
-  // Login with improved error handling
+  // Enhanced login with profile verification
   const login = async (email: string, password: string) => {
     setError(null);
     setLoading(true);
@@ -257,34 +357,29 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       }
       
       console.log('[AuthContext] Login successful:', data.session.user.id);
-      setSession(data.session);
-      setUser(data.session.user);
       
-      // Profile will be loaded by the auth state change listener
+      // Verify profile exists and is accessible
+      const profile = await profileService.fetchUserProfile(data.session.user.id);
+      if (!profile) {
+        console.warn('[AuthContext] No profile found after login, will attempt repair');
+      }
+      
       return true;
     } catch (err: any) {
       console.error('[AuthContext] Unexpected login error:', err);
-      setError(err.message || "An unexpected error occurred during login.");
+      setError("An unexpected error occurred during login.");
       setLoading(false);
       return false;
     }
   };
 
-  // Logout
+  // Keep existing methods unchanged
   const logout = async () => {
     setLoading(true);
     await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
-    setRole(null);
-    setPermissions(initialPermissions);
-    setOrganization(null);
-    setError(null);
-    setLoading(false);
+    // State will be reset by the auth state change listener
   };
 
-  // Signup with proper redirect URL and error handling
   const signup = async (
     email: string,
     password: string,
@@ -321,16 +416,15 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       if (data.user) {
         console.log("[AuthContext] Signup successful, user created:", data.user.id);
         
-        // If email is confirmed immediately (in dev), handle the session
         if (data.session) {
-          setSession(data.session);
-          setUser(data.user);
-          
-          // Give the trigger time to create the profile
+          // Wait for profile creation and verify
           setTimeout(async () => {
-            await fetchProfile(data.user!.id);
+            const profile = await fetchProfile(data.user!.id);
+            if (!profile) {
+              console.warn('[AuthContext] Profile not created after signup, may need manual repair');
+            }
             setLoading(false);
-          }, 1000);
+          }, 2000); // Give trigger time to execute
         } else {
           setLoading(false);
         }
@@ -343,12 +437,12 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     } catch (err: any) {
       console.error("[AuthContext] Unexpected signup error:", err);
       setLoading(false);
-      setError(err.message || "An unexpected error occurred during signup.");
+      setError("An unexpected error occurred during signup.");
       return false;
     }
   };
 
-  // Profile update
+  // Keep existing methods unchanged
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) {
       setError("Not logged in.");
@@ -367,7 +461,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     }
   };
 
-  // Check role and permissions
+  // Keep existing role and permission methods
   const checkRoleAccess = useCallback(
     (roles: string[]) => roleService.checkRoleAccess(role, roles),
     [role]
@@ -377,7 +471,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     [permissions]
   );
 
-  // Organization creation
+  // Keep existing organization methods unchanged
   const createOrganization = async (orgName: string) => {
     setLoading(true);
     setError(null);
@@ -410,7 +504,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     }
   };
 
-  // Invitation helpers
+  // Keep existing invitation methods unchanged
   const sendInvitation = async (email: string, invitedRole: string) => {
     setLoading(true);
     setError(null);
@@ -469,6 +563,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     acceptInvitation,
     organization,
     setTier,
+    debugAuth,
   };
 
   return (

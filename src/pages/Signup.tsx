@@ -15,6 +15,7 @@ const Signup = () => {
 
   useEffect(() => {
     if (!authLoading && session && profile) {
+      console.log('[Signup] User already authenticated, redirecting to dashboard');
       navigate("/dashboard");
     }
   }, [session, profile, navigate, authLoading]);
@@ -24,7 +25,7 @@ const Signup = () => {
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p>Loading...</p>
+          <p className="text-slate-600">Checking authentication...</p>
         </div>
       </div>
     );
@@ -41,7 +42,7 @@ const Signup = () => {
     setLoading(true);
     
     try {
-      console.log('[Signup] Attempting signup with data:', {
+      console.log('[Signup] Starting signup process with data:', {
         email: formData.email,
         role: formData.role,
         hasCompanyName: !!formData.companyName
@@ -56,17 +57,20 @@ const Signup = () => {
       );
       
       if (signupSuccess) {
+        console.log('[Signup] Signup successful');
         toast.success('Account created successfully! Please check your email to verify your account before signing in.');
-        // Redirect to login after a brief delay
+        
+        // Brief delay before redirect to show the success message
         setTimeout(() => {
           navigate("/login");
-        }, 3000);
+        }, 2000);
       } else {
-        setError("Registration failed. Please try again.");
+        console.error('[Signup] Signup failed');
+        setError("Registration failed. Please check your details and try again.");
       }
     } catch (error: any) {
       console.error('[Signup] Error during signup:', error);
-      setError(error.message || "An unexpected error occurred.");
+      setError(error.message || "An unexpected error occurred during registration.");
     } finally {
       setLoading(false);
     }

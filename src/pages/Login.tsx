@@ -1,20 +1,28 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 const Login = () => {
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, session, profile } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (session && profile) {
+      console.log('[Login] User already authenticated, redirecting');
+      navigate("/dashboard");
+    }
+  }, [session, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +33,15 @@ const Login = () => {
       return;
     }
     
+    console.log('[Login] Starting login process for:', email);
+    
     const success = await login(email, password);
     if (success) {
+      console.log('[Login] Login successful, navigating to dashboard');
       navigate("/dashboard");
     } else {
-      setFormError("Invalid credentials or error logging in.");
+      console.error('[Login] Login failed');
+      setFormError("Login failed. Please check your credentials and try again.");
     }
   };
 
@@ -47,14 +59,25 @@ const Login = () => {
         to: "/admin/login"
       }}
     >
-      {error && (
-        <div className="mb-4 p-3 text-red-600 bg-red-50 border border-red-200 rounded-md text-sm text-center">
-          {error}
-        </div>
-      )}
-      {formError && (
-        <div className="mb-4 p-3 text-red-600 bg-red-50 border border-red-200 rounded-md text-sm text-center">
-          {formError}
+      {/* Enhanced error display */}
+      {(error || formError) && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-red-800 mb-1">
+                Sign In Error
+              </h3>
+              <p className="text-sm text-red-700">
+                {error || formError}
+              </p>
+              {error?.includes('Profile') && (
+                <p className="text-xs text-red-600 mt-2">
+                  If this problem persists, try refreshing the page or contact support.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
       
@@ -105,7 +128,14 @@ const Login = () => {
           className="w-full bg-teal-600 hover:bg-teal-700"
           disabled={loading}
         >
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Signing in...
+            </div>
+          ) : (
+            "Sign In"
+          )}
         </Button>
       </form>
     </AuthLayout>
