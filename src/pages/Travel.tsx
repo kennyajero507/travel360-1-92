@@ -1,255 +1,207 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Badge } from '../components/ui/badge';
-import { Plus, FileText, BookOpen, Plane } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
-// Import existing components
-import { useQuoteData } from '../hooks/useQuoteData';
-import { useBookingData } from '../hooks/useBookingData';
-import { useVoucherData } from '../hooks/useVoucherData';
-import { useVoucherActions } from '../hooks/useVoucherActions';
+import React, { useState } from "react";
+import { useQuoteData } from "../hooks/useQuoteData";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Plus, Search, Filter, Eye, Edit, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+
+type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
 
 const Travel = () => {
-  const [activeTab, setActiveTab] = useState('quotes');
-  
-  // Data hooks - fixed destructuring
-  const { quotes = [], isLoading: quotesLoading } = useQuoteData();
-  const { bookings = [], isLoading: bookingsLoading } = useBookingData();
-  const { data: vouchers = [], isLoading: vouchersLoading } = useVoucherData();
-  const { sendEmail, handleDownload } = useVoucherActions();
+  const { data: quotes = [], isLoading, error } = useQuoteData();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const stats = {
-    quotes: quotes.length,
-    activeQuotes: quotes.filter(q => q.status === 'active').length,
-    bookings: bookings.length,
-    confirmedBookings: bookings.filter(b => b.status === 'confirmed').length,
-    vouchers: vouchers.length,
-    sentVouchers: vouchers.filter(v => v.email_sent).length
+  // Filter quotes based on search term and status
+  const filteredQuotes = quotes.filter(quote => {
+    const matchesSearch = quote.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quote.destination.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || quote.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Get status counts for the filter tabs
+  const statusCounts = {
+    all: quotes.length,
+    draft: quotes.filter(q => q.status === 'draft').length,
+    sent: quotes.filter(q => q.status === 'sent').length,
+    approved: quotes.filter(q => q.status === 'approved').length,
+    rejected: quotes.filter(q => q.status === 'rejected').length,
+    expired: quotes.filter(q => q.status === 'expired').length,
   };
 
+  const getStatusColor = (status: QuoteStatus) => {
+    switch (status) {
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'sent': return 'bg-blue-100 text-blue-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'expired': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-red-600">Error Loading Quotes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">There was an error loading your travel quotes. Please try again.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Travel Management</h1>
-          <p className="text-gray-600">Manage quotes, bookings, and vouchers in one place</p>
+          <h1 className="text-2xl font-bold text-gray-900">Travel Quotes</h1>
+          <p className="text-gray-600">Manage your travel quotes and proposals</p>
         </div>
-        <div className="flex gap-3 mt-4 md:mt-0">
-          <Button asChild variant="outline">
-            <Link to="/inquiries/create">
-              <Plus className="h-4 w-4 mr-2" />
-              New Inquiry
-            </Link>
+        <Link to="/create-quote">
+          <Button className="bg-teal-600 hover:bg-teal-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Quote
           </Button>
-          <Button asChild>
-            <Link to="/quotes/create">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Quote
-            </Link>
-          </Button>
-        </div>
+        </Link>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Quotes</CardTitle>
-            <FileText className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.quotes}</div>
-            <p className="text-xs text-muted-foreground">{stats.activeQuotes} active</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
-            <BookOpen className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.bookings}</div>
-            <p className="text-xs text-muted-foreground">{stats.confirmedBookings} confirmed</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Vouchers</CardTitle>
-            <Plane className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.vouchers}</div>
-            <p className="text-xs text-muted-foreground">{stats.sentVouchers} sent</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Search and Filter */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-1">
+              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+              <Input
+                placeholder="Search by client name or destination..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Quotes ({statusCounts.all})</SelectItem>
+                <SelectItem value="draft">Draft ({statusCounts.draft})</SelectItem>
+                <SelectItem value="sent">Sent ({statusCounts.sent})</SelectItem>
+                <SelectItem value="approved">Approved ({statusCounts.approved})</SelectItem>
+                <SelectItem value="rejected">Rejected ({statusCounts.rejected})</SelectItem>
+                <SelectItem value="expired">Expired ({statusCounts.expired})</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Unified Travel Management Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="quotes" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Quotes
-            {stats.quotes > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {stats.quotes}
-              </Badge>
+      {/* Quotes Grid */}
+      {filteredQuotes.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <Search className="h-12 w-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No quotes found</h3>
+            <p className="text-gray-600 mb-4">
+              {searchTerm || statusFilter !== "all" 
+                ? "Try adjusting your search or filters" 
+                : "Get started by creating your first travel quote"}
+            </p>
+            {!searchTerm && statusFilter === "all" && (
+              <Link to="/create-quote">
+                <Button className="bg-teal-600 hover:bg-teal-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Quote
+                </Button>
+              </Link>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="bookings" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Bookings
-            {stats.bookings > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {stats.bookings}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="vouchers" className="flex items-center gap-2">
-            <Plane className="h-4 w-4" />
-            Vouchers
-            {stats.vouchers > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {stats.vouchers}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="quotes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Quotes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {quotesLoading ? (
-                <p>Loading quotes...</p>
-              ) : quotes.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No quotes yet. Create your first quote!</p>
-                  <Button asChild className="mt-4">
-                    <Link to="/quotes/create">Create Quote</Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredQuotes.map((quote) => (
+            <Card key={quote.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">{quote.client}</CardTitle>
+                    <p className="text-sm text-gray-600">{quote.destination}</p>
+                  </div>
+                  <Badge className={getStatusColor(quote.status as QuoteStatus)}>
+                    {quote.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Start Date</p>
+                    <p className="font-medium">
+                      {quote.start_date ? format(new Date(quote.start_date), "MMM dd, yyyy") : "Not set"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Duration</p>
+                    <p className="font-medium">
+                      {quote.duration_days ? `${quote.duration_days} days` : "Not set"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Adults</p>
+                    <p className="font-medium">{quote.adults || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Children</p>
+                    <p className="font-medium">{(quote.children_with_bed || 0) + (quote.children_no_bed || 0)}</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <Link to={`/quotes/${quote.id}/preview`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </Link>
+                  <Link to={`/edit-quote/${quote.id}`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="sm" className="px-2">
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {quotes.slice(0, 10).map(quote => (
-                    <div key={quote.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{quote.client}</div>
-                        <div className="text-sm text-gray-500">{quote.destination}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={quote.status === 'active' ? 'default' : 'secondary'}>
-                          {quote.status}
-                        </Badge>
-                        <Button asChild size="sm" variant="outline">
-                          <Link to={`/quotes/${quote.id}`}>Edit</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="bookings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Bookings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {bookingsLoading ? (
-                <p>Loading bookings...</p>
-              ) : bookings.length === 0 ? (
-                <div className="text-center py-8">
-                  <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No bookings yet. Convert quotes to bookings!</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {bookings.slice(0, 10).map(booking => (
-                    <div key={booking.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{booking.client}</div>
-                        <div className="text-sm text-gray-500">{booking.hotel_name}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
-                          {booking.status}
-                        </Badge>
-                        <Button asChild size="sm" variant="outline">
-                          <Link to={`/bookings/${booking.id}`}>View</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="vouchers" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Vouchers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {vouchersLoading ? (
-                <p>Loading vouchers...</p>
-              ) : vouchers.length === 0 ? (
-                <div className="text-center py-8">
-                  <Plane className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No vouchers yet. Generate from bookings!</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {vouchers.slice(0, 10).map(voucher => (
-                    <div key={voucher.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{voucher.voucher_reference}</div>
-                        <div className="text-sm text-gray-500">
-                          {voucher.bookings?.client || 'Unknown Client'}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={voucher.email_sent ? 'default' : 'secondary'}>
-                          {voucher.email_sent ? 'Sent' : 'Pending'}
-                        </Badge>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownload(voucher.id)}
-                        >
-                          Download
-                        </Button>
-                        {!voucher.email_sent && (
-                          <Button
-                            size="sm"
-                            onClick={() => sendEmail(voucher.id)}
-                          >
-                            Send Email
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

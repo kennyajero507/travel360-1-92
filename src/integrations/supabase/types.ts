@@ -1655,6 +1655,21 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      debug_user_auth: {
+        Args: { user_id_param?: string }
+        Returns: {
+          user_exists: boolean
+          profile_exists: boolean
+          profile_data: Json
+          org_exists: boolean
+          org_data: Json
+          policies_blocking: string[]
+        }[]
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_organization_settings: {
         Args: { p_org_id?: string }
         Returns: {
