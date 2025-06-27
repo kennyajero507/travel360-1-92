@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuoteData } from "../hooks/useQuoteData";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -13,7 +12,7 @@ import { format } from "date-fns";
 type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
 
 const Travel = () => {
-  const { data: quotes = [], isLoading, error } = useQuoteData();
+  const { quotes = [], isLoading, error } = useQuoteData();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
