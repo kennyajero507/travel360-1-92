@@ -23,8 +23,8 @@ export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
     setShowDebug(true);
   };
 
-  // Enhanced loading with better UX
-  if (loading || (session && !profile && !error)) {
+  // Simplified loading state
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center max-w-md mx-auto p-6">
@@ -33,38 +33,6 @@ export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
           <p className="text-slate-600 text-sm">
             Setting up your workspace and profile
           </p>
-          
-          {error && (
-            <Card className="mt-4 border-orange-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2 text-orange-600">
-                  <AlertCircle className="h-4 w-4" />
-                  Loading Issue
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-gray-600 mb-3">{error}</p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={repairProfile}
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Retry
-                  </Button>
-                  <Button
-                    onClick={handleDebug}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <Settings className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     );
@@ -75,7 +43,7 @@ export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Profile failed to load with enhanced error UI
+  // Profile failed to load with simplified error UI
   if (!profile && error) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-50 p-4">
