@@ -95,8 +95,11 @@ export const profileService = {
         return false;
       }
 
-      // Test database connectivity with simple query
-      const { error } = await supabase.rpc('health_check_profiles');
+      // Test database connectivity with simple query instead of RPC call
+      const { error } = await supabase
+        .from('profiles')
+        .select('id')
+        .limit(1);
 
       if (error) {
         console.error('[ProfileService] Health check failed:', error);
