@@ -1,0 +1,110 @@
+
+import { supabase } from '../../integrations/supabase/client';
+import { UserProfile } from './types';
+
+export const simpleProfileService = {
+  async fetchProfile(userId: string): Promise<UserProfile | null> {
+    console.log('[SimpleProfileService] Fetching profile for user:', userId);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[SimpleProfileService] Error fetching profile:', error);
+      return null;
+    }
+
+    if (data) {
+      console.log('[SimpleProfileService] Profile found:', data);
+      return data as UserProfile;
+    }
+
+    console.log('[SimpleProfileService] No profile found for user:', userId);
+    return null;
+  },
+
+  async createProfile(userId: string, email: string, fullName: string, role: string = 'org_owner'): Promise<UserProfile | null> {
+    console.log('[SimpleProfileService] Creating profile for user:', userId);
+    
+    const profileData = {
+      id: userId,
+      full_name: fullName,
+      email: email,
+      role: role,
+      created_at: new Date().toISOString(),
+      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert([profileData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[SimpleProfileService] Error creating profile:', error);
+      return null;
+    }
+
+    console.log('[SimpleProfileService] Profile created successfully:', data);
+    return data as UserProfile;
+  },
+
+  async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
+    console.log('[SimpleProfileService] Updating profile for user:', userId);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[SimpleProfileService] Error updating profile:', error);
+      return null;
+    }
+
+    console.log('[SimpleProfileService] Profile updated successfully:', data);
+    return data as UserProfile;
+  },
+
+  async isSystemAdmin(userId?: string): Promise<boolean> {
+    const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id;
+    if (!targetUserId) return false;
+
+    const { data } = await supabase
+      .from('system_admins')
+      .select('id')
+      .eq('user_id', targetUserId)
+      .maybeSingle();
+
+    return !!data;
+  },
+
+  async debugAuthStatus(userId?: string): Promise<any> {
+    try {
+      const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id;
+      if (!targetUserId) {
+        return { error: 'No user ID available' };
+      }
+
+      const { data, error } = await supabase.rpc('debug_auth_status', {
+        target_user_id: targetUserId
+      });
+
+      if (error) {
+        console.error('[SimpleProfileService] Debug function error:', error);
+        return { error: error.message };
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[SimpleProfileService] Debug error:', error);
+      return { error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+};

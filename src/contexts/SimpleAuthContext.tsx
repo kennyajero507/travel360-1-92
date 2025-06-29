@@ -1,0 +1,252 @@
+
+import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "../integrations/supabase/client";
+import { simpleAuthService } from "./auth/simpleAuthService";
+import { simpleProfileService } from "./auth/simpleProfileService";
+import { roleService } from "./auth/roleService";
+import { UserProfile } from "./auth/types";
+
+interface SimpleAuthContextType {
+  session: Session | null;
+  user: User | null;
+  profile: UserProfile | null;
+  loading: boolean;
+  error: string | null;
+  
+  // Auth methods
+  signUp: (email: string, password: string, fullName: string, role?: string, companyName?: string) => Promise<boolean>;
+  signIn: (email: string, password: string) => Promise<boolean>;
+  signOut: () => Promise<void>;
+  
+  // Profile methods
+  refreshProfile: () => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
+  
+  // Role/Permission methods
+  hasRole: (role: string) => boolean;
+  hasPermission: (permission: string) => boolean;
+  isSystemAdmin: () => boolean;
+  
+  // Debug
+  debugAuth: () => Promise<any>;
+}
+
+const SimpleAuthContext = createContext<SimpleAuthContextType | null>(null);
+
+export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Helper: Fetch profile for user
+  const fetchProfile = useCallback(async (userId: string) => {
+    console.log('[SimpleAuthContext] Fetching profile for user:', userId);
+    
+    try {
+      const profileData = await simpleProfileService.fetchProfile(userId);
+      
+      if (profileData) {
+        setProfile(profileData);
+        setError(null);
+        console.log('[SimpleAuthContext] Profile loaded:', profileData);
+      } else {
+        setProfile(null);
+        setError("Profile not found. Please contact support.");
+        console.warn('[SimpleAuthContext] No profile found for user:', userId);
+      }
+    } catch (err) {
+      console.error('[SimpleAuthContext] Error fetching profile:', err);
+      setProfile(null);
+      setError("Failed to load profile. Please try refreshing.");
+    }
+  }, []);
+
+  // Auth state change handler
+  useEffect(() => {
+    console.log('[SimpleAuthContext] Setting up auth listener');
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[SimpleAuthContext] Auth state changed:', event, session?.user?.id);
+      
+      setSession(session);
+      setUser(session?.user || null);
+      
+      if (session?.user) {
+        // Fetch profile with slight delay to allow trigger to complete
+        setTimeout(() => fetchProfile(session.user.id), 100);
+      } else {
+        setProfile(null);
+        setError(null);
+      }
+      
+      setLoading(false);
+    });
+
+    // Get initial session
+    simpleAuthService.getCurrentSession().then((session) => {
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        fetchProfile(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      console.log('[SimpleAuthContext] Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
+
+  // Sign up method
+  const signUp = async (email: string, password: string, fullName: string, role: string = 'org_owner', companyName?: string): Promise<boolean> => {
+    setError(null);
+    setLoading(true);
+    
+    try {
+      await simpleAuthService.signUp(email, password, fullName, role, companyName);
+      return true;
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Signup error:', err);
+      setError(err.message || 'Signup failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign in method
+  const signIn = async (email: string, password: string): Promise<boolean> => {
+    setError(null);
+    setLoading(true);
+    
+    try {
+      await simpleAuthService.signIn(email, password);
+      return true;
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Signin error:', err);
+      setError(err.message || 'Sign in failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign out method
+  const signOut = async (): Promise<void> => {
+    setLoading(true);
+    
+    try {
+      await simpleAuthService.signOut();
+      // State will be cleared by auth state change listener
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Signout error:', err);
+      setError(err.message || 'Sign out failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh profile
+  const refreshProfile = async (): Promise<void> => {
+    if (user) {
+      setLoading(true);
+      await fetchProfile(user.id);
+      setLoading(false);
+    }
+  };
+
+  // Update profile
+  const updateProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
+    if (!user) return false;
+    
+    setLoading(true);
+    
+    try {
+      const updatedProfile = await simpleProfileService.updateProfile(user.id, updates);
+      
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        setError(null);
+        return true;
+      }
+      
+      setError('Failed to update profile');
+      return false;
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Profile update error:', err);
+      setError(err.message || 'Profile update failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Role and permission helpers
+  const hasRole = (role: string): boolean => {
+    return profile?.role === role;
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    if (!profile) return false;
+    const permissions = roleService.getPermissionsForRole(profile.role);
+    return roleService.hasPermission(permissions, permission);
+  };
+
+  const isSystemAdmin = (): boolean => {
+    return profile?.role === 'system_admin';
+  };
+
+  // Debug method
+  const debugAuth = async (): Promise<any> => {
+    try {
+      const debugInfo = await simpleProfileService.debugAuthStatus(user?.id);
+      return {
+        session: !!session,
+        user: !!user,
+        profile: !!profile,
+        loading,
+        error,
+        debugInfo
+      };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Debug failed' };
+    }
+  };
+
+  const contextValue: SimpleAuthContextType = {
+    session,
+    user,
+    profile,
+    loading,
+    error,
+    signUp,
+    signIn,
+    signOut,
+    refreshProfile,
+    updateProfile,
+    hasRole,
+    hasPermission,
+    isSystemAdmin,
+    debugAuth,
+  };
+
+  return (
+    <SimpleAuthContext.Provider value={contextValue}>
+      {children}
+    </SimpleAuthContext.Provider>
+  );
+};
+
+export const useSimpleAuth = () => {
+  const context = useContext(SimpleAuthContext);
+  if (!context) {
+    throw new Error("useSimpleAuth must be used within a SimpleAuthProvider");
+  }
+  return context;
+};

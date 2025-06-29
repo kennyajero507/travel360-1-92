@@ -1435,6 +1435,27 @@ export type Database = {
         }
         Relationships: []
       }
+      system_admins: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       system_events: {
         Row: {
           created_at: string | null
@@ -1655,6 +1676,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      debug_auth_status: {
+        Args: { target_user_id?: string }
+        Returns: Json
+      }
       debug_user_auth: {
         Args: { user_id_param?: string }
         Returns: {
@@ -1669,10 +1694,6 @@ export type Database = {
       debug_user_profile: {
         Args: { target_user_id?: string }
         Returns: Json
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
       }
       get_organization_settings: {
         Args: { p_org_id?: string }
@@ -1690,6 +1711,10 @@ export type Database = {
       get_user_organization: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      is_system_admin: {
+        Args: { user_id?: string }
+        Returns: boolean
       }
       log_admin_activity: {
         Args: {
