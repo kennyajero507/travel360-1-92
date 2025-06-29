@@ -8,7 +8,7 @@ import { SimpleAuthGuard } from "./components/auth/SimpleAuthGuard";
 import SimpleLogin from "./pages/SimpleLogin";
 import SimpleSignup from "./pages/SimpleSignup";
 import AdminLogin from "./pages/AdminLogin";
-import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +30,7 @@ function App() {
                 path="/dashboard" 
                 element={
                   <SimpleAuthGuard>
-                    <Index />
+                    <Dashboard />
                   </SimpleAuthGuard>
                 } 
               />
