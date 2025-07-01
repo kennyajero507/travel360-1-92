@@ -126,7 +126,7 @@ export const simpleProfileService = {
   },
 
   // Helper method to normalize profile data
-  private normalizeProfile(data: any): UserProfile {
+  normalizeProfile(data: any): UserProfile {
     return {
       id: data.id,
       full_name: data.full_name || null,
