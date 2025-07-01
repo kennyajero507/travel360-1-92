@@ -19,7 +19,21 @@ export const simpleProfileService = {
 
     if (data) {
       console.log('[SimpleProfileService] Profile found:', data);
-      return data as UserProfile;
+      // Ensure all required fields are present with defaults
+      const profile: UserProfile = {
+        id: data.id,
+        full_name: data.full_name || null,
+        email: data.email || null,
+        phone: data.phone || null,
+        role: data.role || 'org_owner',
+        org_id: data.org_id || null,
+        created_at: data.created_at || new Date().toISOString(),
+        trial_ends_at: data.trial_ends_at || null,
+        currency: data.currency || 'USD',
+        email_notifications: data.email_notifications !== undefined ? data.email_notifications : true,
+        sms_notifications: data.sms_notifications !== undefined ? data.sms_notifications : false,
+      };
+      return profile;
     }
 
     console.log('[SimpleProfileService] No profile found for user:', userId);
@@ -36,6 +50,9 @@ export const simpleProfileService = {
       role: role,
       created_at: new Date().toISOString(),
       trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      currency: 'USD',
+      email_notifications: true,
+      sms_notifications: false,
     };
 
     const { data, error } = await supabase
@@ -50,7 +67,7 @@ export const simpleProfileService = {
     }
 
     console.log('[SimpleProfileService] Profile created successfully:', data);
-    return data as UserProfile;
+    return this.normalizeProfile(data);
   },
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
@@ -69,7 +86,7 @@ export const simpleProfileService = {
     }
 
     console.log('[SimpleProfileService] Profile updated successfully:', data);
-    return data as UserProfile;
+    return this.normalizeProfile(data);
   },
 
   async isSystemAdmin(userId?: string): Promise<boolean> {
@@ -106,5 +123,22 @@ export const simpleProfileService = {
       console.error('[SimpleProfileService] Debug error:', error);
       return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
+  },
+
+  // Helper method to normalize profile data
+  private normalizeProfile(data: any): UserProfile {
+    return {
+      id: data.id,
+      full_name: data.full_name || null,
+      email: data.email || null,
+      phone: data.phone || null,
+      role: data.role || 'org_owner',
+      org_id: data.org_id || null,
+      created_at: data.created_at || new Date().toISOString(),
+      trial_ends_at: data.trial_ends_at || null,
+      currency: data.currency || 'USD',
+      email_notifications: data.email_notifications !== undefined ? data.email_notifications : true,
+      sms_notifications: data.sms_notifications !== undefined ? data.sms_notifications : false,
+    };
   }
 };

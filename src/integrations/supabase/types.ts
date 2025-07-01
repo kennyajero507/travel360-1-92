@@ -864,6 +864,7 @@ export type Database = {
           role: string
           sms_notifications: boolean
           trial_ends_at: string | null
+          updated_at: string | null
         }
         Insert: {
           country?: string | null
@@ -878,6 +879,7 @@ export type Database = {
           role?: string
           sms_notifications?: boolean
           trial_ends_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           country?: string | null
@@ -892,6 +894,7 @@ export type Database = {
           role?: string
           sms_notifications?: boolean
           trial_ends_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
