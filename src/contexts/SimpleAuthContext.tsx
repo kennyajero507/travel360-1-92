@@ -6,6 +6,7 @@ import { simpleAuthService } from "./auth/simpleAuthService";
 import { simpleProfileService } from "./auth/simpleProfileService";
 import { roleService } from "./auth/roleService";
 import { UserProfile } from "./auth/types";
+import { runAuthHealthCheck, logHealthCheckResult } from "../utils/authHealthCheck";
 
 interface SimpleAuthContextType {
   session: Session | null;
@@ -41,9 +42,9 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper: Fetch profile for user
-  const fetchProfile = useCallback(async (userId: string) => {
-    console.log('[SimpleAuthContext] Fetching profile for user:', userId);
+  // Helper: Fetch profile for user with retry logic
+  const fetchProfile = useCallback(async (userId: string, retryCount = 0) => {
+    console.log('[SimpleAuthContext] Fetching profile for user:', userId, 'retry:', retryCount);
     
     try {
       const profileData = await simpleProfileService.fetchProfile(userId);
@@ -57,10 +58,21 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
         setError("Profile not found. Please contact support.");
         console.warn('[SimpleAuthContext] No profile found for user:', userId);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('[SimpleAuthContext] Error fetching profile:', err);
+      
+      // Check for specific RLS recursion error and retry
+      if (err?.code === '42P17' && retryCount < 3) {
+        console.log('[SimpleAuthContext] RLS recursion detected, retrying in 1s...');
+        setTimeout(() => fetchProfile(userId, retryCount + 1), 1000);
+        return;
+      }
+      
       setProfile(null);
-      setError("Failed to load profile. Please try refreshing.");
+      const errorMessage = err?.code === '42P17' 
+        ? "Database configuration issue. Please contact support."
+        : "Failed to load profile. Please try refreshing.";
+      setError(errorMessage);
     }
   }, []);
 
@@ -202,17 +214,24 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
     return profile?.role === 'system_admin';
   };
 
-  // Debug method
+  // Debug method with health check
   const debugAuth = async (): Promise<any> => {
     try {
-      const debugInfo = await simpleProfileService.debugAuthStatus(user?.id);
+      const [debugInfo, healthCheck] = await Promise.all([
+        simpleProfileService.debugAuthStatus(user?.id),
+        runAuthHealthCheck()
+      ]);
+      
+      logHealthCheckResult(healthCheck);
+      
       return {
         session: !!session,
         user: !!user,
         profile: !!profile,
         loading,
         error,
-        debugInfo
+        debugInfo,
+        healthCheck
       };
     } catch (err) {
       return { error: err instanceof Error ? err.message : 'Debug failed' };

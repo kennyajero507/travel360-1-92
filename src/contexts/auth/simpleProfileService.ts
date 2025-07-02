@@ -14,7 +14,13 @@ export const simpleProfileService = {
 
     if (error) {
       console.error('[SimpleProfileService] Error fetching profile:', error);
-      return null;
+      
+      // Handle specific RLS recursion error
+      if (error.code === '42P17') {
+        console.error('[SimpleProfileService] RLS infinite recursion detected - this should be fixed now');
+      }
+      
+      throw error;
     }
 
     if (data) {

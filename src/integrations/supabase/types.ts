@@ -1715,6 +1715,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_role_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      is_current_user_system_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_system_admin: {
         Args: { user_id?: string }
         Returns: boolean

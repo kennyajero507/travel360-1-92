@@ -49,12 +49,17 @@ export const SimpleAuthGuard = ({ children, requiredRole }: SimpleAuthGuardProps
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-700">
               <AlertCircle className="h-5 w-5" />
-              Profile Issue
+              Authentication Issue
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded p-3">
               <p className="text-sm text-red-800">{error}</p>
+              {error.includes("Database configuration") && (
+                <p className="text-xs text-red-600 mt-2">
+                  This appears to be a temporary issue. Please try refreshing or contact support.
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
