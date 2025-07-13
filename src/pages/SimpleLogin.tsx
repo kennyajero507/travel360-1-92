@@ -8,6 +8,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { LoadingSpinner } from "../components/common/LoadingSpinner";
 
 const SimpleLogin = () => {
   const navigate = useNavigate();
@@ -68,10 +69,9 @@ const SimpleLogin = () => {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Checking authentication...</p>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" text="Checking authentication..." variant="dots" />
         </div>
       </div>
     );
@@ -146,7 +146,7 @@ const SimpleLogin = () => {
             >
               {loading ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <LoadingSpinner size="sm" variant="pulse" className="text-primary-foreground" />
                   Signing in...
                 </div>
               ) : (
