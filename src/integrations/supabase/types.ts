@@ -1667,6 +1667,10 @@ export type Database = {
         Args: { quote_id_param: string }
         Returns: Json
       }
+      check_if_system_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       check_system_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1723,10 +1727,6 @@ export type Database = {
       get_user_role_safe: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      is_current_user_system_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
       }
       is_system_admin: {
         Args: { user_id?: string }
