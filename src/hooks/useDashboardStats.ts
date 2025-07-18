@@ -51,8 +51,8 @@ const fetchDashboardStats = async (orgId: string | null) => {
 };
 
 export const useDashboardStats = () => {
-    const { organization } = useAuth();
-    const orgId = organization?.id || null;
+    const { profile } = useAuth();
+    const orgId = profile?.org_id || null;
 
     return useQuery({
         queryKey: ['dashboardStats', orgId],
