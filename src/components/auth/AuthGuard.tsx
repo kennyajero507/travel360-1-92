@@ -1,5 +1,5 @@
 
-import { useAuth } from '../../contexts/AuthContext';
+import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { AlertCircle, RefreshCw, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -12,7 +12,7 @@ interface AuthGuardProps {
 }
 
 export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
-  const { session, loading, checkRoleAccess, error, profile, repairProfile, debugAuth } = useAuth();
+  const { session, loading, error, profile, debugAuth } = useSimpleAuth();
   const location = useLocation();
   const [showDebug, setShowDebug] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -66,12 +66,12 @@ export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
             
             <div className="space-y-2">
               <Button
-                onClick={repairProfile}
+                onClick={() => window.location.reload()}
                 className="w-full"
                 variant="default"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Set Up Profile
+                Retry Loading Profile
               </Button>
               
               <div className="flex gap-2">
@@ -109,7 +109,7 @@ export const AuthGuard = ({ children, allowedRoles }: AuthGuardProps) => {
   }
 
   // Role-based access check
-  if (allowedRoles && (!profile || !checkRoleAccess(allowedRoles))) {
+  if (allowedRoles && (!profile || !allowedRoles.includes(profile.role))) {
     return <Navigate to="/dashboard" replace />;
   }
 

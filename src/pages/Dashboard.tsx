@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useSimpleAuth } from "../contexts/SimpleAuthContext";
 import OrganizationSetup from "../components/OrganizationSetup";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -14,7 +14,7 @@ import { errorHandler } from "@/services/errorHandlingService";
 import { toast } from "sonner";
 
 const Dashboard = () => {
-  const { profile, loading, role, organization } = useAuth();
+  const { profile, loading } = useSimpleAuth();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   
   // Show loading state
@@ -35,7 +35,7 @@ const Dashboard = () => {
     return <OrganizationSetup />;
   }
 
-  const isAgent = role === 'agent';
+  const isAgent = profile?.role === 'agent';
   
   // Example quick action form for validation and error demo
   const [quickAction, setQuickAction] = useState("");
@@ -69,8 +69,8 @@ const Dashboard = () => {
           {profile && (
             <div className="mt-2 text-sm text-gray-500">
               <p>Role: <span className="font-medium">{profile.role}</span></p>
-              {organization ? (
-                <p>Organization: <span className="font-medium">{organization.name}</span></p>
+              {profile.org_id ? (
+                <p>Organization: <span className="font-medium">Organization ID: {profile.org_id}</span></p>
               ) : (
                 <p className="text-orange-600">No organization assigned</p>
               )}
