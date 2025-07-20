@@ -41,10 +41,18 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fetchingProfile, setFetchingProfile] = useState<string | null>(null);
 
   // Helper: Fetch profile for user with retry logic
   const fetchProfile = useCallback(async (userId: string, retryCount = 0) => {
+    // Prevent duplicate fetches for the same user
+    if (fetchingProfile === userId) {
+      console.log('[SimpleAuthContext] Already fetching profile for user:', userId);
+      return;
+    }
+    
     console.log('[SimpleAuthContext] Fetching profile for user:', userId, 'retry:', retryCount);
+    setFetchingProfile(userId);
     
     try {
       const profileData = await simpleProfileService.fetchProfile(userId);
@@ -73,8 +81,10 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
         ? "Database configuration issue. Please contact support."
         : "Failed to load profile. Please try refreshing.";
       setError(errorMessage);
+    } finally {
+      setFetchingProfile(null);
     }
-  }, []);
+  }, [fetchingProfile]);
 
   // Auth state change handler
   useEffect(() => {
@@ -113,7 +123,7 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
       console.log('[SimpleAuthContext] Cleaning up auth listener');
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []); // Remove fetchProfile dependency to prevent re-renders
 
   // Sign up method
   const signUp = async (email: string, password: string, fullName: string, role: string = 'org_owner', companyName?: string): Promise<boolean> => {
