@@ -12,6 +12,9 @@ import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
 import InquiriesPage from "./pages/inquiries/InquiriesPage";
 import CreateInquiryPage from "./pages/inquiries/CreateInquiryPage";
+import QuotesPage from "./pages/quotes/QuotesPage";
+import CreateQuotePage from "./pages/quotes/CreateQuotePage";
+import QuotePreviewPage from "./pages/quotes/QuotePreviewPage";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +36,9 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="inquiries" element={<InquiriesPage />} />
                 <Route path="inquiries/create" element={<CreateInquiryPage />} />
+                <Route path="quotes" element={<QuotesPage />} />
+                <Route path="quotes/create" element={<CreateQuotePage />} />
+                <Route path="quotes/:id/preview" element={<QuotePreviewPage />} />
                 {/* Add more protected routes here */}
               </Route>
               
