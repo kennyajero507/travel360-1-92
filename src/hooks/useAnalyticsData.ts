@@ -4,8 +4,8 @@ import { analyticsService } from '../services/analyticsService';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useAnalyticsData = () => {
-  const { organization } = useAuth();
-  const orgId = organization?.id;
+  const { profile } = useAuth();
+  const orgId = profile?.org_id;
 
   const {
     data: analyticsData,

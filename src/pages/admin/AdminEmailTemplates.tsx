@@ -33,14 +33,14 @@ const AdminEmailTemplates = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<{ [k: string]: string }>({});
-  const { organization } = useAuth();
+  const { profile } = useAuth();
 
   const fetchTemplates = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("email_templates")
       .select("*")
-      .eq("org_id", organization?.id)
+      .eq("org_id", profile?.org_id)
       .order("updated_at", { ascending: false });
     setLoading(false);
 
@@ -54,7 +54,7 @@ const AdminEmailTemplates = () => {
   useEffect(() => {
     fetchTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organization?.id]);
+  }, [profile?.org_id]);
 
   const validate = () => {
     const errors: typeof formErrors = {};
@@ -100,7 +100,7 @@ const AdminEmailTemplates = () => {
         .from("email_templates")
         .update({
           ...form,
-          org_id: organization?.id,
+          org_id: profile?.org_id,
           updated_at: new Date().toISOString(),
         })
         .eq("id", editingId)
@@ -109,7 +109,7 @@ const AdminEmailTemplates = () => {
     } else {
       result = await supabase
         .from("email_templates")
-        .insert([{ ...form, org_id: organization?.id }])
+        .insert([{ ...form, org_id: profile?.org_id }])
         .select()
         .maybeSingle();
     }

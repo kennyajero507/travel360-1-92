@@ -59,8 +59,8 @@ const fetchAnalyticsData = async (orgId: string | null) => {
 };
 
 export const useAnalytics = () => {
-    const { organization } = useAuth();
-    const orgId = organization?.id || null;
+    const { profile } = useAuth();
+    const orgId = profile?.org_id || null;
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['analyticsSummary', orgId],

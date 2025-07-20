@@ -78,8 +78,8 @@ const fetchSidebarCounts = async (orgId: string | null): Promise<SidebarCounts> 
 };
 
 export const useSidebarCounts = () => {
-  const { organization } = useAuth();
-  const orgId = organization?.id || null;
+  const { profile } = useAuth();
+  const orgId = profile?.org_id || null;
 
   return useQuery({
     queryKey: ['sidebarCounts', orgId],
