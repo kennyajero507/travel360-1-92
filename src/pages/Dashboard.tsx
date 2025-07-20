@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSimpleAuth } from "../contexts/SimpleAuthContext";
-import OrganizationSetup from "../components/OrganizationSetup";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { FileText, Users, Calendar, ArrowUp, MessageSquare, Receipt, ClipboardList, TrendingUp, BarChart3, Zap } from "lucide-react";
@@ -32,7 +31,23 @@ const Dashboard = () => {
   // Show organization setup if user doesn't have one and is org_owner
   // Only redirect org_owners to setup, other roles can access dashboard without org
   if (profile && !profile.org_id && profile.role === 'org_owner') {
-    return <OrganizationSetup />;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Organization Setup Required</CardTitle>
+            <CardDescription>
+              You need to set up your organization before accessing the dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to="/organization/setup">Set Up Organization</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const isAgent = profile?.role === 'agent';
@@ -88,11 +103,6 @@ const Dashboard = () => {
                   You're not currently associated with an organization. Contact your administrator or create your own organization.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button asChild>
-                  <Link to="/organization/setup">Set Up Organization</Link>
-                </Button>
-              </CardContent>
             </Card>
           </div>
         )}
