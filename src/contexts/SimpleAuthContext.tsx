@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../integrations/supabase/client";
@@ -38,193 +37,115 @@ interface SimpleAuthContextType {
 
 const SimpleAuthContext = createContext<SimpleAuthContextType | null>(null);
 
-export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const SimpleAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fetchingProfile, setFetchingProfile] = useState<string | null>(null);
+  const [fetchingProfile, setFetchingProfile] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Helper: Fetch profile for user with retry logic
-  const fetchProfile = useCallback(async (userId: string, retryCount = 0) => {
-    // Prevent duplicate fetches for the same user
-    if (fetchingProfile === userId) {
-      console.log('[SimpleAuthContext] Already fetching profile for user:', userId);
+  // Auth methods
+  const signUp = async (email: string, password: string, fullName: string, role: string = 'org_owner', companyName?: string): Promise<boolean> => {
+    try {
+      setError(null);
+      const data = await simpleAuthService.signUp(email, password, fullName, role, companyName);
+      return !!data.user;
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Sign up error:', err);
+      setError(err.message);
+      return false;
+    }
+  };
+
+  const signIn = async (email: string, password: string): Promise<boolean> => {
+    try {
+      setError(null);
+      const data = await simpleAuthService.signIn(email, password);
+      return !!data.user;
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Sign in error:', err);
+      setError(err.message);
+      return false;
+    }
+  };
+
+  const signOut = async (): Promise<void> => {
+    try {
+      await simpleAuthService.signOut();
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setError(null);
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Sign out error:', err);
+      setError(err.message);
+    }
+  };
+
+  // Profile fetching with deduplication
+  const fetchProfile = useCallback(async (userId: string, currentRetry: number = 0) => {
+    if (!userId || fetchingProfile) {
+      console.log('[SimpleAuthContext] Skipping profile fetch - no userId or already fetching');
       return;
     }
-    
-    console.log('[SimpleAuthContext] Fetching profile for user:', userId, 'retry:', retryCount);
-    setFetchingProfile(userId);
+
+    const MAX_RETRIES = 3;
+    setFetchingProfile(true);
     
     try {
+      console.log(`[SimpleAuthContext] Fetching profile for user: ${userId} retry: ${currentRetry}`);
       const profileData = await simpleProfileService.fetchProfile(userId);
       
       if (profileData) {
+        console.log('[SimpleAuthContext] Profile loaded:', profileData);
         setProfile(profileData);
         setError(null);
-        console.log('[SimpleAuthContext] Profile loaded:', profileData);
+        setRetryCount(0);
       } else {
-        setProfile(null);
-        setError("Profile not found. Please contact support.");
-        console.warn('[SimpleAuthContext] No profile found for user:', userId);
+        console.warn('[SimpleAuthContext] No profile data returned');
+        if (currentRetry < MAX_RETRIES) {
+          setRetryCount(currentRetry + 1);
+          setTimeout(() => fetchProfile(userId, currentRetry + 1), 1000 * (currentRetry + 1));
+        } else {
+          setError('Failed to load profile after multiple attempts');
+        }
       }
     } catch (err: any) {
-      console.error('[SimpleAuthContext] Error fetching profile:', err);
-      
-      // Check for specific RLS recursion error and retry
-      if (err?.code === '42P17' && retryCount < 3) {
-        console.log('[SimpleAuthContext] RLS recursion detected, retrying in 1s...');
-        setTimeout(() => fetchProfile(userId, retryCount + 1), 1000);
-        return;
+      console.error('[SimpleAuthContext] Profile fetch error:', err);
+      if (currentRetry < MAX_RETRIES) {
+        setRetryCount(currentRetry + 1);
+        setTimeout(() => fetchProfile(userId, currentRetry + 1), 1000 * (currentRetry + 1));
+      } else {
+        setError(`Profile loading failed: ${err.message}`);
       }
-      
-      setProfile(null);
-      const errorMessage = err?.code === '42P17' 
-        ? "Database configuration issue. Please contact support."
-        : "Failed to load profile. Please try refreshing.";
-      setError(errorMessage);
     } finally {
-      setFetchingProfile(null);
+      setFetchingProfile(false);
     }
   }, [fetchingProfile]);
 
-  // Auth state change handler
-  useEffect(() => {
-    console.log('[SimpleAuthContext] Setting up auth listener');
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[SimpleAuthContext] Auth state changed:', event, session?.user?.id);
-      
-      setSession(session);
-      setUser(session?.user || null);
-      
-      if (session?.user) {
-        // Fetch profile with slight delay to allow trigger to complete
-        setTimeout(() => fetchProfile(session.user.id), 100);
-      } else {
-        setProfile(null);
-        setError(null);
-      }
-      
-      setLoading(false);
-    });
-
-    // Get initial session
-    simpleAuthService.getCurrentSession().then((session) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        fetchProfile(session.user.id).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      console.log('[SimpleAuthContext] Cleaning up auth listener');
-      subscription.unsubscribe();
-    };
-  }, []); // Remove fetchProfile dependency to prevent re-renders
-
-  // Sign up method
-  const signUp = async (email: string, password: string, fullName: string, role: string = 'org_owner', companyName?: string): Promise<boolean> => {
-    setError(null);
-    setLoading(true);
-    
-    try {
-      await simpleAuthService.signUp(email, password, fullName, role, companyName);
-      return true;
-    } catch (err: any) {
-      console.error('[SimpleAuthContext] Signup error:', err);
-      setError(err.message || 'Signup failed');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sign in method
-  const signIn = async (email: string, password: string): Promise<boolean> => {
-    setError(null);
-    setLoading(true);
-    
-    try {
-      await simpleAuthService.signIn(email, password);
-      return true;
-    } catch (err: any) {
-      console.error('[SimpleAuthContext] Signin error:', err);
-      setError(err.message || 'Sign in failed');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sign out method
-  const signOut = async (): Promise<void> => {
-    setLoading(true);
-    
-    try {
-      await simpleAuthService.signOut();
-      // State will be cleared by auth state change listener
-    } catch (err: any) {
-      console.error('[SimpleAuthContext] Signout error:', err);
-      setError(err.message || 'Sign out failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Refresh profile
   const refreshProfile = async (): Promise<void> => {
     if (user) {
-      setLoading(true);
       await fetchProfile(user.id);
-      setLoading(false);
     }
   };
 
-  // Update profile
   const updateProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
     if (!user) return false;
     
-    setLoading(true);
-    
     try {
       const updatedProfile = await simpleProfileService.updateProfile(user.id, updates);
-      
       if (updatedProfile) {
-        setProfile(updatedProfile);
-        setError(null);
+        await fetchProfile(user.id);
         return true;
       }
-      
-      setError('Failed to update profile');
       return false;
     } catch (err: any) {
       console.error('[SimpleAuthContext] Profile update error:', err);
-      setError(err.message || 'Profile update failed');
+      setError(err.message);
       return false;
-    } finally {
-      setLoading(false);
     }
-  };
-
-  // Role and permission helpers
-  const hasRole = (role: string): boolean => {
-    return profile?.role === role;
-  };
-
-  const hasPermission = (permission: string): boolean => {
-    if (!profile) return false;
-    const permissions = roleService.getPermissionsForRole(profile.role);
-    return roleService.hasPermission(permissions, permission);
-  };
-
-  const isSystemAdmin = (): boolean => {
-    return profile?.role === 'system_admin';
   };
 
   // Organization creation method
@@ -265,6 +186,21 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
     }
   };
 
+  // Role/Permission methods
+  const hasRole = (role: string): boolean => {
+    return profile?.role === role;
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    if (!profile) return false;
+    const permissions = roleService.getPermissionsForRole(profile.role);
+    return roleService.hasPermission(permissions, permission);
+  };
+
+  const isSystemAdmin = (): boolean => {
+    return profile?.role === 'system_admin';
+  };
+
   // Debug method with health check
   const debugAuth = async (): Promise<any> => {
     try {
@@ -289,6 +225,50 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
     }
   };
 
+  // Auth state listener
+  useEffect(() => {
+    console.log('[SimpleAuthContext] Setting up auth listener');
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        console.log('[SimpleAuthContext] Auth state changed:', event, currentSession?.user?.id);
+        
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
+        
+        if (currentSession?.user && !fetchingProfile) {
+          // Defer profile fetch to avoid blocking auth state change
+          setTimeout(() => {
+            fetchProfile(currentSession.user.id);
+          }, 0);
+        } else if (!currentSession?.user) {
+          setProfile(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('[SimpleAuthContext] Initial session check:', initialSession?.user?.id);
+      setSession(initialSession);
+      setUser(initialSession?.user || null);
+      
+      if (initialSession?.user && !fetchingProfile) {
+        setTimeout(() => {
+          fetchProfile(initialSession.user.id);
+        }, 0);
+      }
+      
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
+
   const contextValue: SimpleAuthContextType = {
     session,
     user,
@@ -300,8 +280,8 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
     signOut,
     refreshProfile,
     updateProfile,
-    hasRole,
     createOrganization,
+    hasRole,
     hasPermission,
     isSystemAdmin,
     debugAuth,
