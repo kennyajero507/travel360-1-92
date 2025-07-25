@@ -1688,6 +1688,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      create_user_organization: {
+        Args: { org_name: string }
+        Returns: Json
+      }
       debug_auth_status: {
         Args: { target_user_id?: string }
         Returns: Json

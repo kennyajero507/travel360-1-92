@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 
 const OrganizationSetup = () => {
-  const { profile, loading: authLoading, refreshProfile } = useSimpleAuth();
+  const { profile, loading: authLoading, refreshProfile, createOrganization, error: authError } = useSimpleAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

@@ -24,6 +24,9 @@ interface SimpleAuthContextType {
   refreshProfile: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   
+  // Organization methods
+  createOrganization: (orgName: string) => Promise<boolean>;
+  
   // Role/Permission methods
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -224,6 +227,44 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
     return profile?.role === 'system_admin';
   };
 
+  // Organization creation method
+  const createOrganization = async (orgName: string): Promise<boolean> => {
+    try {
+      console.log('[SimpleAuthContext] Creating organization:', orgName);
+      
+      const { data, error } = await supabase.rpc('create_user_organization', {
+        org_name: orgName
+      });
+
+      if (error) {
+        console.error('[SimpleAuthContext] Organization creation error:', error);
+        setError(error.message);
+        return false;
+      }
+
+      // Type guard for the response data
+      const response = data as any;
+      if (!response?.success) {
+        console.error('[SimpleAuthContext] Organization creation failed:', response?.error);
+        setError(response?.error || 'Failed to create organization');
+        return false;
+      }
+
+      console.log('[SimpleAuthContext] Organization created successfully:', response.org_id);
+      
+      // Refresh profile to get updated organization info
+      if (user) {
+        await fetchProfile(user.id);
+      }
+      
+      return true;
+    } catch (err: any) {
+      console.error('[SimpleAuthContext] Organization creation exception:', err);
+      setError(err.message || 'Failed to create organization');
+      return false;
+    }
+  };
+
   // Debug method with health check
   const debugAuth = async (): Promise<any> => {
     try {
@@ -260,6 +301,7 @@ export const SimpleAuthProvider = ({ children }: { children: React.ReactNode }) 
     refreshProfile,
     updateProfile,
     hasRole,
+    createOrganization,
     hasPermission,
     isSystemAdmin,
     debugAuth,
