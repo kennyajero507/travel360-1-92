@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useSimpleAuth } from "../contexts/SimpleAuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import OrganizationForm from "./auth/OrganizationForm";
 import { Building, CheckCircle, Clock, AlertCircle } from "lucide-react";
@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 
 const OrganizationSetup = () => {
-  const { createOrganization, profile, loading: authLoading, refreshProfile, error: authError } = useAuth();
+  const { profile, loading: authLoading, refreshProfile } = useSimpleAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
