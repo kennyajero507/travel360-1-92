@@ -15,6 +15,7 @@ import CreateInquiryPage from "./pages/inquiries/CreateInquiryPage";
 import QuotesPage from "./pages/quotes/QuotesPage";
 import CreateQuotePage from "./pages/quotes/CreateQuotePage";
 import QuotePreviewPage from "./pages/quotes/QuotePreviewPage";
+import OrganizationSetup from "./components/OrganizationSetup";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ function App() {
               <Route path="/login" element={<SimpleLogin />} />
               <Route path="/signup" element={<SimpleSignup />} />
               <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/organization/setup" element={<OrganizationSetup />} />
               
               {/* Protected routes */}
               <Route path="/" element={<DashboardLayout />}>

@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../integrations/supabase/client';
-import { useAuth } from '../contexts/AuthContext';
+import { useSimpleAuth } from '../contexts/SimpleAuthContext';
 
 const fetchDashboardStats = async (orgId: string | null) => {
     if (!orgId) {
@@ -51,7 +51,7 @@ const fetchDashboardStats = async (orgId: string | null) => {
 };
 
 export const useDashboardStats = () => {
-    const { profile } = useAuth();
+    const { profile } = useSimpleAuth();
     const orgId = profile?.org_id || null;
 
     return useQuery({
