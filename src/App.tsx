@@ -9,6 +9,10 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import SimpleLogin from "./pages/SimpleLogin";
 import SimpleSignup from "./pages/SimpleSignup";
 import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import OrganizationManagement from "./pages/admin/OrganizationManagement";
+import UserManagement from "./pages/admin/UserManagement";
+import SubscriptionManagement from "./pages/admin/SubscriptionManagement";
 import Dashboard from "./pages/Dashboard";
 import InquiriesPage from "./pages/inquiries/InquiriesPage";
 import CreateInquiryPage from "./pages/inquiries/CreateInquiryPage";
@@ -31,6 +35,10 @@ function App() {
               <Route path="/login" element={<SimpleLogin />} />
               <Route path="/signup" element={<SimpleSignup />} />
               <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/organizations" element={<OrganizationManagement />} />
+              <Route path="/admin/users" element={<UserManagement />} />
+              <Route path="/admin/subscriptions" element={<SubscriptionManagement />} />
               <Route path="/organization/setup" element={<OrganizationSetup />} />
               
               {/* Protected routes */}

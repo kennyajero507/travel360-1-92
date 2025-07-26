@@ -34,6 +34,7 @@ const Sidebar = () => {
       system_admin: [
         { icon: Building, label: 'Organizations', path: '/admin/organizations' },
         { icon: Users, label: 'Users', path: '/admin/users' },
+        { icon: CreditCard, label: 'Subscriptions', path: '/admin/subscriptions' },
         { icon: BarChart3, label: 'System Analytics', path: '/admin/analytics' },
         { icon: Settings, label: 'System Settings', path: '/admin/settings' },
       ],
