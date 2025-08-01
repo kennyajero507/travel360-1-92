@@ -7,10 +7,11 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Plus, Trash2, FileText, Calculator, Hotel, Plane } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, FileText, Calculator, Hotel, Plane, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../integrations/supabase/client';
 
-// Mock data for hotels and transport
+// Mock data for hotels
 const mockHotels = [
   {
     id: '1',
@@ -21,12 +22,6 @@ const mockHotels = [
       { name: 'Standard Room', cost_per_night: 150 },
       { name: 'Ocean View Suite', cost_per_night: 200 },
       { name: 'Presidential Suite', cost_per_night: 350 }
-    ],
-    meal_plans: [
-      { type: 'Room Only', additional_cost: 0 },
-      { type: 'Breakfast', additional_cost: 25 },
-      { type: 'Half Board', additional_cost: 50 },
-      { type: 'Full Board', additional_cost: 80 }
     ]
   },
   {
@@ -36,65 +31,36 @@ const mockHotels = [
     location: 'Central Serengeti',
     room_types: [
       { name: 'Safari Tent', cost_per_night: 300 },
-      { name: 'Safari Suite', cost_per_night: 450 },
-      { name: 'Presidential Safari Suite', cost_per_night: 650 }
-    ],
-    meal_plans: [
-      { type: 'Full Board', additional_cost: 0 },
-      { type: 'All Inclusive', additional_cost: 100 }
+      { name: 'Safari Suite', cost_per_night: 450 }
     ]
   }
 ];
 
-const mockTransport = [
-  { id: '1', type: 'Airport Transfer', route: 'Airport - Hotel', cost_per_person: 25 },
-  { id: '2', type: 'Flight', route: 'Nairobi - Zanzibar', cost_per_person: 150 },
-  { id: '3', type: 'Safari Vehicle', route: 'Game Drive', cost_per_person: 80 }
-];
-
-// Mock inquiry data
-const mockInquiry = {
-  id: '1',
-  inquiry_id: 'ENQ-2501-001',
-  client_name: 'Sarah Johnson',
-  client_email: 'sarah@email.com',
-  destination: 'Zanzibar, Tanzania',
-  travel_start: '2025-03-15',
-  travel_end: '2025-03-22',
-  number_of_guests: 2
-};
-
-interface QuoteHotel {
+interface SleepingArrangement {
   id: string;
-  hotel_id: string;
-  hotel_name: string;
-  hotel_category: string;
-  location: string;
-  check_in: string;
-  check_out: string;
-  nights: number;
+  room_number: number;
+  adults: number;
+  children_with_bed: number;
+  children_no_bed: number;
   room_type: string;
-  meal_plan: string;
   cost_per_night: number;
-  total_cost: number;
-  is_primary: boolean;
 }
 
-interface QuoteTransport {
+interface TransportOption {
   id: string;
-  transport_type: string;
-  vendor_name: string;
+  type: string;
   route: string;
   cost_per_person: number;
+  total_passengers: number;
   total_cost: number;
 }
 
-interface RoomArrangement {
+interface TransferOption {
   id: string;
-  room_type: string;
-  occupancy: number;
-  number_of_rooms: number;
-  cost_per_room: number;
+  type: string;
+  route: string;
+  cost_per_person: number;
+  total_passengers: number;
   total_cost: number;
 }
 
@@ -105,32 +71,30 @@ const CreateQuotePage = () => {
   const inquiryId = searchParams.get('inquiry');
   
   const [loading, setLoading] = useState(false);
-  const [inquiry] = useState(mockInquiry); // In real app, fetch based on inquiryId
+  const [inquiry, setInquiry] = useState<any>(null);
+  const [loadingInquiry, setLoadingInquiry] = useState(true);
 
   const [formData, setFormData] = useState({
-    inquiry_id: inquiryId || '',
-    valid_until: '',
+    selected_hotel_id: '',
     markup_percentage: 15,
+    valid_until: '',
     notes: ''
   });
 
-  const [hotels, setHotels] = useState<QuoteHotel[]>([]);
-  const [transport, setTransport] = useState<QuoteTransport[]>([]);
-  const [roomArrangements, setRoomArrangements] = useState<RoomArrangement[]>([
-    {
-      id: '1',
-      room_type: 'Double Sharing',
-      occupancy: 2,
-      number_of_rooms: 1,
-      cost_per_room: 0,
-      total_cost: 0
-    }
-  ]);
-
+  const [sleepingArrangements, setSleepingArrangements] = useState<SleepingArrangement[]>([]);
+  const [transportOptions, setTransportOptions] = useState<TransportOption[]>([]);
+  const [transferOptions, setTransferOptions] = useState<TransferOption[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Fetch inquiry data
   useEffect(() => {
-    // Set default valid until date (30 days from now)
+    if (inquiryId) {
+      fetchInquiry();
+    }
+  }, [inquiryId]);
+
+  // Set default valid until date
+  useEffect(() => {
     const defaultValidUntil = new Date();
     defaultValidUntil.setDate(defaultValidUntil.getDate() + 30);
     setFormData(prev => ({
@@ -139,147 +103,154 @@ const CreateQuotePage = () => {
     }));
   }, []);
 
-  const calculateNights = (checkIn: string, checkOut: string) => {
-    if (!checkIn || !checkOut) return 0;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const fetchInquiry = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inquiries')
+        .select('*')
+        .eq('id', inquiryId)
+        .single();
+
+      if (error) throw error;
+      
+      setInquiry(data);
+      
+      // Initialize sleeping arrangements based on number of rooms
+      const arrangements: SleepingArrangement[] = [];
+      for (let i = 1; i <= (data.num_rooms || 1); i++) {
+        arrangements.push({
+          id: `room_${i}`,
+          room_number: i,
+          adults: Math.floor(data.adults / (data.num_rooms || 1)),
+          children_with_bed: Math.floor(data.children_with_bed / (data.num_rooms || 1)),
+          children_no_bed: Math.floor(data.children_no_bed / (data.num_rooms || 1)),
+          room_type: '',
+          cost_per_night: 0
+        });
+      }
+      setSleepingArrangements(arrangements);
+    } catch (error) {
+      console.error('Error fetching inquiry:', error);
+      toast.error('Failed to load inquiry data');
+    } finally {
+      setLoadingInquiry(false);
+    }
   };
 
-  const addHotel = () => {
-    const newHotel: QuoteHotel = {
-      id: Date.now().toString(),
-      hotel_id: '',
-      hotel_name: '',
-      hotel_category: '',
-      location: '',
-      check_in: inquiry.travel_start,
-      check_out: inquiry.travel_end,
-      nights: calculateNights(inquiry.travel_start, inquiry.travel_end),
-      room_type: '',
-      meal_plan: '',
-      cost_per_night: 0,
-      total_cost: 0,
-      is_primary: hotels.length === 0
-    };
-    setHotels([...hotels, newHotel]);
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
-  const updateHotel = (id: string, field: string, value: any) => {
-    setHotels(hotels.map(hotel => {
-      if (hotel.id === id) {
-        const updated = { ...hotel, [field]: value };
+  const updateSleepingArrangement = (id: string, field: string, value: any) => {
+    setSleepingArrangements(prev => prev.map(arr => {
+      if (arr.id === id) {
+        const updated = { ...arr, [field]: value };
         
-        // Recalculate nights and total cost when dates change
-        if (field === 'check_in' || field === 'check_out') {
-          updated.nights = calculateNights(updated.check_in, updated.check_out);
-          updated.total_cost = updated.nights * updated.cost_per_night;
-        }
-        
-        // Recalculate total cost when cost per night changes
-        if (field === 'cost_per_night') {
-          updated.total_cost = updated.nights * value;
-        }
-        
-        // Update hotel details when hotel is selected
-        if (field === 'hotel_id') {
-          const selectedHotel = mockHotels.find(h => h.id === value);
-          if (selectedHotel) {
-            updated.hotel_name = selectedHotel.name;
-            updated.hotel_category = selectedHotel.category;
-            updated.location = selectedHotel.location;
+        // Update cost when room type changes
+        if (field === 'room_type' && formData.selected_hotel_id) {
+          const hotel = mockHotels.find(h => h.id === formData.selected_hotel_id);
+          const roomType = hotel?.room_types.find(rt => rt.name === value);
+          if (roomType) {
+            updated.cost_per_night = roomType.cost_per_night;
           }
         }
         
         return updated;
       }
-      return hotel;
+      return arr;
     }));
   };
 
-  const removeHotel = (id: string) => {
-    setHotels(hotels.filter(hotel => hotel.id !== id));
-  };
-
-  const addTransport = () => {
-    const newTransport: QuoteTransport = {
+  const addTransportOption = () => {
+    const newTransport: TransportOption = {
       id: Date.now().toString(),
-      transport_type: '',
-      vendor_name: '',
+      type: '',
       route: '',
       cost_per_person: 0,
+      total_passengers: inquiry?.adults + inquiry?.children || 1,
       total_cost: 0
     };
-    setTransport([...transport, newTransport]);
+    setTransportOptions([...transportOptions, newTransport]);
   };
 
-  const updateTransport = (id: string, field: string, value: any) => {
-    setTransport(transport.map(t => {
-      if (t.id === id) {
-        const updated = { ...t, [field]: value };
-        
-        // Recalculate total cost
+  const updateTransportOption = (id: string, field: string, value: any) => {
+    setTransportOptions(prev => prev.map(transport => {
+      if (transport.id === id) {
+        const updated = { ...transport, [field]: value };
         if (field === 'cost_per_person') {
-          updated.total_cost = value * inquiry.number_of_guests;
+          updated.total_cost = value * updated.total_passengers;
         }
-        
         return updated;
       }
-      return t;
+      return transport;
     }));
   };
 
-  const removeTransport = (id: string) => {
-    setTransport(transport.filter(t => t.id !== id));
+  const removeTransportOption = (id: string) => {
+    setTransportOptions(prev => prev.filter(t => t.id !== id));
   };
 
-  const calculateSubtotal = () => {
-    const hotelTotal = hotels.reduce((sum, hotel) => sum + hotel.total_cost, 0);
-    const transportTotal = transport.reduce((sum, t) => sum + t.total_cost, 0);
-    return hotelTotal + transportTotal;
+  const addTransferOption = () => {
+    const newTransfer: TransferOption = {
+      id: Date.now().toString(),
+      type: '',
+      route: '',
+      cost_per_person: 0,
+      total_passengers: inquiry?.adults + inquiry?.children || 1,
+      total_cost: 0
+    };
+    setTransferOptions([...transferOptions, newTransfer]);
   };
 
-  const calculateMarkup = (subtotal: number) => {
-    return (subtotal * formData.markup_percentage) / 100;
+  const updateTransferOption = (id: string, field: string, value: any) => {
+    setTransferOptions(prev => prev.map(transfer => {
+      if (transfer.id === id) {
+        const updated = { ...transfer, [field]: value };
+        if (field === 'cost_per_person') {
+          updated.total_cost = value * updated.total_passengers;
+        }
+        return updated;
+      }
+      return transfer;
+    }));
   };
 
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const markup = calculateMarkup(subtotal);
-    return subtotal + markup;
+  const removeTransferOption = (id: string) => {
+    setTransferOptions(prev => prev.filter(t => t.id !== id));
   };
 
-  const generateQuoteId = () => {
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `QUO-${year}${month}-${random}`;
+  const calculateTotals = () => {
+    const hotelTotal = sleepingArrangements.reduce((sum, arr) => 
+      sum + (arr.cost_per_night * (inquiry?.nights_count || 1)), 0
+    );
+    
+    const transportTotal = transportOptions.reduce((sum, t) => sum + t.total_cost, 0);
+    const transferTotal = transferOptions.reduce((sum, t) => sum + t.total_cost, 0);
+    
+    const subtotal = hotelTotal + transportTotal + transferTotal;
+    const markupAmount = (subtotal * formData.markup_percentage) / 100;
+    const total = subtotal + markupAmount;
+    
+    return { hotelTotal, transportTotal, transferTotal, subtotal, markupAmount, total };
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.inquiry_id) {
-      newErrors.inquiry_id = 'Inquiry is required';
+    if (!formData.selected_hotel_id) {
+      newErrors.selected_hotel_id = 'Please select a hotel';
     }
 
     if (!formData.valid_until) {
       newErrors.valid_until = 'Valid until date is required';
     }
 
-    if (hotels.length === 0) {
-      newErrors.hotels = 'At least one hotel is required';
+    if (sleepingArrangements.some(arr => !arr.room_type)) {
+      newErrors.room_arrangements = 'Please select room type for all rooms';
     }
-
-    hotels.forEach((hotel, index) => {
-      if (!hotel.hotel_id) {
-        newErrors[`hotel_${index}_hotel_id`] = 'Hotel selection is required';
-      }
-      if (!hotel.room_type) {
-        newErrors[`hotel_${index}_room_type`] = 'Room type is required';
-      }
-    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -296,42 +267,46 @@ const CreateQuotePage = () => {
     setLoading(true);
 
     try {
-      const quoteId = generateQuoteId();
-      const subtotal = calculateSubtotal();
-      const markupAmount = calculateMarkup(subtotal);
-      const totalPrice = calculateTotal();
-
+      const totals = calculateTotals();
+      
       const quoteData = {
-        quote_id: quoteId,
-        inquiry_id: formData.inquiry_id,
-        client_name: inquiry.client_name,
+        inquiry_id: inquiryId,
+        client: inquiry.client_name,
         client_email: inquiry.client_email,
+        mobile: inquiry.client_mobile,
         destination: inquiry.destination,
-        travel_start: inquiry.travel_start,
-        travel_end: inquiry.travel_end,
-        number_of_guests: inquiry.number_of_guests,
-        hotels,
-        transport,
-        room_arrangements: roomArrangements,
-        subtotal,
+        start_date: inquiry.check_in_date,
+        end_date: inquiry.check_out_date,
+        duration_days: inquiry.days_count,
+        duration_nights: inquiry.nights_count,
+        adults: inquiry.adults,
+        children_with_bed: inquiry.children_with_bed,
+        children_no_bed: inquiry.children_no_bed,
+        selected_hotel_option_id: formData.selected_hotel_id,
+        sleeping_arrangements: sleepingArrangements,
+        transport_options: transportOptions,
+        transfer_options: transferOptions,
+        subtotal: totals.subtotal,
         markup_percentage: formData.markup_percentage,
-        markup_amount: markupAmount,
-        total_price: totalPrice,
-        currency: 'USD',
-        status: 'draft',
+        markup_amount: totals.markupAmount,
+        total_amount: totals.total,
+        currency_code: 'USD',
         valid_until: formData.valid_until,
         notes: formData.notes,
+        status: 'draft',
         created_by: profile?.id,
-        org_id: profile?.org_id,
-        created_at: new Date().toISOString()
+        org_id: profile?.org_id
       };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data, error } = await supabase
+        .from('quotes')
+        .insert(quoteData as any)
+        .select()
+        .single();
 
-      console.log('Creating quote:', quoteData);
+      if (error) throw error;
 
-      toast.success(`Quote ${quoteId} created successfully!`);
+      toast.success(`Quote ${data.quote_number} created successfully!`);
       navigate('/quotes');
     } catch (error) {
       console.error('Error creating quote:', error);
@@ -341,9 +316,26 @@ const CreateQuotePage = () => {
     }
   };
 
-  const subtotal = calculateSubtotal();
-  const markupAmount = calculateMarkup(subtotal);
-  const totalPrice = calculateTotal();
+  const totals = calculateTotals();
+
+  if (loadingInquiry) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
+
+  if (!inquiry) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">Inquiry not found</p>
+        <Button className="mt-4" asChild>
+          <Link to="/inquiries">Back to Inquiries</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -356,8 +348,8 @@ const CreateQuotePage = () => {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Quote</h1>
-          <p className="text-gray-600 mt-1">Generate a detailed quote for client inquiry</p>
+          <h1 className="text-3xl font-bold text-gray-900">Create Quote</h1>
+          <p className="text-gray-600 mt-1">Generate a detailed quote for inquiry {inquiry.enquiry_number}</p>
         </div>
       </div>
 
@@ -372,349 +364,352 @@ const CreateQuotePage = () => {
                   <FileText className="h-5 w-5" />
                   Inquiry Details
                 </CardTitle>
-                <CardDescription>
-                  Base information from the client inquiry
-                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Inquiry ID</Label>
-                    <Input value={inquiry.inquiry_id} disabled />
-                  </div>
-                  <div>
-                    <Label>Client Name</Label>
-                    <Input value={inquiry.client_name} disabled />
-                  </div>
-                  <div>
-                    <Label>Destination</Label>
-                    <Input value={inquiry.destination} disabled />
-                  </div>
-                  <div>
-                    <Label>Number of Guests</Label>
-                    <Input value={inquiry.number_of_guests} disabled />
-                  </div>
-                  <div>
-                    <Label>Travel Start</Label>
-                    <Input value={inquiry.travel_start} disabled />
-                  </div>
-                  <div>
-                    <Label>Travel End</Label>
-                    <Input value={inquiry.travel_end} disabled />
-                  </div>
+              <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Inquiry ID:</span>
+                  <span className="ml-2 font-medium">{inquiry.enquiry_number}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Client:</span>
+                  <span className="ml-2 font-medium">{inquiry.client_name}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Destination:</span>
+                  <span className="ml-2 font-medium">{inquiry.destination}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Duration:</span>
+                  <span className="ml-2 font-medium">{inquiry.days_count} days / {inquiry.nights_count} nights</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Guests:</span>
+                  <span className="ml-2 font-medium">{inquiry.adults} adults, {inquiry.children_with_bed + inquiry.children_no_bed} children</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Rooms:</span>
+                  <span className="ml-2 font-medium">{sleepingArrangements.length}</span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Hotels Section */}
+            {/* Hotel Selection */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Hotel className="h-5 w-5" />
-                      Hotels & Accommodation
-                    </CardTitle>
-                    <CardDescription>
-                      Add hotels and configure room arrangements
-                    </CardDescription>
-                  </div>
-                  <Button type="button" onClick={addHotel} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Hotel
-                  </Button>
-                </div>
+                <CardTitle className="flex items-center gap-2">
+                  <Hotel className="h-5 w-5" />
+                  Hotel Selection
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {hotels.map((hotel, index) => (
-                  <div key={hotel.id} className="border rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Hotel {index + 1}</h4>
-                      {hotels.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeHotel(hotel.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                <div className="space-y-2">
+                  <Label>Select Hotel</Label>
+                  <Select
+                    value={formData.selected_hotel_id}
+                    onValueChange={(value) => handleInputChange('selected_hotel_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose hotel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockHotels.map((hotel) => (
+                        <SelectItem key={hotel.id} value={hotel.id}>
+                          {hotel.name} ({hotel.category})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.selected_hotel_id && (
+                    <p className="text-sm text-red-600">{errors.selected_hotel_id}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sleeping Arrangements */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Sleeping Arrangements</CardTitle>
+                <CardDescription>Configure room arrangements and occupancy</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {sleepingArrangements.map((arrangement) => (
+                  <div key={arrangement.id} className="border rounded-lg p-4 space-y-4">
+                    <h4 className="font-medium">Room {arrangement.room_number}</h4>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <Label>Select Hotel</Label>
-                        <Select
-                          value={hotel.hotel_id}
-                          onValueChange={(value) => updateHotel(hotel.id, 'hotel_id', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose hotel" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {mockHotels.map((h) => (
-                              <SelectItem key={h.id} value={h.id}>
-                                {h.name} ({h.category})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label>Adults</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={arrangement.adults}
+                          onChange={(e) => updateSleepingArrangement(arrangement.id, 'adults', parseInt(e.target.value) || 0)}
+                        />
                       </div>
-                      
+                      <div>
+                        <Label>Children with Bed</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={arrangement.children_with_bed}
+                          onChange={(e) => updateSleepingArrangement(arrangement.id, 'children_with_bed', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Children no Bed</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={arrangement.children_no_bed}
+                          onChange={(e) => updateSleepingArrangement(arrangement.id, 'children_no_bed', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
                       <div>
                         <Label>Room Type</Label>
                         <Select
-                          value={hotel.room_type}
-                          onValueChange={(value) => {
-                            updateHotel(hotel.id, 'room_type', value);
-                            // Update cost based on room type
-                            const selectedHotel = mockHotels.find(h => h.id === hotel.hotel_id);
-                            const roomType = selectedHotel?.room_types.find(rt => rt.name === value);
-                            if (roomType) {
-                              updateHotel(hotel.id, 'cost_per_night', roomType.cost_per_night);
-                            }
-                          }}
+                          value={arrangement.room_type}
+                          onValueChange={(value) => updateSleepingArrangement(arrangement.id, 'room_type', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Choose room type" />
+                            <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
-                            {hotel.hotel_id && mockHotels.find(h => h.id === hotel.hotel_id)?.room_types.map((rt) => (
-                              <SelectItem key={rt.name} value={rt.name}>
-                                {rt.name} - ${rt.cost_per_night}/night
+                            {formData.selected_hotel_id && mockHotels.find(h => h.id === formData.selected_hotel_id)?.room_types.map((roomType) => (
+                              <SelectItem key={roomType.name} value={roomType.name}>
+                                {roomType.name} - ${roomType.cost_per_night}/night
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
-                      
-                      <div>
-                        <Label>Check-in Date</Label>
-                        <Input
-                          type="date"
-                          value={hotel.check_in}
-                          onChange={(e) => updateHotel(hotel.id, 'check_in', e.target.value)}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label>Check-out Date</Label>
-                        <Input
-                          type="date"
-                          value={hotel.check_out}
-                          onChange={(e) => updateHotel(hotel.id, 'check_out', e.target.value)}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label>Meal Plan</Label>
-                        <Select
-                          value={hotel.meal_plan}
-                          onValueChange={(value) => updateHotel(hotel.id, 'meal_plan', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose meal plan" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {hotel.hotel_id && mockHotels.find(h => h.id === hotel.hotel_id)?.meal_plans.map((mp) => (
-                              <SelectItem key={mp.type} value={mp.type}>
-                                {mp.type} {mp.additional_cost > 0 && `(+$${mp.additional_cost}/night)`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <Label>Cost per Night</Label>
-                        <Input
-                          type="number"
-                          value={hotel.cost_per_night}
-                          onChange={(e) => updateHotel(hotel.id, 'cost_per_night', parseFloat(e.target.value) || 0)}
-                        />
                       </div>
                     </div>
                     
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="flex justify-between text-sm">
-                        <span>Nights: {hotel.nights}</span>
-                        <span className="font-medium">Total: ${hotel.total_cost}</span>
+                    {arrangement.room_type && (
+                      <div className="text-sm text-gray-600">
+                        Cost: ${arrangement.cost_per_night}/night × {inquiry.nights_count} nights = ${arrangement.cost_per_night * inquiry.nights_count}
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
-                
-                {hotels.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <Hotel className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                    <p>No hotels added yet. Click "Add Hotel" to get started.</p>
-                  </div>
+                {errors.room_arrangements && (
+                  <p className="text-sm text-red-600">{errors.room_arrangements}</p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Transport Section */}
+            {/* Transport Options */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Plane className="h-5 w-5" />
-                      Transport & Transfers
+                      Transport Options (Optional)
                     </CardTitle>
-                    <CardDescription>
-                      Add flights, transfers, and other transport
-                    </CardDescription>
                   </div>
-                  <Button type="button" onClick={addTransport} size="sm">
+                  <Button type="button" onClick={addTransportOption} size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Transport
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {transport.map((t, index) => (
-                  <div key={t.id} className="border rounded-lg p-4 space-y-4">
+                {transportOptions.map((transport) => (
+                  <div key={transport.id} className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Transport {index + 1}</h4>
+                      <h4 className="font-medium">Transport Option</h4>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => removeTransport(t.id)}
+                        onClick={() => removeTransportOption(transport.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label>Transport Type</Label>
-                        <Select
-                          value={t.transport_type}
-                          onValueChange={(value) => updateTransport(t.id, 'transport_type', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose transport" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {mockTransport.map((mt) => (
-                              <SelectItem key={mt.id} value={mt.type}>
-                                {mt.type} - {mt.route}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label>Type</Label>
+                        <Input
+                          placeholder="Flight, Bus, etc."
+                          value={transport.type}
+                          onChange={(e) => updateTransportOption(transport.id, 'type', e.target.value)}
+                        />
                       </div>
-                      
                       <div>
                         <Label>Route</Label>
                         <Input
-                          value={t.route}
-                          onChange={(e) => updateTransport(t.id, 'route', e.target.value)}
                           placeholder="From - To"
+                          value={transport.route}
+                          onChange={(e) => updateTransportOption(transport.id, 'route', e.target.value)}
                         />
                       </div>
-                      
                       <div>
                         <Label>Cost per Person</Label>
                         <Input
                           type="number"
-                          value={t.cost_per_person}
-                          onChange={(e) => updateTransport(t.id, 'cost_per_person', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          step="0.01"
+                          value={transport.cost_per_person}
+                          onChange={(e) => updateTransportOption(transport.id, 'cost_per_person', parseFloat(e.target.value) || 0)}
                         />
                       </div>
-                      
-                      <div>
-                        <Label>Total Cost</Label>
-                        <Input value={`$${t.total_cost}`} disabled />
-                      </div>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600">
+                      Total: ${transport.cost_per_person} × {transport.total_passengers} passengers = ${transport.total_cost}
                     </div>
                   </div>
                 ))}
-                
-                {transport.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <Plane className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                    <p>No transport added yet. Click "Add Transport" to get started.</p>
+              </CardContent>
+            </Card>
+
+            {/* Transfer Options */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Transfer Options (Optional)</CardTitle>
+                  <Button type="button" onClick={addTransferOption} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Transfer
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {transferOptions.map((transfer) => (
+                  <div key={transfer.id} className="border rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Transfer Option</h4>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeTransferOption(transfer.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Type</Label>
+                        <Input
+                          placeholder="Airport Transfer, etc."
+                          value={transfer.type}
+                          onChange={(e) => updateTransferOption(transfer.id, 'type', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Route</Label>
+                        <Input
+                          placeholder="Airport - Hotel"
+                          value={transfer.route}
+                          onChange={(e) => updateTransferOption(transfer.id, 'route', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Cost per Person</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={transfer.cost_per_person}
+                          onChange={(e) => updateTransferOption(transfer.id, 'cost_per_person', parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600">
+                      Total: ${transfer.cost_per_person} × {transfer.total_passengers} passengers = ${transfer.total_cost}
+                    </div>
                   </div>
-                )}
+                ))}
               </CardContent>
             </Card>
 
             {/* Quote Settings */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Quote Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure markup and validity
-                </CardDescription>
+                <CardTitle>Quote Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Markup Percentage</Label>
+                    <Label>Markup Percentage (Hidden from client)</Label>
                     <Input
                       type="number"
-                      value={formData.markup_percentage}
-                      onChange={(e) => setFormData(prev => ({ ...prev, markup_percentage: parseFloat(e.target.value) || 0 }))}
                       min="0"
                       max="100"
+                      step="0.1"
+                      value={formData.markup_percentage}
+                      onChange={(e) => handleInputChange('markup_percentage', parseFloat(e.target.value) || 0)}
                     />
                   </div>
-                  
                   <div>
                     <Label>Valid Until</Label>
                     <Input
                       type="date"
                       value={formData.valid_until}
-                      onChange={(e) => setFormData(prev => ({ ...prev, valid_until: e.target.value }))}
+                      onChange={(e) => handleInputChange('valid_until', e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
-                
+
                 <div>
-                  <Label>Notes (Internal)</Label>
+                  <Label>Internal Notes</Label>
                   <textarea
+                    placeholder="Internal notes for this quote..."
                     value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                     rows={3}
-                    placeholder="Internal notes about this quote..."
                   />
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - Pricing Summary */}
           <div className="space-y-6">
-            {/* Pricing Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Pricing Summary</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Pricing Summary
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  <span className="text-gray-600">Hotel Total:</span>
+                  <span className="font-medium">${totals.hotelTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Markup ({formData.markup_percentage}%):</span>
-                  <span className="font-medium text-blue-600">${markupAmount.toFixed(2)}</span>
+                  <span className="text-gray-600">Transport Total:</span>
+                  <span className="font-medium">${totals.transportTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Transfer Total:</span>
+                  <span className="font-medium">${totals.transferTotal.toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-2">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Total Price:</span>
-                    <span className="font-bold text-green-600 text-lg">${totalPrice.toFixed(2)}</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">${totals.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-red-600">
+                    <span>Markup ({formData.markup_percentage}%):</span>
+                    <span>+${totals.markupAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold border-t pt-2">
+                    <span>Total Amount:</span>
+                    <span className="text-teal-600">${totals.total.toFixed(2)}</span>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 mt-2">
-                  Price per person: ${(totalPrice / inquiry.number_of_guests).toFixed(2)}
+                <div className="text-xs text-gray-500 bg-yellow-50 p-2 rounded">
+                  💡 Markup is hidden from client preview
                 </div>
               </CardContent>
             </Card>
@@ -730,7 +725,7 @@ const CreateQuotePage = () => {
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Creating...
+                      Creating Quote...
                     </>
                   ) : (
                     <>
@@ -749,20 +744,6 @@ const CreateQuotePage = () => {
                 >
                   Cancel
                 </Button>
-              </CardContent>
-            </Card>
-
-            {/* Tips */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">💡 Tips</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-gray-600 space-y-2">
-                <p>• Add multiple hotels for comparison</p>
-                <p>• Include all transport costs</p>
-                <p>• Set appropriate markup percentage</p>
-                <p>• Double-check dates and pricing</p>
-                <p>• Add internal notes for reference</p>
               </CardContent>
             </Card>
           </div>

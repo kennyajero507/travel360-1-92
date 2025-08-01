@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -7,8 +7,9 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Save, MessageSquare, Calculator } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../integrations/supabase/client';
 
 const CreateInquiryPage = () => {
   const navigate = useNavigate();
@@ -18,16 +19,25 @@ const CreateInquiryPage = () => {
   const [formData, setFormData] = useState({
     client_name: '',
     client_email: '',
-    client_phone: '',
+    client_mobile: '',
     destination: '',
-    travel_type: 'international' as 'domestic' | 'international',
+    tour_type: 'international' as 'domestic' | 'international',
+    package_name: '',
     travel_start: '',
     travel_end: '',
-    number_of_guests: 1,
-    special_requests: ''
+    num_adults: 1,
+    num_children: 0,
+    children_with_bed: 0,
+    children_no_bed: 0,
+    num_rooms: 1,
+    notes: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [destinations] = useState([
+    'Zanzibar, Tanzania', 'Serengeti National Park', 'Ngorongoro Crater', 'Mount Kilimanjaro',
+    'Mombasa, Kenya', 'Maasai Mara', 'Lake Nakuru', 'Amboseli National Park', 'Nairobi City', 'Diani Beach'
+  ]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -35,6 +45,22 @@ const CreateInquiryPage = () => {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+
+  // Auto-calculate days and nights when dates change
+  useEffect(() => {
+    if (formData.travel_start && formData.travel_end) {
+      const startDate = new Date(formData.travel_start);
+      const endDate = new Date(formData.travel_end);
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      setFormData(prev => ({
+        ...prev,
+        days_count: diffDays,
+        nights_count: diffDays - 1
+      }));
+    }
+  }, [formData.travel_start, formData.travel_end]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -76,20 +102,16 @@ const CreateInquiryPage = () => {
       }
     }
 
-    if (formData.number_of_guests < 1) {
-      newErrors.number_of_guests = 'Number of guests must be at least 1';
+    if (formData.num_adults < 1) {
+      newErrors.num_adults = 'Number of adults must be at least 1';
+    }
+
+    if (formData.num_rooms < 1) {
+      newErrors.num_rooms = 'Number of rooms must be at least 1';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const generateInquiryId = () => {
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `ENQ-${year}${month}-${random}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,26 +125,45 @@ const CreateInquiryPage = () => {
     setLoading(true);
 
     try {
-      // Generate inquiry ID
-      const inquiryId = generateInquiryId();
-
-      // Here you would typically save to your database
-      // For now, we'll simulate the API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Calculate days and nights
+      const startDate = new Date(formData.travel_start);
+      const endDate = new Date(formData.travel_end);
+      const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const nights = days - 1;
 
       const inquiryData = {
-        ...formData,
-        inquiry_id: inquiryId,
-        status: 'new',
+        client_name: formData.client_name,
+        client_email: formData.client_email,
+        client_mobile: formData.client_mobile,
+        destination: formData.destination,
+        tour_type: formData.tour_type,
+        package_name: formData.package_name || null,
+        check_in_date: formData.travel_start,
+        check_out_date: formData.travel_end,
+        days_count: days,
+        nights_count: nights,
+        adults: formData.num_adults,
+        children: formData.num_children,
+        infants: 0,
+        children_with_bed: formData.children_with_bed,
+        children_no_bed: formData.children_no_bed,
+        special_requirements: formData.notes,
         created_by: profile?.id,
-        org_id: profile?.org_id,
-        created_at: new Date().toISOString()
+        org_id: profile?.org_id
       };
 
-      console.log('Creating inquiry:', inquiryData);
+      const { data, error } = await supabase
+        .from('inquiries')
+        .insert(inquiryData as any)
+        .select()
+        .single();
 
-      toast.success(`Inquiry ${inquiryId} created successfully!`);
-      navigate('/inquiries');
+      if (error) {
+        throw error;
+      }
+
+      toast.success(`Inquiry ${data.enquiry_number} created successfully!`);
+      navigate(`/quotes/create?inquiry=${data.id}`);
     } catch (error) {
       console.error('Error creating inquiry:', error);
       toast.error('Failed to create inquiry. Please try again.');
@@ -131,18 +172,10 @@ const CreateInquiryPage = () => {
     }
   };
 
-  const popularDestinations = [
-    'Zanzibar, Tanzania',
-    'Serengeti National Park',
-    'Ngorongoro Crater',
-    'Mount Kilimanjaro',
-    'Mombasa, Kenya',
-    'Maasai Mara',
-    'Lake Nakuru',
-    'Amboseli National Park',
-    'Nairobi City',
-    'Diani Beach'
-  ];
+  const totalGuests = formData.num_adults + formData.num_children;
+  const calculatedDays = formData.travel_start && formData.travel_end ? 
+    Math.ceil((new Date(formData.travel_end).getTime() - new Date(formData.travel_start).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const calculatedNights = calculatedDays > 0 ? calculatedDays - 1 : 0;
 
   return (
     <div className="space-y-6">
@@ -211,15 +244,17 @@ const CreateInquiryPage = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="client_phone">Phone Number</Label>
-                  <Input
-                    id="client_phone"
-                    placeholder="+1-555-0123"
-                    value={formData.client_phone}
-                    onChange={(e) => handleInputChange('client_phone', e.target.value)}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="client_mobile">
+                      Mobile Number <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="client_mobile"
+                      placeholder="+254-700-000000"
+                      value={formData.client_mobile}
+                      onChange={(e) => handleInputChange('client_mobile', e.target.value)}
+                    />
+                  </div>
               </CardContent>
             </Card>
 
@@ -234,44 +269,54 @@ const CreateInquiryPage = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="destination">
-                      Destination <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="destination"
-                      placeholder="Enter destination"
-                      value={formData.destination}
-                      onChange={(e) => handleInputChange('destination', e.target.value)}
-                      className={errors.destination ? 'border-red-500' : ''}
-                      list="destinations"
-                    />
-                    <datalist id="destinations">
-                      {popularDestinations.map((dest) => (
-                        <option key={dest} value={dest} />
-                      ))}
-                    </datalist>
-                    {errors.destination && (
-                      <p className="text-sm text-red-600">{errors.destination}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="travel_type">Travel Type</Label>
+                    <Label htmlFor="tour_type">Tour Type</Label>
                     <Select
-                      value={formData.travel_type}
+                      value={formData.tour_type}
                       onValueChange={(value: 'domestic' | 'international') => 
-                        handleInputChange('travel_type', value)
+                        handleInputChange('tour_type', value)
                       }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="domestic">Domestic</SelectItem>
-                        <SelectItem value="international">International</SelectItem>
+                        <SelectItem value="domestic">Domestic Tour</SelectItem>
+                        <SelectItem value="international">International Tour</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="package_name">Package Name (Optional)</Label>
+                    <Input
+                      id="package_name"
+                      placeholder="Safari Adventure Package"
+                      value={formData.package_name}
+                      onChange={(e) => handleInputChange('package_name', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="destination">
+                    Destination <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="destination"
+                    placeholder="Enter destination"
+                    value={formData.destination}
+                    onChange={(e) => handleInputChange('destination', e.target.value)}
+                    className={errors.destination ? 'border-red-500' : ''}
+                    list="destinations"
+                  />
+                  <datalist id="destinations">
+                    {destinations.map((dest) => (
+                      <option key={dest} value={dest} />
+                    ))}
+                  </datalist>
+                  {errors.destination && (
+                    <p className="text-sm text-red-600">{errors.destination}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -310,31 +355,105 @@ const CreateInquiryPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="number_of_guests">
-                      Number of Guests <span className="text-red-500">*</span>
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Calculator className="h-4 w-4" />
+                      Auto-calculated Duration
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-gray-50 rounded border text-center">
+                        <div className="text-lg font-semibold text-teal-600">{calculatedDays}</div>
+                        <div className="text-xs text-gray-600">Days</div>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded border text-center">
+                        <div className="text-lg font-semibold text-teal-600">{calculatedNights}</div>
+                        <div className="text-xs text-gray-600">Nights</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Guest Details */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="num_adults">
+                      Adults <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      id="number_of_guests"
+                      id="num_adults"
                       type="number"
                       min="1"
                       max="20"
-                      value={formData.number_of_guests}
-                      onChange={(e) => handleInputChange('number_of_guests', parseInt(e.target.value) || 1)}
-                      className={errors.number_of_guests ? 'border-red-500' : ''}
+                      value={formData.num_adults}
+                      onChange={(e) => handleInputChange('num_adults', parseInt(e.target.value) || 1)}
+                      className={errors.num_adults ? 'border-red-500' : ''}
                     />
-                    {errors.number_of_guests && (
-                      <p className="text-sm text-red-600">{errors.number_of_guests}</p>
+                    {errors.num_adults && (
+                      <p className="text-sm text-red-600">{errors.num_adults}</p>
                     )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="num_children">Children</Label>
+                    <Input
+                      id="num_children"
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={formData.num_children}
+                      onChange={(e) => handleInputChange('num_children', parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="children_with_bed">Children with Bed</Label>
+                    <Input
+                      id="children_with_bed"
+                      type="number"
+                      min="0"
+                      max={formData.num_children}
+                      value={formData.children_with_bed}
+                      onChange={(e) => handleInputChange('children_with_bed', parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="children_no_bed">Children without Bed</Label>
+                    <Input
+                      id="children_no_bed"
+                      type="number"
+                      min="0"
+                      max={formData.num_children}
+                      value={formData.children_no_bed}
+                      onChange={(e) => handleInputChange('children_no_bed', parseInt(e.target.value) || 0)}
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="special_requests">Special Requests</Label>
+                  <Label htmlFor="num_rooms">
+                    Number of Rooms <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="num_rooms"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.num_rooms}
+                    onChange={(e) => handleInputChange('num_rooms', parseInt(e.target.value) || 1)}
+                    className={errors.num_rooms ? 'border-red-500' : ''}
+                  />
+                  {errors.num_rooms && (
+                    <p className="text-sm text-red-600">{errors.num_rooms}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Additional Notes</Label>
                   <textarea
-                    id="special_requests"
+                    id="notes"
                     placeholder="Any special requirements, preferences, or notes..."
-                    value={formData.special_requests}
-                    onChange={(e) => handleInputChange('special_requests', e.target.value)}
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                     rows={4}
                   />
@@ -364,22 +483,28 @@ const CreateInquiryPage = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Travel Type:</span>
+                  <span className="text-gray-600">Tour Type:</span>
                   <span className="font-medium capitalize">
-                    {formData.travel_type}
+                    {formData.tour_type}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Guests:</span>
+                  <span className="text-gray-600">Total Guests:</span>
                   <span className="font-medium">
-                    {formData.number_of_guests}
+                    {totalGuests} ({formData.num_adults} adults, {formData.num_children} children)
                   </span>
                 </div>
-                {formData.travel_start && formData.travel_end && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Rooms:</span>
+                  <span className="font-medium">
+                    {formData.num_rooms}
+                  </span>
+                </div>
+                {calculatedDays > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Duration:</span>
                     <span className="font-medium">
-                      {Math.ceil((new Date(formData.travel_end).getTime() - new Date(formData.travel_start).getTime()) / (1000 * 60 * 60 * 24))} days
+                      {calculatedDays} days / {calculatedNights} nights
                     </span>
                   </div>
                 )}
@@ -402,7 +527,7 @@ const CreateInquiryPage = () => {
                   ) : (
                     <>
                       <Save className="h-4 w-4 mr-2" />
-                      Create Inquiry
+                      Create Inquiry & Generate Quote
                     </>
                   )}
                 </Button>
