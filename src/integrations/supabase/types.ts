@@ -360,6 +360,8 @@ export type Database = {
           check_in_date: string
           check_out_date: string
           children: number
+          children_no_bed: number | null
+          children_with_bed: number | null
           client_email: string | null
           client_mobile: string
           client_name: string
@@ -379,6 +381,9 @@ export type Database = {
           infants: number
           lead_source: string | null
           nights_count: number | null
+          notes: string | null
+          num_adults: number | null
+          num_children: number | null
           num_rooms: number | null
           org_id: string | null
           package_name: string | null
@@ -391,7 +396,9 @@ export type Database = {
           tour_consultant: string | null
           tour_type: string
           transport_mode_preference: string | null
+          travel_end: string | null
           travel_insurance_required: boolean | null
+          travel_start: string | null
           updated_at: string | null
           visa_required: boolean | null
           workflow_stage: string | null
@@ -403,6 +410,8 @@ export type Database = {
           check_in_date: string
           check_out_date: string
           children: number
+          children_no_bed?: number | null
+          children_with_bed?: number | null
           client_email?: string | null
           client_mobile: string
           client_name: string
@@ -422,6 +431,9 @@ export type Database = {
           infants: number
           lead_source?: string | null
           nights_count?: number | null
+          notes?: string | null
+          num_adults?: number | null
+          num_children?: number | null
           num_rooms?: number | null
           org_id?: string | null
           package_name?: string | null
@@ -434,7 +446,9 @@ export type Database = {
           tour_consultant?: string | null
           tour_type: string
           transport_mode_preference?: string | null
+          travel_end?: string | null
           travel_insurance_required?: boolean | null
+          travel_start?: string | null
           updated_at?: string | null
           visa_required?: boolean | null
           workflow_stage?: string | null
@@ -446,6 +460,8 @@ export type Database = {
           check_in_date?: string
           check_out_date?: string
           children?: number
+          children_no_bed?: number | null
+          children_with_bed?: number | null
           client_email?: string | null
           client_mobile?: string
           client_name?: string
@@ -465,6 +481,9 @@ export type Database = {
           infants?: number
           lead_source?: string | null
           nights_count?: number | null
+          notes?: string | null
+          num_adults?: number | null
+          num_children?: number | null
           num_rooms?: number | null
           org_id?: string | null
           package_name?: string | null
@@ -477,7 +496,9 @@ export type Database = {
           tour_consultant?: string | null
           tour_type?: string
           transport_mode_preference?: string | null
+          travel_end?: string | null
           travel_insurance_required?: boolean | null
+          travel_start?: string | null
           updated_at?: string | null
           visa_required?: boolean | null
           workflow_stage?: string | null
@@ -1269,6 +1290,8 @@ export type Database = {
           inquiry_id: string | null
           itinerary: Json | null
           lead_source: string | null
+          markup_amount: number | null
+          markup_percentage: number | null
           markup_type: string | null
           markup_value: number | null
           mobile: string
@@ -1277,20 +1300,27 @@ export type Database = {
           package_name: string | null
           passport_expiry_date: string | null
           preferred_currency: string | null
+          quote_number: string | null
           regional_preference: string | null
           room_arrangements: Json | null
           sectionmarkups: Json | null
           selected_hotel_option_id: string | null
+          sleeping_arrangements: Json | null
           special_requirements: string | null
           start_date: string
           status: string
+          subtotal: number | null
           summary_data: Json | null
+          total_amount: number | null
           tour_type: string | null
+          transfer_options: Json | null
           transfers: Json | null
           transport_mode_preference: string | null
+          transport_options: Json | null
           transports: Json | null
           travel_insurance_required: boolean | null
           updated_at: string | null
+          valid_until: string | null
           visa_documentation: Json | null
           visa_required: boolean | null
           workflow_stage: string | null
@@ -1321,6 +1351,8 @@ export type Database = {
           inquiry_id?: string | null
           itinerary?: Json | null
           lead_source?: string | null
+          markup_amount?: number | null
+          markup_percentage?: number | null
           markup_type?: string | null
           markup_value?: number | null
           mobile: string
@@ -1329,20 +1361,27 @@ export type Database = {
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
+          quote_number?: string | null
           regional_preference?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
+          sleeping_arrangements?: Json | null
           special_requirements?: string | null
           start_date: string
           status?: string
+          subtotal?: number | null
           summary_data?: Json | null
+          total_amount?: number | null
           tour_type?: string | null
+          transfer_options?: Json | null
           transfers?: Json | null
           transport_mode_preference?: string | null
+          transport_options?: Json | null
           transports?: Json | null
           travel_insurance_required?: boolean | null
           updated_at?: string | null
+          valid_until?: string | null
           visa_documentation?: Json | null
           visa_required?: boolean | null
           workflow_stage?: string | null
@@ -1373,6 +1412,8 @@ export type Database = {
           inquiry_id?: string | null
           itinerary?: Json | null
           lead_source?: string | null
+          markup_amount?: number | null
+          markup_percentage?: number | null
           markup_type?: string | null
           markup_value?: number | null
           mobile?: string
@@ -1381,20 +1422,27 @@ export type Database = {
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
+          quote_number?: string | null
           regional_preference?: string | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
+          sleeping_arrangements?: Json | null
           special_requirements?: string | null
           start_date?: string
           status?: string
+          subtotal?: number | null
           summary_data?: Json | null
+          total_amount?: number | null
           tour_type?: string | null
+          transfer_options?: Json | null
           transfers?: Json | null
           transport_mode_preference?: string | null
+          transport_options?: Json | null
           transports?: Json | null
           travel_insurance_required?: boolean | null
           updated_at?: string | null
+          valid_until?: string | null
           visa_documentation?: Json | null
           visa_required?: boolean | null
           workflow_stage?: string | null
@@ -1710,6 +1758,14 @@ export type Database = {
       debug_user_profile: {
         Args: { target_user_id?: string }
         Returns: Json
+      }
+      generate_inquiry_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_quote_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_organization_settings: {
         Args: { p_org_id?: string }
