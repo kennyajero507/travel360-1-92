@@ -148,6 +148,7 @@ const CreateInquiryPage = () => {
         children_with_bed: formData.children_with_bed,
         children_no_bed: formData.children_no_bed,
         special_requirements: formData.notes,
+        num_rooms: formData.num_rooms,
         created_by: profile?.id,
         org_id: profile?.org_id
       };

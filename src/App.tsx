@@ -19,6 +19,7 @@ import CreateInquiryPage from "./pages/inquiries/CreateInquiryPage";
 import QuotesPage from "./pages/quotes/QuotesPage";
 import CreateQuotePage from "./pages/quotes/CreateQuotePage";
 import QuotePreviewPage from "./pages/quotes/QuotePreviewPage";
+import BookingsPage from "./pages/BookingsPage";
 import OrganizationSetup from "./components/OrganizationSetup";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ function App() {
                 <Route path="quotes" element={<QuotesPage />} />
                 <Route path="quotes/create" element={<CreateQuotePage />} />
                 <Route path="quotes/:id/preview" element={<QuotePreviewPage />} />
+                <Route path="bookings" element={<BookingsPage />} />
                 {/* Add more protected routes here */}
               </Route>
               
