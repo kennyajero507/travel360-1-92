@@ -301,6 +301,13 @@ const CreateQuotePage = () => {
     try {
       const totals = calculateTotals();
       
+      // Calculate days and nights from dates
+      const startDate = new Date(inquiry.check_in_date);
+      const endDate = new Date(inquiry.check_out_date);
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+      const nights = days - 1;
+
       const quoteData = {
         inquiry_id: inquiryId,
         client: inquiry.client_name,
@@ -309,12 +316,13 @@ const CreateQuotePage = () => {
         destination: inquiry.destination,
         start_date: inquiry.check_in_date,
         end_date: inquiry.check_out_date,
-        duration_days: inquiry.days_count,
-        duration_nights: inquiry.nights_count,
-        adults: inquiry.adults,
-        children_with_bed: inquiry.children_with_bed,
-        children_no_bed: inquiry.children_no_bed,
-        selected_hotel_option_id: formData.selected_hotel_id,
+        duration_days: days,
+        duration_nights: nights,
+        adults: inquiry.adults || inquiry.num_adults || 1,
+        children_with_bed: inquiry.children_with_bed || 0,
+        children_no_bed: inquiry.children_no_bed || 0,
+        infants: inquiry.infants || 0,
+        hotel_id: formData.selected_hotel_id,
         sleeping_arrangements: sleepingArrangements,
         transport_options: transportOptions,
         transfer_options: transferOptions,
