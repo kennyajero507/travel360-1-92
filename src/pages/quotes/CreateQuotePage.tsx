@@ -78,20 +78,52 @@ const CreateQuotePage = () => {
     selected_hotel_id: '',
     markup_percentage: 15,
     valid_until: '',
-    notes: ''
+    notes: '',
+    currency_code: 'USD'
   });
+
+  const [orgSettings, setOrgSettings] = useState<any>(null);
 
   const [sleepingArrangements, setSleepingArrangements] = useState<SleepingArrangement[]>([]);
   const [transportOptions, setTransportOptions] = useState<TransportOption[]>([]);
   const [transferOptions, setTransferOptions] = useState<TransferOption[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch inquiry data
+  // Fetch inquiry data and organization settings
   useEffect(() => {
     if (inquiryId) {
       fetchInquiry();
     }
-  }, [inquiryId]);
+    if (profile?.org_id) {
+      fetchOrganizationSettings();
+    }
+  }, [inquiryId, profile?.org_id]);
+
+  const fetchOrganizationSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organization_settings')
+        .select('*')
+        .eq('org_id', profile?.org_id)
+        .single();
+
+      if (error) throw error;
+      
+      setOrgSettings(data);
+      
+      // Set default currency from organization settings
+      if (data?.default_currency) {
+        setFormData(prev => ({
+          ...prev,
+          currency_code: data.default_currency
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching organization settings:', error);
+      // Use USD as fallback
+      setFormData(prev => ({ ...prev, currency_code: 'USD' }));
+    }
+  };
 
   // Set default valid until date
   useEffect(() => {
@@ -290,7 +322,7 @@ const CreateQuotePage = () => {
         markup_percentage: formData.markup_percentage,
         markup_amount: totals.markupAmount,
         total_amount: totals.total,
-        currency_code: 'USD',
+        currency_code: formData.currency_code,
         valid_until: formData.valid_until,
         notes: formData.notes,
         status: 'draft',
@@ -317,6 +349,20 @@ const CreateQuotePage = () => {
   };
 
   const totals = calculateTotals();
+
+  const formatCurrency = (amount: number) => {
+    const currency = formData.currency_code || 'USD';
+    const symbol = {
+      'USD': '$',
+      'KES': 'KSh',
+      'EUR': '€',
+      'GBP': '£',
+      'TZS': 'TSh',
+      'UGX': 'USh'
+    }[currency] || '$';
+    
+    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   if (loadingInquiry) {
     return (
@@ -485,11 +531,11 @@ const CreateQuotePage = () => {
                       </div>
                     </div>
                     
-                    {arrangement.room_type && (
-                      <div className="text-sm text-gray-600">
-                        Cost: ${arrangement.cost_per_night}/night × {inquiry.nights_count} nights = ${arrangement.cost_per_night * inquiry.nights_count}
-                      </div>
-                    )}
+                     {arrangement.room_type && (
+                       <div className="text-sm text-gray-600">
+                         Cost: {formatCurrency(arrangement.cost_per_night)}/night × {inquiry.nights_count} nights = {formatCurrency(arrangement.cost_per_night * inquiry.nights_count)}
+                       </div>
+                     )}
                   </div>
                 ))}
                 {errors.room_arrangements && (
@@ -558,9 +604,9 @@ const CreateQuotePage = () => {
                       </div>
                     </div>
                     
-                    <div className="text-sm text-gray-600">
-                      Total: ${transport.cost_per_person} × {transport.total_passengers} passengers = ${transport.total_cost}
-                    </div>
+                     <div className="text-sm text-gray-600">
+                       Total: {formatCurrency(transport.cost_per_person)} × {transport.total_passengers} passengers = {formatCurrency(transport.total_cost)}
+                     </div>
                   </div>
                 ))}
               </CardContent>
@@ -621,9 +667,9 @@ const CreateQuotePage = () => {
                       </div>
                     </div>
                     
-                    <div className="text-sm text-gray-600">
-                      Total: ${transfer.cost_per_person} × {transfer.total_passengers} passengers = ${transfer.total_cost}
-                    </div>
+                     <div className="text-sm text-gray-600">
+                       Total: {formatCurrency(transfer.cost_per_person)} × {transfer.total_passengers} passengers = {formatCurrency(transfer.total_cost)}
+                     </div>
                   </div>
                 ))}
               </CardContent>
@@ -658,6 +704,34 @@ const CreateQuotePage = () => {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Currency</Label>
+                    <Select
+                      value={formData.currency_code}
+                      onValueChange={(value) => handleInputChange('currency_code', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD - US Dollar</SelectItem>
+                        <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
+                        <SelectItem value="EUR">EUR - Euro</SelectItem>
+                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                        <SelectItem value="TZS">TZS - Tanzanian Shilling</SelectItem>
+                        <SelectItem value="UGX">UGX - Ugandan Shilling</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {orgSettings?.default_currency && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Organization default: {orgSettings.default_currency}
+                      </p>
+                    )}
+                  </div>
+                  <div></div>
+                </div>
+
                 <div>
                   <Label>Internal Notes</Label>
                   <textarea
@@ -681,33 +755,33 @@ const CreateQuotePage = () => {
                   Pricing Summary
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Hotel Total:</span>
-                  <span className="font-medium">${totals.hotelTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Transport Total:</span>
-                  <span className="font-medium">${totals.transportTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Transfer Total:</span>
-                  <span className="font-medium">${totals.transferTotal.toFixed(2)}</span>
-                </div>
-                <div className="border-t pt-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-medium">${totals.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-red-600">
-                    <span>Markup ({formData.markup_percentage}%):</span>
-                    <span>+${totals.markupAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold border-t pt-2">
-                    <span>Total Amount:</span>
-                    <span className="text-teal-600">${totals.total.toFixed(2)}</span>
-                  </div>
-                </div>
+               <CardContent className="space-y-3">
+                 <div className="flex justify-between text-sm">
+                   <span className="text-gray-600">Hotel Total:</span>
+                   <span className="font-medium">{formatCurrency(totals.hotelTotal)}</span>
+                 </div>
+                 <div className="flex justify-between text-sm">
+                   <span className="text-gray-600">Transport Total:</span>
+                   <span className="font-medium">{formatCurrency(totals.transportTotal)}</span>
+                 </div>
+                 <div className="flex justify-between text-sm">
+                   <span className="text-gray-600">Transfer Total:</span>
+                   <span className="font-medium">{formatCurrency(totals.transferTotal)}</span>
+                 </div>
+                 <div className="border-t pt-2">
+                   <div className="flex justify-between text-sm">
+                     <span className="text-gray-600">Subtotal:</span>
+                     <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
+                   </div>
+                   <div className="flex justify-between text-sm text-red-600">
+                     <span>Markup ({formData.markup_percentage}%):</span>
+                     <span>+{formatCurrency(totals.markupAmount)}</span>
+                   </div>
+                   <div className="flex justify-between text-lg font-bold border-t pt-2">
+                     <span>Total Amount:</span>
+                     <span className="text-teal-600">{formatCurrency(totals.total)}</span>
+                   </div>
+                 </div>
                 <div className="text-xs text-gray-500 bg-yellow-50 p-2 rounded">
                   💡 Markup is hidden from client preview
                 </div>

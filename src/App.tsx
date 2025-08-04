@@ -20,6 +20,7 @@ import QuotesPage from "./pages/quotes/QuotesPage";
 import CreateQuotePage from "./pages/quotes/CreateQuotePage";
 import QuotePreviewPage from "./pages/quotes/QuotePreviewPage";
 import BookingsPage from "./pages/BookingsPage";
+import BookingCreatePage from "./pages/BookingCreatePage";
 import ReportsPage from "./pages/ReportsPage";
 import TransportPage from "./pages/TransportPage";
 import HotelsPage from "./pages/HotelsPage";
@@ -57,6 +58,7 @@ function App() {
                 <Route path="quotes/create" element={<CreateQuotePage />} />
                 <Route path="quotes/:id/preview" element={<QuotePreviewPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
+                <Route path="bookings/create" element={<BookingCreatePage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="transport" element={<TransportPage />} />
                 <Route path="hotels" element={<HotelsPage />} />
