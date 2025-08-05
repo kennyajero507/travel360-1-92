@@ -91,10 +91,8 @@ const CreateQuotePage = () => {
 
   // Fetch inquiry data and organization settings
   useEffect(() => {
-    if (inquiryId) {
+    if (inquiryId && profile?.org_id) {
       fetchInquiry();
-    }
-    if (profile?.org_id) {
       fetchOrganizationSettings();
     }
   }, [inquiryId, profile?.org_id]);
@@ -141,9 +139,15 @@ const CreateQuotePage = () => {
         .from('inquiries')
         .select('*')
         .eq('id', inquiryId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        toast.error('Inquiry not found');
+        navigate('/inquiries');
+        return;
+      }
       
       setInquiry(data);
       
