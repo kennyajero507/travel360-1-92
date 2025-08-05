@@ -3,7 +3,6 @@ import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Badge } from '../../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { 
   Plus, 
@@ -11,199 +10,97 @@ import {
   Filter, 
   FileText, 
   Calendar, 
-  Users, 
-  MapPin,
   Clock,
-  User,
-  Phone,
-  Mail,
   DollarSign,
-  Eye,
-  Send,
-  Download,
-  Edit
+  TrendingUp
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// Mock data - replace with actual API calls
-const mockQuotes = [
-  {
-    id: '1',
-    quote_id: 'QUO-2501-001',
-    inquiry_id: 'ENQ-2501-001',
-    client_name: 'Sarah Johnson',
-    client_email: 'sarah@email.com',
-    destination: 'Zanzibar, Tanzania',
-    travel_start: '2025-03-15',
-    travel_end: '2025-03-22',
-    number_of_guests: 2,
-    subtotal: 3200,
-    markup_percentage: 15,
-    markup_amount: 480,
-    total_price: 3680,
-    currency: 'USD',
-    status: 'draft' as const,
-    valid_until: '2025-02-15',
-    created_at: '2025-01-15T11:30:00Z',
-    hotels: [
-      {
-        hotel_name: 'Zanzibar Beach Resort',
-        hotel_category: '4-star',
-        location: 'Stone Town',
-        check_in: '2025-03-15',
-        check_out: '2025-03-22',
-        nights: 7,
-        room_type: 'Ocean View Suite',
-        meal_plan: 'Half Board',
-        cost_per_night: 200,
-        total_cost: 1400,
-        is_primary: true
-      }
-    ]
-  },
-  {
-    id: '2',
-    quote_id: 'QUO-2501-002',
-    inquiry_id: 'ENQ-2501-002',
-    client_name: 'Michael Chen',
-    client_email: 'michael.chen@email.com',
-    destination: 'Serengeti National Park',
-    travel_start: '2025-04-10',
-    travel_end: '2025-04-17',
-    number_of_guests: 4,
-    subtotal: 8500,
-    markup_percentage: 20,
-    markup_amount: 1700,
-    total_price: 10200,
-    currency: 'USD',
-    status: 'pending' as const,
-    valid_until: '2025-03-10',
-    created_at: '2025-01-14T15:20:00Z',
-    hotels: [
-      {
-        hotel_name: 'Serengeti Safari Lodge',
-        hotel_category: '5-star',
-        location: 'Central Serengeti',
-        check_in: '2025-04-10',
-        check_out: '2025-04-17',
-        nights: 7,
-        room_type: 'Safari Suite',
-        meal_plan: 'Full Board',
-        cost_per_night: 450,
-        total_cost: 3150,
-        is_primary: true
-      }
-    ]
-  },
-  {
-    id: '3',
-    quote_id: 'QUO-2501-003',
-    inquiry_id: 'ENQ-2501-003',
-    client_name: 'Emily Rodriguez',
-    client_email: 'emily.r@email.com',
-    destination: 'Nairobi City Tour',
-    travel_start: '2025-02-20',
-    travel_end: '2025-02-23',
-    number_of_guests: 1,
-    subtotal: 800,
-    markup_percentage: 12,
-    markup_amount: 96,
-    total_price: 896,
-    currency: 'USD',
-    status: 'approved' as const,
-    valid_until: '2025-02-10',
-    created_at: '2025-01-13T10:15:00Z',
-    hotels: [
-      {
-        hotel_name: 'Nairobi Serena Hotel',
-        hotel_category: '5-star',
-        location: 'Central Nairobi',
-        check_in: '2025-02-20',
-        check_out: '2025-02-23',
-        nights: 3,
-        room_type: 'Deluxe Room',
-        meal_plan: 'Breakfast',
-        cost_per_night: 180,
-        total_cost: 540,
-        is_primary: true
-      }
-    ]
-  }
-];
+import { useQuotes } from '../../hooks/useQuotes';
+import { formatCurrency } from '../../utils/quoteCalculations';
+import QuoteCard from '../../components/quotes/QuoteCard';
+import { toast } from 'sonner';
 
 const QuotesPage = () => {
   const { profile } = useSimpleAuth();
+  const { quotes, loading, updateQuote } = useQuotes();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'expired': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const filteredQuotes = mockQuotes.filter(quote => {
-    const matchesSearch = quote.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.quote_id.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter quotes
+  const filteredQuotes = quotes.filter(quote => {
+    const matchesSearch = 
+      quote.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quote.quote_number && quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
+    
     return matchesSearch && matchesStatus;
   });
 
+  // Get quotes by status
   const getQuotesByStatus = (status: string) => {
-    if (status === 'all') return mockQuotes;
-    return mockQuotes.filter(quote => quote.status === status);
+    return quotes.filter(quote => quote.status === status);
   };
 
-  const canCreateQuote = profile?.role === 'agent' || 
-                        profile?.role === 'tour_operator' || 
-                        profile?.role === 'org_owner';
+  // Calculate total value
+  const totalValue = quotes.reduce((sum, quote) => sum + (quote.total_amount || 0), 0);
 
-  const canApproveQuotes = profile?.role === 'tour_operator' || 
-                          profile?.role === 'org_owner';
-
-  const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
+  // Handle quote approval
+  const handleApprove = async (quote: any) => {
+    try {
+      await updateQuote(quote.id, { status: 'approved' });
+    } catch (error) {
+      // Error is handled in the hook
+    }
   };
+
+  // Handle send email
+  const handleSendEmail = (quote: any) => {
+    toast.info('Email functionality coming soon!');
+  };
+
+  // Handle download PDF
+  const handleDownloadPDF = (quote: any) => {
+    toast.info('PDF download functionality coming soon!');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Travel Quotes</h1>
-          <p className="text-gray-600 mt-1">Create and manage travel quotes for clients</p>
+          <h1 className="text-3xl font-bold text-gray-900">Quotes</h1>
+          <p className="text-gray-600 mt-1">Manage and track your travel quotes</p>
         </div>
-        {canCreateQuote && (
-          <Button asChild className="bg-teal-600 hover:bg-teal-700">
-            <Link to="/quotes/create">
-              <Plus className="h-4 w-4 mr-2" />
-              New Quote
-            </Link>
-          </Button>
-        )}
+        <Button asChild>
+          <Link to="/quotes/create">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Quote
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Draft Quotes</p>
-                <p className="text-2xl font-bold text-gray-600">
-                  {getQuotesByStatus('draft').length}
+                <p className="text-sm font-medium text-gray-600">Total Quotes</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {quotes.length}
                 </p>
               </div>
-              <FileText className="h-8 w-8 text-gray-600" />
+              <FileText className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -242,7 +139,7 @@ const QuotesPage = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Value</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(mockQuotes.reduce((sum, quote) => sum + quote.total_price, 0))}
+                  {formatCurrency(totalValue, 'USD')}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-blue-600" />
@@ -291,178 +188,33 @@ const QuotesPage = () => {
       {/* Quotes List */}
       <div className="space-y-4">
         {filteredQuotes.map((quote) => (
-          <Card key={quote.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {quote.quote_id}
-                    </h3>
-                    <Badge className={getStatusColor(quote.status)}>
-                      {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
-                    </Badge>
-                    <Badge variant="outline">
-                      {quote.number_of_guests} guests
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm font-medium">{quote.client_name}</p>
-                        <p className="text-xs text-gray-500">Client</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm font-medium">{quote.destination}</p>
-                        <p className="text-xs text-gray-500">Destination</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm font-medium">
-                          {new Date(quote.travel_start).toLocaleDateString()} - {new Date(quote.travel_end).toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-gray-500">Travel dates</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm font-medium text-green-600">
-                          {formatCurrency(quote.total_price, quote.currency)}
-                        </p>
-                        <p className="text-xs text-gray-500">Total price</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hotel Information */}
-                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                    <h4 className="text-sm font-medium text-gray-800 mb-2">Hotels Included:</h4>
-                    {quote.hotels.map((hotel, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <div>
-                          <span className="font-medium">{hotel.hotel_name}</span>
-                          <span className="text-gray-500 ml-2">({hotel.hotel_category})</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-medium">{hotel.nights} nights</span>
-                          <span className="text-gray-500 ml-2">{hotel.room_type}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pricing Breakdown */}
-                  <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">Subtotal</p>
-                        <p className="font-medium">{formatCurrency(quote.subtotal, quote.currency)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Markup ({quote.markup_percentage}%)</p>
-                        <p className="font-medium text-blue-600">{formatCurrency(quote.markup_amount, quote.currency)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Total Price</p>
-                        <p className="font-bold text-green-600">{formatCurrency(quote.total_price, quote.currency)}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <Mail className="h-4 w-4" />
-                      {quote.client_email}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      Valid until {new Date(quote.valid_until).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 ml-4">
-                  <Button asChild size="sm">
-                    <Link to={`/quotes/${quote.id}`}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </Link>
-                  </Button>
-                  
-                  {quote.status === 'draft' && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/quotes/${quote.id}/edit`}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Link>
-                    </Button>
-                  )}
-                  
-                  {(quote.status === 'draft' || quote.status === 'pending') && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/quotes/${quote.id}/preview`}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Client Preview
-                      </Link>
-                    </Button>
-                  )}
-                  
-                  {quote.status === 'pending' && canApproveQuotes && (
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      Approve
-                    </Button>
-                  )}
-                  
-                  {quote.status === 'approved' && (
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700" asChild>
-                      <Link to={`/bookings/create?quote=${quote.id}`}>
-                        Create Booking
-                      </Link>
-                    </Button>
-                  )}
-                  
-                  <Button variant="outline" size="sm">
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Email
-                  </Button>
-                  
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <QuoteCard
+            key={quote.id}
+            quote={quote}
+            onApprove={handleApprove}
+            onSendEmail={handleSendEmail}
+            onDownloadPDF={handleDownloadPDF}
+          />
         ))}
 
         {filteredQuotes.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No quotes found</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {searchTerm || statusFilter !== 'all' ? 'No quotes match your filters' : 'No quotes yet'}
+              </h3>
+              <p className="text-gray-500 mb-6">
                 {searchTerm || statusFilter !== 'all' 
-                  ? 'Try adjusting your search or filters'
-                  : 'Get started by creating your first quote'
+                  ? 'Try adjusting your search criteria or filters.'
+                  : 'Get started by creating your first quote from an inquiry.'
                 }
               </p>
-              {canCreateQuote && (
+              {(!searchTerm && statusFilter === 'all') && (
                 <Button asChild>
                   <Link to="/quotes/create">
                     <Plus className="h-4 w-4 mr-2" />
-                    Create First Quote
+                    Create Your First Quote
                   </Link>
                 </Button>
               )}

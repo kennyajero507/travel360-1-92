@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Plus, Trash2, FileText, Calculator, Hotel, Plane, Eye } from 'lucide-react';
+import { ArrowLeft, Save, FileText, Calculator } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
+import { useQuotes } from '../../hooks/useQuotes';
+import type { Quote } from '../../types/quote';
 
 const EditQuotePage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { profile } = useSimpleAuth();
+  const { updateQuote } = useQuotes();
   
   const [loading, setLoading] = useState(false);
-  const [quote, setQuote] = useState<any>(null);
+  const [quote, setQuote] = useState<Quote | null>(null);
   const [loadingQuote, setLoadingQuote] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -69,7 +72,7 @@ const EditQuotePage = () => {
         return;
       }
       
-      setQuote(data);
+      setQuote(data as Quote);
       
       // Set form data from quote
       setFormData({
@@ -96,24 +99,18 @@ const EditQuotePage = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('quotes')
-        .update({
-          markup_percentage: formData.markup_percentage,
-          valid_until: formData.valid_until,
-          notes: formData.notes,
-          currency_code: formData.currency_code,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      if (!id) throw new Error('Quote ID is required');
+      
+      await updateQuote(id, {
+        markup_percentage: formData.markup_percentage,
+        valid_until: formData.valid_until,
+        notes: formData.notes,
+        currency_code: formData.currency_code
+      } as any);
 
-      if (error) throw error;
-
-      toast.success('Quote updated successfully!');
       navigate('/quotes');
     } catch (error) {
       console.error('Error updating quote:', error);
-      toast.error('Failed to update quote. Please try again.');
     } finally {
       setLoading(false);
     }
