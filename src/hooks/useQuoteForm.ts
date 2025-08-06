@@ -15,7 +15,7 @@ export const useQuoteForm = (inquiryId?: string) => {
     markup_percentage: 15,
     valid_until: '',
     notes: '',
-    currency_code: 'USD'
+    currency_code: 'KES' // Use KES as default, will be overridden by org settings
   });
 
   const [sleepingArrangements, setSleepingArrangements] = useState<SleepingArrangement[]>([]);
@@ -85,8 +85,8 @@ export const useQuoteForm = (inquiryId?: string) => {
       }
     } catch (error) {
       console.error('Error fetching organization settings:', error);
-      // Use USD as fallback
-      setFormData(prev => ({ ...prev, currency_code: 'USD' }));
+      // Use KES as fallback
+      setFormData(prev => ({ ...prev, currency_code: 'KES' }));
     }
   };
 

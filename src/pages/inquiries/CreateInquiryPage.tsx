@@ -25,10 +25,11 @@ const CreateInquiryPage = () => {
     package_name: '',
     travel_start: '',
     travel_end: '',
-    num_adults: 1,
-    num_children: 0,
+    adults: 1,
+    children: 0,
     children_with_bed: 0,
     children_no_bed: 0,
+    infants: 0,
     num_rooms: 1,
     notes: ''
   });
@@ -102,8 +103,8 @@ const CreateInquiryPage = () => {
       }
     }
 
-    if (formData.num_adults < 1) {
-      newErrors.num_adults = 'Number of adults must be at least 1';
+    if (formData.adults < 1) {
+      newErrors.adults = 'Number of adults must be at least 1';
     }
 
     if (formData.num_rooms < 1) {
@@ -142,9 +143,9 @@ const CreateInquiryPage = () => {
         check_out_date: formData.travel_end,
         days_count: days,
         nights_count: nights,
-        adults: formData.num_adults,
-        children: formData.num_children,
-        infants: 0,
+        adults: formData.adults,
+        children: formData.children,
+        infants: formData.infants,
         children_with_bed: formData.children_with_bed,
         children_no_bed: formData.children_no_bed,
         special_requirements: formData.notes,
@@ -173,7 +174,7 @@ const CreateInquiryPage = () => {
     }
   };
 
-  const totalGuests = formData.num_adults + formData.num_children;
+  const totalGuests = formData.adults + formData.children;
   const calculatedDays = formData.travel_start && formData.travel_end ? 
     Math.ceil((new Date(formData.travel_end).getTime() - new Date(formData.travel_start).getTime()) / (1000 * 60 * 60 * 24)) : 0;
   const calculatedNights = calculatedDays > 0 ? calculatedDays - 1 : 0;
@@ -376,32 +377,32 @@ const CreateInquiryPage = () => {
                 {/* Guest Details */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="num_adults">
+                    <Label htmlFor="adults">
                       Adults <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      id="num_adults"
+                      id="adults"
                       type="number"
                       min="1"
                       max="20"
-                      value={formData.num_adults}
-                      onChange={(e) => handleInputChange('num_adults', parseInt(e.target.value) || 1)}
-                      className={errors.num_adults ? 'border-red-500' : ''}
+                      value={formData.adults}
+                      onChange={(e) => handleInputChange('adults', parseInt(e.target.value) || 1)}
+                      className={errors.adults ? 'border-red-500' : ''}
                     />
-                    {errors.num_adults && (
-                      <p className="text-sm text-red-600">{errors.num_adults}</p>
+                    {errors.adults && (
+                      <p className="text-sm text-red-600">{errors.adults}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="num_children">Children</Label>
+                    <Label htmlFor="children">Children</Label>
                     <Input
-                      id="num_children"
+                      id="children"
                       type="number"
                       min="0"
                       max="10"
-                      value={formData.num_children}
-                      onChange={(e) => handleInputChange('num_children', parseInt(e.target.value) || 0)}
+                      value={formData.children}
+                      onChange={(e) => handleInputChange('children', parseInt(e.target.value) || 0)}
                     />
                   </div>
 
@@ -411,7 +412,7 @@ const CreateInquiryPage = () => {
                       id="children_with_bed"
                       type="number"
                       min="0"
-                      max={formData.num_children}
+                      max={formData.children}
                       value={formData.children_with_bed}
                       onChange={(e) => handleInputChange('children_with_bed', parseInt(e.target.value) || 0)}
                     />
@@ -423,7 +424,7 @@ const CreateInquiryPage = () => {
                       id="children_no_bed"
                       type="number"
                       min="0"
-                      max={formData.num_children}
+                      max={formData.children}
                       value={formData.children_no_bed}
                       onChange={(e) => handleInputChange('children_no_bed', parseInt(e.target.value) || 0)}
                     />
@@ -492,7 +493,7 @@ const CreateInquiryPage = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Total Guests:</span>
                   <span className="font-medium">
-                    {totalGuests} ({formData.num_adults} adults, {formData.num_children} children)
+                    {totalGuests} ({formData.adults} adults, {formData.children} children)
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">

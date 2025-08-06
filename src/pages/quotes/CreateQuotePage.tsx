@@ -61,7 +61,7 @@ const CreateQuotePage = () => {
         end_date: inquiry.check_out_date,
         duration_days: days,
         duration_nights: nights,
-        adults: inquiry.adults || inquiry.num_adults || 1,
+        adults: inquiry.adults || 1,
         children_with_bed: inquiry.children_with_bed || 0,
         children_no_bed: inquiry.children_no_bed || 0,
         infants: inquiry.infants || 0,

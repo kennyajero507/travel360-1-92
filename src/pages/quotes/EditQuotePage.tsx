@@ -1,44 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { toast } from 'sonner';
-import { ArrowLeft, Save, FileText, Calculator } from 'lucide-react';
+import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../integrations/supabase/client';
 import { useQuotes } from '../../hooks/useQuotes';
-import type { Quote } from '../../types/quote';
+import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
+import { formatCurrency } from '../../utils/quoteCalculations';
+import { supabase } from '../../integrations/supabase/client';
+import { toast } from 'sonner';
+import QuoteSummary from '../../components/quotes/QuoteSummary';
 
 const EditQuotePage = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { id } = useParams();
   const { profile } = useSimpleAuth();
   const { updateQuote } = useQuotes();
   
-  const [loading, setLoading] = useState(false);
-  const [quote, setQuote] = useState<Quote | null>(null);
-  const [loadingQuote, setLoadingQuote] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [quote, setQuote] = useState<any>(null);
+  const [orgSettings, setOrgSettings] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     markup_percentage: 15,
     valid_until: '',
-    notes: '',
-    currency_code: 'USD'
+    currency_code: 'KES',
+    notes: ''
   });
 
-  const [orgSettings, setOrgSettings] = useState<any>(null);
+  const fetchQuote = async () => {
+    if (!id) return;
 
-  // Fetch quote data and organization settings
-  useEffect(() => {
-    if (id && profile?.org_id) {
-      fetchQuote();
-      fetchOrganizationSettings();
+    try {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        toast.error('Quote not found');
+        navigate('/quotes');
+        return;
+      }
+
+      setQuote(data);
+      setFormData({
+        markup_percentage: data.markup_percentage || 15,
+        valid_until: data.valid_until || '',
+        currency_code: data.currency_code || 'KES',
+        notes: data.notes || ''
+      });
+    } catch (error) {
+      console.error('Error fetching quote:', error);
+      toast.error('Failed to load quote');
     }
-  }, [id, profile?.org_id]);
+  };
 
   const fetchOrganizationSettings = async () => {
     try {
@@ -49,46 +72,23 @@ const EditQuotePage = () => {
         .maybeSingle();
 
       if (error) throw error;
-      
       setOrgSettings(data);
     } catch (error) {
       console.error('Error fetching organization settings:', error);
     }
   };
 
-  const fetchQuote = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('quotes')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchQuote(), fetchOrganizationSettings()]);
+      setLoading(false);
+    };
 
-      if (error) throw error;
-      
-      if (!data) {
-        toast.error('Quote not found');
-        navigate('/quotes');
-        return;
-      }
-      
-      setQuote(data as Quote);
-      
-      // Set form data from quote
-      setFormData({
-        markup_percentage: data.markup_percentage || 15,
-        valid_until: data.valid_until || '',
-        notes: data.notes || '',
-        currency_code: data.currency_code || 'USD'
-      });
-      
-    } catch (error) {
-      console.error('Error fetching quote:', error);
-      toast.error('Failed to load quote data');
-    } finally {
-      setLoadingQuote(false);
+    if (id && profile?.org_id) {
+      loadData();
     }
-  };
+  }, [id, profile?.org_id]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -96,41 +96,35 @@ const EditQuotePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
 
     try {
-      if (!id) throw new Error('Quote ID is required');
-      
-      await updateQuote(id, {
+      if (!quote) return;
+
+      const updates = {
         markup_percentage: formData.markup_percentage,
         valid_until: formData.valid_until,
+        currency_code: formData.currency_code,
         notes: formData.notes,
-        currency_code: formData.currency_code
-      } as any);
+        updated_at: new Date().toISOString()
+      };
 
+      await updateQuote(quote.id, updates);
+      toast.success('Quote updated successfully!');
       navigate('/quotes');
     } catch (error) {
       console.error('Error updating quote:', error);
+      toast.error('Failed to update quote');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    const currency = formData.currency_code || 'USD';
-    const symbol = {
-      'USD': '$',
-      'KES': 'KSh',
-      'EUR': '€',
-      'GBP': '£',
-      'TZS': 'TSh',
-      'UGX': 'USh'
-    }[currency] || '$';
-    
-    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrencyDisplay = (amount: number) => {
+    return formatCurrency(amount, formData.currency_code);
   };
 
-  if (loadingQuote) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
@@ -161,7 +155,7 @@ const EditQuotePage = () => {
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Edit Quote</h1>
-          <p className="text-gray-600 mt-1">Editing quote {quote.quote_number}</p>
+          <p className="text-gray-600 mt-1">Update quote {quote.quote_number}</p>
         </div>
       </div>
 
@@ -179,6 +173,10 @@ const EditQuotePage = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Quote Number</Label>
+                    <p className="text-base font-semibold text-gray-900">{quote.quote_number}</p>
+                  </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Client</Label>
                     <p className="text-base font-semibold text-gray-900">{quote.client}</p>
@@ -277,49 +275,32 @@ const EditQuotePage = () => {
 
           {/* Summary */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Quote Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(quote.subtotal || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Markup ({formData.markup_percentage}%)</span>
-                    <span className="font-medium text-blue-600">{formatCurrency((quote.subtotal || 0) * formData.markup_percentage / 100)}</span>
-                  </div>
-                  <div className="border-t pt-3">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-green-600">{formatCurrency((quote.subtotal || 0) * (1 + formData.markup_percentage / 100))}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <QuoteSummary
+              sleepingArrangements={quote.sleeping_arrangements || []}
+              transportOptions={quote.transport_options || []}
+              transferOptions={quote.transfer_options || []}
+              activities={quote.activities || []}
+              markupPercentage={formData.markup_percentage}
+              durationNights={quote.duration_nights || 1}
+              currencyCode={formData.currency_code}
+            />
 
             <Card>
               <CardContent className="p-4 space-y-3">
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loading}
+                  disabled={saving}
                 >
-                  {loading ? (
+                  {saving ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Updating Quote...
+                      Saving Changes...
                     </>
                   ) : (
                     <>
                       <Save className="h-4 w-4 mr-2" />
-                      Update Quote
+                      Save Changes
                     </>
                   )}
                 </Button>
@@ -329,7 +310,7 @@ const EditQuotePage = () => {
                   variant="outline"
                   className="w-full"
                   onClick={() => navigate('/quotes')}
-                  disabled={loading}
+                  disabled={saving}
                 >
                   Cancel
                 </Button>
