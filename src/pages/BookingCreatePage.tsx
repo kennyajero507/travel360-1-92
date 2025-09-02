@@ -42,6 +42,8 @@ const BookingCreatePage = () => {
   useEffect(() => {
     if (quoteId) {
       fetchQuote();
+    } else {
+      setLoadingQuote(false);
     }
   }, [quoteId]);
 
@@ -51,29 +53,31 @@ const BookingCreatePage = () => {
         .from('quotes')
         .select('*')
         .eq('id', quoteId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       
       setQuote(data);
       
       // Pre-fill form with quote data
-      setFormData({
-        client: data.client || '',
-        client_email: data.client_email || '',
-        client_mobile: data.mobile || '',
-        destination: data.destination || '',
-        hotel_name: 'Selected from Quote',
-        travel_start: data.start_date || '',
-        travel_end: data.end_date || '',
-        total_price: data.total_amount || 0,
-        status: 'pending',
-        notes: data.notes || '',
-        room_arrangement: data.sleeping_arrangements || {},
-        transport: data.transport_options || {},
-        transfers: data.transfer_options || {},
-        activities: data.activities || {}
-      });
+      if (data) {
+        setFormData({
+          client: data.client || '',
+          client_email: data.client_email || '',
+          client_mobile: data.mobile || '',
+          destination: data.destination || '',
+          hotel_name: 'Selected from Quote',
+          travel_start: data.start_date || '',
+          travel_end: data.end_date || '',
+          total_price: data.total_amount || 0,
+          status: 'pending',
+          notes: data.notes || '',
+          room_arrangement: data.sleeping_arrangements || {},
+          transport: data.transport_options || {},
+          transfers: data.transfer_options || {},
+          activities: data.activities || {}
+        });
+      }
     } catch (error) {
       console.error('Error fetching quote:', error);
       toast.error('Failed to load quote data');
@@ -132,7 +136,7 @@ const BookingCreatePage = () => {
 
       const { data, error } = await supabase
         .from('bookings')
-        .insert(bookingData as any)
+        .insert(bookingData)
         .select()
         .single();
 

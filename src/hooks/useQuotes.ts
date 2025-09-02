@@ -37,25 +37,31 @@ export const useQuotes = () => {
   const createQuote = async (quoteData: Partial<Quote>) => {
     try {
       setLoading(true);
+      console.log('Creating quote with data:', quoteData);
+      
       const { data, error } = await supabase
         .from('quotes')
-        .insert([{
+        .insert({
           ...quoteData,
           org_id: profile?.org_id,
           created_by: profile?.id,
           status: 'draft'
-        } as any])
+        } as any)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Quote creation error:', error);
+        throw error;
+      }
 
+      console.log('Quote created successfully:', data);
       setQuotes(prev => [data as Quote, ...prev]);
       toast.success('Quote created successfully!');
       return data;
     } catch (err) {
       console.error('Error creating quote:', err);
-      toast.error('Failed to create quote');
+      toast.error(`Failed to create quote: ${err.message || 'Unknown error'}`);
       throw err;
     } finally {
       setLoading(false);
@@ -65,6 +71,8 @@ export const useQuotes = () => {
   const updateQuote = async (id: string, updates: Partial<Quote>) => {
     try {
       setLoading(true);
+      console.log('Updating quote:', id, 'with data:', updates);
+      
       const { data, error } = await supabase
         .from('quotes')
         .update(updates)
@@ -72,14 +80,18 @@ export const useQuotes = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Quote update error:', error);
+        throw error;
+      }
 
+      console.log('Quote updated successfully:', data);
       setQuotes(prev => prev.map(quote => quote.id === id ? data as Quote : quote));
       toast.success('Quote updated successfully!');
       return data;
     } catch (err) {
       console.error('Error updating quote:', err);
-      toast.error('Failed to update quote');
+      toast.error(`Failed to update quote: ${err.message || 'Unknown error'}`);
       throw err;
     } finally {
       setLoading(false);

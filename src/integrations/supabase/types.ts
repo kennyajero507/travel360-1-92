@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1725,10 +1725,10 @@ export type Database = {
       }
       check_user_permission: {
         Args: {
-          p_user_id: string
+          p_action?: string
           p_permission: string
           p_resource?: string
-          p_action?: string
+          p_user_id: string
         }
         Returns: boolean
       }
@@ -1747,12 +1747,12 @@ export type Database = {
       debug_user_auth: {
         Args: { user_id_param?: string }
         Returns: {
-          user_exists: boolean
-          profile_exists: boolean
-          profile_data: Json
-          org_exists: boolean
           org_data: Json
+          org_exists: boolean
           policies_blocking: string[]
+          profile_data: Json
+          profile_exists: boolean
+          user_exists: boolean
         }[]
       }
       debug_user_profile: {
@@ -1770,10 +1770,10 @@ export type Database = {
       get_organization_settings: {
         Args: { p_org_id?: string }
         Returns: {
-          org_id: string
           default_country: string
           default_currency: string
           default_regions: Json
+          org_id: string
         }[]
       }
       get_user_org_id: {
@@ -1795,9 +1795,9 @@ export type Database = {
       log_admin_activity: {
         Args: {
           p_action: string
-          p_target_type?: string
-          p_target_id?: string
           p_details?: Json
+          p_target_id?: string
+          p_target_type?: string
         }
         Returns: string
       }

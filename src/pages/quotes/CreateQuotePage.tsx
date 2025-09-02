@@ -11,6 +11,7 @@ import { useQuotes } from '../../hooks/useQuotes';
 import { useQuoteForm } from '../../hooks/useQuoteForm';
 import { calculateTotals, calculateDuration } from '../../utils/quoteCalculations';
 import QuoteSummary from '../../components/quotes/QuoteSummary';
+import { toast } from 'sonner';
 
 const CreateQuotePage = () => {
   const navigate = useNavigate();
@@ -39,6 +40,8 @@ const CreateQuotePage = () => {
       if (!inquiry) {
         throw new Error('No inquiry data available');
       }
+
+      console.log('Creating quote from inquiry:', inquiry);
 
       // Calculate totals
       const { days, nights } = calculateDuration(inquiry.check_in_date, inquiry.check_out_date);
@@ -80,10 +83,13 @@ const CreateQuotePage = () => {
         status: 'draft' as const
       };
 
+      console.log('Quote data to create:', quoteData);
+
       await createQuote(quoteData);
       navigate('/quotes');
     } catch (error) {
       console.error('Error creating quote:', error);
+      toast.error(`Failed to create quote: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
