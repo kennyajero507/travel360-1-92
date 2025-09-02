@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useHotels } from '../hooks/useHotels';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -93,6 +94,7 @@ const mockHotels = [
 ];
 
 const HotelsPage = () => {
+  const { hotels, loading } = useHotels();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -133,7 +135,7 @@ const HotelsPage = () => {
     ));
   };
 
-  const filteredHotels = mockHotels.filter(hotel => {
+  const filteredHotels = hotels.filter(hotel => {
     const matchesSearch = hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          hotel.location.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -152,9 +154,11 @@ const HotelsPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Hotels Management</h1>
           <p className="text-gray-600 mt-1">Manage your hotel inventory and partnerships</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Hotel
+        <Button asChild>
+          <Link to="/hotels/create">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Hotel
+          </Link>
         </Button>
       </div>
 
@@ -314,8 +318,16 @@ const HotelsPage = () => {
                             </div>
                             
                             <div className="flex items-center gap-2 mb-2">
-                              {renderStars(hotel.rating)}
-                              <span className="text-sm text-gray-600">({hotel.rating})</span>
+                              {hotel.rating ? renderStars(hotel.rating) : (
+                                <div className="flex gap-1">
+                                  {Array.from({ length: 5 }, (_, i) => (
+                                    <Star key={i} className="h-4 w-4 text-gray-300" />
+                                  ))}
+                                </div>
+                              )}
+                              <span className="text-sm text-gray-600">
+                                {hotel.rating ? `(${hotel.rating})` : 'No rating'}
+                              </span>
                             </div>
                             
                             <p className="text-sm text-gray-600">{hotel.description}</p>
@@ -325,31 +337,45 @@ const HotelsPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           <div>
                             <p className="text-sm font-medium text-gray-700">Room Count</p>
-                            <p className="text-lg font-semibold">{hotel.room_count} rooms</p>
+                            <p className="text-lg font-semibold">
+                              {hotel.room_count || 'N/A'} rooms
+                            </p>
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-700">Price Range</p>
                             <p className="text-lg font-semibold">
-                              {formatCurrency(hotel.pricing.standard)} - {formatCurrency(hotel.pricing.suite)}
+                              {hotel.pricing ? (
+                                `${formatCurrency(hotel.pricing.standard || 0)} - ${formatCurrency(hotel.pricing.suite || 0)}`
+                              ) : (
+                                'Contact for pricing'
+                              )}
                             </p>
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-700">Contact</p>
-                            <p className="text-sm text-gray-600">{hotel.contact.phone}</p>
-                            <p className="text-sm text-gray-600">{hotel.contact.email}</p>
+                            <p className="text-sm text-gray-600">
+                              {hotel.contact_info?.phone || 'No phone'}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {hotel.contact_info?.email || 'No email'}
+                            </p>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2 mb-4">
                           <span className="text-sm font-medium text-gray-700">Amenities:</span>
                           <div className="flex gap-2">
-                            {hotel.amenities.slice(0, 5).map((amenity) => (
-                              <div key={amenity} className="flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded">
-                                {getAmenityIcon(amenity)}
-                                <span className="capitalize">{amenity.replace('_', ' ')}</span>
-                              </div>
-                            ))}
-                            {hotel.amenities.length > 5 && (
+                            {hotel.amenities && Array.isArray(hotel.amenities) ? (
+                              hotel.amenities.slice(0, 5).map((amenity, index) => (
+                                <div key={index} className="flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded">
+                                  {getAmenityIcon(amenity)}
+                                  <span className="capitalize">{amenity.replace('_', ' ')}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-500">No amenities listed</span>
+                            )}
+                            {hotel.amenities && hotel.amenities.length > 5 && (
                               <span className="text-xs text-gray-500">+{hotel.amenities.length - 5} more</span>
                             )}
                           </div>

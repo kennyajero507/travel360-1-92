@@ -427,7 +427,7 @@ export type Database = {
           estimated_budget_range?: string | null
           flight_preference?: string | null
           guide_language_preference?: string | null
-          id: string
+          id?: string
           infants: number
           lead_source?: string | null
           nights_count?: number | null

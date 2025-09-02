@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import { ArrowLeft, Save, MessageSquare, Calculator } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../integrations/supabase/client';
+import { useInquiries } from '../../hooks/useInquiries';
 
 const CreateInquiryPage = () => {
   const navigate = useNavigate();
   const { profile } = useSimpleAuth();
-  const [loading, setLoading] = useState(false);
+  const { createInquiry, loading } = useInquiries();
 
   const [formData, setFormData] = useState({
     client_name: '',
@@ -123,8 +123,6 @@ const CreateInquiryPage = () => {
       return;
     }
 
-    setLoading(true);
-
     try {
       // Calculate days and nights
       const startDate = new Date(formData.travel_start);
@@ -150,27 +148,12 @@ const CreateInquiryPage = () => {
         children_no_bed: formData.children_no_bed,
         special_requirements: formData.notes,
         num_rooms: formData.num_rooms,
-        created_by: profile?.id,
-        org_id: profile?.org_id
       };
 
-      const { data, error } = await supabase
-        .from('inquiries')
-        .insert(inquiryData as any)
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success(`Inquiry ${data.enquiry_number} created successfully!`);
+      const data = await createInquiry(inquiryData);
       navigate(`/quotes/create?inquiry=${data.id}`);
     } catch (error) {
       console.error('Error creating inquiry:', error);
-      toast.error('Failed to create inquiry. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 

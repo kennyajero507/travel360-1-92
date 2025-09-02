@@ -25,6 +25,7 @@ import BookingCreatePage from "./pages/BookingCreatePage";
 import ReportsPage from "./pages/ReportsPage";
 import TransportPage from "./pages/TransportPage";
 import HotelsPage from "./pages/HotelsPage";
+import CreateHotelPage from "./pages/hotels/CreateHotelPage";
 import TeamPage from "./pages/TeamPage";
 import DestinationsPage from "./pages/DestinationsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -64,6 +65,7 @@ function App() {
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="transport" element={<TransportPage />} />
                 <Route path="hotels" element={<HotelsPage />} />
+                <Route path="hotels/create" element={<CreateHotelPage />} />
                 <Route path="team" element={<TeamPage />} />
                 <Route path="destinations" element={<DestinationsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
