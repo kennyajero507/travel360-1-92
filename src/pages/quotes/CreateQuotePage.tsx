@@ -54,20 +54,38 @@ const CreateQuotePage = () => {
         nights
       );
 
+      // Handle data structure inconsistencies between inquiries
+      const adults = inquiry.adults || inquiry.num_adults || 1;
+      const childrenWithBed = inquiry.children_with_bed || 0;
+      const childrenNoBed = inquiry.children_no_bed || 0;
+      const infants = inquiry.infants || 0;
+
+      console.log('Inquiry data being used:', {
+        inquiry_id: inquiryId,
+        client_name: inquiry.client_name,
+        adults,
+        children_with_bed: childrenWithBed,
+        children_no_bed: childrenNoBed,
+        infants,
+        check_in_date: inquiry.check_in_date,
+        check_out_date: inquiry.check_out_date,
+        destination: inquiry.destination
+      });
+
       const quoteData = {
         inquiry_id: inquiryId,
         client: inquiry.client_name,
-        client_email: inquiry.client_email,
-        mobile: inquiry.client_mobile,
+        client_email: inquiry.client_email || null,
+        mobile: inquiry.client_mobile || '',
         destination: inquiry.destination,
         start_date: inquiry.check_in_date,
         end_date: inquiry.check_out_date,
         duration_days: days,
         duration_nights: nights,
-        adults: inquiry.adults || 1,
-        children_with_bed: inquiry.children_with_bed || 0,
-        children_no_bed: inquiry.children_no_bed || 0,
-        infants: inquiry.infants || 0,
+        adults: adults,
+        children_with_bed: childrenWithBed,
+        children_no_bed: childrenNoBed,
+        infants: infants,
         hotel_id: formData.selected_hotel_id || null,
         sleeping_arrangements: sleepingArrangements,
         transport_options: transportOptions,
@@ -78,8 +96,8 @@ const CreateQuotePage = () => {
         markup_amount: totals.markupAmount,
         total_amount: totals.grandTotal,
         currency_code: formData.currency_code,
-        valid_until: formData.valid_until,
-        notes: formData.notes,
+        valid_until: formData.valid_until || null,
+        notes: formData.notes || null,
         status: 'draft' as const
       };
 

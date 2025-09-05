@@ -38,20 +38,33 @@ export const useQuotes = () => {
     try {
       setLoading(true);
       console.log('Creating quote with data:', quoteData);
+      console.log('Profile org_id:', profile?.org_id);
+      console.log('Profile id:', profile?.id);
       
+      // Ensure required fields are set
+      const insertData = {
+        ...quoteData,
+        org_id: profile?.org_id,
+        created_by: profile?.id,
+        status: quoteData.status || 'draft'
+      };
+
+      console.log('Final insert data:', insertData);
+
       const { data, error } = await supabase
         .from('quotes')
-        .insert({
-          ...quoteData,
-          org_id: profile?.org_id,
-          created_by: profile?.id,
-          status: 'draft'
-        } as any)
+        .insert(insertData as any)
         .select()
         .single();
 
       if (error) {
-        console.error('Quote creation error:', error);
+        console.error('Supabase quote creation error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 
@@ -59,9 +72,10 @@ export const useQuotes = () => {
       setQuotes(prev => [data as Quote, ...prev]);
       toast.success('Quote created successfully!');
       return data;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating quote:', err);
-      toast.error(`Failed to create quote: ${err.message || 'Unknown error'}`);
+      const errorMessage = err?.message || err?.details || 'Unknown error occurred';
+      toast.error(`Failed to create quote: ${errorMessage}`);
       throw err;
     } finally {
       setLoading(false);

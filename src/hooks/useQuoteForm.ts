@@ -42,15 +42,27 @@ export const useQuoteForm = (inquiryId?: string) => {
 
       setInquiry(data);
 
-      // Initialize sleeping arrangements
+      // Initialize sleeping arrangements - handle data inconsistencies
+      const numRooms = data.num_rooms || 1;
+      const totalAdults = data.adults || data.num_adults || 1;
+      const totalChildrenWithBed = data.children_with_bed || 0;
+      const totalChildrenNoBed = data.children_no_bed || 0;
+
+      console.log('Initializing sleeping arrangements from inquiry:', {
+        num_rooms: numRooms,
+        total_adults: totalAdults,
+        total_children_with_bed: totalChildrenWithBed,
+        total_children_no_bed: totalChildrenNoBed
+      });
+
       const arrangements: SleepingArrangement[] = [];
-      for (let i = 1; i <= (data.num_rooms || 1); i++) {
+      for (let i = 1; i <= numRooms; i++) {
         arrangements.push({
           id: `room_${i}`,
           room_number: i,
-          adults: Math.floor((data.adults || 1) / (data.num_rooms || 1)),
-          children_with_bed: Math.floor((data.children_with_bed || 0) / (data.num_rooms || 1)),
-          children_no_bed: Math.floor((data.children_no_bed || 0) / (data.num_rooms || 1)),
+          adults: Math.floor(totalAdults / numRooms),
+          children_with_bed: Math.floor(totalChildrenWithBed / numRooms),
+          children_no_bed: Math.floor(totalChildrenNoBed / numRooms),
           room_type: '',
           cost_per_night: 0
         });
