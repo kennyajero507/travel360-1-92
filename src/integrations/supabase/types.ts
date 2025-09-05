@@ -95,7 +95,7 @@ export type Database = {
           hotel_name: string
           id: string
           notes: string | null
-          org_id: string | null
+          org_id: string
           quote_id: string | null
           room_arrangement: Json | null
           status: string
@@ -117,7 +117,7 @@ export type Database = {
           hotel_name: string
           id?: string
           notes?: string | null
-          org_id?: string | null
+          org_id: string
           quote_id?: string | null
           room_arrangement?: Json | null
           status?: string
@@ -139,7 +139,7 @@ export type Database = {
           hotel_name?: string
           id?: string
           notes?: string | null
-          org_id?: string | null
+          org_id?: string
           quote_id?: string | null
           room_arrangement?: Json | null
           status?: string
@@ -301,7 +301,7 @@ export type Database = {
           images: Json | null
           location: string | null
           name: string
-          org_id: string | null
+          org_id: string
           policies: Json | null
           pricing: Json | null
           room_types: Json | null
@@ -322,7 +322,7 @@ export type Database = {
           images?: Json | null
           location?: string | null
           name: string
-          org_id?: string | null
+          org_id: string
           policies?: Json | null
           pricing?: Json | null
           room_types?: Json | null
@@ -343,7 +343,7 @@ export type Database = {
           images?: Json | null
           location?: string | null
           name?: string
-          org_id?: string | null
+          org_id?: string
           policies?: Json | null
           pricing?: Json | null
           room_types?: Json | null
@@ -385,7 +385,7 @@ export type Database = {
           num_adults: number | null
           num_children: number | null
           num_rooms: number | null
-          org_id: string | null
+          org_id: string
           package_name: string | null
           passport_expiry_date: string | null
           preferred_currency: string | null
@@ -435,7 +435,7 @@ export type Database = {
           num_adults?: number | null
           num_children?: number | null
           num_rooms?: number | null
-          org_id?: string | null
+          org_id: string
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
@@ -485,7 +485,7 @@ export type Database = {
           num_adults?: number | null
           num_children?: number | null
           num_rooms?: number | null
-          org_id?: string | null
+          org_id?: string
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
@@ -1296,7 +1296,7 @@ export type Database = {
           markup_value: number | null
           mobile: string
           notes: string | null
-          org_id: string | null
+          org_id: string
           package_name: string | null
           passport_expiry_date: string | null
           preferred_currency: string | null
@@ -1357,7 +1357,7 @@ export type Database = {
           markup_value?: number | null
           mobile: string
           notes?: string | null
-          org_id?: string | null
+          org_id: string
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
@@ -1418,7 +1418,7 @@ export type Database = {
           markup_value?: number | null
           mobile?: string
           notes?: string | null
-          org_id?: string | null
+          org_id?: string
           package_name?: string | null
           passport_expiry_date?: string | null
           preferred_currency?: string | null
