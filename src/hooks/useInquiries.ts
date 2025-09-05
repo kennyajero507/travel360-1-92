@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
+import type { DatabaseInquiry, DatabaseBooking, DatabaseHotel, InquiryFormData, BookingFormData, HotelFormData } from '../types/database';
 import { supabase } from '@/integrations/supabase/client';
 import { useSimpleAuth } from '@/contexts/SimpleAuthContext';
-import { toast } from 'sonner';
+import { errorHandler } from '../services/errorHandler';
+import { useAsyncCleanup } from '../utils/cleanup';
 
 export const useInquiries = () => {
-  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [inquiries, setInquiries] = useState<DatabaseInquiry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { profile } = useSimpleAuth();
+  const { isMounted, safeSetState } = useAsyncCleanup();
 
   const fetchInquiries = async () => {
-    if (!profile?.org_id) return;
+    if (!profile?.org_id || !isMounted()) return;
     
-    setLoading(true);
-    setError(null);
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
     
     try {
       const { data, error } = await supabase
@@ -23,23 +26,24 @@ export const useInquiries = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInquiries(data || []);
+      if (isMounted()) {
+        setInquiries(data || []);
+      }
     } catch (err: any) {
-      console.error('Error fetching inquiries:', err);
-      setError(err.message);
-      toast.error('Failed to fetch inquiries');
+      errorHandler.handleError(err, 'fetchInquiries');
+      safeSetState(setError)(err.message);
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 
-  const createInquiry = async (inquiryData: any) => {
+  const createInquiry = async (inquiryData: InquiryFormData) => {
     if (!profile?.id || !profile?.org_id) {
       throw new Error('User must be authenticated and belong to an organization');
     }
 
-    setLoading(true);
-    setError(null);
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
 
     try {
       const { data, error } = await supabase
@@ -54,22 +58,22 @@ export const useInquiries = () => {
 
       if (error) throw error;
 
-      setInquiries(prev => [data, ...prev]);
-      toast.success(`Inquiry ${data.enquiry_number} created successfully!`);
+      if (isMounted()) {
+        setInquiries(prev => [data, ...prev]);
+      }
       return data;
     } catch (err: any) {
-      console.error('Error creating inquiry:', err);
-      setError(err.message);
-      toast.error('Failed to create inquiry');
+      errorHandler.handleError(err, 'createInquiry');
+      safeSetState(setError)(err.message);
       throw err;
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 
-  const updateInquiry = async (id: string, updates: any) => {
-    setLoading(true);
-    setError(null);
+  const updateInquiry = async (id: string, updates: Partial<DatabaseInquiry>) => {
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
 
     try {
       const { data, error } = await supabase
@@ -81,24 +85,24 @@ export const useInquiries = () => {
 
       if (error) throw error;
 
-      setInquiries(prev => prev.map(inquiry => 
-        inquiry.id === id ? { ...inquiry, ...data } : inquiry
-      ));
-      toast.success('Inquiry updated successfully');
+      if (isMounted()) {
+        setInquiries(prev => prev.map(inquiry => 
+          inquiry.id === id ? { ...inquiry, ...data } : inquiry
+        ));
+      }
       return data;
     } catch (err: any) {
-      console.error('Error updating inquiry:', err);
-      setError(err.message);
-      toast.error('Failed to update inquiry');
+      errorHandler.handleError(err, 'updateInquiry');
+      safeSetState(setError)(err.message);
       throw err;
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 
   const deleteInquiry = async (id: string) => {
-    setLoading(true);
-    setError(null);
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
 
     try {
       const { error } = await supabase
@@ -108,15 +112,15 @@ export const useInquiries = () => {
 
       if (error) throw error;
 
-      setInquiries(prev => prev.filter(inquiry => inquiry.id !== id));
-      toast.success('Inquiry deleted successfully');
+      if (isMounted()) {
+        setInquiries(prev => prev.filter(inquiry => inquiry.id !== id));
+      }
     } catch (err: any) {
-      console.error('Error deleting inquiry:', err);
-      setError(err.message);
-      toast.error('Failed to delete inquiry');
+      errorHandler.handleError(err, 'deleteInquiry');
+      safeSetState(setError)(err.message);
       throw err;
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 

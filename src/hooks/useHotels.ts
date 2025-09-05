@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
+import type { DatabaseInquiry, DatabaseBooking, DatabaseHotel, InquiryFormData, BookingFormData, HotelFormData } from '../types/database';
 import { supabase } from '@/integrations/supabase/client';
 import { useSimpleAuth } from '@/contexts/SimpleAuthContext';
-import { toast } from 'sonner';
+import { errorHandler } from '../services/errorHandler';
+import { useAsyncCleanup } from '../utils/cleanup';
 
 export const useHotels = () => {
-  const [hotels, setHotels] = useState<any[]>([]);
+  const [hotels, setHotels] = useState<DatabaseHotel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { profile } = useSimpleAuth();
+  const { isMounted, safeSetState } = useAsyncCleanup();
 
   const fetchHotels = async () => {
-    if (!profile?.org_id) return;
+    if (!profile?.org_id || !isMounted()) return;
     
-    setLoading(true);
-    setError(null);
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
     
     try {
       const { data, error } = await supabase
@@ -23,23 +26,25 @@ export const useHotels = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setHotels(data || []);
+      
+      if (isMounted()) {
+        setHotels(data || []);
+      }
     } catch (err: any) {
-      console.error('Error fetching hotels:', err);
-      setError(err.message);
-      toast.error('Failed to fetch hotels');
+      errorHandler.handleError(err, 'fetchHotels');
+      safeSetState(setError)(err.message);
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 
-  const createHotel = async (hotelData: any) => {
+  const createHotel = async (hotelData: HotelFormData) => {
     if (!profile?.id || !profile?.org_id) {
       throw new Error('User must be authenticated and belong to an organization');
     }
 
-    setLoading(true);
-    setError(null);
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
 
     try {
       const { data, error } = await supabase
@@ -54,22 +59,22 @@ export const useHotels = () => {
 
       if (error) throw error;
 
-      setHotels(prev => [data, ...prev]);
-      toast.success('Hotel created successfully!');
+      if (isMounted()) {
+        setHotels(prev => [data, ...prev]);
+      }
       return data;
     } catch (err: any) {
-      console.error('Error creating hotel:', err);
-      setError(err.message);
-      toast.error('Failed to create hotel');
+      errorHandler.handleError(err, 'createHotel');
+      safeSetState(setError)(err.message);
       throw err;
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 
-  const updateHotel = async (id: string, updates: any) => {
-    setLoading(true);
-    setError(null);
+  const updateHotel = async (id: string, updates: Partial<DatabaseHotel>) => {
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
 
     try {
       const { data, error } = await supabase
@@ -81,24 +86,24 @@ export const useHotels = () => {
 
       if (error) throw error;
 
-      setHotels(prev => prev.map(hotel => 
-        hotel.id === id ? { ...hotel, ...data } : hotel
-      ));
-      toast.success('Hotel updated successfully');
+      if (isMounted()) {
+        setHotels(prev => prev.map(hotel => 
+          hotel.id === id ? { ...hotel, ...data } : hotel
+        ));
+      }
       return data;
     } catch (err: any) {
-      console.error('Error updating hotel:', err);
-      setError(err.message);
-      toast.error('Failed to update hotel');
+      errorHandler.handleError(err, 'updateHotel');
+      safeSetState(setError)(err.message);
       throw err;
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 
   const deleteHotel = async (id: string) => {
-    setLoading(true);
-    setError(null);
+    safeSetState(setLoading)(true);
+    safeSetState(setError)(null);
 
     try {
       const { error } = await supabase
@@ -108,15 +113,15 @@ export const useHotels = () => {
 
       if (error) throw error;
 
-      setHotels(prev => prev.filter(hotel => hotel.id !== id));
-      toast.success('Hotel deleted successfully');
+      if (isMounted()) {
+        setHotels(prev => prev.filter(hotel => hotel.id !== id));
+      }
     } catch (err: any) {
-      console.error('Error deleting hotel:', err);
-      setError(err.message);
-      toast.error('Failed to delete hotel');
+      errorHandler.handleError(err, 'deleteHotel');
+      safeSetState(setError)(err.message);
       throw err;
     } finally {
-      setLoading(false);
+      safeSetState(setLoading)(false);
     }
   };
 

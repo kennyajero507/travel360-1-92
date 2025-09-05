@@ -225,22 +225,36 @@ export const SimpleAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  // Auth state listener
+  // Auth state listener - FIXED to prevent memory leaks and duplicate listeners
   useEffect(() => {
     console.log('[SimpleAuthContext] Setting up auth listener');
+    let isSubscriptionActive = true;
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
+        // Prevent state updates if component is unmounted
+        if (!isSubscriptionActive) return;
+        
         console.log('[SimpleAuthContext] Auth state changed:', event, currentSession?.user?.id);
         
         setSession(currentSession);
         setUser(currentSession?.user || null);
         
         if (currentSession?.user && !fetchingProfile) {
-          // Defer profile fetch to avoid blocking auth state change
-          setTimeout(() => {
-            fetchProfile(currentSession.user.id);
-          }, 0);
+          // Use requestIdleCallback for better performance
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(() => {
+              if (isSubscriptionActive && currentSession?.user) {
+                fetchProfile(currentSession.user.id);
+              }
+            });
+          } else {
+            setTimeout(() => {
+              if (isSubscriptionActive && currentSession?.user) {
+                fetchProfile(currentSession.user.id);
+              }
+            }, 0);
+          }
         } else if (!currentSession?.user) {
           setProfile(null);
         }
@@ -249,25 +263,40 @@ export const SimpleAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     );
 
-    // Get initial session
+    // Get initial session with proper cleanup check
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!isSubscriptionActive) return;
+      
       console.log('[SimpleAuthContext] Initial session check:', initialSession?.user?.id);
       setSession(initialSession);
       setUser(initialSession?.user || null);
       
       if (initialSession?.user && !fetchingProfile) {
-        setTimeout(() => {
-          fetchProfile(initialSession.user.id);
-        }, 0);
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(() => {
+            if (isSubscriptionActive && initialSession?.user) {
+              fetchProfile(initialSession.user.id);
+            }
+          });
+        } else {
+          setTimeout(() => {
+            if (isSubscriptionActive && initialSession?.user) {
+              fetchProfile(initialSession.user.id);
+            }
+          }, 0);
+        }
       }
       
       setLoading(false);
     });
 
+    // Cleanup function to prevent memory leaks
     return () => {
+      console.log('[SimpleAuthContext] Cleaning up auth listener');
+      isSubscriptionActive = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []); // Removed fetchProfile dependency to prevent multiple listeners
 
   const contextValue: SimpleAuthContextType = {
     session,
