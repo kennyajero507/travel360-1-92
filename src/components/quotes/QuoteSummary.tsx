@@ -23,11 +23,17 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
   durationNights,
   currencyCode
 }) => {
+  // Ensure all arrays are properly defined
+  const safeArrangements = Array.isArray(sleepingArrangements) ? sleepingArrangements : [];
+  const safeTransportOptions = Array.isArray(transportOptions) ? transportOptions : [];
+  const safeTransferOptions = Array.isArray(transferOptions) ? transferOptions : [];
+  const safeActivities = Array.isArray(activities) ? activities : [];
+
   const totals = calculateTotals(
-    sleepingArrangements,
-    transportOptions,
-    transferOptions,
-    activities,
+    safeArrangements,
+    safeTransportOptions,
+    safeTransferOptions,
+    safeActivities,
     markupPercentage,
     durationNights
   );
