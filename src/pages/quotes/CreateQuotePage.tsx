@@ -45,11 +45,18 @@ const CreateQuotePage = () => {
 
       // Calculate totals
       const { days, nights } = calculateDuration(inquiry.check_in_date, inquiry.check_out_date);
+      
+      // Ensure arrays are safe before calculation
+      const safeSleepingArrangements = Array.isArray(sleepingArrangements) ? sleepingArrangements : [];
+      const safeTransportOptions = Array.isArray(transportOptions) ? transportOptions : [];
+      const safeTransferOptions = Array.isArray(transferOptions) ? transferOptions : [];
+      const safeActivities = Array.isArray(activities) ? activities : [];
+      
       const totals = calculateTotals(
-        sleepingArrangements,
-        transportOptions,
-        transferOptions,
-        activities,
+        safeSleepingArrangements,
+        safeTransportOptions,
+        safeTransferOptions,
+        safeActivities,
         formData.markup_percentage,
         nights
       );
@@ -87,10 +94,10 @@ const CreateQuotePage = () => {
         children_no_bed: childrenNoBed,
         infants: infants,
         hotel_id: formData.selected_hotel_id || null,
-        sleeping_arrangements: sleepingArrangements,
-        transport_options: transportOptions,
-        transfer_options: transferOptions,
-        activities: activities,
+        sleeping_arrangements: safeSleepingArrangements,
+        transport_options: safeTransportOptions,
+        transfer_options: safeTransferOptions,
+        activities: safeActivities,
         subtotal: totals.subtotal,
         markup_percentage: formData.markup_percentage,
         markup_amount: totals.markupAmount,
@@ -133,6 +140,12 @@ const CreateQuotePage = () => {
   }
 
   const { days, nights } = calculateDuration(inquiry.check_in_date, inquiry.check_out_date);
+
+  // Ensure arrays are safe for rendering
+  const safeSleepingArrangements = Array.isArray(sleepingArrangements) ? sleepingArrangements : [];
+  const safeTransportOptions = Array.isArray(transportOptions) ? transportOptions : [];
+  const safeTransferOptions = Array.isArray(transferOptions) ? transferOptions : [];
+  const safeActivities = Array.isArray(activities) ? activities : [];
 
   return (
     <div className="space-y-6">
@@ -267,10 +280,10 @@ const CreateQuotePage = () => {
           {/* Summary */}
           <div className="space-y-6">
             <QuoteSummary
-              sleepingArrangements={sleepingArrangements}
-              transportOptions={transportOptions}
-              transferOptions={transferOptions}
-              activities={activities}
+              sleepingArrangements={safeSleepingArrangements}
+              transportOptions={safeTransportOptions}
+              transferOptions={safeTransferOptions}
+              activities={safeActivities}
               markupPercentage={formData.markup_percentage}
               durationNights={nights}
               currencyCode={formData.currency_code}
