@@ -31,6 +31,21 @@ export interface Quote {
   transport_options: any[] | null;
   transfer_options: any[] | null;
   activities: any[] | null;
+  // Enhanced fields
+  quote_type?: string;
+  client_portal_token?: string;
+  client_viewed_at?: string | null;
+  client_response_deadline?: string | null;
+  terms_conditions?: string | null;
+  inclusions?: any[];
+  exclusions?: any[];
+  payment_terms?: string | null;
+  cancellation_policy?: string | null;
+  requires_approval?: boolean;
+  approval_status?: string;
+  sent_to_client_at?: string | null;
+  follow_up_count?: number;
+  last_follow_up_at?: string | null;
 }
 
 export interface QuoteFormData {
@@ -39,6 +54,71 @@ export interface QuoteFormData {
   valid_until: string;
   notes: string;
   currency_code: string;
+  terms_conditions?: string;
+  inclusions?: string[];
+  exclusions?: string[];
+  payment_terms?: string;
+  cancellation_policy?: string;
+  client_response_deadline?: string;
+}
+
+export interface QuoteOption {
+  id?: string;
+  quote_id?: string;
+  option_name: string;
+  option_description?: string;
+  base_price: number;
+  total_price: number;
+  currency_code: string;
+  inclusions: string[];
+  exclusions: string[];
+  hotel_details: any;
+  transport_details: any;
+  activity_details: any;
+  is_recommended: boolean;
+  is_selected: boolean;
+  sort_order: number;
+}
+
+export interface QuoteTemplate {
+  id?: string;
+  org_id?: string;
+  template_name: string;
+  template_description?: string;
+  destination: string;
+  duration_days: number;
+  duration_nights: number;
+  base_inclusions: string[];
+  base_exclusions: string[];
+  default_hotels: any[];
+  default_activities: any[];
+  default_transport: any;
+  pricing_structure: any;
+  terms_conditions?: string;
+  is_active: boolean;
+  created_by?: string;
+}
+
+export interface QuoteInteraction {
+  id?: string;
+  quote_id: string;
+  interaction_type: 'viewed' | 'downloaded' | 'accepted' | 'rejected' | 'feedback';
+  client_email?: string;
+  client_ip_address?: string;
+  interaction_data?: any;
+  user_agent?: string;
+  created_at?: string;
+}
+
+export interface QuoteApproval {
+  id?: string;
+  quote_id: string;
+  approver_id: string;
+  approval_status: 'pending' | 'approved' | 'rejected';
+  approval_notes?: string;
+  approval_level: number;
+  approved_at?: string;
+  created_at?: string;
 }
 
 export interface SleepingArrangement {

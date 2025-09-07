@@ -979,6 +979,82 @@ export type Database = {
           },
         ]
       }
+      quote_analytics: {
+        Row: {
+          id: string
+          metric_data: Json | null
+          metric_name: string
+          metric_value: number | null
+          quote_id: string
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          metric_data?: Json | null
+          metric_name: string
+          metric_value?: number | null
+          quote_id: string
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          metric_data?: Json | null
+          metric_name?: string
+          metric_value?: number | null
+          quote_id?: string
+          recorded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_analytics_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_approvals: {
+        Row: {
+          approval_level: number | null
+          approval_notes: string | null
+          approval_status: string
+          approved_at: string | null
+          approver_id: string
+          created_at: string
+          id: string
+          quote_id: string
+        }
+        Insert: {
+          approval_level?: number | null
+          approval_notes?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approver_id: string
+          created_at?: string
+          id?: string
+          quote_id: string
+        }
+        Update: {
+          approval_level?: number | null
+          approval_notes?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approver_id?: string
+          created_at?: string
+          id?: string
+          quote_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_approvals_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_excursions: {
         Row: {
           activity_type: string
@@ -1077,6 +1153,47 @@ export type Database = {
           },
         ]
       }
+      quote_interactions: {
+        Row: {
+          client_email: string | null
+          client_ip_address: unknown | null
+          created_at: string
+          id: string
+          interaction_data: Json | null
+          interaction_type: string
+          quote_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          client_email?: string | null
+          client_ip_address?: unknown | null
+          created_at?: string
+          id?: string
+          interaction_data?: Json | null
+          interaction_type: string
+          quote_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          client_email?: string | null
+          client_ip_address?: unknown | null
+          created_at?: string
+          id?: string
+          interaction_data?: Json | null
+          interaction_type?: string
+          quote_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_interactions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_markup: {
         Row: {
           created_at: string | null
@@ -1105,6 +1222,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "quote_markup_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_options: {
+        Row: {
+          activity_details: Json | null
+          base_price: number
+          created_at: string
+          currency_code: string
+          exclusions: Json | null
+          hotel_details: Json | null
+          id: string
+          inclusions: Json | null
+          is_recommended: boolean | null
+          is_selected: boolean | null
+          option_description: string | null
+          option_name: string
+          quote_id: string
+          sort_order: number | null
+          total_price: number
+          transport_details: Json | null
+          updated_at: string
+        }
+        Insert: {
+          activity_details?: Json | null
+          base_price?: number
+          created_at?: string
+          currency_code?: string
+          exclusions?: Json | null
+          hotel_details?: Json | null
+          id?: string
+          inclusions?: Json | null
+          is_recommended?: boolean | null
+          is_selected?: boolean | null
+          option_description?: string | null
+          option_name: string
+          quote_id: string
+          sort_order?: number | null
+          total_price?: number
+          transport_details?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          activity_details?: Json | null
+          base_price?: number
+          created_at?: string
+          currency_code?: string
+          exclusions?: Json | null
+          hotel_details?: Json | null
+          id?: string
+          inclusions?: Json | null
+          is_recommended?: boolean | null
+          is_selected?: boolean | null
+          option_description?: string | null
+          option_name?: string
+          quote_id?: string
+          sort_order?: number | null
+          total_price?: number
+          transport_details?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_options_quote_id_fkey"
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
@@ -1153,6 +1338,77 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_templates: {
+        Row: {
+          base_exclusions: Json | null
+          base_inclusions: Json | null
+          created_at: string
+          created_by: string | null
+          default_activities: Json | null
+          default_hotels: Json | null
+          default_transport: Json | null
+          destination: string
+          duration_days: number
+          duration_nights: number
+          id: string
+          is_active: boolean | null
+          org_id: string
+          pricing_structure: Json | null
+          template_description: string | null
+          template_name: string
+          terms_conditions: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_exclusions?: Json | null
+          base_inclusions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          default_activities?: Json | null
+          default_hotels?: Json | null
+          default_transport?: Json | null
+          destination: string
+          duration_days: number
+          duration_nights: number
+          id?: string
+          is_active?: boolean | null
+          org_id: string
+          pricing_structure?: Json | null
+          template_description?: string | null
+          template_name: string
+          terms_conditions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_exclusions?: Json | null
+          base_inclusions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          default_activities?: Json | null
+          default_hotels?: Json | null
+          default_transport?: Json | null
+          destination?: string
+          duration_days?: number
+          duration_nights?: number
+          id?: string
+          is_active?: boolean | null
+          org_id?: string
+          pricing_structure?: Json | null
+          template_description?: string | null
+          template_name?: string
+          terms_conditions?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1267,12 +1523,17 @@ export type Database = {
         Row: {
           activities: Json | null
           adults: number
+          approval_status: string | null
           approved_hotel_id: string | null
+          cancellation_policy: string | null
           children_no_bed: number | null
           children_with_bed: number | null
           client: string
           client_email: string | null
+          client_portal_token: string | null
+          client_response_deadline: string | null
           client_selection_date: string | null
+          client_viewed_at: string | null
           created_at: string | null
           created_by: string | null
           currency_code: string | null
@@ -1282,13 +1543,17 @@ export type Database = {
           duration_nights: number | null
           end_date: string
           estimated_budget_range: string | null
+          exclusions: Json | null
           flight_preference: string | null
+          follow_up_count: number | null
           guide_language_preference: string | null
           hotel_id: string | null
           id: string
+          inclusions: Json | null
           infants: number | null
           inquiry_id: string | null
           itinerary: Json | null
+          last_follow_up_at: string | null
           lead_source: string | null
           markup_amount: number | null
           markup_percentage: number | null
@@ -1299,18 +1564,23 @@ export type Database = {
           org_id: string
           package_name: string | null
           passport_expiry_date: string | null
+          payment_terms: string | null
           preferred_currency: string | null
           quote_number: string | null
+          quote_type: string | null
           regional_preference: string | null
+          requires_approval: boolean | null
           room_arrangements: Json | null
           sectionmarkups: Json | null
           selected_hotel_option_id: string | null
+          sent_to_client_at: string | null
           sleeping_arrangements: Json | null
           special_requirements: string | null
           start_date: string
           status: string
           subtotal: number | null
           summary_data: Json | null
+          terms_conditions: string | null
           total_amount: number | null
           tour_type: string | null
           transfer_options: Json | null
@@ -1328,12 +1598,17 @@ export type Database = {
         Insert: {
           activities?: Json | null
           adults: number
+          approval_status?: string | null
           approved_hotel_id?: string | null
+          cancellation_policy?: string | null
           children_no_bed?: number | null
           children_with_bed?: number | null
           client: string
           client_email?: string | null
+          client_portal_token?: string | null
+          client_response_deadline?: string | null
           client_selection_date?: string | null
+          client_viewed_at?: string | null
           created_at?: string | null
           created_by?: string | null
           currency_code?: string | null
@@ -1343,13 +1618,17 @@ export type Database = {
           duration_nights?: number | null
           end_date: string
           estimated_budget_range?: string | null
+          exclusions?: Json | null
           flight_preference?: string | null
+          follow_up_count?: number | null
           guide_language_preference?: string | null
           hotel_id?: string | null
           id?: string
+          inclusions?: Json | null
           infants?: number | null
           inquiry_id?: string | null
           itinerary?: Json | null
+          last_follow_up_at?: string | null
           lead_source?: string | null
           markup_amount?: number | null
           markup_percentage?: number | null
@@ -1360,18 +1639,23 @@ export type Database = {
           org_id: string
           package_name?: string | null
           passport_expiry_date?: string | null
+          payment_terms?: string | null
           preferred_currency?: string | null
           quote_number?: string | null
+          quote_type?: string | null
           regional_preference?: string | null
+          requires_approval?: boolean | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
+          sent_to_client_at?: string | null
           sleeping_arrangements?: Json | null
           special_requirements?: string | null
           start_date: string
           status?: string
           subtotal?: number | null
           summary_data?: Json | null
+          terms_conditions?: string | null
           total_amount?: number | null
           tour_type?: string | null
           transfer_options?: Json | null
@@ -1389,12 +1673,17 @@ export type Database = {
         Update: {
           activities?: Json | null
           adults?: number
+          approval_status?: string | null
           approved_hotel_id?: string | null
+          cancellation_policy?: string | null
           children_no_bed?: number | null
           children_with_bed?: number | null
           client?: string
           client_email?: string | null
+          client_portal_token?: string | null
+          client_response_deadline?: string | null
           client_selection_date?: string | null
+          client_viewed_at?: string | null
           created_at?: string | null
           created_by?: string | null
           currency_code?: string | null
@@ -1404,13 +1693,17 @@ export type Database = {
           duration_nights?: number | null
           end_date?: string
           estimated_budget_range?: string | null
+          exclusions?: Json | null
           flight_preference?: string | null
+          follow_up_count?: number | null
           guide_language_preference?: string | null
           hotel_id?: string | null
           id?: string
+          inclusions?: Json | null
           infants?: number | null
           inquiry_id?: string | null
           itinerary?: Json | null
+          last_follow_up_at?: string | null
           lead_source?: string | null
           markup_amount?: number | null
           markup_percentage?: number | null
@@ -1421,18 +1714,23 @@ export type Database = {
           org_id?: string
           package_name?: string | null
           passport_expiry_date?: string | null
+          payment_terms?: string | null
           preferred_currency?: string | null
           quote_number?: string | null
+          quote_type?: string | null
           regional_preference?: string | null
+          requires_approval?: boolean | null
           room_arrangements?: Json | null
           sectionmarkups?: Json | null
           selected_hotel_option_id?: string | null
+          sent_to_client_at?: string | null
           sleeping_arrangements?: Json | null
           special_requirements?: string | null
           start_date?: string
           status?: string
           subtotal?: number | null
           summary_data?: Json | null
+          terms_conditions?: string | null
           total_amount?: number | null
           tour_type?: string | null
           transfer_options?: Json | null
@@ -1759,6 +2057,10 @@ export type Database = {
         Args: { target_user_id?: string }
         Returns: Json
       }
+      generate_client_portal_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_inquiry_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1798,6 +2100,15 @@ export type Database = {
           p_details?: Json
           p_target_id?: string
           p_target_type?: string
+        }
+        Returns: string
+      }
+      log_quote_metric: {
+        Args: {
+          p_metric_data?: Json
+          p_metric_name: string
+          p_metric_value?: number
+          p_quote_id: string
         }
         Returns: string
       }

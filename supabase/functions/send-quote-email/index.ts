@@ -1,19 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-// Define the structure of the quote preview data we expect.
-// This is a subset of the full ClientQuotePreview type from the frontend.
-interface ClientQuotePreview {
-  id: string;
-  client: string;
-  destination: string;
-}
-
-interface QuoteEmailRequest {
-  quotePreview: ClientQuotePreview;
-  recipientEmail: string;
-}
+import { Resend } from "npm:resend@4.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -28,44 +15,60 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { quotePreview, recipientEmail }: QuoteEmailRequest = await req.json();
+    const { quoteId, recipientEmail, emailType = 'new_quote' } = await req.json();
     
-    // Fallback to SITE_URL env var, then to a default for local dev
-    const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:5173';
-    const previewUrl = `${siteUrl}/quote-preview?id=${quotePreview.id}`;
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h1>Hello ${quotePreview.client},</h1>
-        <p>Your personalized travel quote for <strong>${quotePreview.destination}</strong> is ready for your review.</p>
-        <p>You can view the complete details by clicking the button below:</p>
-        <a href="${previewUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Your Quote</a>
-        <p>If you have any questions or would like to make changes, please don't hesitate to reply to this email.</p>
-        <p>Best regards,<br>The Lovable Agency Team</p>
-      </div>
-    `;
+    // Fetch quote with portal token
+    const { data: quote, error } = await supabaseClient
+      .from('quotes')
+      .select('*, organizations!org_id(name)')
+      .eq('id', quoteId)
+      .single();
 
-    const { data, error } = await resend.emails.send({
-      from: "Lovable Agency <onboarding@resend.dev>",
+    if (error || !quote) throw new Error('Quote not found');
+
+    const portalUrl = `${req.headers.get("origin")}/quote/${quote.client_portal_token}`;
+    const orgName = quote.organizations?.name || "TravelFlow360";
+
+    const emailResponse = await resend.emails.send({
+      from: `${orgName} <quotes@yourdomain.com>`,
       to: [recipientEmail],
-      subject: `Your Travel Quote for ${quotePreview.destination} is Ready!`,
-      html: emailHtml,
+      subject: `Your Travel Quote #${quote.quote_number} - ${quote.destination}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #0d9488;">Your Travel Quote is Ready!</h1>
+          <p>Hi ${quote.client},</p>
+          <p>Your travel quote for <strong>${quote.destination}</strong> is ready for review.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${portalUrl}" style="background: #0d9488; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              View Your Quote
+            </a>
+          </div>
+          <p>This quote is valid until ${quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'further notice'}.</p>
+        </div>
+      `
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      throw new Error(error.message);
-    }
+    if (emailResponse.error) throw emailResponse.error;
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+    // Update quote
+    await supabaseClient
+      .from('quotes')
+      .update({ sent_to_client_at: new Date().toISOString() })
+      .eq('id', quoteId);
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (error: any) {
-    console.error("Error in send-quote-email function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 };
