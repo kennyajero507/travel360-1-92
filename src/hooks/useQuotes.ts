@@ -37,9 +37,12 @@ export const useQuotes = () => {
   const createQuote = async (quoteData: Partial<Quote>) => {
     try {
       setLoading(true);
+      console.log('=== SUPABASE QUOTE INSERT DEBUG ===');
       console.log('Creating quote with data:', quoteData);
       console.log('Profile org_id:', profile?.org_id);
       console.log('Profile id:', profile?.id);
+      console.log('Is profile loaded?', !!profile);
+      console.log('Is user authenticated?', !!profile?.id);
       
       // Ensure required fields are set
       const insertData = {
