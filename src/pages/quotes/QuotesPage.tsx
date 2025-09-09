@@ -19,6 +19,7 @@ import { useQuotes } from '../../hooks/useQuotes';
 import { formatCurrency } from '../../utils/quoteCalculations';
 import QuoteCard from '../../components/quotes/QuoteCard';
 import { toast } from 'sonner';
+import QuoteAnalyticsDashboard from '../../components/quotes/QuoteAnalyticsDashboard';
 
 const QuotesPage = () => {
   const { profile } = useSimpleAuth();
@@ -88,6 +89,9 @@ const QuotesPage = () => {
           </Link>
         </Button>
       </div>
+
+      {/* Analytics Dashboard */}
+      <QuoteAnalyticsDashboard />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -13,6 +13,7 @@ import { formatCurrency } from '../../utils/quoteCalculations';
 import { supabase } from '../../integrations/supabase/client';
 import { toast } from 'sonner';
 import QuoteSummary from '../../components/quotes/QuoteSummary';
+import MultiOptionQuoteBuilder from '../../components/quotes/MultiOptionQuoteBuilder';
 
 const EditQuotePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -163,6 +164,9 @@ const EditQuotePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Multi-Option Quote Builder */}
+            <MultiOptionQuoteBuilder quoteId={quote.id} currencyCode={formData.currency_code} />
+            
             {/* Quote Information */}
             <Card>
               <CardHeader>

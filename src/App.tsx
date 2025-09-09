@@ -20,6 +20,7 @@ import QuotesPage from "./pages/quotes/QuotesPage";
 import CreateQuotePage from "./pages/quotes/CreateQuotePage";
 import EditQuotePage from "./pages/quotes/EditQuotePage";
 import QuotePreviewPage from "./pages/quotes/QuotePreviewPage";
+import ClientPortalPage from "./pages/quotes/ClientPortalPage";
 import BookingsPage from "./pages/BookingsPage";
 import BookingCreatePage from "./pages/BookingCreatePage";
 import ReportsPage from "./pages/ReportsPage";
@@ -50,6 +51,7 @@ function App() {
               <Route path="/admin/users" element={<UserManagement />} />
               <Route path="/admin/subscriptions" element={<SubscriptionManagement />} />
               <Route path="/organization/setup" element={<OrganizationSetup />} />
+              <Route path="/client/quote/:token" element={<ClientPortalPage />} />
               
               {/* Protected routes */}
               <Route path="/" element={<DashboardLayout />}>

@@ -13,6 +13,7 @@ import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
 import { calculateTotals, calculateDuration } from '../../utils/quoteCalculations';
 import QuoteSummary from '../../components/quotes/QuoteSummary';
 import { toast } from 'sonner';
+import MultiOptionQuoteBuilder from '../../components/quotes/MultiOptionQuoteBuilder';
 
 const CreateQuotePage = () => {
   const navigate = useNavigate();
@@ -314,6 +315,9 @@ const CreateQuotePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Multi-Option Quote Builder */}
+            <MultiOptionQuoteBuilder quoteId="" currencyCode={formData.currency_code} />
+            
             {/* Inquiry Information */}
             <Card>
               <CardHeader>
