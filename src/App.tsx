@@ -21,6 +21,9 @@ import CreateQuotePage from "./pages/quotes/CreateQuotePage";
 import EditQuotePage from "./pages/quotes/EditQuotePage";
 import QuotePreviewPage from "./pages/quotes/QuotePreviewPage";
 import ClientPortalPage from "./pages/quotes/ClientPortalPage";
+import InquiryDetailPage from "./pages/inquiries/InquiryDetailPage";
+import QuoteDetailPage from "./pages/quotes/QuoteDetailPage";
+import BookingDetailPage from "./pages/bookings/BookingDetailPage";
 import BookingsPage from "./pages/BookingsPage";
 import BookingCreatePage from "./pages/BookingCreatePage";
 import ReportsPage from "./pages/ReportsPage";
@@ -56,14 +59,17 @@ function App() {
               {/* Protected routes */}
               <Route path="/" element={<DashboardLayout />}>
                 <Route path="dashboard" element={<Dashboard />} />
-                <Route path="inquiries" element={<InquiriesPage />} />
-                <Route path="inquiries/create" element={<CreateInquiryPage />} />
-                <Route path="quotes" element={<QuotesPage />} />
-                <Route path="quotes/create" element={<CreateQuotePage />} />
-                <Route path="quotes/:id/edit" element={<EditQuotePage />} />
-                <Route path="quotes/:id/preview" element={<QuotePreviewPage />} />
-                <Route path="bookings" element={<BookingsPage />} />
-                <Route path="bookings/create" element={<BookingCreatePage />} />
+              <Route path="/inquiries" element={<InquiriesPage />} />
+              <Route path="/inquiries/create" element={<CreateInquiryPage />} />
+              <Route path="/inquiries/:id" element={<InquiryDetailPage />} />
+              <Route path="/quotes" element={<QuotesPage />} />
+              <Route path="/quotes/create" element={<CreateQuotePage />} />
+              <Route path="/quotes/:id" element={<QuoteDetailPage />} />
+              <Route path="/quotes/:id/edit" element={<EditQuotePage />} />
+              <Route path="/quotes/:id/preview" element={<QuotePreviewPage />} />
+              <Route path="/bookings" element={<BookingsPage />} />
+              <Route path="/bookings/create" element={<BookingCreatePage />} />
+              <Route path="/bookings/:id" element={<BookingDetailPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="transport" element={<TransportPage />} />
                 <Route path="hotels" element={<HotelsPage />} />

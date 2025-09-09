@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSimpleAuth } from '../../contexts/SimpleAuthContext';
+import { useInquiries } from '../../hooks/useInquiries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -20,84 +21,51 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Mock data - replace with actual API calls
-const mockInquiries = [
-  {
-    id: '1',
-    inquiry_id: 'ENQ-2501-001',
-    client_name: 'Sarah Johnson',
-    client_email: 'sarah@email.com',
-    client_phone: '+1-555-0123',
-    destination: 'Zanzibar, Tanzania',
-    travel_type: 'international' as const,
-    travel_start: '2025-03-15',
-    travel_end: '2025-03-22',
-    number_of_guests: 2,
-    status: 'new' as const,
-    assigned_agent_id: null,
-    created_at: '2025-01-15T10:30:00Z',
-    special_requests: 'Honeymoon package, beachfront accommodation preferred'
-  },
-  {
-    id: '2',
-    inquiry_id: 'ENQ-2501-002',
-    client_name: 'Michael Chen',
-    client_email: 'michael.chen@email.com',
-    client_phone: '+1-555-0124',
-    destination: 'Serengeti National Park',
-    travel_type: 'international' as const,
-    travel_start: '2025-04-10',
-    travel_end: '2025-04-17',
-    number_of_guests: 4,
-    status: 'assigned' as const,
-    assigned_agent_id: 'agent-1',
-    created_at: '2025-01-14T14:20:00Z',
-    special_requests: 'Family safari, child-friendly accommodations'
-  },
-  {
-    id: '3',
-    inquiry_id: 'ENQ-2501-003',
-    client_name: 'Emily Rodriguez',
-    client_email: 'emily.r@email.com',
-    destination: 'Nairobi City Tour',
-    travel_type: 'domestic' as const,
-    travel_start: '2025-02-20',
-    travel_end: '2025-02-23',
-    number_of_guests: 1,
-    status: 'quoted' as const,
-    assigned_agent_id: 'agent-2',
-    created_at: '2025-01-13T09:15:00Z'
-  }
-];
-
 const InquiriesPage = () => {
   const { profile } = useSimpleAuth();
+  const { inquiries, loading, error } = useInquiries();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800';
-      case 'assigned': return 'bg-yellow-100 text-yellow-800';
-      case 'quoted': return 'bg-green-100 text-green-800';
-      case 'booked': return 'bg-purple-100 text-purple-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'New': return 'bg-blue-100 text-blue-800';
+      case 'Assigned': return 'bg-yellow-100 text-yellow-800';
+      case 'Quoted': return 'bg-green-100 text-green-800';
+      case 'Booked': return 'bg-purple-100 text-purple-800';
+      case 'Cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const filteredInquiries = mockInquiries.filter(inquiry => {
+  const filteredInquiries = inquiries.filter(inquiry => {
     const matchesSearch = inquiry.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          inquiry.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         inquiry.inquiry_id.toLowerCase().includes(searchTerm.toLowerCase());
+                         (inquiry.enquiry_number || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || inquiry.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const getInquiriesByStatus = (status: string) => {
-    if (status === 'all') return mockInquiries;
-    return mockInquiries.filter(inquiry => inquiry.status === status);
+    if (status === 'all') return inquiries;
+    return inquiries.filter(inquiry => inquiry.status === status);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">Error loading inquiries: {error}</p>
+      </div>
+    );
+  }
 
   const canCreateInquiry = profile?.role === 'customer_service' || 
                           profile?.role === 'agent' || 
@@ -133,7 +101,7 @@ const InquiriesPage = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">New Inquiries</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {getInquiriesByStatus('new').length}
+                  {getInquiriesByStatus('New').length}
                 </p>
               </div>
               <MessageSquare className="h-8 w-8 text-blue-600" />
@@ -147,7 +115,7 @@ const InquiriesPage = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Assigned</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {getInquiriesByStatus('assigned').length}
+                  {getInquiriesByStatus('Assigned').length}
                 </p>
               </div>
               <Users className="h-8 w-8 text-yellow-600" />
@@ -161,7 +129,7 @@ const InquiriesPage = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Quoted</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {getInquiriesByStatus('quoted').length}
+                  {getInquiriesByStatus('Quoted').length}
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-green-600" />
@@ -175,7 +143,7 @@ const InquiriesPage = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {mockInquiries.length}
+                  {inquiries.length}
                 </p>
               </div>
               <MessageSquare className="h-8 w-8 text-gray-600" />
@@ -206,11 +174,11 @@ const InquiriesPage = () => {
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Status</option>
-                <option value="new">New</option>
-                <option value="assigned">Assigned</option>
-                <option value="quoted">Quoted</option>
-                <option value="booked">Booked</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="New">New</option>
+                <option value="Assigned">Assigned</option>
+                <option value="Quoted">Quoted</option>
+                <option value="Booked">Booked</option>
+                <option value="Cancelled">Cancelled</option>
               </select>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
@@ -236,13 +204,13 @@ const InquiriesPage = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {inquiry.inquiry_id}
+                        {inquiry.enquiry_number || `INQ-${inquiry.id.slice(0, 8)}`}
                       </h3>
                       <Badge className={getStatusColor(inquiry.status)}>
                         {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
                       </Badge>
                       <Badge variant="outline">
-                        {inquiry.travel_type}
+                        {inquiry.tour_type}
                       </Badge>
                     </div>
 
@@ -251,7 +219,7 @@ const InquiriesPage = () => {
                         <User className="h-4 w-4 text-gray-500" />
                         <div>
                           <p className="text-sm font-medium">{inquiry.client_name}</p>
-                          <p className="text-xs text-gray-500">{inquiry.number_of_guests} guests</p>
+                          <p className="text-xs text-gray-500">{(inquiry.adults || 0) + (inquiry.children || 0)} guests</p>
                         </div>
                       </div>
 
@@ -267,7 +235,7 @@ const InquiriesPage = () => {
                         <Calendar className="h-4 w-4 text-gray-500" />
                         <div>
                           <p className="text-sm font-medium">
-                            {new Date(inquiry.travel_start).toLocaleDateString()} - {new Date(inquiry.travel_end).toLocaleDateString()}
+                            {new Date(inquiry.check_in_date).toLocaleDateString()} - {new Date(inquiry.check_out_date).toLocaleDateString()}
                           </p>
                           <p className="text-xs text-gray-500">Travel dates</p>
                         </div>
@@ -289,18 +257,18 @@ const InquiriesPage = () => {
                         <Mail className="h-4 w-4" />
                         {inquiry.client_email}
                       </div>
-                      {inquiry.client_phone && (
+                      {inquiry.client_mobile && (
                         <div className="flex items-center gap-1">
                           <Phone className="h-4 w-4" />
-                          {inquiry.client_phone}
+                          {inquiry.client_mobile}
                         </div>
                       )}
                     </div>
 
-                    {inquiry.special_requests && (
+                    {inquiry.special_requirements && (
                       <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                         <p className="text-sm text-gray-700">
-                          <span className="font-medium">Special Requests:</span> {inquiry.special_requests}
+                          <span className="font-medium">Special Requirements:</span> {inquiry.special_requirements}
                         </p>
                       </div>
                     )}
@@ -313,13 +281,13 @@ const InquiriesPage = () => {
                       </Link>
                     </Button>
                     
-                    {inquiry.status === 'new' && canAssignAgents && (
+                    {inquiry.status === 'New' && canAssignAgents && (
                       <Button variant="outline" size="sm">
                         Assign Agent
                       </Button>
                     )}
                     
-                    {inquiry.status === 'assigned' && (
+                    {inquiry.status === 'Assigned' && (
                       <Button variant="outline" size="sm" asChild>
                         <Link to={`/quotes/create?inquiry=${inquiry.id}`}>
                           Create Quote
@@ -358,7 +326,7 @@ const InquiriesPage = () => {
 
         <TabsContent value="kanban">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {['new', 'assigned', 'quoted', 'booked', 'cancelled'].map((status) => (
+            {['New', 'Assigned', 'Quoted', 'Booked', 'Cancelled'].map((status) => (
               <Card key={status}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium capitalize">
@@ -371,17 +339,17 @@ const InquiriesPage = () => {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-gray-600">
-                            {inquiry.inquiry_id}
+                            {inquiry.enquiry_number || `INQ-${inquiry.id.slice(0, 8)}`}
                           </span>
                           <Badge variant="outline" className="text-xs">
-                            {inquiry.travel_type}
+                            {inquiry.tour_type}
                           </Badge>
                         </div>
                         <h4 className="font-medium text-sm">{inquiry.client_name}</h4>
                         <p className="text-xs text-gray-600">{inquiry.destination}</p>
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Users className="h-3 w-3" />
-                          {inquiry.number_of_guests} guests
+                          {(inquiry.adults || 0) + (inquiry.children || 0)} guests
                         </div>
                       </div>
                     </Card>
