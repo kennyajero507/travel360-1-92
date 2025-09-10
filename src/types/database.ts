@@ -36,6 +36,7 @@ export interface DatabaseInquiry {
   travel_insurance_required: boolean | null;
   passport_expiry_date: string | null;
   document_checklist: any; // JSON field - can be string, array, or object
+  special_requirements: string | null;
 }
 
 export interface DatabaseQuote {

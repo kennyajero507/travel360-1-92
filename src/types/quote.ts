@@ -31,6 +31,7 @@ export interface Quote {
   transport_options: any[] | null;
   transfer_options: any[] | null;
   activities: any[] | null;
+  package_name: string | null;
   // Enhanced fields
   quote_type?: string;
   client_portal_token?: string;
