@@ -23,6 +23,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import type { DatabaseInquiry } from '../../types/database';
+import InquiryQuotesList from '../../components/quotes/InquiryQuotesList';
 
 const InquiryDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -414,6 +415,15 @@ const InquiryDetailPage = () => {
                 </Button>
               )}
               
+              {inquiry.status === 'New' && canManageInquiry && (
+                <Button asChild className="w-full" variant="outline">
+                  <Link to={`/quotes/create?inquiry=${inquiry.id}`}>
+                    <Quote className="h-4 w-4 mr-2" />
+                    Create Quote
+                  </Link>
+                </Button>
+              )}
+              
               <Button variant="outline" className="w-full" asChild>
                 <Link to={`mailto:${inquiry.client_email}`}>
                   <Mail className="h-4 w-4 mr-2" />
@@ -429,6 +439,9 @@ const InquiryDetailPage = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Related Quotes */}
+          <InquiryQuotesList inquiryId={inquiry.id} />
 
           {/* Inquiry Metadata */}
           <Card>

@@ -41,8 +41,6 @@ export const useQuotes = () => {
       console.log('Creating quote with data:', quoteData);
       console.log('Profile org_id:', profile?.org_id);
       console.log('Profile id:', profile?.id);
-      console.log('Is profile loaded?', !!profile);
-      console.log('Is user authenticated?', !!profile?.id);
       
       // Ensure required fields are set
       const insertData = {
@@ -62,12 +60,6 @@ export const useQuotes = () => {
 
       if (error) {
         console.error('Supabase quote creation error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
         throw error;
       }
 
@@ -106,7 +98,7 @@ export const useQuotes = () => {
       setQuotes(prev => prev.map(quote => quote.id === id ? data as Quote : quote));
       toast.success('Quote updated successfully!');
       return data;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating quote:', err);
       toast.error(`Failed to update quote: ${err.message || 'Unknown error'}`);
       throw err;
@@ -153,6 +145,86 @@ export const useQuotes = () => {
     }
   };
 
+  const sendQuoteToClient = async (id: string, clientEmail: string) => {
+    try {
+      setLoading(true);
+      
+      // Update quote status to sent
+      const { data: updatedQuote, error: updateError } = await supabase
+        .from('quotes')
+        .update({ 
+          status: 'sent',
+          sent_to_client_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      // Call edge function to send email
+      const { error: emailError } = await supabase.functions.invoke('send-quote-email', {
+        body: {
+          quoteId: id,
+          clientEmail: clientEmail
+        }
+      });
+
+      if (emailError) {
+        console.warn('Failed to send email, but quote status updated:', emailError);
+        toast.warning('Quote status updated, but email sending failed. Please contact client manually.');
+      } else {
+        toast.success('Quote sent to client successfully!');
+      }
+
+      setQuotes(prev => prev.map(quote => quote.id === id ? updatedQuote as Quote : quote));
+      return updatedQuote;
+    } catch (err: any) {
+      console.error('Error sending quote:', err);
+      toast.error('Failed to send quote to client');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuoteStatus = async (id: string, status: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('quotes')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setQuotes(prev => prev.map(quote => quote.id === id ? data as Quote : quote));
+      toast.success(`Quote status updated to ${status}`);
+      return data;
+    } catch (err: any) {
+      console.error('Error updating quote status:', err);
+      toast.error('Failed to update quote status');
+      throw err;
+    }
+  };
+
+  const getQuotesByInquiry = async (inquiryId: string): Promise<Quote[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('inquiry_id', inquiryId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Quote[] || [];
+    } catch (err) {
+      console.error('Error fetching quotes by inquiry:', err);
+      return [];
+    }
+  };
+
   useEffect(() => {
     if (profile?.org_id) {
       fetchQuotes();
@@ -167,6 +239,9 @@ export const useQuotes = () => {
     createQuote,
     updateQuote,
     deleteQuote,
-    getQuote
+    getQuote,
+    sendQuoteToClient,
+    updateQuoteStatus,
+    getQuotesByInquiry
   };
 };
