@@ -24,24 +24,25 @@ export const calculateTotals = (
   const safeTransferOptions = Array.isArray(transferOptions) ? transferOptions : [];
   const safeActivities = Array.isArray(activities) ? activities : [];
 
-  // Calculate accommodation costs
+  // Calculate accommodation costs - use cost_per_night * duration for each arrangement
   const accommodationTotal = safeArrangements.reduce((total, arrangement) => {
+    // Simple calculation: cost per night * duration for this arrangement
     return total + (arrangement.cost_per_night * durationNights);
   }, 0);
 
   // Calculate transport costs
   const transportTotal = safeTransportOptions.reduce((total, transport) => {
-    return total + transport.total_cost;
+    return total + (transport.total_cost || 0);
   }, 0);
 
   // Calculate transfer costs
   const transferTotal = safeTransferOptions.reduce((total, transfer) => {
-    return total + transfer.total_cost;
+    return total + (transfer.total_cost || 0);
   }, 0);
 
   // Calculate activity costs
   const activityTotal = safeActivities.reduce((total, activity) => {
-    return total + activity.total_cost;
+    return total + (activity.total_cost || 0);
   }, 0);
 
   // Calculate subtotal
